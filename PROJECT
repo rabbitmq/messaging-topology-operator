@@ -1,0 +1,7 @@
+domain: rabbitmq.com
+repo: github.com/rabbitmq/messaging-topology-operator
+resources:
+- group: rabbitmq.com
+  kind: Queue
+  version: v1beta1
+version: "2"
