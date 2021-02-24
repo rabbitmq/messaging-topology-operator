@@ -18,24 +18,44 @@ package v1beta1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+// using runtime.RawExtension to represent queue arguments
+// interface{} is not currently supported by controller runtime
+// recommendation is to use json.RawMessage or runtime.RawExtension to represent interface{}
+// See: https://github.com/kubernetes-sigs/controller-tools/issues/294
 
 // QueueSpec defines the desired state of Queue
 type QueueSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// default to vhost '/'
+	// +kubebuilder:default:=/
+	Vhost string `json:"vhost,omitempty"`
+	Type  string `json:"type,omitempty"`
+	// when set to false queues does not survive server restart
+	Durable bool `json:"durable,omitempty"`
+	// when set to true, queues that has at least one consumer before, are deleted after last consumer unsubscribes
+	AutoDelete bool `json:"autoDelete,omitempty"`
+	// queue arguments in the format of KEY: VALUE
+	// x-delivery-limit: 10000
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:pruning:PreserveUnknownFields
+	Arguments *runtime.RawExtension `json:"arguments,omitempty"`
+	// Reference to the RabbitmqCluster that the queue will be created in
+	// Required property
+	// +kubebuilder:validation:Required
+	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
+}
 
-	// Foo is an example field of Queue. Edit Queue_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+type RabbitmqClusterReference struct {
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+	// +kubebuilder:validation:Required
+	Namespace string `json:"namespace"`
 }
 
 // QueueStatus defines the observed state of Queue
 type QueueStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
 }
 
 // +kubebuilder:object:root=true
