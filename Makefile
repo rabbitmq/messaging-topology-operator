@@ -1,21 +1,16 @@
+# runs the target list by default
+.DEFAULT_GOAL = list
 
-# Image URL to use all building/pushing image targets
-IMG ?= controller:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS ?= "crd:trivialVersions=true"
+CRD_OPTIONS ?= "crd:trivialVersions=true, preserveUnknownFields=false, crdVersions=v1"
 
-# Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
-ifeq (,$(shell go env GOBIN))
-GOBIN=$(shell go env GOPATH)/bin
-else
-GOBIN=$(shell go env GOBIN)
-endif
+# Insert a comment starting with '##' after a target, and it will be printed by 'make' and 'make list'
+list:    ## list Makefile targets
+	@echo "The most used targets: \n"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-all: manager
-
-# Run tests
-test: generate fmt vet manifests
-	go test ./... -coverprofile cover.out
+unit-tests: generate fmt vet manifests ## Run unit tests
+	ginkgo -r --randomizeAllSpecs api/ internal/
 
 # Build manager binary
 manager: generate fmt vet
@@ -33,10 +28,18 @@ install: manifests
 uninstall: manifests
 	kustomize build config/crd | kubectl delete -f -
 
+destroy:
+	kustomize build config/rbac | kubectl delete --ignore-not-found=true -f -
+	kustomize build config/default | kubectl delete --ignore-not-found=true -f -
+
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-deploy: manifests
-	cd config/manager && kustomize edit set image controller=${IMG}
+# with local changes
+deploy: check-env-docker-credentials docker-build-dev manifests deploy-rbac docker-registry-secret set-operator-image-repo
+	cd config/manager && kustomize edit set image controller=$(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)
 	kustomize build config/default | kubectl apply -f -
+
+deploy-rbac:
+	kustomize build config/rbac | kubectl apply -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
@@ -54,13 +57,47 @@ vet:
 generate: controller-gen
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
-# Build the docker image
-docker-build: test
-	docker build . -t ${IMG}
+check-env-docker-credentials: check-env-registry-server
+ifndef DOCKER_REGISTRY_USERNAME
+	$(error DOCKER_REGISTRY_USERNAME is undefined: Username for accessing the docker registry)
+endif
+ifndef DOCKER_REGISTRY_PASSWORD
+	$(error DOCKER_REGISTRY_PASSWORD is undefined: Password for accessing the docker registry)
+endif
+ifndef DOCKER_REGISTRY_SECRET
+	$(error DOCKER_REGISTRY_SECRET is undefined: Name of Kubernetes secret in which to store the Docker registry username and password)
+endif
 
-# Push the docker image
-docker-push:
-	docker push ${IMG}
+docker-build-dev: check-env-docker-repo  git-commit-sha
+	docker build --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .
+	docker push $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)
+
+docker-registry-secret: check-env-docker-credentials operator-namespace
+	echo "creating registry secret and patching default service account"
+	@kubectl -n $(K8S_OPERATOR_NAMESPACE) create secret docker-registry $(DOCKER_REGISTRY_SECRET) --docker-server='$(DOCKER_REGISTRY_SERVER)' --docker-username="$$DOCKER_REGISTRY_USERNAME" --docker-password="$$DOCKER_REGISTRY_PASSWORD" || true
+	@kubectl -n $(K8S_OPERATOR_NAMESPACE) patch serviceaccount messaging-topology-operator -p '{"imagePullSecrets": [{"name": "$(DOCKER_REGISTRY_SECRET)"}]}'
+
+git-commit-sha:
+ifeq ("", git diff --stat)
+GIT_COMMIT=$(shell git rev-parse --short HEAD)
+else
+GIT_COMMIT=$(shell git rev-parse --short HEAD)-
+endif
+
+check-env-registry-server:
+ifndef DOCKER_REGISTRY_SERVER
+	$(error DOCKER_REGISTRY_SERVER is undefined: URL of docker registry containing the Operator image (e.g. registry.my-company.com))
+endif
+
+check-env-docker-repo: check-env-registry-server set-operator-image-repo
+
+set-operator-image-repo:
+OPERATOR_IMAGE=p-rabbitmq-for-kubernetes/messaging-topology-operator
+
+operator-namespace:
+ifeq (, $(K8S_OPERATOR_NAMESPACE))
+K8S_OPERATOR_NAMESPACE=rabbitmq-system
+endif
 
 # find or download controller-gen
 # download controller-gen if necessary
