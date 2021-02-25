@@ -7,14 +7,9 @@ import (
 	topologyv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
 
-// GenerateQueueSettings generates rabbithole.QueueSettings for the given Queue
-// queue.Spec.Arguments (type k8s apimachinery runtime.RawExtensions) is unmarshalled
-// Unmarshall stores: bool, for JSON booleans
-// float64, for JSON numbers
-// string, for JSON strings
-// []interface{}, for JSON arrays
-// map[string]interface{}, for JSON objects
-// nil for JSON null
+// generates rabbithole.QueueSettings for a given Queue
+// queue.Spec.Arguments (type k8s runtime.RawExtensions) is unmarshalled
+// Unmarshall stores float64, for JSON numbers
 // See: https://golang.org/pkg/encoding/json/#Unmarshal
 func GenerateQueueSettings(q *topologyv1beta1.Queue) (*rabbithole.QueueSettings, error) {
 	arguments := make(map[string]interface{})

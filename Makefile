@@ -12,6 +12,9 @@ list:    ## list Makefile targets
 unit-tests: generate fmt vet manifests ## Run unit tests
 	ginkgo -r --randomizeAllSpecs api/ internal/
 
+system-tests: ## run end-to-end tests against Kubernetes cluster defined in ~/.kube/config. Expects cluster operator and messaging topology operator to be installed in the cluster
+	NAMESPACE="rabbitmq-system" ginkgo -randomizeAllSpecs -r system_tests/
+
 # Build manager binary
 manager: generate fmt vet
 	go build -o bin/manager main.go

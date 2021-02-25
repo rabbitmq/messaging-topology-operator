@@ -19,8 +19,6 @@ package controllers
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"github.com/go-logr/logr"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	topologyv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
@@ -28,7 +26,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
-	"net/http"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -37,7 +34,7 @@ import (
 
 const deletionFinalizer = "deletion.finalizers.queues.rabbitmq.com"
 
-// QueueReconciler reconciles a Queue object
+// QueueReconciler reconciles a RabbitMQ Queue
 type QueueReconciler struct {
 	client.Client
 	Log      logr.Logger
@@ -62,17 +59,17 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// create rabbitmq http client
-	client, err := r.rabbitClient(ctx, q.Spec.RabbitmqClusterReference)
+	// create rabbitmq http rabbitClient
+	rabbitClient, err := r.rabbitholeClient(ctx, q.Spec.RabbitmqClusterReference)
 	if err != nil {
-		logger.Error(err, "Failed to generate http client")
+		logger.Error(err, "Failed to generate http rabbitClient")
 		return reconcile.Result{}, err
 	}
 
 	// Check if the q has been marked for deletion
 	if !q.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info("Deleting")
-		return ctrl.Result{}, r.deleteQueue(ctx, client, q)
+		return ctrl.Result{}, r.deleteQueue(ctx, rabbitClient, q)
 	}
 
 	if err := r.addFinalizerIfNeeded(ctx, q); err != nil {
@@ -87,7 +84,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	logger.Info("Start reconciling",
 		"spec", string(queueSpec))
 
-	if err := r.declareQueue(ctx, client, q); err != nil {
+	if err := r.declareQueue(ctx, rabbitClient, q); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -101,43 +98,21 @@ func (r *QueueReconciler) declareQueue(ctx context.Context, client *rabbithole.C
 
 	queueSettings, err := internal.GenerateQueueSettings(q)
 	if err != nil {
+		msg := "failed to generate queue settings"
+		r.Recorder.Event(q, corev1.EventTypeWarning, "FailedDeclare", msg)
+		logger.Error(err, msg)
+		return err
+	}
+
+	if err := validateResponse(client.DeclareQueue(q.Spec.Vhost, q.Name, *queueSettings)); err != nil {
 		msg := "failed to declare queue"
 		r.Recorder.Event(q, corev1.EventTypeWarning, "FailedDeclare", msg)
 		logger.Error(err, msg)
 		return err
 	}
 
-	//queueSettings := make(map[string]interface{})
-	//if q.Spec.Arguments != nil {
-	//	if err := json.Unmarshal(q.Spec.Arguments.Raw, &queueSettings); err != nil {
-	//		msg := "failed to unmarshall queue arguments"
-	//		r.Recorder.Event(q, corev1.EventTypeWarning, "FailedDeclare", msg)
-	//		logger.Error(err, msg)
-	//		return err
-	//	}
-	//}
-	//
-	//// bug in rabbithole; setting queue type in QueueSettings.Type does not have impact
-	//if q.Spec.Type != "" {
-	//	queueSettings["x-queue-type"] = q.Spec.Type
-	//}
-
-	res, err := client.DeclareQueue(q.Spec.Vhost, q.Name, *queueSettings)
-	if err != nil {
-		msg := "failed to declare queue"
-		r.Recorder.Event(q, corev1.EventTypeWarning, "FailedDeclare", msg)
-		logger.Error(err, msg)
-		return err
-	}
-
-	if res.StatusCode >= http.StatusBadRequest {
-		msg := "failed to declare queue"
-		r.Recorder.Event(q, corev1.EventTypeWarning, "FailedDeclare", msg)
-		logger.Error(errors.New("FailedDeclare"), "server response", res.Body)
-		return fmt.Errorf("response from server: %s", res.Body)
-	}
-
-	logger.Info("server response", "response.body", res.Body)
+	logger.Info("Successfully declared queue")
+	r.Recorder.Event(q, corev1.EventTypeNormal, "SuccessfulDeclare", "Successfully declared queue")
 	return nil
 }
 
@@ -153,7 +128,14 @@ func (r *QueueReconciler) addFinalizerIfNeeded(ctx context.Context, q *topologyv
 }
 
 func (r *QueueReconciler) deleteQueue(ctx context.Context, client *rabbithole.Client, q *topologyv1beta1.Queue) error {
-	client.DeleteQueue(q.Spec.Vhost, q.Name)
+	logger := ctrl.LoggerFrom(ctx)
+
+	if err := validateResponse(client.DeleteQueue(q.Spec.Vhost, q.Name)); err != nil {
+		msg := "failed to delete queue"
+		r.Recorder.Event(q, corev1.EventTypeWarning, "FailedDelete", msg)
+		logger.Error(err, msg)
+		return err
+	}
 	return r.removeFinalizer(ctx, q)
 }
 

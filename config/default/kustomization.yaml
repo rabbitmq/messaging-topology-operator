@@ -15,6 +15,3 @@ namePrefix: messaging-topology-
 bases:
 - ../crd
 - ../manager
-
-patchesStrategicMerge:
-vars:

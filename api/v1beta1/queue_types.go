@@ -24,7 +24,6 @@ import (
 // using runtime.RawExtension to represent queue arguments
 // interface{} is not currently supported by controller runtime
 // recommendation is to use json.RawMessage or runtime.RawExtension to represent interface{}
-// See: https://github.com/kubernetes-sigs/controller-tools/issues/294
 
 // QueueSpec defines the desired state of Queue
 type QueueSpec struct {
@@ -36,8 +35,7 @@ type QueueSpec struct {
 	Durable bool `json:"durable,omitempty"`
 	// when set to true, queues that has at least one consumer before, are deleted after last consumer unsubscribes
 	AutoDelete bool `json:"autoDelete,omitempty"`
-	// queue arguments in the format of KEY: VALUE
-	// x-delivery-limit: 10000
+	// queue arguments in the format of KEY: VALUE. e.g. x-delivery-limit: 10000
 	// +kubebuilder:validation:Type=object
 	// +kubebuilder:pruning:PreserveUnknownFields
 	Arguments *runtime.RawExtension `json:"arguments,omitempty"`

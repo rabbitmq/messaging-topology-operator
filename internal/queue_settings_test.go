@@ -60,7 +60,6 @@ var _ = Describe("GenerateQueueSettings", func() {
 				HaveLen(8),
 				// GenerateQueueSettings Unmarshal queue.Spec.Arguments
 				// Unmarshall stores float64 for JSON numbers
-				// See: https://golang.org/pkg/encoding/json/#Unmarshal
 				HaveKeyWithValue("x-delivery-limit", float64(10000)),
 				HaveKeyWithValue("x-max-in-memory-length", float64(500)),
 				HaveKeyWithValue("x-max-in-memory-bytes", float64(5000)),

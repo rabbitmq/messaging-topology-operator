@@ -4,16 +4,20 @@ metadata:
   name: operator
   namespace: system
   labels:
-    control-plane: operator
+    app.kubernetes.io/name: messaging-topology-operator
+    app.kubernetes.io/component: messaging-topology-operator
+    app.kubernetes.io/part-of: rabbitmq
 spec:
   selector:
     matchLabels:
-      control-plane: operator
+      app.kubernetes.io/name: messaging-topology-operator
   replicas: 1
   template:
     metadata:
       labels:
-        control-plane: operator
+        app.kubernetes.io/name: messaging-topology-operator
+        app.kubernetes.io/component: messaging-topology-operator
+        app.kubernetes.io/part-of: rabbitmq
     spec:
       serviceAccountName: messaging-topology-operator
       containers:

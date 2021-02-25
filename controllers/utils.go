@@ -7,17 +7,17 @@ import (
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	//"k8s.io/apimachinery/pkg/runtime"
-	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"io/ioutil"
+	"net/http"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"net"
 )
 
-// returns a http client for the given RabbitmqClusterReference
-// assumes that the RabbitmqCluster is reachable using its ClusterIP
-// assumes
-func (r *QueueReconciler) rabbitClient(ctx context.Context, rmq v1beta1.RabbitmqClusterReference) (*rabbithole.Client, error) {
+// returns a http client for the given RabbitmqCluster
+// assumes the RabbitmqCluster is reachable using its service's ClusterIP
+func (r *QueueReconciler) rabbitholeClient(ctx context.Context, rmq v1beta1.RabbitmqClusterReference) (*rabbithole.Client, error) {
 	svc, secret, err := r.serviceSecretFromReference(ctx, rmq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get service or secret object from specified rabbitmqcluster: %v", err)
@@ -53,7 +53,7 @@ func (r *QueueReconciler) rabbitClient(ctx context.Context, rmq v1beta1.Rabbitmq
 	return client, nil
 }
 
-// returns rmq management port from given service
+// returns RabbitMQ management port from given service
 // if both "management-tls" and "management" ports are present, returns the "management-tls" port
 func managementPort(svc *corev1.Service) (int, error) {
 	for _, port := range svc.Spec.Ports {
@@ -67,7 +67,6 @@ func managementPort(svc *corev1.Service) (int, error) {
 	return 0, fmt.Errorf("failed to find 'management' or 'management-tls' from service %s", svc.Name)
 }
 
-// returns the service and the secret object from given RabbitmqClusterReference
 func (r *QueueReconciler) serviceSecretFromReference(ctx context.Context, rmq v1beta1.RabbitmqClusterReference) (*corev1.Service, *corev1.Secret, error) {
 	cluster := &rabbitmqv1beta1.RabbitmqCluster{}
 	if err := r.Get(ctx, types.NamespacedName{Name: rmq.Name, Namespace: rmq.Namespace}, cluster); err != nil {
@@ -75,6 +74,7 @@ func (r *QueueReconciler) serviceSecretFromReference(ctx context.Context, rmq v1
 	}
 
 	secret := &corev1.Secret{}
+	// TODO: use cluster.Status.Binding instead of cluster.Status.DefaultUser.SecretReference.Name after the PR exposes Status.Binding is released
 	if err := r.Get(ctx, types.NamespacedName{Namespace: rmq.Namespace, Name: cluster.Status.DefaultUser.SecretReference.Name}, secret); err != nil {
 		return nil, nil, err
 	}
@@ -84,4 +84,19 @@ func (r *QueueReconciler) serviceSecretFromReference(ctx context.Context, rmq v1
 		return nil, nil, err
 	}
 	return svc, secret, nil
+}
+
+// TODO: check possible status code response from RabbitMQ
+// validate status code above 300 might not be all failure case
+func validateResponse(res *http.Response, err error) error {
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode >= http.StatusMultipleChoices {
+		body, _ := ioutil.ReadAll(res.Body)
+		res.Body.Close()
+		return fmt.Errorf("request failed with status code %d and body %q", res.StatusCode, body)
+	}
+	return nil
 }

@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: dev.registry.pivotal.io/p-rabbitmq-for-kubernetes/messaging-topology-operator
-  newTag: bd024c0-
+  newTag: 70b1ee4-
