@@ -1,7 +1,4 @@
-apiVersion: rabbitmq.com.rabbitmq.com/v1beta1
+apiVersion: rabbitmq.com/v1beta1
 kind: Queue
 metadata:
-  name: queue-sample
-spec:
-  # Add fields here
-  foo: bar
+  name: test
