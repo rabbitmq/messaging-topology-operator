@@ -17,6 +17,7 @@ var _ = Describe("Queue spec", func() {
 
 	It("creates a queue with default settings", func() {
 		expectedSpec := QueueSpec{
+			Name:       "test-queue",
 			Vhost:      "/",
 			Durable:    false,
 			AutoDelete: false,
@@ -28,10 +29,11 @@ var _ = Describe("Queue spec", func() {
 
 		q := Queue{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "some-q",
+				Name:      "test-queue",
 				Namespace: namespace,
 			},
 			Spec: QueueSpec{
+				Name: "test-queue",
 				RabbitmqClusterReference: RabbitmqClusterReference{
 					Name:      "some-cluster",
 					Namespace: namespace,
@@ -54,6 +56,7 @@ var _ = Describe("Queue spec", func() {
 				Namespace: namespace,
 			},
 			Spec: QueueSpec{
+				Name:       "test-queue",
 				Vhost:      "/hello",
 				Type:       "a type",
 				Durable:    true,
@@ -74,6 +77,7 @@ var _ = Describe("Queue spec", func() {
 			Namespace: q.Namespace,
 		}, fetchedQ)).To(Succeed())
 
+		Expect(fetchedQ.Spec.Name).To(Equal("test-queue"))
 		Expect(fetchedQ.Spec.Vhost).To(Equal("/hello"))
 		Expect(fetchedQ.Spec.Type).To(Equal("a type"))
 		Expect(fetchedQ.Spec.Durable).To(BeTrue())

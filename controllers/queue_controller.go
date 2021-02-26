@@ -104,14 +104,14 @@ func (r *QueueReconciler) declareQueue(ctx context.Context, client *rabbithole.C
 		return err
 	}
 
-	if err := validateResponse(client.DeclareQueue(q.Spec.Vhost, q.Name, *queueSettings)); err != nil {
+	if err := validateResponse(client.DeclareQueue(q.Spec.Vhost, q.Spec.Name, *queueSettings)); err != nil {
 		msg := "failed to declare queue"
 		r.Recorder.Event(q, corev1.EventTypeWarning, "FailedDeclare", msg)
-		logger.Error(err, msg)
+		logger.Error(err, msg, "queue", q.Spec.Name)
 		return err
 	}
 
-	logger.Info("Successfully declared queue")
+	logger.Info("Successfully declared queue", "queue", q.Spec.Name)
 	r.Recorder.Event(q, corev1.EventTypeNormal, "SuccessfulDeclare", "Successfully declared queue")
 	return nil
 }
@@ -130,10 +130,10 @@ func (r *QueueReconciler) addFinalizerIfNeeded(ctx context.Context, q *topologyv
 func (r *QueueReconciler) deleteQueue(ctx context.Context, client *rabbithole.Client, q *topologyv1beta1.Queue) error {
 	logger := ctrl.LoggerFrom(ctx)
 
-	if err := validateResponse(client.DeleteQueue(q.Spec.Vhost, q.Name)); err != nil {
+	if err := validateResponse(client.DeleteQueue(q.Spec.Vhost, q.Spec.Name)); err != nil {
 		msg := "failed to delete queue"
 		r.Recorder.Event(q, corev1.EventTypeWarning, "FailedDelete", msg)
-		logger.Error(err, msg)
+		logger.Error(err, msg, "queue", q.Spec.Name)
 		return err
 	}
 	return r.removeFinalizer(ctx, q)

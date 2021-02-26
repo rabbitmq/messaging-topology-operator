@@ -33,15 +33,18 @@ spec:
             description: QueueSpec defines the desired state of Queue
             properties:
               arguments:
-                description: 'queue arguments in the format of KEY: VALUE. e.g. x-delivery-limit: 10000'
+                description: 'Queue arguments in the format of KEY: VALUE. e.g. x-delivery-limit: 10000'
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
               autoDelete:
                 description: when set to true, queues that has at least one consumer before, are deleted after last consumer unsubscribes
                 type: boolean
               durable:
-                description: when set to false queues does not survive server restart
+                description: When set to false queues does not survive server restart
                 type: boolean
+              name:
+                description: Name of the queue; required property
+                type: string
               rabbitmqClusterReference:
                 description: Reference to the RabbitmqCluster that the queue will be created in Required property
                 properties:
@@ -57,9 +60,10 @@ spec:
                 type: string
               vhost:
                 default: /
-                description: default to vhost '/'
+                description: Default to vhost '/'
                 type: string
             required:
+            - name
             - rabbitmqClusterReference
             type: object
           status:

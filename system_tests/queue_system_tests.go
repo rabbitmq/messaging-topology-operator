@@ -32,6 +32,7 @@ var _ = Describe("Queue Controller", func() {
 					Name:      rmq.Name,
 					Namespace: rmq.Namespace,
 				},
+				Name:       "queue-test",
 				Type:       "quorum",
 				AutoDelete: false,
 				Durable:    true,
@@ -53,7 +54,7 @@ var _ = Describe("Queue Controller", func() {
 		}, 10, 2).Should(BeNil())
 
 		Expect(*qInfo).To(MatchFields(IgnoreExtras, Fields{
-			"Name":       Equal(q.Name),
+			"Name":       Equal(q.Spec.Name),
 			"Vhost":      Equal(q.Spec.Vhost),
 			"AutoDelete": BeFalse(),
 			"Durable":    BeTrue(),
@@ -63,7 +64,7 @@ var _ = Describe("Queue Controller", func() {
 
 		By("deleting queue")
 		Expect(k8sClient.Delete(ctx, q)).To(Succeed())
-		_, err := rabbitClient.GetQueue(q.Spec.Vhost, q.Name)
+		_, err := rabbitClient.GetQueue(q.Spec.Vhost, q.Spec.Name)
 		Expect(err.Error()).To(ContainSubstring("Object Not Found"))
 	})
 })
