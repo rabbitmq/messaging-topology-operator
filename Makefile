@@ -9,7 +9,11 @@ list:    ## list Makefile targets
 	@echo "The most used targets: \n"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-unit-tests: generate fmt vet manifests ## Run unit tests
+install-tools:
+	go mod download
+	grep _ tools/tools.go | awk -F '"' '{print $$2}' | xargs -t go install
+
+unit-tests: install-tools generate fmt vet manifests ## Run unit tests
 	ginkgo -r --randomizeAllSpecs api/ internal/
 
 system-tests: ## run end-to-end tests against Kubernetes cluster defined in ~/.kube/config. Expects cluster operator and messaging topology operator to be installed in the cluster
