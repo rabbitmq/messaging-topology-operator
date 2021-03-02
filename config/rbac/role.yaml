@@ -37,6 +37,26 @@ rules:
 - apiGroups:
   - rabbitmq.com
   resources:
+  - exchanges
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - exchanges/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - rabbitmq.com
+  resources:
   - queues
   verbs:
   - create

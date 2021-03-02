@@ -27,19 +27,19 @@ var _ = Describe("GenerateQueueSettings", func() {
 
 	It("sets QueueSettings.AutoDelete according to queue.spec", func() {
 		settings, err := internal.GenerateQueueSettings(q)
-		Expect(err).To(Not(HaveOccurred()))
+		Expect(err).NotTo(HaveOccurred())
 		Expect(settings.AutoDelete).To(BeFalse())
 	})
 
 	It("sets QueueSettings.Durable according to queue.spec", func() {
 		settings, err := internal.GenerateQueueSettings(q)
-		Expect(err).To(Not(HaveOccurred()))
+		Expect(err).NotTo(HaveOccurred())
 		Expect(settings.Durable).To(BeTrue())
 	})
 
 	It("sets QueueSettings.Arguments according to queue.spec", func() {
 		settings, err := internal.GenerateQueueSettings(q)
-		Expect(err).To(Not(HaveOccurred()))
+		Expect(err).NotTo(HaveOccurred())
 		Expect(settings.Arguments["x-queue-type"].(string)).To(Equal("quorum"))
 	})
 
@@ -55,7 +55,7 @@ var _ = Describe("GenerateQueueSettings", func() {
 "x-single-active-consumer": true
 }`)}
 			settings, err := internal.GenerateQueueSettings(q)
-			Expect(err).To(Not(HaveOccurred()))
+			Expect(err).NotTo(HaveOccurred())
 			Expect(settings.Arguments).Should(SatisfyAll(
 				HaveLen(8),
 				// GenerateQueueSettings Unmarshal queue.Spec.Arguments

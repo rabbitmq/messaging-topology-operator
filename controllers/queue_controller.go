@@ -60,7 +60,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	// create rabbitmq http rabbitClient
-	rabbitClient, err := r.rabbitholeClient(ctx, q.Spec.RabbitmqClusterReference)
+	rabbitClient, err := rabbitholeClient(ctx, r.Client, q.Spec.RabbitmqClusterReference)
 	if err != nil {
 		logger.Error(err, "Failed to generate http rabbitClient")
 		return reconcile.Result{}, err

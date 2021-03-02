@@ -4,4 +4,7 @@ resources:
 - group: rabbitmq.com
   kind: Queue
   version: v1beta1
+- group: rabbitmq.com
+  kind: Exchange
+  version: v1beta1
 version: "2"

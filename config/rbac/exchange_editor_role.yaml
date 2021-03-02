@@ -1,13 +1,13 @@
-# permissions for end users to edit queues.
+# permissions for end users to edit exchanges.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: queue-editor-role
+  name: exchange-editor-role
 rules:
 - apiGroups:
   - rabbitmq.com
   resources:
-  - queues
+  - exchanges
   verbs:
   - create
   - delete
@@ -19,6 +19,6 @@ rules:
 - apiGroups:
   - rabbitmq.com
   resources:
-  - queues/status
+  - exchanges/status
   verbs:
   - get
