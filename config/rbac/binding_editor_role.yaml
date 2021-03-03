@@ -1,13 +1,13 @@
-# permissions for end users to edit queues.
+# permissions for end users to edit bindings.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: queue-editor-role
+  name: binding-editor-role
 rules:
 - apiGroups:
   - rabbitmq.com
   resources:
-  - queues
+  - bindings
   verbs:
   - create
   - delete
@@ -19,6 +19,6 @@ rules:
 - apiGroups:
   - rabbitmq.com
   resources:
-  - queues/status
+  - bindings/status
   verbs:
   - get

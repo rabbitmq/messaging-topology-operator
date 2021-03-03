@@ -27,12 +27,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	clusterv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
+
+	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	topologyv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
 	// +kubebuilder:scaffold:imports
 )
 
 const queueControllerName = "queue-controller"
+const exchangeControllerName = "exchange-controller"
+const bindingControllerName = "binding-controller"
 
 var (
 	scheme = runtime.NewScheme()
@@ -44,6 +48,7 @@ func init() {
 	_ = clusterv1beta1.AddToScheme(scheme)
 
 	_ = topologyv1beta1.AddToScheme(scheme)
+	_ = rabbitmqcomv1beta1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -72,6 +77,24 @@ func main() {
 		Recorder: mgr.GetEventRecorderFor(queueControllerName),
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", queueControllerName)
+		os.Exit(1)
+	}
+	if err = (&controllers.ExchangeReconciler{
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("Exchange"),
+		Scheme:   mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorderFor(exchangeControllerName),
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", exchangeControllerName)
+		os.Exit(1)
+	}
+	if err = (&controllers.BindingReconciler{
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("Binding"),
+		Scheme:   mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorderFor(bindingControllerName),
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", bindingControllerName)
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
