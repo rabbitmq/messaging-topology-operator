@@ -3,21 +3,21 @@ package internal_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	topologyv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 var _ = Describe("GenerateExchangeSettings", func() {
-	var e *topologyv1beta1.Exchange
+	var e *topologyv1alpha1.Exchange
 
 	BeforeEach(func() {
-		e = &topologyv1beta1.Exchange{
+		e = &topologyv1alpha1.Exchange{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "exchange",
 			},
-			Spec: topologyv1beta1.ExchangeSpec{
+			Spec: topologyv1alpha1.ExchangeSpec{
 				Type:       "fanout",
 				Durable:    true,
 				AutoDelete: true,

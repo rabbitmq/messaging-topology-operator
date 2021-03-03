@@ -11,24 +11,24 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 
-	topologyv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 )
 
 var _ = Describe("Queue Controller", func() {
 	var (
 		namespace = MustHaveEnv("NAMESPACE")
 		ctx       = context.Background()
-		q         *topologyv1beta1.Queue
+		q         *topologyv1alpha1.Queue
 	)
 
 	BeforeEach(func() {
-		q = &topologyv1beta1.Queue{
+		q = &topologyv1alpha1.Queue{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "queue-test",
 				Namespace: namespace,
 			},
-			Spec: topologyv1beta1.QueueSpec{
-				RabbitmqClusterReference: topologyv1beta1.RabbitmqClusterReference{
+			Spec: topologyv1alpha1.QueueSpec{
+				RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
 					Name:      rmq.Name,
 					Namespace: rmq.Namespace,
 				},

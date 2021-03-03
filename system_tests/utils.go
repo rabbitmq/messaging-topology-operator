@@ -6,7 +6,7 @@ import (
 	"fmt"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	. "github.com/onsi/gomega"
-	"github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	"github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -63,7 +63,7 @@ func MustHaveEnv(name string) string {
 	return value
 }
 
-func generateRabbitClient(ctx context.Context, clientSet *kubernetes.Clientset, rmq *v1beta1.RabbitmqClusterReference) (*rabbithole.Client, error) {
+func generateRabbitClient(ctx context.Context, clientSet *kubernetes.Clientset, rmq *v1alpha1.RabbitmqClusterReference) (*rabbithole.Client, error) {
 	nodeIp := kubernetesNodeIp(ctx, clientSet)
 	if nodeIp == "" {
 		return nil, errors.New("failed to get kubernetes Node IP")
@@ -89,7 +89,7 @@ func generateRabbitClient(ctx context.Context, clientSet *kubernetes.Clientset, 
 	return rabbitClient, nil
 }
 
-func getUsernameAndPassword(ctx context.Context, clientSet *kubernetes.Clientset, rmq *v1beta1.RabbitmqClusterReference) (string, string, error) {
+func getUsernameAndPassword(ctx context.Context, clientSet *kubernetes.Clientset, rmq *v1alpha1.RabbitmqClusterReference) (string, string, error) {
 	secretName := fmt.Sprintf("%s-default-user", rmq.Name)
 	secret, err := clientSet.CoreV1().Secrets(rmq.Namespace).Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
@@ -106,7 +106,7 @@ func getUsernameAndPassword(ctx context.Context, clientSet *kubernetes.Clientset
 	return string(username), string(password), nil
 }
 
-func managementNodePort(ctx context.Context, clientSet *kubernetes.Clientset, rmq *v1beta1.RabbitmqClusterReference) string {
+func managementNodePort(ctx context.Context, clientSet *kubernetes.Clientset, rmq *v1alpha1.RabbitmqClusterReference) string {
 	svc, err := clientSet.CoreV1().Services(rmq.Namespace).
 		Get(ctx, rmq.Name, metav1.GetOptions{})
 

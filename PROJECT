@@ -3,11 +3,11 @@ repo: github.com/rabbitmq/messaging-topology-operator
 resources:
 - group: rabbitmq.com
   kind: Queue
-  version: v1beta1
+  version: v1alpha1
 - group: rabbitmq.com
   kind: Exchange
-  version: v1beta1
+  version: v1alpha1
 - group: rabbitmq.com
   kind: Binding
-  version: v1beta1
+  version: v1alpha1
 version: "2"

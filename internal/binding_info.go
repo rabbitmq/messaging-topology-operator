@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
-	topologyv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 )
 
-func GenerateBindingInfo(binding *topologyv1beta1.Binding) (*rabbithole.BindingInfo, error) {
+func GenerateBindingInfo(binding *topologyv1alpha1.Binding) (*rabbithole.BindingInfo, error) {
 	arguments := make(map[string]interface{})
 	if binding.Spec.Arguments != nil {
 		if err := json.Unmarshal(binding.Spec.Arguments.Raw, &arguments); err != nil {

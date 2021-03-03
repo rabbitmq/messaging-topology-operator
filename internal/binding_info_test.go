@@ -3,21 +3,21 @@ package internal_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	topologyv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 var _ = Describe("GenerateBindingInfo()", func() {
-	var binding *topologyv1beta1.Binding
+	var binding *topologyv1alpha1.Binding
 
 	BeforeEach(func() {
-		binding = &topologyv1beta1.Binding{
+		binding = &topologyv1alpha1.Binding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "exchange",
 			},
-			Spec: topologyv1beta1.BindingSpec{
+			Spec: topologyv1alpha1.BindingSpec{
 				Vhost:           "/avhost",
 				Source:          "test-exchange",
 				Destination:     "test-queue",

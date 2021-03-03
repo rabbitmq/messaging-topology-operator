@@ -6,7 +6,7 @@ import (
 	"fmt"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
-	"github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	"github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	"io/ioutil"
 	"net/http"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -18,7 +18,7 @@ import (
 
 // returns a http client for the given RabbitmqCluster
 // assumes the RabbitmqCluster is reachable using its service's ClusterIP
-func rabbitholeClient(ctx context.Context, c client.Client, rmq v1beta1.RabbitmqClusterReference) (*rabbithole.Client, error) {
+func rabbitholeClient(ctx context.Context, c client.Client, rmq v1alpha1.RabbitmqClusterReference) (*rabbithole.Client, error) {
 	svc, secret, err := serviceSecretFromReference(ctx, c, rmq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get service or secret object from specified rabbitmqcluster: %v", err)
@@ -68,7 +68,7 @@ func managementPort(svc *corev1.Service) (int, error) {
 	return 0, fmt.Errorf("failed to find 'management' or 'management-tls' from service %s", svc.Name)
 }
 
-func serviceSecretFromReference(ctx context.Context, c client.Client, rmq v1beta1.RabbitmqClusterReference) (*corev1.Service, *corev1.Secret, error) {
+func serviceSecretFromReference(ctx context.Context, c client.Client, rmq v1alpha1.RabbitmqClusterReference) (*corev1.Service, *corev1.Secret, error) {
 	cluster := &rabbitmqv1beta1.RabbitmqCluster{}
 	if err := c.Get(ctx, types.NamespacedName{Name: rmq.Name, Namespace: rmq.Namespace}, cluster); err != nil {
 		return nil, nil, err

@@ -26,10 +26,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	clusterv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
+	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 
-	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	topologyv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
 	// +kubebuilder:scaffold:imports
 )
@@ -45,10 +44,9 @@ var (
 
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
-	_ = clusterv1beta1.AddToScheme(scheme)
+	_ = rabbitmqv1beta1.AddToScheme(scheme)
 
-	_ = topologyv1beta1.AddToScheme(scheme)
-	_ = rabbitmqcomv1beta1.AddToScheme(scheme)
+	_ = topologyv1alpha1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 

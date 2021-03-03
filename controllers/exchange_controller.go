@@ -31,7 +31,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	topologyv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 )
 
 const exchangeFinalizer = "deletion.finalizers.exchanges.rabbitmq.com"
@@ -50,7 +50,7 @@ type ExchangeReconciler struct {
 func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
-	exchange := &topologyv1beta1.Exchange{}
+	exchange := &topologyv1alpha1.Exchange{}
 	if err := r.Get(ctx, req.NamespacedName, exchange); err != nil {
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
@@ -87,7 +87,7 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	return ctrl.Result{}, nil
 }
 
-func (r *ExchangeReconciler) declareExchange(ctx context.Context, client *rabbithole.Client, exchange *topologyv1beta1.Exchange) error {
+func (r *ExchangeReconciler) declareExchange(ctx context.Context, client *rabbithole.Client, exchange *topologyv1alpha1.Exchange) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	settings, err := internal.GenerateExchangeSettings(exchange)
@@ -111,7 +111,7 @@ func (r *ExchangeReconciler) declareExchange(ctx context.Context, client *rabbit
 }
 
 // addFinalizerIfNeeded adds a deletion finalizer if the Exchange does not have one yet and is not marked for deletion
-func (r *ExchangeReconciler) addFinalizerIfNeeded(ctx context.Context, e *topologyv1beta1.Exchange) error {
+func (r *ExchangeReconciler) addFinalizerIfNeeded(ctx context.Context, e *topologyv1alpha1.Exchange) error {
 	if e.ObjectMeta.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(e, exchangeFinalizer) {
 		controllerutil.AddFinalizer(e, exchangeFinalizer)
 		if err := r.Client.Update(ctx, e); err != nil {
@@ -121,7 +121,7 @@ func (r *ExchangeReconciler) addFinalizerIfNeeded(ctx context.Context, e *topolo
 	return nil
 }
 
-func (r *ExchangeReconciler) deleteExchange(ctx context.Context, client *rabbithole.Client, exchange *topologyv1beta1.Exchange) error {
+func (r *ExchangeReconciler) deleteExchange(ctx context.Context, client *rabbithole.Client, exchange *topologyv1alpha1.Exchange) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	if err := validateResponse(client.DeleteExchange(exchange.Spec.Vhost, exchange.Spec.Name)); err != nil {
@@ -133,7 +133,7 @@ func (r *ExchangeReconciler) deleteExchange(ctx context.Context, client *rabbith
 	return r.removeFinalizer(ctx, exchange)
 }
 
-func (r *ExchangeReconciler) removeFinalizer(ctx context.Context, e *topologyv1beta1.Exchange) error {
+func (r *ExchangeReconciler) removeFinalizer(ctx context.Context, e *topologyv1alpha1.Exchange) error {
 	controllerutil.RemoveFinalizer(e, exchangeFinalizer)
 	if err := r.Client.Update(ctx, e); err != nil {
 		return err
@@ -143,6 +143,6 @@ func (r *ExchangeReconciler) removeFinalizer(ctx context.Context, e *topologyv1b
 
 func (r *ExchangeReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&topologyv1beta1.Exchange{}).
+		For(&topologyv1alpha1.Exchange{}).
 		Complete(r)
 }

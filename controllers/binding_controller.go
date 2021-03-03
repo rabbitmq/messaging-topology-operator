@@ -30,7 +30,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	topologyv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 )
 
 // BindingReconciler reconciles a Binding object
@@ -47,7 +47,7 @@ type BindingReconciler struct {
 func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
-	binding := &topologyv1beta1.Binding{}
+	binding := &topologyv1alpha1.Binding{}
 	if err := r.Get(ctx, req.NamespacedName, binding); err != nil {
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
@@ -75,7 +75,7 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	return ctrl.Result{}, nil
 }
 
-func (r *BindingReconciler) declareBinding(ctx context.Context, client *rabbithole.Client, binding *topologyv1beta1.Binding) error {
+func (r *BindingReconciler) declareBinding(ctx context.Context, client *rabbithole.Client, binding *topologyv1alpha1.Binding) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	info, err := internal.GenerateBindingInfo(binding)
@@ -100,6 +100,6 @@ func (r *BindingReconciler) declareBinding(ctx context.Context, client *rabbitho
 
 func (r *BindingReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&topologyv1beta1.Binding{}).
+		For(&topologyv1alpha1.Binding{}).
 		Complete(r)
 }

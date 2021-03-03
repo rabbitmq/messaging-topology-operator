@@ -11,24 +11,24 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 
-	topologyv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 )
 
 var _ = Describe("Exchange", func() {
 	var (
 		namespace = MustHaveEnv("NAMESPACE")
 		ctx       = context.Background()
-		exchange  *topologyv1beta1.Exchange
+		exchange  *topologyv1alpha1.Exchange
 	)
 
 	BeforeEach(func() {
-		exchange = &topologyv1beta1.Exchange{
+		exchange = &topologyv1alpha1.Exchange{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "exchange-test",
 				Namespace: namespace,
 			},
-			Spec: topologyv1beta1.ExchangeSpec{
-				RabbitmqClusterReference: topologyv1beta1.RabbitmqClusterReference{
+			Spec: topologyv1alpha1.ExchangeSpec{
+				RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
 					Name:      rmq.Name,
 					Namespace: rmq.Namespace,
 				},

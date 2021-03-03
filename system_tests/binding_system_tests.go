@@ -11,54 +11,54 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 
-	topologyv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 )
 
 var _ = Describe("Binding", func() {
 	var (
 		namespace = MustHaveEnv("NAMESPACE")
 		ctx       = context.Background()
-		binding   *topologyv1beta1.Binding
-		queue     *topologyv1beta1.Queue
-		exchange  *topologyv1beta1.Exchange
+		binding   *topologyv1alpha1.Binding
+		queue     *topologyv1alpha1.Queue
+		exchange  *topologyv1alpha1.Exchange
 	)
 
 	BeforeEach(func() {
-		exchange = &topologyv1beta1.Exchange{
+		exchange = &topologyv1alpha1.Exchange{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-exchange",
 				Namespace: namespace,
 			},
-			Spec: topologyv1beta1.ExchangeSpec{
+			Spec: topologyv1alpha1.ExchangeSpec{
 				Name: "test-exchange",
-				RabbitmqClusterReference: topologyv1beta1.RabbitmqClusterReference{
+				RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
 					Name:      rmq.Name,
 					Namespace: rmq.Namespace,
 				},
 			},
 		}
 		Expect(k8sClient.Create(ctx, exchange, &client.CreateOptions{})).To(Succeed())
-		queue = &topologyv1beta1.Queue{
+		queue = &topologyv1alpha1.Queue{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-queue",
 				Namespace: namespace,
 			},
-			Spec: topologyv1beta1.QueueSpec{
+			Spec: topologyv1alpha1.QueueSpec{
 				Name: "test-queue",
-				RabbitmqClusterReference: topologyv1beta1.RabbitmqClusterReference{
+				RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
 					Name:      rmq.Name,
 					Namespace: rmq.Namespace,
 				},
 			},
 		}
 		Expect(k8sClient.Create(ctx, queue, &client.CreateOptions{})).To(Succeed())
-		binding = &topologyv1beta1.Binding{
+		binding = &topologyv1alpha1.Binding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "binding-test",
 				Namespace: namespace,
 			},
-			Spec: topologyv1beta1.BindingSpec{
-				RabbitmqClusterReference: topologyv1beta1.RabbitmqClusterReference{
+			Spec: topologyv1alpha1.BindingSpec{
+				RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
 					Name:      rmq.Name,
 					Namespace: rmq.Namespace,
 				},

@@ -3,21 +3,21 @@ package internal_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	topologyv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 var _ = Describe("GenerateQueueSettings", func() {
-	var q *topologyv1beta1.Queue
+	var q *topologyv1alpha1.Queue
 
 	BeforeEach(func() {
-		q = &topologyv1beta1.Queue{
+		q = &topologyv1alpha1.Queue{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "a-queue",
 			},
-			Spec: topologyv1beta1.QueueSpec{
+			Spec: topologyv1alpha1.QueueSpec{
 				Type:       "quorum",
 				AutoDelete: false,
 				Durable:    true,
