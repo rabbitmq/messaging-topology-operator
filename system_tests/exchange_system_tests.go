@@ -64,7 +64,11 @@ var _ = Describe("Exchange", func() {
 
 		By("deleting exchange")
 		Expect(k8sClient.Delete(ctx, exchange)).To(Succeed())
-		_, err := rabbitClient.GetExchange(exchange.Spec.Vhost, exchange.Spec.Name)
+		var err error
+		Eventually(func() error {
+			_, err = rabbitClient.GetExchange(exchange.Spec.Vhost, exchange.Name)
+			return err
+		}, 5).Should(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("Object Not Found"))
 	})
 })

@@ -64,7 +64,11 @@ var _ = Describe("Queue Controller", func() {
 
 		By("deleting queue")
 		Expect(k8sClient.Delete(ctx, q)).To(Succeed())
-		_, err := rabbitClient.GetQueue(q.Spec.Vhost, q.Spec.Name)
+		var err error
+		Eventually(func() error {
+			_, err = rabbitClient.GetQueue(q.Spec.Vhost, q.Name)
+			return err
+		}, 5).Should(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("Object Not Found"))
 	})
 })
