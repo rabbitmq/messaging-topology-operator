@@ -62,7 +62,7 @@ vet:
 
 # Generate code
 generate: install-tools
-	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
+	controller-gen object:headerFile="hack/NOTICE.go.txt" paths="./..."
 
 check-env-docker-credentials: check-env-registry-server
 ifndef DOCKER_REGISTRY_USERNAME
