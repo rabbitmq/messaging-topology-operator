@@ -4,6 +4,7 @@
 resources:
 - bases/rabbitmq.com_queues.yaml
 - bases/rabbitmq.com_exchanges.yaml
+- bases/rabbitmq.com_bindings.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 configurations:

@@ -1,0 +1,72 @@
+package internal_test
+
+import (
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	topologyv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	"github.com/rabbitmq/messaging-topology-operator/internal"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+)
+
+var _ = Describe("GenerateBindingInfo()", func() {
+	var binding *topologyv1beta1.Binding
+
+	BeforeEach(func() {
+		binding = &topologyv1beta1.Binding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "exchange",
+			},
+			Spec: topologyv1beta1.BindingSpec{
+				Vhost:           "/avhost",
+				Source:          "test-exchange",
+				Destination:     "test-queue",
+				DestinationType: "queue",
+				RoutingKey:      "a-key",
+			},
+		}
+	})
+
+	It("sets the correct vhost", func() {
+		info, err := internal.GenerateBindingInfo(binding)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(info.Vhost).To(Equal("/avhost"))
+	})
+
+	It("sets the correct source", func() {
+		info, err := internal.GenerateBindingInfo(binding)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(info.Source).To(Equal("test-exchange"))
+	})
+
+	It("sets the correct destination", func() {
+		info, err := internal.GenerateBindingInfo(binding)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(info.Destination).To(Equal("test-queue"))
+	})
+
+	It("sets the correct destination type", func() {
+		info, err := internal.GenerateBindingInfo(binding)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(info.DestinationType).To(Equal("queue"))
+	})
+
+	It("sets the correct routing key", func() {
+		info, err := internal.GenerateBindingInfo(binding)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(info.RoutingKey).To(Equal("a-key"))
+	})
+
+	When("exchange arguments are provided", func() {
+		It("generates the correct exchange arguments", func() {
+			binding.Spec.Arguments = &runtime.RawExtension{
+				Raw: []byte(`{"argument": "argument-value"}`),
+			}
+			info, err := internal.GenerateBindingInfo(binding)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(info.Arguments).To(HaveLen(1))
+			Expect(info.Arguments).To(HaveKeyWithValue("argument", "argument-value"))
+		})
+	})
+
+})

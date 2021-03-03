@@ -1,0 +1,20 @@
+# permissions for end users to view bindings.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: binding-viewer-role
+rules:
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - bindings
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - bindings/status
+  verbs:
+  - get

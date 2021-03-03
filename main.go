@@ -36,6 +36,7 @@ import (
 
 const queueControllerName = "queue-controller"
 const exchangeControllerName = "exchange-controller"
+const bindingControllerName = "binding-controller"
 
 var (
 	scheme = runtime.NewScheme()
@@ -85,6 +86,15 @@ func main() {
 		Recorder: mgr.GetEventRecorderFor(exchangeControllerName),
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", exchangeControllerName)
+		os.Exit(1)
+	}
+	if err = (&controllers.BindingReconciler{
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("Binding"),
+		Scheme:   mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorderFor(bindingControllerName),
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", bindingControllerName)
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
