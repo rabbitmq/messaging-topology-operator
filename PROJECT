@@ -10,4 +10,7 @@ resources:
 - group: rabbitmq.com
   kind: Binding
   version: v1alpha1
+- group: rabbitmq.com
+  kind: User
+  version: v1alpha1
 version: "2"

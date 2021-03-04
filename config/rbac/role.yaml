@@ -111,3 +111,23 @@ rules:
   verbs:
   - get
   - update
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - users
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - users/status
+  verbs:
+  - get
+  - patch
+  - update
