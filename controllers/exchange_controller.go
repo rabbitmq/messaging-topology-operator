@@ -12,6 +12,7 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
@@ -114,10 +115,15 @@ func (r *ExchangeReconciler) addFinalizerIfNeeded(ctx context.Context, e *topolo
 	return nil
 }
 
+// deletes exchange from rabbitmq server
+// if server responds with '404' Not Found, it logs and does not requeue on error
 func (r *ExchangeReconciler) deleteExchange(ctx context.Context, client *rabbithole.Client, exchange *topologyv1alpha1.Exchange) error {
 	logger := ctrl.LoggerFrom(ctx)
 
-	if err := validateResponse(client.DeleteExchange(exchange.Spec.Vhost, exchange.Spec.Name)); err != nil {
+	err := validateResponseForDeletion(client.DeleteExchange(exchange.Spec.Vhost, exchange.Spec.Name))
+	if errors.Is(err, NotFound) {
+		logger.Info("cannot find exchange in rabbitmq server; already deleted", "exchange", exchange.Spec.Name)
+	} else if err != nil {
 		msg := "failed to delete exchange"
 		r.Recorder.Event(exchange, corev1.EventTypeWarning, "FailedDelete", msg)
 		logger.Error(err, msg, "exchange", exchange.Spec.Name)
