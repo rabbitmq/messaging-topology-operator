@@ -12,6 +12,7 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/go-logr/logr"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
@@ -120,10 +121,16 @@ func (r *QueueReconciler) addFinalizerIfNeeded(ctx context.Context, q *topologyv
 	return nil
 }
 
+// deletes queue from rabbitmq server
+// if server responds with '404' Not Found, it logs and does not requeue on error
+// queues could be deleted manually or gone because of AutoDelete
 func (r *QueueReconciler) deleteQueue(ctx context.Context, client *rabbithole.Client, q *topologyv1alpha1.Queue) error {
 	logger := ctrl.LoggerFrom(ctx)
 
-	if err := validateResponse(client.DeleteQueue(q.Spec.Vhost, q.Spec.Name)); err != nil {
+	err := validateResponseForDeletion(client.DeleteQueue(q.Spec.Vhost, q.Spec.Name))
+	if errors.Is(err, NotFound) {
+		logger.Info("cannot find queue in rabbitmq server; already deleted", "queue", q.Spec.Name)
+	} else if err != nil {
 		msg := "failed to delete queue"
 		r.Recorder.Event(q, corev1.EventTypeWarning, "FailedDelete", msg)
 		logger.Error(err, msg, "queue", q.Spec.Name)
