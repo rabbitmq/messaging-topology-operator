@@ -39,11 +39,10 @@ destroy:
 	kustomize build config/rbac | kubectl delete --ignore-not-found=true -f -
 	kustomize build config/default | kubectl delete --ignore-not-found=true -f -
 
-# Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-# with local changes
-deploy: check-env-docker-credentials docker-build-dev manifests deploy-rbac docker-registry-secret set-operator-image-repo
+# Deploy operator with local changes
+deploy-dev: check-env-docker-credentials docker-build-dev manifests deploy-rbac docker-registry-secret set-operator-image-repo
 	cd config/manager && kustomize edit set image controller=$(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)
-	kustomize build config/default | kubectl apply -f -
+	kustomize build config/default/overlays/dev | sed 's@((operator_docker_image))@"$(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)"@' | kubectl apply -f -
 
 deploy-rbac:
 	kustomize build config/rbac | kubectl apply -f -

@@ -12,6 +12,11 @@ namePrefix: messaging-topology-
 #commonLabels:
 #  someName: someValue
 
-bases:
-- ../crd
-- ../manager
+resources:
+- ../../crd
+- ../../manager
+
+images:
+- name: controller
+  newName: rabbitmqoperator/messaging-topology-operator-dev
+  newTag: latest
