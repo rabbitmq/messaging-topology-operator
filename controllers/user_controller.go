@@ -13,22 +13,31 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
+	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	clientretry "k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
-	"github.com/rabbitmq/messaging-topology-operator/internal"
 )
 
-const userFinalizer = "deletion.finalizers.users.rabbitmq.com"
+var apiGVStr = topologyv1alpha1.GroupVersion.String()
+
+const (
+	userFinalizer = "deletion.finalizers.users.rabbitmq.com"
+	ownerKey      = ".metadata.controller"
+	ownerKind     = "User"
+)
 
 // UserReconciler reconciles a User object
 type UserReconciler struct {
@@ -40,6 +49,7 @@ type UserReconciler struct {
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=users,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=users/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update
 
 func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
@@ -73,7 +83,14 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	logger.Info("Start reconciling",
 		"spec", string(spec))
 
-	// TODO: Create a Secret object containing the credentials for the user
+	if err := r.declareCredentials(ctx, user); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := r.setUserStatus(ctx, user); err != nil {
+		return ctrl.Result{}, err
+	}
+
 	if err := r.declareUser(ctx, rabbitClient, user); err != nil {
 		return ctrl.Result{}, err
 	}
@@ -83,7 +100,7 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return ctrl.Result{}, nil
 }
 
-func (r *UserReconciler) declareUser(ctx context.Context, client *rabbithole.Client, user *topologyv1alpha1.User) error {
+func (r *UserReconciler) declareCredentials(ctx context.Context, user *topologyv1alpha1.User) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	// TODO: If a user has provided a Secret containing the desired password, use it instead here.
@@ -95,15 +112,71 @@ func (r *UserReconciler) declareUser(ctx context.Context, client *rabbithole.Cli
 		return err
 	}
 
-	decodedPassword, err := base64.StdEncoding.DecodeString(password)
+	credentialSecret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      user.ObjectMeta.Name + "-user-credentials",
+			Namespace: user.ObjectMeta.Namespace,
+		},
+		Type: corev1.SecretTypeOpaque,
+		Data: map[string][]byte{
+			"username": []byte(base64.StdEncoding.EncodeToString([]byte(user.Spec.Name))),
+			"password": []byte(password),
+		},
+	}
+
+	var operationResult controllerutil.OperationResult
+	err = clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
+		var apiError error
+		operationResult, apiError = controllerutil.CreateOrUpdate(ctx, r.Client, &credentialSecret, func() error {
+			if err := controllerutil.SetControllerReference(user, &credentialSecret, r.Scheme); err != nil {
+				return fmt.Errorf("failed setting controller reference: %v", err)
+			}
+			return nil
+		})
+		return apiError
+	})
 	if err != nil {
-		msg := "failed to decode random password"
-		r.Recorder.Event(user, corev1.EventTypeWarning, "FailedDeclare", msg)
+		msg := "failed to create/update credentials secret"
+		r.Recorder.Event(&credentialSecret, corev1.EventTypeWarning, string(operationResult), msg)
 		logger.Error(err, msg)
 		return err
 	}
 
-	userSettings := internal.GenerateUserSettings(user.Spec, string(decodedPassword))
+	logger.Info("Successfully declared credentials secret", "user", credentialSecret.ObjectMeta.Name)
+	r.Recorder.Event(&credentialSecret, corev1.EventTypeNormal, "SuccessfulDeclare", "Successfully declared user")
+	return nil
+}
+
+func (r *UserReconciler) setUserStatus(ctx context.Context, user *topologyv1alpha1.User) error {
+	logger := ctrl.LoggerFrom(ctx)
+
+	credentials := &corev1.LocalObjectReference{
+		Name: user.Spec.Name + "-user-credentials",
+	}
+	user.Status.Credentials = credentials
+	if err := r.Status().Update(ctx, user); err != nil {
+		return err
+	}
+	logger.Info("Successfully updated secret status credentials", "user", user.Name, "secretRef", credentials)
+	r.Recorder.Event(user, corev1.EventTypeNormal, "SuccessfulStatusUpdate", "Successfully updated user status")
+	return nil
+}
+
+func (r *UserReconciler) declareUser(ctx context.Context, client *rabbithole.Client, user *topologyv1alpha1.User) error {
+	logger := ctrl.LoggerFrom(ctx)
+
+	credentials := &corev1.Secret{}
+	if err := r.Get(ctx, types.NamespacedName{Name: user.Status.Credentials.Name, Namespace: user.Namespace}, credentials); err != nil {
+		return err
+	}
+
+	userSettings, err := internal.GenerateUserSettings(credentials, user.Spec.Tags)
+	if err != nil {
+		msg := "failed to generate user settings from credential in status"
+		r.Recorder.Event(user, corev1.EventTypeWarning, "FailedDeclare", msg)
+		logger.Error(err, msg, "user.status", user.Status)
+		return err
+	}
 
 	if err := validateResponse(client.PutUser(user.Spec.Name, userSettings)); err != nil {
 		msg := "failed to declare user"
@@ -149,7 +222,31 @@ func (r *UserReconciler) removeFinalizer(ctx context.Context, user *topologyv1al
 }
 
 func (r *UserReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &corev1.Secret{}, ownerKey, addResourceToIndex); err != nil {
+		return err
+	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&topologyv1alpha1.User{}).
+		Owns(&corev1.Secret{}).
 		Complete(r)
+}
+
+func addResourceToIndex(rawObj client.Object) []string {
+	switch resourceObject := rawObj.(type) {
+	case *corev1.Secret:
+		owner := metav1.GetControllerOf(resourceObject)
+		return validateAndGetOwner(owner)
+	default:
+		return nil
+	}
+}
+
+func validateAndGetOwner(owner *metav1.OwnerReference) []string {
+	if owner == nil {
+		return nil
+	}
+	if owner.APIVersion != apiGVStr || owner.Kind != ownerKind {
+		return nil
+	}
+	return []string{owner.Name}
 }

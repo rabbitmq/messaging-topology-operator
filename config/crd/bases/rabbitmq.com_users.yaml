@@ -61,10 +61,20 @@ spec:
             type: object
           status:
             description: UserStatus defines the observed state of User
+            properties:
+              credentials:
+                description: Provides a reference to a Secret object containing the user credentials.
+                properties:
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?'
+                    type: string
+                type: object
             type: object
         type: object
     served: true
     storage: true
+    subresources:
+      status: {}
 status:
   acceptedNames:
     kind: ""

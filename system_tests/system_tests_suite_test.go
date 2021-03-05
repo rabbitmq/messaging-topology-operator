@@ -11,13 +11,14 @@ package system_tests
 
 import (
 	"context"
+	"testing"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/utils/pointer"
-	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

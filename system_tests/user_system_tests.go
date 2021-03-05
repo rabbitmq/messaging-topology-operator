@@ -3,6 +3,7 @@ package system_tests
 import (
 	"context"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -10,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
+	"k8s.io/apimachinery/pkg/types"
 
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 )
@@ -55,11 +57,42 @@ var _ = Describe("Users", func() {
 		}))
 		Expect(userInfo.PasswordHash).NotTo(BeEmpty())
 
+		By("Creating a Secret with the generated credentials")
+		generatedSecretKey := types.NamespacedName{
+			Name:      "user-test-user-credentials",
+			Namespace: namespace,
+		}
+		var generatedSecret = &corev1.Secret{}
+		Expect(k8sClient.Get(ctx, generatedSecretKey, generatedSecret)).To(Succeed())
+
+		By("Referencing the location of the Secret in the User's Status")
+		generatedUser := &topologyv1alpha1.User{}
+		Eventually(func() *corev1.LocalObjectReference {
+			err := k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, generatedUser)
+			if err != nil {
+				return nil
+			}
+
+			if generatedUser.Status.Credentials != nil {
+				return generatedUser.Status.Credentials
+			}
+
+			return nil
+		}, 5).ShouldNot(BeNil())
+		Expect(generatedUser.Status.Credentials.Name).To(Equal(generatedSecret.Name))
+
 		By("deleting user")
 		Expect(k8sClient.Delete(ctx, user)).To(Succeed())
 		var err error
 		Eventually(func() error {
 			_, err = rabbitClient.GetUser(user.Spec.Name)
+			return err
+		}, 5).Should(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("Object Not Found"))
+
+		By("deleting the credentials secret")
+		Eventually(func() error {
+			err := k8sClient.Get(ctx, generatedSecretKey, generatedSecret)
 			return err
 		}, 5).Should(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("Object Not Found"))

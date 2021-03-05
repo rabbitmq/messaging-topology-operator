@@ -10,5 +10,5 @@ func RandomEncodedString(dataLen int) (string, error) {
 	if _, err := rand.Read(randomBytes); err != nil {
 		return "", err
 	}
-	return base64.URLEncoding.EncodeToString(randomBytes), nil
+	return base64.StdEncoding.EncodeToString(randomBytes), nil
 }

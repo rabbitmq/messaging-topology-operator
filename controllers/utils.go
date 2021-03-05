@@ -114,6 +114,7 @@ func validateResponse(res *http.Response, err error) error {
 // return a custom error if status code is 404
 // used in QueueReconciler.deleteQueue() and ExchangeReconcilier.deleteExchange()
 var NotFound = errors.New("not found")
+
 func validateResponseForDeletion(res *http.Response, err error) error {
 	if res.StatusCode == http.StatusNotFound {
 		return NotFound

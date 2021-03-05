@@ -10,6 +10,7 @@ This product may include a number of subcomponents with separate copyright notic
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -27,7 +28,8 @@ type UserSpec struct {
 
 // UserStatus defines the observed state of User
 type UserStatus struct {
-	// TODO: Return a reference to a Secret object containing the user credentials/binding
+	// Provides a reference to a Secret object containing the user credentials.
+	Credentials *corev1.LocalObjectReference `json:"credentials,omitempty"`
 }
 
 // UserTag defines the level of access to the management UI allocated to the user.
@@ -37,6 +39,7 @@ type UserTag string
 // +kubebuilder:object:root=true
 
 // User is the Schema for the users API
+// +kubebuilder:subresource:status
 type User struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
