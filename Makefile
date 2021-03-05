@@ -35,6 +35,11 @@ install: manifests
 uninstall: manifests
 	kustomize build config/crd | kubectl delete -f -
 
+deploy-manager:
+	kustomize build config/default/base | kubectl apply -f -
+
+deploy: manifests deploy-rbac deploy-manager
+
 destroy:
 	kustomize build config/rbac | kubectl delete --ignore-not-found=true -f -
 	kustomize build config/default | kubectl delete --ignore-not-found=true -f -
