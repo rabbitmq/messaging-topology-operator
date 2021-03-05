@@ -46,7 +46,7 @@ Here's the recommended workflow:
  * Create a branch with a descriptive name
  * Make your changes, run tests, commit with a [descriptive message][git-commit-msgs], push to your fork
  * Submit pull requests with an explanation what has been changed and **why**
- * Submit a filled out and signed Contributor Agreement if needed.
+ * Submit a filled out and signed [Contributor Agreement](https://cla.vmware.com/cla/1/preview) if needed.
  * We will get to your pull request within one week. Usually within the next day or two you'll get a response.
 
 If what you are going to work on is a substantial change, please first
