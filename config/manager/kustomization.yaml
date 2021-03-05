@@ -6,7 +6,7 @@ resources:
 
 images:
 - name: controller
-  newName: rabbitmqoperator/messaging-topology-operator
+  newName: rabbitmqoperator/messaging-topology-operator-dev
   newTag: latest
 
 
