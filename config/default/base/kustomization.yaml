@@ -3,8 +3,6 @@ kind: Kustomization
 
 namespace: rabbitmq-system
 
-namePrefix: messaging-topology-
-
 resources:
 - ../../crd
 - ../../manager

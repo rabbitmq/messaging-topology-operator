@@ -6,12 +6,17 @@
 #
 # This product may include a number of subcomponents with separate copyright notices and license terms. Your use of these subcomponents is subject to the terms and conditions of the subcomponent's license, as noted in the LICENSE file.
 
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: rabbitmq-system
-  labels:
-    app.kubernetes.io/name: rabbitmq-system
-    app.kubernetes.io/component: messaging-topology-operator
-    app.kubernetes.io/part-of: rabbitmq
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: rabbitmq-system
+images:
 
+- name: rabbitmqoperator/messaging-topology-operator-dev
+  newName: rabbitmqoperator/messaging-topology-operator
+  newTag: latest
+
+resources:
+- ../namespace/
+- ../crd/
+- ../rbac/
+- ../manager/
