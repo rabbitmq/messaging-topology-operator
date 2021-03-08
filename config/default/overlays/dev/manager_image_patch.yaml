@@ -15,6 +15,5 @@ spec:
     spec:
       containers:
       - image: ((operator_docker_image))
-        name: operator
+        name: manager
         imagePullPolicy: Always
-        args: ["--zap-devel"]

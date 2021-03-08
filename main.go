@@ -26,6 +26,7 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
+const vhostControllerName = "vhost-controller"
 const queueControllerName = "queue-controller"
 const exchangeControllerName = "exchange-controller"
 const bindingControllerName = "binding-controller"
@@ -96,6 +97,15 @@ func main() {
 		Recorder: mgr.GetEventRecorderFor(userControllerName),
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", userControllerName)
+		os.Exit(1)
+	}
+	if err = (&controllers.VhostReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("Vhost"),
+		Scheme: mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorderFor(vhostControllerName),
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", vhostControllerName)
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
