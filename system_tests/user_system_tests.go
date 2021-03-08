@@ -65,6 +65,22 @@ var _ = Describe("Users", func() {
 		var generatedSecret = &corev1.Secret{}
 		Expect(k8sClient.Get(ctx, generatedSecretKey, generatedSecret)).To(Succeed())
 
+		By("creating a client credential set that can be authenticated")
+		var err error
+		rawUsername := string(generatedSecret.Data["username"])
+		rawPassword := string(generatedSecret.Data["password"])
+		output, err := kubectl(
+			"-n",
+			rmq.Namespace,
+			"exec",
+			"svc/"+rmq.Name,
+			"rabbitmqctl",
+			"authenticate_user",
+			rawUsername,
+			rawPassword,
+		)
+		Expect(string(output)).To(ContainSubstring("Success"))
+
 		By("Referencing the location of the Secret in the User's Status")
 		generatedUser := &topologyv1alpha1.User{}
 		Eventually(func() *corev1.LocalObjectReference {
@@ -81,9 +97,26 @@ var _ = Describe("Users", func() {
 		}, 5).ShouldNot(BeNil())
 		Expect(generatedUser.Status.Credentials.Name).To(Equal(generatedSecret.Name))
 
+		// TODO: Support update workflow
+		// By("updating the user tags and preserving the user's credentials")
+		// user.Spec.Tags = []topologyv1alpha1.UserTag{}
+		// Expect(k8sClient.Update(ctx, user, &client.UpdateOptions{})).To(Succeed())
+		// var updatedUserInfo *rabbithole.UserInfo
+		// Eventually(func() error {
+		// 	var err error
+		// 	updatedUserInfo, err = rabbitClient.GetUser(user.Spec.Name)
+		// 	return err
+		// }, 10, 2).Should(BeNil())
+
+		// Expect(*updatedUserInfo).To(MatchFields(IgnoreExtras, Fields{
+		// 	"Name":             Equal(user.Spec.Name),
+		// 	"Tags":             Equal(""),
+		// 	"HashingAlgorithm": Equal(rabbithole.HashingAlgorithmSHA512),
+		// }))
+		// Expect(updatedUserInfo.PasswordHash).To(Equal(userInfo.PasswordHash))
+
 		By("deleting user")
 		Expect(k8sClient.Delete(ctx, user)).To(Succeed())
-		var err error
 		Eventually(func() error {
 			_, err = rabbitClient.GetUser(user.Spec.Name)
 			return err

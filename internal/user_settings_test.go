@@ -18,13 +18,11 @@ var _ = Describe("GenerateUserSettings", func() {
 	var userTags []topologyv1alpha1.UserTag
 
 	BeforeEach(func() {
-		username := base64.StdEncoding.EncodeToString([]byte("my-rabbit-user"))
-		password := base64.StdEncoding.EncodeToString([]byte("a-secure-password"))
 		credentialSecret = corev1.Secret{
 			Type: corev1.SecretTypeOpaque,
 			Data: map[string][]byte{
-				"username": []byte(username),
-				"password": []byte(password),
+				"username": []byte("my-rabbit-user"),
+				"password": []byte("a-secure-password"),
 			},
 		}
 		userTags = []topologyv1alpha1.UserTag{"administrator", "monitoring"}

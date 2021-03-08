@@ -11,7 +11,6 @@ package controllers
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 
@@ -119,7 +118,7 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topologyv
 		},
 		Type: corev1.SecretTypeOpaque,
 		Data: map[string][]byte{
-			"username": []byte(base64.StdEncoding.EncodeToString([]byte(user.Spec.Name))),
+			"username": []byte(user.Spec.Name),
 			"password": []byte(password),
 		},
 	}

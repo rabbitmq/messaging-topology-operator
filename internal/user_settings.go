@@ -10,7 +10,6 @@ This product may include a number of subcomponents with separate copyright notic
 package internal
 
 import (
-	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -20,13 +19,13 @@ import (
 )
 
 func GenerateUserSettings(credentials *corev1.Secret, tags []topologyv1alpha1.UserTag) (rabbithole.UserSettings, error) {
-	username, err := decodeField(credentials, "username")
-	if err != nil {
-		return rabbithole.UserSettings{}, err
+	username, ok := credentials.Data["username"]
+	if !ok {
+		return rabbithole.UserSettings{}, fmt.Errorf("Could not find username in credentials secret %s", credentials.Name)
 	}
-	password, err := decodeField(credentials, "password")
-	if err != nil {
-		return rabbithole.UserSettings{}, err
+	password, ok := credentials.Data["password"]
+	if !ok {
+		return rabbithole.UserSettings{}, fmt.Errorf("Could not find password in credentials secret %s", credentials.Name)
 	}
 
 	var userTagStrings []string
@@ -35,21 +34,9 @@ func GenerateUserSettings(credentials *corev1.Secret, tags []topologyv1alpha1.Us
 	}
 
 	return rabbithole.UserSettings{
-		Name:             username,
+		Name:             string(username),
 		Tags:             strings.Join(userTagStrings, ","),
-		PasswordHash:     rabbithole.Base64EncodedSaltedPasswordHashSHA512(password),
+		PasswordHash:     rabbithole.Base64EncodedSaltedPasswordHashSHA512(string(password)),
 		HashingAlgorithm: rabbithole.HashingAlgorithmSHA512,
 	}, nil
-}
-
-func decodeField(credentials *corev1.Secret, field string) (string, error) {
-	credentialField, ok := credentials.Data[field]
-	if !ok {
-		return "", fmt.Errorf("Could not find field %s in credentials %s", field, credentials.Name)
-	}
-	decodedField, err := base64.StdEncoding.DecodeString(string(credentialField))
-	if err != nil {
-		return "", fmt.Errorf("Failed to base64 decode string: %s", credentialField)
-	}
-	return string(decodedField), nil
 }
