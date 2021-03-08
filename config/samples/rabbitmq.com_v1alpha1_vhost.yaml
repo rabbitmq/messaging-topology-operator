@@ -1,0 +1,7 @@
+apiVersion: rabbitmq.com/v1alpha1
+kind: Vhost
+metadata:
+  name: vhost-sample
+spec:
+  # Add fields here
+  foo: bar
