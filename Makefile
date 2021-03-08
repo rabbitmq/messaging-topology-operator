@@ -109,6 +109,9 @@ ifeq (, $(K8S_OPERATOR_NAMESPACE))
 K8S_OPERATOR_NAMESPACE=rabbitmq-system
 endif
 
+cluster-operator:
+	@kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/latest/download/cluster-operator.yml
+
 ## used in CI pipeline to create release artifact
 generate-manifests:
 	mkdir -p releases

@@ -13,16 +13,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
-	"io/ioutil"
-	"net/http"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"net"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"net"
 )
 
 // returns a http client for the given RabbitmqCluster
@@ -112,8 +114,9 @@ func validateResponse(res *http.Response, err error) error {
 }
 
 // return a custom error if status code is 404
-// used in QueueReconciler.deleteQueue() and ExchangeReconcilier.deleteExchange()
+// used in QueueReconciler.deleteQueue(), ExchangeReconcilier.deleteExchange() and UserReconciler.deleteUser()
 var NotFound = errors.New("not found")
+
 func validateResponseForDeletion(res *http.Response, err error) error {
 	if res.StatusCode == http.StatusNotFound {
 		return NotFound
