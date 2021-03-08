@@ -1,0 +1,15 @@
+apiVersion: rabbitmq.com/v1alpha1
+kind: Queue
+metadata:
+  name: qq-example
+spec:
+  name: test # name of the queue
+  vhost: "/test-vhost" # default to '/' if not provided
+  rabbitmqClusterReference:
+    name: test
+    namespace: rabbitmq-system
+  type: quorum # without providing a queue type, rabbitmq creates a classic queue
+  autoDelete: false
+  durable: true
+  arguments:
+    max-length-bytes: 1048576 # any optional queue arguments

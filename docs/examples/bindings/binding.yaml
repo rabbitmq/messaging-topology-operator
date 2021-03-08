@@ -1,0 +1,12 @@
+apiVersion: rabbitmq.com/v1alpha1
+kind: Binding
+metadata:
+  name: binding
+spec:
+  vhost: "/test-vhost" # default to '/' if not provided
+  source: test # an existng exchange
+  destination: test # an existing queue or exchange
+  destinationType: queue # can be 'queue' or 'exchange'
+  rabbitmqClusterReference:
+    name: test
+    namespace: rabbitmq-system
