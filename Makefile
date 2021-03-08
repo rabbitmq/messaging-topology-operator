@@ -42,11 +42,10 @@ deploy: manifests deploy-rbac deploy-manager
 
 destroy:
 	kustomize build config/rbac | kubectl delete --ignore-not-found=true -f -
-	kustomize build config/default | kubectl delete --ignore-not-found=true -f -
+	kustomize build config/default/base | kubectl delete --ignore-not-found=true -f -
 
 # Deploy operator with local changes
 deploy-dev: check-env-docker-credentials docker-build-dev manifests deploy-rbac docker-registry-secret set-operator-image-repo
-	cd config/manager && kustomize edit set image controller=$(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)
 	kustomize build config/default/overlays/dev | sed 's@((operator_docker_image))@"$(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)"@' | kubectl apply -f -
 
 deploy-rbac:
@@ -112,3 +111,9 @@ endif
 
 cluster-operator:
 	@kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/latest/download/cluster-operator.yml
+
+## used in CI pipeline to create release artifact
+generate-manifests:
+	mkdir -p releases
+	kustomize build config/installation/ > releases/messaging-topology-operator.yaml
+
