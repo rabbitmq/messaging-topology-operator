@@ -4,6 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
@@ -12,11 +18,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"log"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strconv"
 )
 
 func createRestConfig() (*rest.Config, error) {

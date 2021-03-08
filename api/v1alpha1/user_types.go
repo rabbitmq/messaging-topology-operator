@@ -29,7 +29,12 @@ type UserSpec struct {
 	// exist for the User object to be created.
 	// +kubebuilder:validation:Required
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
-	// TODO: Allow the provision of the user with a pre-defined password through a Secret here
+	ImportPasswordSecret     ImportPasswordSecret     `json:"importPasswordReference,omitempty"`
+}
+
+type ImportPasswordSecret struct {
+	Name        *corev1.LocalObjectReference `json:"name,omitempty"`
+	PasswordKey string                       `json:"passwordKey,omitempty"`
 }
 
 // UserStatus defines the observed state of User.

@@ -83,12 +83,14 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	logger.Info("Start reconciling",
 		"spec", string(spec))
 
-	if err := r.declareCredentials(ctx, user); err != nil {
-		return ctrl.Result{}, err
-	}
+	if user.Status.Credentials == nil {
+		if err := r.declareCredentials(ctx, user); err != nil {
+			return ctrl.Result{}, err
+		}
 
-	if err := r.setUserStatus(ctx, user); err != nil {
-		return ctrl.Result{}, err
+		if err := r.setUserStatus(ctx, user); err != nil {
+			return ctrl.Result{}, err
+		}
 	}
 
 	if err := r.declareUser(ctx, rabbitClient, user); err != nil {
@@ -103,8 +105,13 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 func (r *UserReconciler) declareCredentials(ctx context.Context, user *topologyv1alpha1.User) error {
 	logger := ctrl.LoggerFrom(ctx)
 
-	// TODO: If a user has provided a Secret containing the desired password, use it instead here.
-	password, err := internal.RandomEncodedString(24)
+	var password string
+	var err error
+	if user.Spec.ImportPasswordSecret.Name != nil {
+		password, err = r.importPassword(ctx, user.Spec.ImportPasswordSecret.Name.Name, user.Namespace, user.Spec.ImportPasswordSecret.PasswordKey)
+	} else {
+		password, err = internal.RandomEncodedString(24)
+	}
 	if err != nil {
 		msg := "failed to generate random password"
 		r.Recorder.Event(user, corev1.EventTypeWarning, "FailedDeclare", msg)
@@ -147,6 +154,19 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topologyv
 	logger.Info("Successfully declared credentials secret", "user", credentialSecret.ObjectMeta.Name)
 	r.Recorder.Event(&credentialSecret, corev1.EventTypeNormal, "SuccessfulDeclare", "Successfully declared user")
 	return nil
+}
+
+func (r *UserReconciler) importPassword(ctx context.Context, secretName, secretNamespace, passwordKey string) (string, error) {
+	var passwordSecret corev1.Secret
+	err := r.Client.Get(ctx, types.NamespacedName{Name: secretName, Namespace: secretNamespace}, &passwordSecret)
+	if err != nil {
+		return "", err
+	}
+	password, ok := passwordSecret.Data[passwordKey]
+	if !ok {
+		return "", fmt.Errorf("Could not find password key %s in password secret: %s", passwordKey, passwordSecret.Name)
+	}
+	return string(password), nil
 }
 
 func (r *UserReconciler) setUserStatus(ctx context.Context, user *topologyv1alpha1.User) error {
