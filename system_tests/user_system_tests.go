@@ -64,6 +64,8 @@ var _ = Describe("Users", func() {
 		}
 		var generatedSecret = &corev1.Secret{}
 		Expect(k8sClient.Get(ctx, generatedSecretKey, generatedSecret)).To(Succeed())
+		Expect(generatedSecret.Data).To(HaveKeyWithValue("username", []uint8(user.Spec.Name)))
+		Expect(generatedSecret.Data).To(HaveKey("password"))
 
 		By("creating a client credential set that can be authenticated")
 		var err error

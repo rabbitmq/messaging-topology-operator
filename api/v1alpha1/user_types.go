@@ -14,43 +14,52 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// UserSpec defines the desired state of User
+// UserSpec defines the desired state of User.
 type UserSpec struct {
+	// Username of the user to create on a RabbitmqCluster.
 	// +kubebuilder:validation:Required
-	Name string    `json:"name"`
+	Name string `json:"name"`
+	// List of permissions tags to associate with the user. This determines the level of
+	// access to the RabbitMQ management UI granted to the user. Omitting this field will
+	// lead to a user than can still connect to the cluster through messaging protocols,
+	// but cannot perform any management actions.
+	// For more information, see https://www.rabbitmq.com/management.html#permissions.
 	Tags []UserTag `json:"tags,omitempty"`
-	// Reference to the RabbitmqCluster that the user will be created in
-	// Required property
+	// Reference to the RabbitmqCluster that the user will be created for. This cluster must
+	// exist for the User object to be created.
 	// +kubebuilder:validation:Required
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
 	// TODO: Allow the provision of the user with a pre-defined password through a Secret here
 }
 
-// UserStatus defines the observed state of User
+// UserStatus defines the observed state of User.
 type UserStatus struct {
 	// Provides a reference to a Secret object containing the user credentials.
 	Credentials *corev1.LocalObjectReference `json:"credentials,omitempty"`
 }
 
 // UserTag defines the level of access to the management UI allocated to the user.
+// For more information, see https://www.rabbitmq.com/management.html#permissions.
 // +kubebuilder:validation:Enum=management;policymaker;monitoring;administrator
 type UserTag string
 
 // +kubebuilder:object:root=true
 
-// User is the Schema for the users API
+// User is the Schema for the users API.
 // +kubebuilder:subresource:status
 type User struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   UserSpec   `json:"spec,omitempty"`
+	// Spec configures the desired state of the User object.
+	Spec UserSpec `json:"spec,omitempty"`
+	// Status exposes the observed state of the User object.
 	Status UserStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// UserList contains a list of User
+// UserList contains a list of Users.
 type UserList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

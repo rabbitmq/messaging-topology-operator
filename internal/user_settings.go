@@ -34,8 +34,12 @@ func GenerateUserSettings(credentials *corev1.Secret, tags []topologyv1alpha1.Us
 	}
 
 	return rabbithole.UserSettings{
-		Name:             string(username),
-		Tags:             strings.Join(userTagStrings, ","),
+		Name: string(username),
+		Tags: strings.Join(userTagStrings, ","),
+		// To avoid sending raw passwords over the wire, compute a password hash using a random salt
+		// and use this in the UserSettings instead.
+		// For more information on this hashing algorithm, see
+		// https://www.rabbitmq.com/passwords.html#computing-password-hash.
 		PasswordHash:     rabbithole.Base64EncodedSaltedPasswordHashSHA512(string(password)),
 		HashingAlgorithm: rabbithole.HashingAlgorithmSHA512,
 	}, nil

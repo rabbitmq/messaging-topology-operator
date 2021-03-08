@@ -12,6 +12,7 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -117,6 +118,8 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topologyv
 			Namespace: user.ObjectMeta.Namespace,
 		},
 		Type: corev1.SecretTypeOpaque,
+		// The format of the generated Secret conforms to the Provisioned Service
+		// type Spec. For more information, see https://k8s-service-bindings.github.io/spec/#provisioned-service.
 		Data: map[string][]byte{
 			"username": []byte(user.Spec.Name),
 			"password": []byte(password),
@@ -203,7 +206,10 @@ func (r *UserReconciler) addFinalizerIfNeeded(ctx context.Context, user *topolog
 func (r *UserReconciler) deleteUser(ctx context.Context, client *rabbithole.Client, user *topologyv1alpha1.User) error {
 	logger := ctrl.LoggerFrom(ctx)
 
-	if err := validateResponse(client.DeleteUser(user.Spec.Name)); err != nil {
+	err := validateResponseForDeletion(client.DeleteUser(user.Spec.Name))
+	if errors.Is(err, NotFound) {
+		logger.Info("cannot find user in rabbitmq server; already deleted", "user", user.Spec.Name)
+	} else if err != nil {
 		msg := "failed to delete user"
 		r.Recorder.Event(user, corev1.EventTypeWarning, "FailedDelete", msg)
 		logger.Error(err, msg, "user", user.Spec.Name)
