@@ -22,6 +22,7 @@ You can create RabbitMQ resources:
 2. [Exchange](.docs/examples/exchanges)
 3. [Binding](.docs/examples/bindings)
 4. [User](.docs/examples/users)
+5. [Vhost](.docs/examples/vhosts)
 
 ## Contributing
 
