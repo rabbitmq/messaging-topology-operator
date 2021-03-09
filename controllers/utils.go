@@ -57,12 +57,12 @@ func rabbitholeClient(ctx context.Context, c client.Client, rmq v1alpha1.Rabbitm
 		return nil, errors.New("failed to retrieve username: key password missing from secret")
 	}
 
-	client, err := rabbithole.NewClient(endpoint, string(defaultUser), string(defaultUserPass))
+	rabbitholeClient, err := rabbithole.NewClient(endpoint, string(defaultUser), string(defaultUserPass))
 	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate rabbit client: %v", err)
+		return nil, fmt.Errorf("failed to instantiate rabbit rabbitholeClient: %v", err)
 	}
 
-	return client, nil
+	return rabbitholeClient, nil
 }
 
 // returns RabbitMQ management port from given service
