@@ -29,11 +29,25 @@ type UserSpec struct {
 	// exist for the User object to be created.
 	// +kubebuilder:validation:Required
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
-	ImportPasswordSecret     ImportPasswordSecret     `json:"importPasswordSecret,omitempty"`
+	// ImportPasswordSecret instructs the controller to import the password for a user
+	// from a specified Secret object.
+	ImportPasswordSecret ImportPasswordSecret `json:"importPasswordSecret,omitempty"`
 }
 
+// Defines a Secret used to pre-define the password set for this User. User objects created
+// with this field set will not have randomly-generated passwords, and will instead import
+// the password value from this Secret.
+// Note that this import only occurs at creation time, and is ignored once a password has been set
+// on a User.
 type ImportPasswordSecret struct {
+	// Name of the Secret object containing the desired password.
 	Name string `json:"name,omitempty"`
+	// Namespace of the Secret object containing the desired password. If unset, this will
+	// default to the namespace of the User.
+	Namespace string `json:"namespace,omitempty"`
+	// Specifies the key in the Secret object whose value will be taken as the password value.
+	// If this field is unset, the User password will be set to the value of the key 'password'
+	// in the Secret object's Data field.
 	// +kubebuilder:validation:Default=password
 	PasswordKey string `json:"passwordKey,omitempty"`
 }

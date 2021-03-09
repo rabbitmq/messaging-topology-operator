@@ -110,7 +110,15 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topologyv
 	msg := fmt.Sprintf("declaring credentials for User %s: %#v", user.Name, user)
 	logger.Info(msg)
 	if user.Spec.ImportPasswordSecret.Name != "" {
-		password, err = r.importPassword(ctx, user.Spec.ImportPasswordSecret.Name, user.Namespace, user.Spec.ImportPasswordSecret.PasswordKey)
+		var secretNamespace string
+
+		if user.Spec.ImportPasswordSecret.Namespace == "" {
+			secretNamespace = user.Namespace
+		} else {
+			secretNamespace = user.Spec.ImportPasswordSecret.Namespace
+		}
+
+		password, err = r.importPassword(ctx, user.Spec.ImportPasswordSecret.Name, secretNamespace, user.Spec.ImportPasswordSecret.PasswordKey)
 	} else {
 		password, err = internal.RandomEncodedString(24)
 	}
@@ -162,7 +170,7 @@ func (r *UserReconciler) importPassword(ctx context.Context, secretName, secretN
 	var passwordSecret corev1.Secret
 	err := r.Client.Get(ctx, types.NamespacedName{Name: secretName, Namespace: secretNamespace}, &passwordSecret)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("Could not find password secret %s in namespace %s; Err: %w", secretName, secretNamespace, err)
 	}
 	password, ok := passwordSecret.Data[passwordKey]
 	if !ok {
