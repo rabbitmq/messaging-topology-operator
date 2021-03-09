@@ -29,12 +29,13 @@ type UserSpec struct {
 	// exist for the User object to be created.
 	// +kubebuilder:validation:Required
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
-	ImportPasswordSecret     ImportPasswordSecret     `json:"importPasswordReference,omitempty"`
+	ImportPasswordSecret     ImportPasswordSecret     `json:"importPasswordSecret,omitempty"`
 }
 
 type ImportPasswordSecret struct {
-	Name        *corev1.LocalObjectReference `json:"name,omitempty"`
-	PasswordKey string                       `json:"passwordKey,omitempty"`
+	Name string `json:"name,omitempty"`
+	// +kubebuilder:validation:Default=password
+	PasswordKey string `json:"passwordKey,omitempty"`
 }
 
 // UserStatus defines the observed state of User.

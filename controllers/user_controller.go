@@ -107,8 +107,10 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topologyv
 
 	var password string
 	var err error
-	if user.Spec.ImportPasswordSecret.Name != nil {
-		password, err = r.importPassword(ctx, user.Spec.ImportPasswordSecret.Name.Name, user.Namespace, user.Spec.ImportPasswordSecret.PasswordKey)
+	msg := fmt.Sprintf("declaring credentials for User %s: %#v", user.Name, user)
+	logger.Info(msg)
+	if user.Spec.ImportPasswordSecret.Name != "" {
+		password, err = r.importPassword(ctx, user.Spec.ImportPasswordSecret.Name, user.Namespace, user.Spec.ImportPasswordSecret.PasswordKey)
 	} else {
 		password, err = internal.RandomEncodedString(24)
 	}

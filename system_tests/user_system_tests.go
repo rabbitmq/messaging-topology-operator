@@ -72,20 +72,12 @@ var _ = Describe("Users", func() {
 			var err error
 			rawUsername := string(generatedSecret.Data["username"])
 			rawPassword := string(generatedSecret.Data["password"])
-			Eventually(func() string {
-				output, _ := kubectl(
-					"-n",
-					rmq.Namespace,
-					"exec",
-					"svc/"+rmq.Name,
-					"--",
-					"rabbitmqctl",
-					`authenticate_user`,
-					rawUsername,
-					rawPassword,
-				)
-				return string(output)
-			}, 5).Should(ContainSubstring("Success"))
+			managementEndpoint, err := managementEndpoint(ctx, clientSet, &user.Spec.RabbitmqClusterReference)
+			Expect(err).NotTo(HaveOccurred())
+			client, err := rabbithole.NewClient(managementEndpoint, rawUsername, rawPassword)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = client.Overview()
+			Expect(err).NotTo(HaveOccurred())
 
 			By("Referencing the location of the Secret in the User's Status")
 			generatedUser := &topologyv1alpha1.User{}
@@ -166,9 +158,7 @@ var _ = Describe("Users", func() {
 					Name: "user-test-2",
 					Tags: []topologyv1alpha1.UserTag{"policymaker", "management"},
 					ImportPasswordSecret: topologyv1alpha1.ImportPasswordSecret{
-						Name: &corev1.LocalObjectReference{
-							Name: passwordSecret.ObjectMeta.Name,
-						},
+						Name:        passwordSecret.ObjectMeta.Name,
 						PasswordKey: "my-password",
 					},
 				},
@@ -209,20 +199,12 @@ var _ = Describe("Users", func() {
 			var err error
 			rawUsername := string(generatedSecret.Data["username"])
 			rawPassword := string(generatedSecret.Data["password"])
-			Eventually(func() string {
-				output, _ := kubectl(
-					"-n",
-					rmq.Namespace,
-					"exec",
-					"svc/"+rmq.Name,
-					"--",
-					"rabbitmqctl",
-					`authenticate_user`,
-					rawUsername,
-					rawPassword,
-				)
-				return string(output)
-			}, 5).Should(ContainSubstring("Success"))
+			managementEndpoint, err := managementEndpoint(ctx, clientSet, &user.Spec.RabbitmqClusterReference)
+			Expect(err).NotTo(HaveOccurred())
+			client, err := rabbithole.NewClient(managementEndpoint, rawUsername, rawPassword)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = client.Overview()
+			Expect(err).NotTo(HaveOccurred())
 
 			By("deleting user")
 			Expect(k8sClient.Delete(ctx, user)).To(Succeed())
