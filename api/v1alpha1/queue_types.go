@@ -35,8 +35,8 @@ type QueueSpec struct {
 	// +kubebuilder:validation:Type=object
 	// +kubebuilder:pruning:PreserveUnknownFields
 	Arguments *runtime.RawExtension `json:"arguments,omitempty"`
-	// Reference to the RabbitmqCluster that the queue will be created in
-	// Required property
+	// Reference to the RabbitmqCluster that the queue will be created in.
+	// Required property.
 	// +kubebuilder:validation:Required
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
 }

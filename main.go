@@ -31,6 +31,7 @@ const queueControllerName = "queue-controller"
 const exchangeControllerName = "exchange-controller"
 const bindingControllerName = "binding-controller"
 const userControllerName = "user-controller"
+const policyControllerName = "policy-controller"
 
 var (
 	scheme = runtime.NewScheme()
@@ -100,12 +101,21 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&controllers.VhostReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Vhost"),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("Vhost"),
+		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor(vhostControllerName),
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", vhostControllerName)
+		os.Exit(1)
+	}
+	if err = (&controllers.PolicyReconciler{
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("Policy"),
+		Scheme:   mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorderFor(policyControllerName),
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", policyControllerName)
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
