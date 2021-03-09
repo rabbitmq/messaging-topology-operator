@@ -22,10 +22,14 @@ spec:
         description: Queue is the Schema for the queues API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
             type: object
@@ -33,11 +37,13 @@ spec:
             description: QueueSpec defines the desired state of Queue
             properties:
               arguments:
-                description: 'Queue arguments in the format of KEY: VALUE. e.g. x-delivery-limit: 10000'
+                description: 'Queue arguments in the format of KEY: VALUE. e.g. x-delivery-limit:
+                  10000'
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
               autoDelete:
-                description: when set to true, queues that has at least one consumer before, are deleted after last consumer unsubscribes
+                description: when set to true, queues that has at least one consumer
+                  before, are deleted after last consumer unsubscribes
                 type: boolean
               durable:
                 description: When set to false queues does not survive server restart
@@ -46,7 +52,8 @@ spec:
                 description: Name of the queue; required property
                 type: string
               rabbitmqClusterReference:
-                description: Reference to the RabbitmqCluster that the queue will be created in Required property
+                description: Reference to the RabbitmqCluster that the queue will
+                  be created in Required property
                 properties:
                   name:
                     type: string
