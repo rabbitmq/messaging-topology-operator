@@ -100,9 +100,9 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&controllers.VhostReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Vhost"),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("Vhost"),
+		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor(vhostControllerName),
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", vhostControllerName)
