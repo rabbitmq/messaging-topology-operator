@@ -12,7 +12,8 @@ type PolicySpec struct {
 	// Default to vhost '/'
 	// +kubebuilder:default:=/
 	Vhost string `json:"vhost,omitempty"`
-	// Regular expression pattern used to match queues and exchanges, e.g. "^ha\..+". Required property.
+	// Regular expression pattern used to match queues and exchanges, e.g. "^amq.".
+	// Required property.
 	// +kubebuilder:validation:Required
 	Pattern string `json:"pattern"`
 	// What this policy applies to: 'queues', 'exchanges', or 'all'.
@@ -28,7 +29,8 @@ type PolicySpec struct {
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +kubebuilder:validation:Required
 	Definition *runtime.RawExtension `json:"definition"`
-	// Reference to the RabbitmqCluster that the exchange will be created in. Required property.
+	// Reference to the RabbitmqCluster that the exchange will be created in.
+	// Required property.
 	// +kubebuilder:validation:Required
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
 }

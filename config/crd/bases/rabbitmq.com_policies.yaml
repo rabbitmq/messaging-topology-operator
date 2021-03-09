@@ -53,7 +53,7 @@ spec:
                 type: string
               pattern:
                 description: Regular expression pattern used to match queues and exchanges,
-                  e.g. "^ha\..+". Required property.
+                  e.g. "^amq.". Required property.
                 type: string
               priority:
                 default: 0

@@ -41,7 +41,7 @@ spec:
                 type: string
               rabbitmqClusterReference:
                 description: Reference to the RabbitmqCluster that the vhost will
-                  be created in Required property
+                  be created in. Required property.
                 properties:
                   name:
                     type: string

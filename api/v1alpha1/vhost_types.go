@@ -19,8 +19,8 @@ type VhostSpec struct {
 	// +kubebuilder:validation:Required
 	Name    string `json:"name"`
 	Tracing bool   `json:"tracing,omitempty"`
-	// Reference to the RabbitmqCluster that the vhost will be created in
-	// Required property
+	// Reference to the RabbitmqCluster that the vhost will be created in.
+	// Required property.
 	// +kubebuilder:validation:Required
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
 }
