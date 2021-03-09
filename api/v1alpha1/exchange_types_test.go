@@ -28,7 +28,7 @@ var _ = Describe("Exchange spec", func() {
 			},
 		}
 
-		q := Exchange{
+		exchange := Exchange{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-exchange",
 				Namespace: namespace,
@@ -41,19 +41,19 @@ var _ = Describe("Exchange spec", func() {
 				},
 			},
 		}
-		Expect(k8sClient.Create(ctx, &q)).To(Succeed())
+		Expect(k8sClient.Create(ctx, &exchange)).To(Succeed())
 		fetchedExchange := &Exchange{}
 		Expect(k8sClient.Get(ctx, types.NamespacedName{
-			Name:      q.Name,
-			Namespace: q.Namespace,
+			Name:      exchange.Name,
+			Namespace: exchange.Namespace,
 		}, fetchedExchange)).To(Succeed())
 		Expect(fetchedExchange.Spec).To(Equal(expectedSpec))
 	})
 
 	It("creates a exchange with configurations", func() {
-		q := Exchange{
+		exchange := Exchange{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "random-q",
+				Name:      "random-exchange",
 				Namespace: namespace,
 			},
 			Spec: ExchangeSpec{
@@ -71,11 +71,11 @@ var _ = Describe("Exchange spec", func() {
 				},
 			},
 		}
-		Expect(k8sClient.Create(ctx, &q)).To(Succeed())
+		Expect(k8sClient.Create(ctx, &exchange)).To(Succeed())
 		fetchedExchange := &Exchange{}
 		Expect(k8sClient.Get(ctx, types.NamespacedName{
-			Name:      q.Name,
-			Namespace: q.Namespace,
+			Name:      exchange.Name,
+			Namespace: exchange.Namespace,
 		}, fetchedExchange)).To(Succeed())
 
 		Expect(fetchedExchange.Spec.Name).To(Equal("test-exchange"))

@@ -70,17 +70,17 @@ var _ = Describe("user spec", func() {
 			})
 			It("successfully creates the user", func() {
 				Expect(k8sClient.Create(ctx, &user)).To(Succeed())
-				fetcheduser := &User{}
+				fetchedUser := &User{}
 				Expect(k8sClient.Get(ctx, types.NamespacedName{
 					Name:      user.Name,
 					Namespace: user.Namespace,
-				}, fetcheduser)).To(Succeed())
-				Expect(fetcheduser.Spec.RabbitmqClusterReference).To(Equal(RabbitmqClusterReference{
+				}, fetchedUser)).To(Succeed())
+				Expect(fetchedUser.Spec.RabbitmqClusterReference).To(Equal(RabbitmqClusterReference{
 					Name:      "some-cluster",
 					Namespace: namespace,
 				}))
-				Expect(fetcheduser.Spec.Name).NotTo(BeEmpty())
-				Expect(fetcheduser.Spec.Name).To(Equal(username))
+				Expect(fetchedUser.Spec.Name).NotTo(BeEmpty())
+				Expect(fetchedUser.Spec.Name).To(Equal(username))
 			})
 		})
 

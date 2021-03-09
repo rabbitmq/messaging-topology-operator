@@ -46,9 +46,9 @@ var _ = Describe("Binding spec", func() {
 	})
 
 	It("creates a binding with configurations", func() {
-		q := Binding{
+		binding := Binding{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "random-q",
+				Name:      "random-binding",
 				Namespace: namespace,
 			},
 			Spec: BindingSpec{
@@ -66,11 +66,11 @@ var _ = Describe("Binding spec", func() {
 				},
 			},
 		}
-		Expect(k8sClient.Create(ctx, &q)).To(Succeed())
+		Expect(k8sClient.Create(ctx, &binding)).To(Succeed())
 		fetchedBinding := &Binding{}
 		Expect(k8sClient.Get(ctx, types.NamespacedName{
-			Name:      q.Name,
-			Namespace: q.Namespace,
+			Name:      binding.Name,
+			Namespace: binding.Namespace,
 		}, fetchedBinding)).To(Succeed())
 
 		Expect(fetchedBinding.Spec.Vhost).To(Equal("/avhost"))
