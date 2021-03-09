@@ -18,10 +18,8 @@ import (
 
 func GeneratePolicy(p *topologyv1alpha1.Policy) (*rabbithole.Policy, error) {
 	definition := make(map[string]interface{})
-	if p.Spec.Definition != nil {
-		if err := json.Unmarshal(p.Spec.Definition.Raw, &definition); err != nil {
-			return nil, fmt.Errorf("failed to unmarshall policy definition: %v", err)
-		}
+	if err := json.Unmarshal(p.Spec.Definition.Raw, &definition); err != nil {
+		return nil, fmt.Errorf("failed to unmarshall policy definition: %v", err)
 	}
 
 	return &rabbithole.Policy{

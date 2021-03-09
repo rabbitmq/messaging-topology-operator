@@ -34,7 +34,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: PolicySpec defines the desired state of Policy
+            description: PolicySpec defines the desired state of Policy https://www.rabbitmq.com/parameters.html#policies
             properties:
               applyTo:
                 default: all
@@ -57,7 +57,9 @@ spec:
                 type: string
               priority:
                 default: 0
-                description: Default to '0'
+                description: Default to '0'. In the event that more than one policy
+                  can match a given exchange or queue, the policy with the greatest
+                  priority applies.
                 type: integer
               rabbitmqClusterReference:
                 description: Reference to the RabbitmqCluster that the exchange will

@@ -18,11 +18,12 @@ var _ = Describe("GeneratePolicy", func() {
 				Name: "new-policy",
 			},
 			Spec: topologyv1alpha1.PolicySpec{
-				Name:     "new-p",
-				Vhost:    "/new-vhost",
-				ApplyTo:  "exchanges",
-				Pattern:  "exchange-name",
-				Priority: 5,
+				Name:       "new-p",
+				Vhost:      "/new-vhost",
+				ApplyTo:    "exchanges",
+				Pattern:    "exchange-name",
+				Priority:   5,
+				Definition: &runtime.RawExtension{Raw: []byte(`{"key":"value"}`)},
 			},
 		}
 	})
@@ -57,14 +58,10 @@ var _ = Describe("GeneratePolicy", func() {
 		Expect(generated.Pattern).To(Equal("exchange-name"))
 	})
 
-	When("policy definition are provided", func() {
-		It("sets definition correctly", func() {
-			p.Spec.Definition = &runtime.RawExtension{
-				Raw: []byte(`{"key": "value"}`)}
-			generated, err := GeneratePolicy(p)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(generated.Definition).Should(HaveLen(1))
-			Expect(generated.Definition).Should(HaveKeyWithValue("key", "value"))
-		})
+	It("sets definition according to policySpec", func() {
+		generated, err := GeneratePolicy(p)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(generated.Definition).Should(HaveLen(1))
+		Expect(generated.Definition).Should(HaveKeyWithValue("key", "value"))
 	})
 })

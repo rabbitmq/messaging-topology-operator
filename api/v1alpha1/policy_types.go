@@ -6,6 +6,7 @@ import (
 )
 
 // PolicySpec defines the desired state of Policy
+// https://www.rabbitmq.com/parameters.html#policies
 type PolicySpec struct {
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`
@@ -21,7 +22,8 @@ type PolicySpec struct {
 	// +kubebuilder:validation:Enum=queues;exchanges;all
 	// +kubebuilder:default:=all
 	ApplyTo string `json:"applyTo,omitempty"`
-	// Default to '0'
+	// Default to '0'.
+	// In the event that more than one policy can match a given exchange or queue, the policy with the greatest priority applies.
 	// +kubebuilder:default:=0
 	Priority int `json:"priority,omitempty"`
 	// Policy definition. Required property.

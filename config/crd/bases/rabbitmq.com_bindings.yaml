@@ -47,7 +47,7 @@ spec:
                 - queue
                 type: string
               rabbitmqClusterReference:
-                description: Reference to the RabbitmqCluster that the exchange will
+                description: Reference to the RabbitmqCluster that the binding will
                   be created in. Required property.
                 properties:
                   name:
