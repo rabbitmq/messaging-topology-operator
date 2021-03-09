@@ -2,6 +2,7 @@ apiVersion: rabbitmq.com/v1alpha1
 kind: Exchange
 metadata:
   name: exchange-example
+  namespace: rabbitmq-system
 spec:
   name: example # name of the exchange
   vhost: "/test-vhost" # default to '/' if not provided
