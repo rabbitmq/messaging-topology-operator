@@ -14,9 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // ExchangeSpec defines the desired state of Exchange
 type ExchangeSpec struct {
 	// +kubebuilder:validation:Required
@@ -32,8 +29,8 @@ type ExchangeSpec struct {
 	// +kubebuilder:validation:Type=object
 	// +kubebuilder:pruning:PreserveUnknownFields
 	Arguments *runtime.RawExtension `json:"arguments,omitempty"`
-	// Reference to the RabbitmqCluster that the exchange will be created in
-	// Required property
+	// Reference to the RabbitmqCluster that the exchange will be created in.
+	// Required property.
 	// +kubebuilder:validation:Required
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
 }

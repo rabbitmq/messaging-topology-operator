@@ -13,4 +13,10 @@ resources:
 - group: rabbitmq.com
   kind: User
   version: v1alpha1
+- group: rabbitmq.com
+  kind: Vhost
+  version: v1alpha1
+- group: rabbitmq.com
+  kind: Policy
+  version: v1alpha1
 version: "2"

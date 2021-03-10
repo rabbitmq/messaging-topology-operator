@@ -6,6 +6,8 @@ resources:
 - bases/rabbitmq.com_exchanges.yaml
 - bases/rabbitmq.com_bindings.yaml
 - bases/rabbitmq.com_users.yaml
+- bases/rabbitmq.com_vhosts.yaml
+- bases/rabbitmq.com_policies.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 configurations:

@@ -11,5 +11,3 @@ spec:
   type: quorum # without providing a queue type, rabbitmq creates a classic queue
   autoDelete: false
   durable: true
-  arguments:
-    max-length-bytes: 1048576 # any optional queue arguments

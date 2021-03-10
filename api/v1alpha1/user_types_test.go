@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -22,7 +23,6 @@ var _ = Describe("user spec", func() {
 				Namespace: namespace,
 			},
 			Spec: UserSpec{
-				Name: "test-user",
 				RabbitmqClusterReference: RabbitmqClusterReference{
 					Name:      "some-cluster",
 					Namespace: namespace,
@@ -39,7 +39,6 @@ var _ = Describe("user spec", func() {
 			Name:      "some-cluster",
 			Namespace: namespace,
 		}))
-		Expect(fetcheduser.Spec.Name).To(Equal("test-user"))
 		Expect(len(fetcheduser.Spec.Tags)).To(Equal(0))
 	})
 
@@ -55,9 +54,8 @@ var _ = Describe("user spec", func() {
 				},
 				Spec: UserSpec{
 					Tags: tags,
-					ImportCredentialsSecret: ImportCredentialsSecret{
-						Name:      "secret-name",
-						Namespace: "secret-namespace",
+					ImportCredentialsSecret: &corev1.LocalObjectReference{
+						Name: "secret-name",
 					},
 					RabbitmqClusterReference: RabbitmqClusterReference{
 						Name:      "some-cluster",
@@ -73,20 +71,17 @@ var _ = Describe("user spec", func() {
 			})
 			It("successfully creates the user", func() {
 				Expect(k8sClient.Create(ctx, &user)).To(Succeed())
-				fetcheduser := &User{}
+				fetchedUser := &User{}
 				Expect(k8sClient.Get(ctx, types.NamespacedName{
 					Name:      user.Name,
 					Namespace: user.Namespace,
-				}, fetcheduser)).To(Succeed())
-				Expect(fetcheduser.Spec.RabbitmqClusterReference).To(Equal(RabbitmqClusterReference{
+				}, fetchedUser)).To(Succeed())
+				Expect(fetchedUser.Spec.RabbitmqClusterReference).To(Equal(RabbitmqClusterReference{
 					Name:      "some-cluster",
 					Namespace: namespace,
 				}))
-				Expect(fetcheduser.Spec.ImportCredentialsSecret).To(Equal(ImportCredentialsSecret{
-					Name:      "secret-name",
-					Namespace: "secret-namespace",
-				}))
-				Expect(fetcheduser.Spec.Tags).To(Equal([]UserTag{"policymaker", "monitoring"}))
+				Expect(fetchedUser.Spec.ImportCredentialsSecret.Name).To(Equal("secret-name"))
+				Expect(fetchedUser.Spec.Tags).To(Equal([]UserTag{"policymaker", "monitoring"}))
 			})
 		})
 
