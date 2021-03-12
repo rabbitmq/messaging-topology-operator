@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"time"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
@@ -41,7 +43,13 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	rabbitClient, err := rabbitholeClient(ctx, r.Client, vhost.Spec.RabbitmqClusterReference)
-	if err != nil {
+
+	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
+	// the Cluster is temporarily down. Requeue until it comes back up.
+	if errors.Is(err, NoSuchRabbitmqClusterError) && vhost.ObjectMeta.DeletionTimestamp.IsZero() {
+		logger.Info("Could not generate rabbitClient for non existant cluster: " + err.Error())
+		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
+	} else if err != nil && !errors.Is(err, NoSuchRabbitmqClusterError) {
 		logger.Error(err, "Failed to generate http rabbitClient")
 		return reconcile.Result{}, err
 	}
@@ -104,6 +112,11 @@ func (r *VhostReconciler) addFinalizerIfNeeded(ctx context.Context, vhost *topol
 // if server responds with '404' Not Found, it logs and does not requeue on error
 func (r *VhostReconciler) deleteVhost(ctx context.Context, client *rabbithole.Client, vhost *topologyv1alpha1.Vhost) error {
 	logger := ctrl.LoggerFrom(ctx)
+
+	if client == nil {
+		logger.Info("Not deleting vhost as RabbitmqCluster is already deleted or down", "vhost", vhost.Name)
+		return r.removeFinalizer(ctx, vhost)
+	}
 
 	err := validateResponseForDeletion(client.DeleteVhost(vhost.Spec.Name))
 	if errors.Is(err, NotFound) {

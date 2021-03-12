@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/go-logr/logr"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
@@ -60,7 +61,13 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	rabbitClient, err := rabbitholeClient(ctx, r.Client, user.Spec.RabbitmqClusterReference)
-	if err != nil {
+
+	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
+	// the Cluster is temporarily down. Requeue until it comes back up.
+	if errors.Is(err, NoSuchRabbitmqClusterError) && user.ObjectMeta.DeletionTimestamp.IsZero() {
+		logger.Info("Could not generate rabbitClient for non existant cluster: " + err.Error())
+		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
+	} else if err != nil && !errors.Is(err, NoSuchRabbitmqClusterError) {
 		logger.Error(err, "Failed to generate http rabbitClient")
 		return reconcile.Result{}, err
 	}
@@ -205,6 +212,11 @@ func (r *UserReconciler) addFinalizerIfNeeded(ctx context.Context, user *topolog
 
 func (r *UserReconciler) deleteUser(ctx context.Context, client *rabbithole.Client, user *topologyv1alpha1.User) error {
 	logger := ctrl.LoggerFrom(ctx)
+
+	if client == nil {
+		logger.Info("Not deleting user as RabbitmqCluster is already deleted or down", "user", user.Name)
+		return r.removeFinalizer(ctx, user)
+	}
 
 	err := validateResponseForDeletion(client.DeleteUser(user.Spec.Name))
 	if errors.Is(err, NotFound) {

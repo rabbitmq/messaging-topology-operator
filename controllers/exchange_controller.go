@@ -13,6 +13,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"time"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
@@ -50,7 +52,13 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	rabbitClient, err := rabbitholeClient(ctx, r.Client, exchange.Spec.RabbitmqClusterReference)
-	if err != nil {
+
+	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
+	// the Cluster is temporarily down. Requeue until it comes back up.
+	if errors.Is(err, NoSuchRabbitmqClusterError) && exchange.ObjectMeta.DeletionTimestamp.IsZero() {
+		logger.Info("Could not generate rabbitClient for non existant cluster: " + err.Error())
+		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
+	} else if err != nil && !errors.Is(err, NoSuchRabbitmqClusterError) {
 		logger.Error(err, "Failed to generate http rabbitClient")
 		return reconcile.Result{}, err
 	}
@@ -119,6 +127,11 @@ func (r *ExchangeReconciler) addFinalizerIfNeeded(ctx context.Context, e *topolo
 // if server responds with '404' Not Found, it logs and does not requeue on error
 func (r *ExchangeReconciler) deleteExchange(ctx context.Context, client *rabbithole.Client, exchange *topologyv1alpha1.Exchange) error {
 	logger := ctrl.LoggerFrom(ctx)
+
+	if client == nil {
+		logger.Info("Not deleting exchange as RabbitmqCluster is already deleted or down", "exchange", exchange.Name)
+		return r.removeFinalizer(ctx, exchange)
+	}
 
 	err := validateResponseForDeletion(client.DeleteExchange(exchange.Spec.Vhost, exchange.Spec.Name))
 	if errors.Is(err, NotFound) {
