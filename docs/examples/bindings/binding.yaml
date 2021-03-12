@@ -2,6 +2,7 @@ apiVersion: rabbitmq.com/v1alpha1
 kind: Binding
 metadata:
   name: binding
+  namespace: rabbitmq-system
 spec:
   vhost: "/test-vhost" # default to '/' if not provided
   source: test # an existng exchange
