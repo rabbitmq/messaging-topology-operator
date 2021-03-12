@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/go-logr/logr v0.3.0
 	github.com/michaelklishin/rabbit-hole/v2 v2.6.0
-	github.com/onsi/ginkgo v1.15.0
+	github.com/onsi/ginkgo v1.15.1
 	github.com/onsi/gomega v1.11.0
 	github.com/rabbitmq/cluster-operator v1.5.0
 	k8s.io/api v0.20.4
