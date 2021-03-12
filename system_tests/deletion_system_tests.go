@@ -68,7 +68,6 @@ var _ = Describe("Deletion", func() {
 				Namespace: namespace,
 			},
 			Spec: topologyv1alpha1.UserSpec{
-				Name:                     "user-deletion-test",
 				RabbitmqClusterReference: targetClusterRef,
 			},
 		}
@@ -89,7 +88,7 @@ var _ = Describe("Deletion", func() {
 		Expect(k8sClient.Create(ctx, &vhost)).To(Succeed())
 	})
 
-	FIt("handles the referenced RabbitmqCluster being deleted", func() {
+	It("handles the referenced RabbitmqCluster being deleted", func() {
 		Expect(k8sClient.Delete(ctx, &rabbitmqv1beta1.RabbitmqCluster{ObjectMeta: metav1.ObjectMeta{Name: targetCluster.Name, Namespace: targetCluster.Namespace}})).To(Succeed())
 		Eventually(func() string {
 			output, _ := kubectl(
