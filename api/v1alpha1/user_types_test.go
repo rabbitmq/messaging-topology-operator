@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -22,7 +23,6 @@ var _ = Describe("user spec", func() {
 				Namespace: namespace,
 			},
 			Spec: UserSpec{
-				Name: "test-user",
 				RabbitmqClusterReference: RabbitmqClusterReference{
 					Name:      "some-cluster",
 					Namespace: namespace,
@@ -39,7 +39,6 @@ var _ = Describe("user spec", func() {
 			Name:      "some-cluster",
 			Namespace: namespace,
 		}))
-		Expect(fetcheduser.Spec.Name).To(Equal("test-user"))
 		Expect(len(fetcheduser.Spec.Tags)).To(Equal(0))
 	})
 
@@ -54,8 +53,10 @@ var _ = Describe("user spec", func() {
 					Namespace: namespace,
 				},
 				Spec: UserSpec{
-					Name: username,
 					Tags: tags,
+					ImportCredentialsSecret: &corev1.LocalObjectReference{
+						Name: "secret-name",
+					},
 					RabbitmqClusterReference: RabbitmqClusterReference{
 						Name:      "some-cluster",
 						Namespace: namespace,
@@ -79,8 +80,8 @@ var _ = Describe("user spec", func() {
 					Name:      "some-cluster",
 					Namespace: namespace,
 				}))
-				Expect(fetchedUser.Spec.Name).NotTo(BeEmpty())
-				Expect(fetchedUser.Spec.Name).To(Equal(username))
+				Expect(fetchedUser.Spec.ImportCredentialsSecret.Name).To(Equal("secret-name"))
+				Expect(fetchedUser.Spec.Tags).To(Equal([]UserTag{"policymaker", "monitoring"}))
 			})
 		})
 

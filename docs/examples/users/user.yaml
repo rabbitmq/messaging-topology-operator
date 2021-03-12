@@ -2,8 +2,8 @@ apiVersion: rabbitmq.com/v1alpha1
 kind: User
 metadata:
   name: user-sample
+  namespace: rabbitmq-system
 spec:
-  name: test-user # name of the user
   tags:
   - management # available tags are 'management', 'policymaker', 'monitoring' and 'administrator'
   rabbitmqClusterReference:

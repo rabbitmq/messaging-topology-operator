@@ -2,6 +2,8 @@
 
 Kubernetes operator to manage [RabbitMQ](https://www.rabbitmq.com/) messaging topologies within a RabbitMQ cluster deployed via the [RabbitMQ Cluster Kubernetes Operator](https://github.com/rabbitmq/cluster-operator/). This repository contains [custom controllers](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/#custom-controllers) and [custom resource definitions (CRDs)](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/#customresourcedefinitions) enabling a declarative API for RabbitMQ messaging topologies.
 
+**Note:** This project is under active development and is provided as **alpha** software. There is no guarantee of API backwards compatibility, release schedule, or providing support.
+
 ## Quickstart
 
 Before deploying Messaging Topology Operator, you need to have:
@@ -19,10 +21,11 @@ kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/release
 You can create RabbitMQ resources:
 
 1. [Queue](./docs/examples/queues)
-2. [Exchange](.docs/examples/exchanges)
-3. [Binding](.docs/examples/bindings)
-4. [User](.docs/examples/users)
-5. [Vhost](.docs/examples/vhosts)
+2. [Exchange](./docs/examples/exchanges)
+3. [Binding](./docs/examples/bindings)
+4. [User](./docs/examples/users)
+5. [Vhost](./docs/examples/vhosts)
+6. [Policy](./docs/examples/policies)
 
 ## Contributing
 
