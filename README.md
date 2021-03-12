@@ -19,11 +19,11 @@ kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/release
 You can create RabbitMQ resources:
 
 1. [Queue](./docs/examples/queues)
-2. [Exchange](.docs/examples/exchanges)
-3. [Binding](.docs/examples/bindings)
-4. [User](.docs/examples/users)
-5. [Vhost](.docs/examples/vhosts)
-5. [Policy](.docs/examples/policies)
+2. [Exchange](./docs/examples/exchanges)
+3. [Binding](./docs/examples/bindings)
+4. [User](./docs/examples/users)
+5. [Vhost](./docs/examples/vhosts)
+6. [Policy](./docs/examples/policies)
 
 ## Contributing
 
