@@ -4,6 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
@@ -12,11 +18,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"log"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strconv"
 )
 
 func createRestConfig() (*rest.Config, error) {
@@ -64,17 +65,10 @@ func MustHaveEnv(name string) string {
 }
 
 func generateRabbitClient(ctx context.Context, clientSet *kubernetes.Clientset, rmq *v1alpha1.RabbitmqClusterReference) (*rabbithole.Client, error) {
-	nodeIp := kubernetesNodeIp(ctx, clientSet)
-	if nodeIp == "" {
-		return nil, errors.New("failed to get kubernetes Node IP")
+	endpoint, err := managementEndpoint(ctx, clientSet, rmq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get management endpoint: %w", err)
 	}
-
-	nodePort := managementNodePort(ctx, clientSet, rmq)
-	if nodePort == "" {
-		return nil, errors.New("failed to get NodePort for management")
-	}
-
-	endpoint := fmt.Sprintf("http://%s:%s", nodeIp, nodePort)
 
 	username, password, err := getUsernameAndPassword(ctx, clientSet, rmq)
 	if err != nil {
@@ -104,6 +98,20 @@ func getUsernameAndPassword(ctx context.Context, clientSet *kubernetes.Clientset
 		return "", "", fmt.Errorf("cannot find 'password' in %s", secretName)
 	}
 	return string(username), string(password), nil
+}
+
+func managementEndpoint(ctx context.Context, clientSet *kubernetes.Clientset, rmq *v1alpha1.RabbitmqClusterReference) (string, error) {
+	nodeIp := kubernetesNodeIp(ctx, clientSet)
+	if nodeIp == "" {
+		return "", errors.New("failed to get kubernetes Node IP")
+	}
+
+	nodePort := managementNodePort(ctx, clientSet, rmq)
+	if nodePort == "" {
+		return "", errors.New("failed to get NodePort for management")
+	}
+
+	return fmt.Sprintf("http://%s:%s", nodeIp, nodePort), nil
 }
 
 func managementNodePort(ctx context.Context, clientSet *kubernetes.Clientset, rmq *v1alpha1.RabbitmqClusterReference) string {

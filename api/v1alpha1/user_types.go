@@ -16,9 +16,6 @@ import (
 
 // UserSpec defines the desired state of User.
 type UserSpec struct {
-	// Username of the user to create on a RabbitmqCluster.
-	// +kubebuilder:validation:Required
-	Name string `json:"name"`
 	// List of permissions tags to associate with the user. This determines the level of
 	// access to the RabbitMQ management UI granted to the user. Omitting this field will
 	// lead to a user than can still connect to the cluster through messaging protocols,
@@ -29,7 +26,13 @@ type UserSpec struct {
 	// exist for the User object to be created.
 	// +kubebuilder:validation:Required
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
-	// TODO: Allow the provision of the user with a pre-defined password through a Secret here
+	// Defines a Secret used to pre-define the username and password set for this User. User objects created
+	// with this field set will not have randomly-generated credentials, and will instead import
+	// the username/password values from this Secret.
+	// The Secret must contain the keys `username` and `password` in its Data field, or the import will fail.
+	// Note that this import only occurs at creation time, and is ignored once a password has been set
+	// on a User.
+	ImportCredentialsSecret *corev1.LocalObjectReference `json:"importCredentialsSecret,omitempty"`
 }
 
 // UserStatus defines the observed state of User.

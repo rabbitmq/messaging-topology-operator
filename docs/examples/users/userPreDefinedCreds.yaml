@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: credentials-secret
+type: Opaque
+data:
+  username: bXktc2VjcmV0LXVzZXI=
+  password: d2h5YXJleW91bG9va2luZ2hlcmU=
+---
+apiVersion: rabbitmq.com/v1alpha1
+kind: User
+metadata:
+  name: import-user-sample
+spec:
+  tags:
+  - management # available tags are 'management', 'policymaker', 'monitoring' and 'administrator'
+  - policymaker
+  rabbitmqClusterReference:
+    name: test
+    namespace: rabbitmq-system
+  importCredentialsSecret:
+    name: credentials-secret

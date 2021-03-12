@@ -83,12 +83,15 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	logger.Info("Start reconciling",
 		"spec", string(spec))
 
-	if err := r.declareCredentials(ctx, user); err != nil {
-		return ctrl.Result{}, err
-	}
+	if user.Status.Credentials == nil {
+		logger.Info("User does not yet have a Credentials Secret; generating", "user", user.Name)
+		if err := r.declareCredentials(ctx, user); err != nil {
+			return ctrl.Result{}, err
+		}
 
-	if err := r.setUserStatus(ctx, user); err != nil {
-		return ctrl.Result{}, err
+		if err := r.setUserStatus(ctx, user); err != nil {
+			return ctrl.Result{}, err
+		}
 	}
 
 	if err := r.declareUser(ctx, rabbitClient, user); err != nil {
@@ -103,14 +106,14 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 func (r *UserReconciler) declareCredentials(ctx context.Context, user *topologyv1alpha1.User) error {
 	logger := ctrl.LoggerFrom(ctx)
 
-	// TODO: If a user has provided a Secret containing the desired password, use it instead here.
-	password, err := internal.RandomEncodedString(24)
+	username, password, err := r.generateCredentials(ctx, user)
 	if err != nil {
-		msg := "failed to generate random password"
-		r.Recorder.Event(user, corev1.EventTypeWarning, "FailedDeclare", msg)
+		msg := "failed to generate credentials"
+		r.Recorder.Event(user, corev1.EventTypeWarning, "CredentialGenerateFailure", msg)
 		logger.Error(err, msg)
 		return err
 	}
+	logger.Info("Credentials generated for User", "user", user.Name, "generatedUsername", username)
 
 	credentialSecret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -121,7 +124,7 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topologyv
 		// The format of the generated Secret conforms to the Provisioned Service
 		// type Spec. For more information, see https://k8s-service-bindings.github.io/spec/#provisioned-service.
 		Data: map[string][]byte{
-			"username": []byte(user.Spec.Name),
+			"username": []byte(username),
 			"password": []byte(password),
 		},
 	}
@@ -144,19 +147,72 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topologyv
 		return err
 	}
 
-	logger.Info("Successfully declared credentials secret", "user", credentialSecret.ObjectMeta.Name)
+	logger.Info("Successfully declared credentials secret", "secret", credentialSecret.Name, "namespace", credentialSecret.Namespace)
 	r.Recorder.Event(&credentialSecret, corev1.EventTypeNormal, "SuccessfulDeclare", "Successfully declared user")
 	return nil
+}
+
+func (r *UserReconciler) generateCredentials(ctx context.Context, user *topologyv1alpha1.User) (string, string, error) {
+	logger := ctrl.LoggerFrom(ctx)
+
+	var err error
+	msg := fmt.Sprintf("generating/importing credentials for User %s: %#v", user.Name, user)
+	logger.Info(msg)
+
+	if user.Spec.ImportCredentialsSecret != nil {
+		logger.Info("An import secret was provided in the user spec", "user", user.Name, "secretName", user.Spec.ImportCredentialsSecret.Name)
+		return r.importCredentials(ctx, user.Spec.ImportCredentialsSecret.Name, user.Namespace)
+	}
+
+	username, err := internal.RandomEncodedString(24)
+	if err != nil {
+		msg := "failed to generate random username"
+		r.Recorder.Event(user, corev1.EventTypeWarning, "FailedDeclare", msg)
+		logger.Error(err, msg)
+		return "", "", err
+	}
+	password, err := internal.RandomEncodedString(24)
+	if err != nil {
+		msg := "failed to generate random password"
+		r.Recorder.Event(user, corev1.EventTypeWarning, "FailedDeclare", msg)
+		logger.Error(err, msg)
+		return "", "", err
+	}
+	return username, password, nil
+
+}
+
+func (r *UserReconciler) importCredentials(ctx context.Context, secretName, secretNamespace string) (string, string, error) {
+	logger := ctrl.LoggerFrom(ctx)
+	logger.Info("Importing user credentials from provided Secret", "secretName", secretName, "secretNamespace", secretNamespace)
+
+	var credentialsSecret corev1.Secret
+	err := r.Client.Get(ctx, types.NamespacedName{Name: secretName, Namespace: secretNamespace}, &credentialsSecret)
+	if err != nil {
+		return "", "", fmt.Errorf("Could not find password secret %s in namespace %s; Err: %w", secretName, secretNamespace, err)
+	}
+	username, ok := credentialsSecret.Data["username"]
+	if !ok {
+		return "", "", fmt.Errorf("Could not find username key in credentials secret: %s", credentialsSecret.Name)
+	}
+	password, ok := credentialsSecret.Data["password"]
+	if !ok {
+		return "", "", fmt.Errorf("Could not find password key in credentials secret: %s", credentialsSecret.Name)
+	}
+
+	logger.Info("Retrieved credentials from Secret", "secretName", secretName, "retrievedUsername", string(username))
+	return string(username), string(password), nil
 }
 
 func (r *UserReconciler) setUserStatus(ctx context.Context, user *topologyv1alpha1.User) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	credentials := &corev1.LocalObjectReference{
-		Name: user.Spec.Name + "-user-credentials",
+		Name: user.Name + "-user-credentials",
 	}
 	user.Status.Credentials = credentials
 	if err := r.Status().Update(ctx, user); err != nil {
+		logger.Error(err, "Failed to update secret status credentials", "user", user.Name, "secretRef", credentials)
 		return err
 	}
 	logger.Info("Successfully updated secret status credentials", "user", user.Name, "secretRef", credentials)
@@ -167,27 +223,32 @@ func (r *UserReconciler) setUserStatus(ctx context.Context, user *topologyv1alph
 func (r *UserReconciler) declareUser(ctx context.Context, client *rabbithole.Client, user *topologyv1alpha1.User) error {
 	logger := ctrl.LoggerFrom(ctx)
 
-	credentials := &corev1.Secret{}
-	if err := r.Get(ctx, types.NamespacedName{Name: user.Status.Credentials.Name, Namespace: user.Namespace}, credentials); err != nil {
-		return err
-	}
-
-	userSettings, err := internal.GenerateUserSettings(credentials, user.Spec.Tags)
+	credentials, err := r.getUserCredentials(ctx, user)
 	if err != nil {
-		msg := "failed to generate user settings from credential in status"
+		msg := "failed to retrieve user credentials secret from status"
 		r.Recorder.Event(user, corev1.EventTypeWarning, "FailedDeclare", msg)
 		logger.Error(err, msg, "user.status", user.Status)
 		return err
 	}
+	logger.Info("Retrieved credentials for user", "user", user.Name, "credentials", credentials.Name)
 
-	if err := validateResponse(client.PutUser(user.Spec.Name, userSettings)); err != nil {
+	userSettings, err := internal.GenerateUserSettings(credentials, user.Spec.Tags)
+	if err != nil {
+		msg := "failed to generate user settings from credential"
+		r.Recorder.Event(user, corev1.EventTypeWarning, "FailedDeclare", msg)
+		logger.Error(err, msg, "user.status", user.Status)
+		return err
+	}
+	logger.Info("Generated user settings", "user", user.Name, "settings", userSettings)
+
+	if err := validateResponse(client.PutUser(userSettings.Name, userSettings)); err != nil {
 		msg := "failed to declare user"
 		r.Recorder.Event(user, corev1.EventTypeWarning, "FailedDeclare", msg)
-		logger.Error(err, msg, "user", user.Spec.Name)
+		logger.Error(err, msg, "user", user.Name)
 		return err
 	}
 
-	logger.Info("Successfully declared user", "user", user.Spec.Name)
+	logger.Info("Successfully declared user", "user", user.Name)
 	r.Recorder.Event(user, corev1.EventTypeNormal, "SuccessfulDeclare", "Successfully declared user")
 	return nil
 }
@@ -203,16 +264,40 @@ func (r *UserReconciler) addFinalizerIfNeeded(ctx context.Context, user *topolog
 	return nil
 }
 
+func (r *UserReconciler) getUserCredentials(ctx context.Context, user *topologyv1alpha1.User) (*corev1.Secret, error) {
+	logger := ctrl.LoggerFrom(ctx)
+	if user.Status.Credentials == nil {
+		return nil, fmt.Errorf("This User does not yet have a Credentials Secret created")
+	}
+
+	credentials := &corev1.Secret{}
+	if err := r.Get(ctx, types.NamespacedName{Name: user.Status.Credentials.Name, Namespace: user.Namespace}, credentials); err != nil {
+		logger.Error(err, "Failed to retrieve user credentials secret from status", "user", user.Name, "secretCredentials", user.Status.Credentials)
+		return nil, err
+	}
+
+	logger.Info("Successfully retrieved credentials", "user", user.Name, "secretCredentials", user.Status.Credentials)
+	return credentials, nil
+}
+
 func (r *UserReconciler) deleteUser(ctx context.Context, client *rabbithole.Client, user *topologyv1alpha1.User) error {
 	logger := ctrl.LoggerFrom(ctx)
 
-	err := validateResponseForDeletion(client.DeleteUser(user.Spec.Name))
+	credentials, err := r.getUserCredentials(ctx, user)
+	if err != nil {
+		msg := "failed to retrieve user credentials secret from status"
+		r.Recorder.Event(user, corev1.EventTypeWarning, "FailedDelete", msg)
+		logger.Error(err, msg, "user.status", user.Status)
+		return err
+	}
+
+	err = validateResponseForDeletion(client.DeleteUser(string(credentials.Data["username"])))
 	if errors.Is(err, NotFound) {
-		logger.Info("cannot find user in rabbitmq server; already deleted", "user", user.Spec.Name)
+		logger.Info("cannot find user in rabbitmq server; already deleted", "user", user.Name)
 	} else if err != nil {
 		msg := "failed to delete user"
 		r.Recorder.Event(user, corev1.EventTypeWarning, "FailedDelete", msg)
-		logger.Error(err, msg, "user", user.Spec.Name)
+		logger.Error(err, msg, "user", user.Name)
 		return err
 	}
 	return r.removeFinalizer(ctx, user)
