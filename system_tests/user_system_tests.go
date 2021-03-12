@@ -101,6 +101,17 @@ var _ = Describe("Users", func() {
 			}, 5).ShouldNot(BeNil())
 			Expect(generatedUser.Status.Credentials.Name).To(Equal(generatedSecret.Name))
 
+			By("updating status condition 'Ready'")
+			updatedUser := topologyv1alpha1.User{}
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &updatedUser)).To(Succeed())
+
+			Expect(updatedUser.Status.Conditions).To(HaveLen(1))
+			readyCondition := updatedUser.Status.Conditions[0]
+			Expect(string(readyCondition.Type)).To(Equal("Ready"))
+			Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))
+			Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
+			Expect(readyCondition.LastTransitionTime).NotTo(Equal(metav1.Time{}))
+
 			By("deleting user")
 			Expect(k8sClient.Delete(ctx, user)).To(Succeed())
 			Eventually(func() error {

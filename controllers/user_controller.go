@@ -95,7 +95,21 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	if err := r.declareUser(ctx, rabbitClient, user); err != nil {
+		// Set Condition 'Ready' to false with message
+		user.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.NotReady(err.Error())}
+		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
+			return r.Status().Update(ctx, user)
+		}); writerErr != nil {
+			logger.Error(writerErr, failedConditionsUpdateMsg)
+		}
 		return ctrl.Result{}, err
+	}
+
+	user.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.Ready()}
+	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
+		return r.Status().Update(ctx, user)
+	}); writerErr != nil {
+		logger.Error(writerErr, failedConditionsUpdateMsg)
 	}
 
 	logger.Info("Finished reconciling")

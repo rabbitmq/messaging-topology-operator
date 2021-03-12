@@ -16,6 +16,7 @@ import (
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
+	clientretry "k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/go-logr/logr"
@@ -60,9 +61,22 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		"spec", string(spec))
 
 	if err := r.declareBinding(ctx, rabbitClient, binding); err != nil {
+		// Set Condition 'Ready' to false with message
+		binding.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.NotReady(err.Error())}
+		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
+			return r.Status().Update(ctx, binding)
+		}); writerErr != nil {
+			logger.Error(writerErr, failedConditionsUpdateMsg)
+		}
 		return ctrl.Result{}, err
 	}
 
+	binding.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.Ready()}
+	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
+		return r.Status().Update(ctx, binding)
+	}); writerErr != nil {
+		logger.Error(writerErr, failedConditionsUpdateMsg)
+	}
 	logger.Info("Finished reconciling")
 
 	return ctrl.Result{}, nil

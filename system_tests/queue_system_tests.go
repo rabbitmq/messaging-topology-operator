@@ -3,8 +3,10 @@ package system_tests
 import (
 	"context"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo"
@@ -61,6 +63,17 @@ var _ = Describe("Queue Controller", func() {
 		}))
 		Expect(qInfo.Arguments).To(HaveKeyWithValue("x-quorum-initial-group-size", float64(3)))
 		Expect(qInfo.Arguments).To(HaveKeyWithValue("x-queue-type", "quorum"))
+
+		By("updating status condition 'Ready'")
+		updatedQueue := topologyv1alpha1.Queue{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: q.Name, Namespace: q.Namespace}, &updatedQueue)).To(Succeed())
+
+		Expect(updatedQueue.Status.Conditions).To(HaveLen(1))
+		readyCondition := updatedQueue.Status.Conditions[0]
+		Expect(string(readyCondition.Type)).To(Equal("Ready"))
+		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))
+		Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
+		Expect(readyCondition.LastTransitionTime).NotTo(Equal(metav1.Time{}))
 
 		By("deleting queue")
 		Expect(k8sClient.Delete(ctx, q)).To(Succeed())

@@ -27,9 +27,11 @@ type VhostSpec struct {
 
 // VhostStatus defines the observed state of Vhost
 type VhostStatus struct {
+	Conditions []Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 
 // Vhost is the Schema for the vhosts API
 type Vhost struct {

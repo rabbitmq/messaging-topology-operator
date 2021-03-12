@@ -3,8 +3,10 @@ package system_tests
 import (
 	"context"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo"
@@ -52,6 +54,12 @@ var _ = Describe("Binding", func() {
 			},
 		}
 		Expect(k8sClient.Create(ctx, queue, &client.CreateOptions{})).To(Succeed())
+		Eventually(func() error {
+			var err error
+			_, err = rabbitClient.GetQueue(queue.Spec.Vhost, queue.Name)
+			return err
+		}, 10, 2).Should(BeNil()) // wait for queue to be available; or else binding will fail to create
+
 		binding = &topologyv1alpha1.Binding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "binding-test",
@@ -102,5 +110,16 @@ var _ = Describe("Binding", func() {
 			"RoutingKey":      Equal(binding.Spec.RoutingKey),
 		}))
 		Expect(fetchedBinding.Arguments).To(HaveKeyWithValue("extra-argument", "test"))
+
+		By("updating status condition 'Ready'")
+		updatedBinding := topologyv1alpha1.Binding{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &updatedBinding)).To(Succeed())
+
+		Expect(updatedBinding.Status.Conditions).To(HaveLen(1))
+		readyCondition := updatedBinding.Status.Conditions[0]
+		Expect(string(readyCondition.Type)).To(Equal("Ready"))
+		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))
+		Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
+		Expect(readyCondition.LastTransitionTime).NotTo(Equal(metav1.Time{}))
 	})
 })

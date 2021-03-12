@@ -20,6 +20,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
+	clientretry "k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -79,9 +80,22 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		"spec", string(queueSpec))
 
 	if err := r.declareQueue(ctx, rabbitClient, q); err != nil {
+		// Set Condition 'Ready' to false with message
+		q.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.NotReady(err.Error())}
+		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
+			return r.Status().Update(ctx, q)
+		}); writerErr != nil {
+			logger.Error(writerErr, failedConditionsUpdateMsg)
+		}
 		return ctrl.Result{}, err
 	}
 
+	q.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.Ready()}
+	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
+		return r.Status().Update(ctx, q)
+	}); writerErr != nil {
+		logger.Error(writerErr, failedConditionsUpdateMsg)
+	}
 	logger.Info("Finished reconciling")
 
 	return ctrl.Result{}, nil

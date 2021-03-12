@@ -37,11 +37,11 @@ type ExchangeSpec struct {
 
 // ExchangeStatus defines the observed state of Exchange
 type ExchangeStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Conditions []Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 
 // Exchange is the Schema for the exchanges API
 type Exchange struct {
