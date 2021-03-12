@@ -48,13 +48,13 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	rabbitClient, err := rabbitholeClient(ctx, r.Client, binding.Spec.RabbitmqClusterReference)
 	if err != nil {
-		logger.Error(err, "Failed to generate http rabbitClient")
+		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
 	}
 
 	spec, err := json.Marshal(binding.Spec)
 	if err != nil {
-		logger.Error(err, "Failed to marshal binding spec")
+		logger.Error(err, failedMarshalSpec)
 	}
 
 	logger.Info("Start reconciling",
@@ -66,7 +66,7 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, binding)
 		}); writerErr != nil {
-			logger.Error(writerErr, failedConditionsUpdateMsg)
+			logger.Error(writerErr, failedConditionsUpdate)
 		}
 		return ctrl.Result{}, err
 	}
@@ -75,7 +75,7 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, binding)
 	}); writerErr != nil {
-		logger.Error(writerErr, failedConditionsUpdateMsg)
+		logger.Error(writerErr, failedConditionsUpdate)
 	}
 	logger.Info("Finished reconciling")
 

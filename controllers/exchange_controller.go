@@ -52,7 +52,7 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	rabbitClient, err := rabbitholeClient(ctx, r.Client, exchange.Spec.RabbitmqClusterReference)
 	if err != nil {
-		logger.Error(err, "Failed to generate http rabbitClient")
+		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
 	}
 
@@ -67,7 +67,7 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	spec, err := json.Marshal(exchange.Spec)
 	if err != nil {
-		logger.Error(err, "Failed to marshal exchange spec")
+		logger.Error(err, failedMarshalSpec)
 	}
 
 	logger.Info("Start reconciling",
@@ -79,7 +79,7 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, exchange)
 		}); writerErr != nil {
-			logger.Error(writerErr, failedConditionsUpdateMsg)
+			logger.Error(writerErr, failedConditionsUpdate)
 		}
 		return ctrl.Result{}, err
 	}
@@ -88,7 +88,7 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, exchange)
 	}); writerErr != nil {
-		logger.Error(writerErr, failedConditionsUpdateMsg)
+		logger.Error(writerErr, failedConditionsUpdate)
 	}
 	logger.Info("Finished reconciling")
 

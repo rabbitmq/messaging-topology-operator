@@ -53,7 +53,7 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	rabbitClient, err := rabbitholeClient(ctx, r.Client, policy.Spec.RabbitmqClusterReference)
 	if err != nil {
-		logger.Error(err, "Failed to generate http rabbit client")
+		logger.Error(err, failedGenerateRabbitClient)
 	}
 
 	if !policy.ObjectMeta.DeletionTimestamp.IsZero() {
@@ -67,7 +67,7 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	spec, err := json.Marshal(policy.Spec)
 	if err != nil {
-		logger.Error(err, "Failed to marshal policy spec")
+		logger.Error(err, failedMarshalSpec)
 	}
 
 	logger.Info("Start reconciling",
@@ -79,7 +79,7 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, policy)
 		}); writerErr != nil {
-			logger.Error(writerErr, failedConditionsUpdateMsg)
+			logger.Error(writerErr, failedConditionsUpdate)
 		}
 		return ctrl.Result{}, err
 	}
@@ -88,7 +88,7 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, policy)
 	}); writerErr != nil {
-		logger.Error(writerErr, failedConditionsUpdateMsg)
+		logger.Error(writerErr, failedConditionsUpdate)
 	}
 	logger.Info("Finished reconciling")
 

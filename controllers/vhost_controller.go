@@ -43,7 +43,7 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	rabbitClient, err := rabbitholeClient(ctx, r.Client, vhost.Spec.RabbitmqClusterReference)
 	if err != nil {
-		logger.Error(err, "Failed to generate http rabbitClient")
+		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
 	}
 
@@ -59,7 +59,7 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	spec, err := json.Marshal(vhost.Spec)
 	if err != nil {
-		logger.Error(err, "Failed to marshal vhost spec")
+		logger.Error(err, failedMarshalSpec)
 	}
 
 	logger.Info("Start reconciling",
@@ -71,7 +71,7 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, vhost)
 		}); writerErr != nil {
-			logger.Error(writerErr, failedConditionsUpdateMsg)
+			logger.Error(writerErr, failedConditionsUpdate)
 		}
 		return ctrl.Result{}, err
 	}
@@ -80,7 +80,7 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, vhost)
 	}); writerErr != nil {
-		logger.Error(writerErr, failedConditionsUpdateMsg)
+		logger.Error(writerErr, failedConditionsUpdate)
 	}
 	logger.Info("Finished reconciling")
 
