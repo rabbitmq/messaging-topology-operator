@@ -39,9 +39,11 @@ type PolicySpec struct {
 
 // PolicyStatus defines the observed state of Policy
 type PolicyStatus struct {
+	Conditions []Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 
 // Policy is the Schema for the policies API
 type Policy struct {

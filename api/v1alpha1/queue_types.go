@@ -50,9 +50,11 @@ type RabbitmqClusterReference struct {
 
 // QueueStatus defines the observed state of Queue
 type QueueStatus struct {
+	Conditions []Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 
 // Queue is the Schema for the queues API
 type Queue struct {

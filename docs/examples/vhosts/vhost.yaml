@@ -8,3 +8,10 @@ spec:
   rabbitmqClusterReference:
     name: test
     namespace: rabbitmq-system
+# status:
+#   conditions:
+#   - lastTransitionTime: ""
+#     status: "True" # true, false, or unknown
+#     type: Ready
+#     Reason: "SuccessfulCreateOrUpdate" # status false result in reason FailedCreateOrUpdate
+#     Message: "" # set when status is false

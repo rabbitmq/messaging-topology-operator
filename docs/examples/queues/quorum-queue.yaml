@@ -12,3 +12,10 @@ spec:
   type: quorum # without providing a queue type, rabbitmq creates a classic queue
   autoDelete: false
   durable: true
+# status:
+#   conditions:
+#   - lastTransitionTime: ""
+#     status: "True" # true, false, or unknown
+#     type: Ready
+#     Reason: "SuccessfulCreateOrUpdate" # status false result in reason FailedCreateOrUpdate
+#     Message: "" # set when status is false

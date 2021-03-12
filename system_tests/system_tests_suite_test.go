@@ -114,7 +114,7 @@ var _ = BeforeSuite(func() {
 			Expect(string(output)).To(ContainSubstring("not found"))
 		}
 		return string(output)
-	}, 60, 10).Should(Equal("'True'"))
+	}, 120, 5).Should(Equal("'True'"))
 
 	rabbitClient, err = generateRabbitClient(context.Background(), clientSet, &topologyv1alpha1.RabbitmqClusterReference{Name: rmq.Name, Namespace: rmq.Namespace})
 	Expect(err).NotTo(HaveOccurred())

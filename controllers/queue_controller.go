@@ -20,6 +20,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
+	clientretry "k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -56,7 +57,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	// create rabbitmq http rabbitClient
 	rabbitClient, err := rabbitholeClient(ctx, r.Client, q.Spec.RabbitmqClusterReference)
 	if err != nil {
-		logger.Error(err, "Failed to generate http rabbitClient")
+		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
 	}
 
@@ -72,16 +73,29 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	queueSpec, err := json.Marshal(q.Spec)
 	if err != nil {
-		logger.Error(err, "Failed to marshal q spec")
+		logger.Error(err, failedMarshalSpec)
 	}
 
 	logger.Info("Start reconciling",
 		"spec", string(queueSpec))
 
 	if err := r.declareQueue(ctx, rabbitClient, q); err != nil {
+		// Set Condition 'Ready' to false with message
+		q.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.NotReady(err.Error())}
+		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
+			return r.Status().Update(ctx, q)
+		}); writerErr != nil {
+			logger.Error(writerErr, failedConditionsUpdate)
+		}
 		return ctrl.Result{}, err
 	}
 
+	q.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.Ready()}
+	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
+		return r.Status().Update(ctx, q)
+	}); writerErr != nil {
+		logger.Error(writerErr, failedConditionsUpdate)
+	}
 	logger.Info("Finished reconciling")
 
 	return ctrl.Result{}, nil

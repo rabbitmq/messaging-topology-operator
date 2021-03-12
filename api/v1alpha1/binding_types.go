@@ -39,9 +39,11 @@ type BindingSpec struct {
 
 // BindingStatus defines the observed state of Binding
 type BindingStatus struct {
+	Conditions []Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 
 // Binding is the Schema for the bindings API
 type Binding struct {
