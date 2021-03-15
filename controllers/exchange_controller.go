@@ -79,16 +79,17 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, exchange)
 		}); writerErr != nil {
-			logger.Error(writerErr, failedConditionsUpdate)
+			logger.Error(writerErr, failedStatusUpdate)
 		}
 		return ctrl.Result{}, err
 	}
 
 	exchange.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.Ready()}
+	exchange.Status.ObservedGeneration = exchange.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, exchange)
 	}); writerErr != nil {
-		logger.Error(writerErr, failedConditionsUpdate)
+		logger.Error(writerErr, failedStatusUpdate)
 	}
 	logger.Info("Finished reconciling")
 

@@ -75,6 +75,9 @@ var _ = Describe("Queue Controller", func() {
 		Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
 		Expect(readyCondition.LastTransitionTime).NotTo(Equal(metav1.Time{}))
 
+		By("setting status.observedGeneration")
+		Expect(updatedQueue.Status.ObservedGeneration).To(Equal(updatedQueue.GetGeneration()))
+
 		By("deleting queue")
 		Expect(k8sClient.Delete(ctx, q)).To(Succeed())
 		var err error

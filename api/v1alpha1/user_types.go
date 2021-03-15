@@ -37,7 +37,10 @@ type UserSpec struct {
 
 // UserStatus defines the observed state of User.
 type UserStatus struct {
-	Conditions []Condition `json:"conditions,omitempty"`
+	// observedGeneration is the most recent successful generation observed for this User. It corresponds to the
+	// User's generation, which is updated on mutation by the API Server.
+	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
+	Conditions         []Condition `json:"conditions,omitempty"`
 	// Provides a reference to a Secret object containing the user credentials.
 	Credentials *corev1.LocalObjectReference `json:"credentials,omitempty"`
 }

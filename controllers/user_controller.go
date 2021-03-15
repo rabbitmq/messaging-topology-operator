@@ -100,16 +100,17 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, user)
 		}); writerErr != nil {
-			logger.Error(writerErr, failedConditionsUpdate)
+			logger.Error(writerErr, failedStatusUpdate)
 		}
 		return ctrl.Result{}, err
 	}
 
 	user.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.Ready()}
+	user.Status.ObservedGeneration = user.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, user)
 	}); writerErr != nil {
-		logger.Error(writerErr, failedConditionsUpdate)
+		logger.Error(writerErr, failedStatusUpdate)
 	}
 
 	logger.Info("Finished reconciling")
