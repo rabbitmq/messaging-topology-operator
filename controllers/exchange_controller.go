@@ -143,7 +143,7 @@ func (r *ExchangeReconciler) deleteExchange(ctx context.Context, client *rabbith
 	logger := ctrl.LoggerFrom(ctx)
 
 	if client == nil {
-		logger.Info("Not deleting exchange as RabbitmqCluster is already deleted or down", "exchange", exchange.Name)
+		logger.Info(noSuchRabbitDeletion, "exchange", exchange.Name)
 		return r.removeFinalizer(ctx, exchange)
 	}
 

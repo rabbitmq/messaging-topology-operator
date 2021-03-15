@@ -305,7 +305,7 @@ func (r *UserReconciler) deleteUser(ctx context.Context, client *rabbithole.Clie
 	logger := ctrl.LoggerFrom(ctx)
 
 	if client == nil {
-		logger.Info("Not deleting user as RabbitmqCluster is already deleted or down", "user", user.Name)
+		logger.Info(noSuchRabbitDeletion, "user", user.Name)
 		return r.removeFinalizer(ctx, user)
 	}
 

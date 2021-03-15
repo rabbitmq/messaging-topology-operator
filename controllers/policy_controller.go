@@ -143,7 +143,7 @@ func (r *PolicyReconciler) deletePolicy(ctx context.Context, client *rabbithole.
 	logger := ctrl.LoggerFrom(ctx)
 
 	if client == nil {
-		logger.Info("Not deleting policy as RabbitmqCluster is already deleted or down", "policy", policy.Name)
+		logger.Info(noSuchRabbitDeletion, "policy", policy.Name)
 		return r.removeFinalizer(ctx, policy)
 	}
 

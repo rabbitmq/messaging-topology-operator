@@ -128,7 +128,7 @@ func (r *VhostReconciler) deleteVhost(ctx context.Context, client *rabbithole.Cl
 	logger := ctrl.LoggerFrom(ctx)
 
 	if client == nil {
-		logger.Info("Not deleting vhost as RabbitmqCluster is already deleted or down", "vhost", vhost.Name)
+		logger.Info(noSuchRabbitDeletion, "vhost", vhost.Name)
 		return r.removeFinalizer(ctx, vhost)
 	}
 

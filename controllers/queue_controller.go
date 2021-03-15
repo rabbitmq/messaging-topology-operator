@@ -150,7 +150,7 @@ func (r *QueueReconciler) deleteQueue(ctx context.Context, client *rabbithole.Cl
 	logger := ctrl.LoggerFrom(ctx)
 
 	if client == nil {
-		logger.Info("Not deleting queue as RabbitmqCluster is already deleted or down", "queue", q.Name)
+		logger.Info(noSuchRabbitDeletion, "queue", q.Name)
 		return r.removeFinalizer(ctx, q)
 	}
 
