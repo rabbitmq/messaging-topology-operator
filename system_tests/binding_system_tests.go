@@ -121,5 +121,8 @@ var _ = Describe("Binding", func() {
 		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))
 		Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
 		Expect(readyCondition.LastTransitionTime).NotTo(Equal(metav1.Time{}))
+
+		By("setting status.observedGeneration")
+		Expect(updatedBinding.Status.ObservedGeneration).To(Equal(updatedBinding.GetGeneration()))
 	})
 })

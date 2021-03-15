@@ -71,16 +71,17 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, vhost)
 		}); writerErr != nil {
-			logger.Error(writerErr, failedConditionsUpdate)
+			logger.Error(writerErr, failedStatusUpdate)
 		}
 		return ctrl.Result{}, err
 	}
 
 	vhost.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.Ready()}
+	vhost.Status.ObservedGeneration = vhost.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, vhost)
 	}); writerErr != nil {
-		logger.Error(writerErr, failedConditionsUpdate)
+		logger.Error(writerErr, failedStatusUpdate)
 	}
 	logger.Info("Finished reconciling")
 

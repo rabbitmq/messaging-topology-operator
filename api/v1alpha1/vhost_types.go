@@ -27,7 +27,10 @@ type VhostSpec struct {
 
 // VhostStatus defines the observed state of Vhost
 type VhostStatus struct {
-	Conditions []Condition `json:"conditions,omitempty"`
+	// observedGeneration is the most recent successful generation observed for this Vhost. It corresponds to the
+	// Vhost's generation, which is updated on mutation by the API Server.
+	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
+	Conditions         []Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true

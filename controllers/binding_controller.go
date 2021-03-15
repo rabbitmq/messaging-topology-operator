@@ -66,16 +66,17 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, binding)
 		}); writerErr != nil {
-			logger.Error(writerErr, failedConditionsUpdate)
+			logger.Error(writerErr, failedStatusUpdate)
 		}
 		return ctrl.Result{}, err
 	}
 
 	binding.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.Ready()}
+	binding.Status.ObservedGeneration = binding.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, binding)
 	}); writerErr != nil {
-		logger.Error(writerErr, failedConditionsUpdate)
+		logger.Error(writerErr, failedStatusUpdate)
 	}
 	logger.Info("Finished reconciling")
 

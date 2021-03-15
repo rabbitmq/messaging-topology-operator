@@ -59,6 +59,9 @@ var _ = Describe("vhost", func() {
 		Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
 		Expect(readyCondition.LastTransitionTime).NotTo(Equal(metav1.Time{}))
 
+		By("setting status.observedGeneration")
+		Expect(updatedVhost.Status.ObservedGeneration).To(Equal(updatedVhost.GetGeneration()))
+
 		By("deleting a vhost")
 		Expect(k8sClient.Delete(ctx, vhost)).To(Succeed())
 		var err error

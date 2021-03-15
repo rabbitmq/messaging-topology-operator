@@ -112,6 +112,9 @@ var _ = Describe("Users", func() {
 			Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
 			Expect(readyCondition.LastTransitionTime).NotTo(Equal(metav1.Time{}))
 
+			By("setting status.observedGeneration")
+			Expect(updatedUser.Status.ObservedGeneration).To(Equal(updatedUser.GetGeneration()))
+
 			By("deleting user")
 			Expect(k8sClient.Delete(ctx, user)).To(Succeed())
 			Eventually(func() error {

@@ -75,6 +75,9 @@ var _ = Describe("Policy", func() {
 		Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
 		Expect(readyCondition.LastTransitionTime).NotTo(Equal(metav1.Time{}))
 
+		By("setting status.observedGeneration")
+		Expect(updatedPolicy.Status.ObservedGeneration).To(Equal(updatedPolicy.GetGeneration()))
+
 		By("updating policy")
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, policy)).To(Succeed())
 		policy.Spec.Definition = &runtime.RawExtension{

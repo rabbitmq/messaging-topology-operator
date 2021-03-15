@@ -75,6 +75,9 @@ var _ = Describe("Exchange", func() {
 		Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
 		Expect(readyCondition.LastTransitionTime).NotTo(Equal(metav1.Time{}))
 
+		By("setting status.observedGeneration")
+		Expect(updatedExchange.Status.ObservedGeneration).To(Equal(updatedExchange.GetGeneration()))
+
 		By("deleting exchange")
 		Expect(k8sClient.Delete(ctx, exchange)).To(Succeed())
 		var err error

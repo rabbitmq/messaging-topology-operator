@@ -85,16 +85,17 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, q)
 		}); writerErr != nil {
-			logger.Error(writerErr, failedConditionsUpdate)
+			logger.Error(writerErr, failedStatusUpdate)
 		}
 		return ctrl.Result{}, err
 	}
 
 	q.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.Ready()}
+	q.Status.ObservedGeneration = q.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, q)
 	}); writerErr != nil {
-		logger.Error(writerErr, failedConditionsUpdate)
+		logger.Error(writerErr, failedStatusUpdate)
 	}
 	logger.Info("Finished reconciling")
 

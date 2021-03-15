@@ -39,7 +39,10 @@ type PolicySpec struct {
 
 // PolicyStatus defines the observed state of Policy
 type PolicyStatus struct {
-	Conditions []Condition `json:"conditions,omitempty"`
+	// observedGeneration is the most recent successful generation observed for this Policy. It corresponds to the
+	// Policy's generation, which is updated on mutation by the API Server.
+	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
+	Conditions         []Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
