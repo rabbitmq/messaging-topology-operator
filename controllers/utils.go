@@ -27,12 +27,14 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
+var NoSuchRabbitmqClusterError = errors.New("RabbitmqCluster object does not exist")
+
 // returns a http client for the given RabbitmqCluster
 // assumes the RabbitmqCluster is reachable using its service's ClusterIP
 func rabbitholeClient(ctx context.Context, c client.Client, rmq v1alpha1.RabbitmqClusterReference) (*rabbithole.Client, error) {
 	svc, secret, err := serviceSecretFromReference(ctx, c, rmq)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get service or secret object from specified rabbitmqcluster: %v", err)
+		return nil, fmt.Errorf("failed to get service or secret object from specified rabbitmqcluster: %w", err)
 	}
 
 	ip := net.ParseIP(svc.Spec.ClusterIP)
@@ -79,9 +81,17 @@ func managementPort(svc *corev1.Service) (int, error) {
 	return 0, fmt.Errorf("failed to find 'management' or 'management-tls' from service %s", svc.Name)
 }
 
-func serviceSecretFromReference(ctx context.Context, c client.Client, rmq v1alpha1.RabbitmqClusterReference) (*corev1.Service, *corev1.Secret, error) {
+func rabbitmqClusterFromReference(ctx context.Context, c client.Client, rmq v1alpha1.RabbitmqClusterReference) (*rabbitmqv1beta1.RabbitmqCluster, error) {
 	cluster := &rabbitmqv1beta1.RabbitmqCluster{}
 	if err := c.Get(ctx, types.NamespacedName{Name: rmq.Name, Namespace: rmq.Namespace}, cluster); err != nil {
+		return nil, fmt.Errorf("Failed to get cluster from reference: %s Error: %w", err, NoSuchRabbitmqClusterError)
+	}
+	return cluster, nil
+}
+
+func serviceSecretFromReference(ctx context.Context, c client.Client, rmq v1alpha1.RabbitmqClusterReference) (*corev1.Service, *corev1.Secret, error) {
+	cluster, err := rabbitmqClusterFromReference(ctx, c, rmq)
+	if err != nil {
 		return nil, nil, err
 	}
 

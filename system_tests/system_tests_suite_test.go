@@ -15,10 +15,8 @@ import (
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/utils/pointer"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -87,34 +85,7 @@ var _ = BeforeSuite(func() {
 	}, 10, 1).Should(ContainSubstring("1/1"), "messaging-topology-operator not deployed")
 
 	// setup a RabbitmqCluster used for system tests
-	rmq = &rabbitmqv1beta1.RabbitmqCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "system-test",
-			Namespace: namespace,
-		},
-		Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
-			Replicas: pointer.Int32Ptr(1),
-			Service: rabbitmqv1beta1.RabbitmqClusterServiceSpec{
-				Type: corev1.ServiceTypeNodePort,
-			},
-		},
-	}
-
-	Expect(k8sClient.Create(context.Background(), rmq)).To(Succeed())
-	Eventually(func() string {
-		output, err := kubectl(
-			"-n",
-			rmq.Namespace,
-			"get",
-			"rabbitmqclusters",
-			rmq.Name,
-			"-ojsonpath='{.status.conditions[?(@.type==\"AllReplicasReady\")].status}'",
-		)
-		if err != nil {
-			Expect(string(output)).To(ContainSubstring("not found"))
-		}
-		return string(output)
-	}, 120, 5).Should(Equal("'True'"))
+	rmq = setupTestRabbitmqCluster(k8sClient, "system-test", namespace)
 
 	rabbitClient, err = generateRabbitClient(context.Background(), clientSet, &topologyv1alpha1.RabbitmqClusterReference{Name: rmq.Name, Namespace: rmq.Namespace})
 	Expect(err).NotTo(HaveOccurred())

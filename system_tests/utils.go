@@ -8,16 +8,19 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	. "github.com/onsi/gomega"
+	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/utils/pointer"
 )
 
 func createRestConfig() (*rest.Config, error) {
@@ -142,4 +145,37 @@ func kubernetesNodeIp(ctx context.Context, clientSet *kubernetes.Clientset) stri
 		}
 	}
 	return nodeIp
+}
+
+func setupTestRabbitmqCluster(k8sClient client.Client, name, namespace string) *rabbitmqv1beta1.RabbitmqCluster {
+	// setup a RabbitmqCluster used for system tests
+	rabbitmqCluster := &rabbitmqv1beta1.RabbitmqCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
+			Replicas: pointer.Int32Ptr(1),
+			Service: rabbitmqv1beta1.RabbitmqClusterServiceSpec{
+				Type: corev1.ServiceTypeNodePort,
+			},
+		},
+	}
+
+	Expect(k8sClient.Create(context.Background(), rabbitmqCluster)).To(Succeed())
+	Eventually(func() string {
+		output, err := kubectl(
+			"-n",
+			rabbitmqCluster.Namespace,
+			"get",
+			"rabbitmqclusters",
+			rabbitmqCluster.Name,
+			"-ojsonpath='{.status.conditions[?(@.type==\"AllReplicasReady\")].status}'",
+		)
+		if err != nil {
+			Expect(string(output)).To(ContainSubstring("not found"))
+		}
+		return string(output)
+	}, 120, 10).Should(Equal("'True'"))
+	return rabbitmqCluster
 }
