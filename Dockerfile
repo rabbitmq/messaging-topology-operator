@@ -16,13 +16,22 @@ COPY controllers/ controllers/
 COPY internal/ internal/
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -tags timetzdata -o manager main.go
 
-# Use distroless as minimal base image to package the manager binary
-# Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot
+# ---------------------------------------
+FROM alpine:latest as etc-builder
+
+RUN echo "messaging-topology-operator:x:1001:" > /etc/group && \
+    echo "messaging-topology-operator:x:1001:1001::/home/messaging-topology-operator:/usr/sbin/nologin" > /etc/passwd
+
+RUN apk add -U --no-cache ca-certificates
+
+# ---------------------------------------
+FROM scratch
 WORKDIR /
 COPY --from=builder /workspace/manager .
-USER nonroot:nonroot
+COPY --from=etc-builder /etc/passwd /etc/group /etc/
+COPY --from=etc-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+USER 1001:1001
 
 ENTRYPOINT ["/manager"]
