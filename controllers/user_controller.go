@@ -61,14 +61,13 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	rabbitClient, err := rabbitholeClient(ctx, r.Client, user.Spec.RabbitmqClusterReference)
-
 	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
 	// the Cluster is temporarily down. Requeue until it comes back up.
 	if errors.Is(err, NoSuchRabbitmqClusterError) && user.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info("Could not generate rabbitClient for non existant cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
 	} else if err != nil && !errors.Is(err, NoSuchRabbitmqClusterError) {
-		logger.Error(err, "Failed to generate http rabbitClient")
+		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
 	}
 
@@ -84,7 +83,7 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	spec, err := json.Marshal(user.Spec)
 	if err != nil {
-		logger.Error(err, "Failed to marshal binding spec")
+		logger.Error(err, failedMarshalSpec)
 	}
 
 	logger.Info("Start reconciling",
@@ -102,7 +101,22 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	if err := r.declareUser(ctx, rabbitClient, user); err != nil {
+		// Set Condition 'Ready' to false with message
+		user.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.NotReady(err.Error())}
+		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
+			return r.Status().Update(ctx, user)
+		}); writerErr != nil {
+			logger.Error(writerErr, failedStatusUpdate)
+		}
 		return ctrl.Result{}, err
+	}
+
+	user.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.Ready()}
+	user.Status.ObservedGeneration = user.GetGeneration()
+	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
+		return r.Status().Update(ctx, user)
+	}); writerErr != nil {
+		logger.Error(writerErr, failedStatusUpdate)
 	}
 
 	logger.Info("Finished reconciling")

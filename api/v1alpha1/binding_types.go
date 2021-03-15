@@ -39,9 +39,14 @@ type BindingSpec struct {
 
 // BindingStatus defines the observed state of Binding
 type BindingStatus struct {
+	// observedGeneration is the most recent successful generation observed for this Binding. It corresponds to the
+	// Binding's generation, which is updated on mutation by the API Server.
+	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
+	Conditions         []Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 
 // Binding is the Schema for the bindings API
 type Binding struct {

@@ -3,6 +3,7 @@ package system_tests
 import (
 	"context"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -62,6 +63,20 @@ var _ = Describe("Policy", func() {
 		}))
 
 		Expect(fetchedPolicy.Definition).To(HaveKeyWithValue("ha-mode", "all"))
+
+		By("updating status condition 'Ready'")
+		updatedPolicy := topologyv1alpha1.Policy{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &updatedPolicy)).To(Succeed())
+
+		Expect(updatedPolicy.Status.Conditions).To(HaveLen(1))
+		readyCondition := updatedPolicy.Status.Conditions[0]
+		Expect(string(readyCondition.Type)).To(Equal("Ready"))
+		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))
+		Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
+		Expect(readyCondition.LastTransitionTime).NotTo(Equal(metav1.Time{}))
+
+		By("setting status.observedGeneration")
+		Expect(updatedPolicy.Status.ObservedGeneration).To(Equal(updatedPolicy.GetGeneration()))
 
 		By("updating policy")
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, policy)).To(Succeed())

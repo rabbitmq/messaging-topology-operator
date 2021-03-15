@@ -75,10 +75,45 @@ spec:
             type: object
           status:
             description: QueueStatus defines the observed state of Queue
+            properties:
+              conditions:
+                items:
+                  properties:
+                    lastTransitionTime:
+                      description: The last time this Condition type changed.
+                      format: date-time
+                      type: string
+                    message:
+                      description: Full text reason for current status of the condition.
+                      type: string
+                    reason:
+                      description: One word, camel-case reason for current status
+                        of the condition.
+                      type: string
+                    status:
+                      description: True, False, or Unknown
+                      type: string
+                    type:
+                      description: Type indicates the scope of RabbitmqCluster status
+                        addressed by the condition.
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+              observedGeneration:
+                description: observedGeneration is the most recent successful generation
+                  observed for this Queue. It corresponds to the Queue's generation,
+                  which is updated on mutation by the API Server.
+                format: int64
+                type: integer
             type: object
         type: object
     served: true
     storage: true
+    subresources:
+      status: {}
 status:
   acceptedNames:
     kind: ""

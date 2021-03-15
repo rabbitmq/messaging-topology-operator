@@ -10,6 +10,7 @@ import (
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
+	clientretry "k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -43,14 +44,13 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	rabbitClient, err := rabbitholeClient(ctx, r.Client, vhost.Spec.RabbitmqClusterReference)
-
 	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
 	// the Cluster is temporarily down. Requeue until it comes back up.
 	if errors.Is(err, NoSuchRabbitmqClusterError) && vhost.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info("Could not generate rabbitClient for non existant cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
-	} else if err != nil && !errors.Is(err, NoSuchRabbitmqClusterError) {
-		logger.Error(err, "Failed to generate http rabbitClient")
+  } else if err != nil && !errors.Is(err, NoSuchRabbitmqClusterError) {
+		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
 	}
 
@@ -66,16 +66,30 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	spec, err := json.Marshal(vhost.Spec)
 	if err != nil {
-		logger.Error(err, "Failed to marshal vhost spec")
+		logger.Error(err, failedMarshalSpec)
 	}
 
 	logger.Info("Start reconciling",
 		"spec", string(spec))
 
 	if err := r.putVhost(ctx, rabbitClient, vhost); err != nil {
+		// Set Condition 'Ready' to false with message
+		vhost.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.NotReady(err.Error())}
+		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
+			return r.Status().Update(ctx, vhost)
+		}); writerErr != nil {
+			logger.Error(writerErr, failedStatusUpdate)
+		}
 		return ctrl.Result{}, err
 	}
 
+	vhost.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.Ready()}
+	vhost.Status.ObservedGeneration = vhost.GetGeneration()
+	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
+		return r.Status().Update(ctx, vhost)
+	}); writerErr != nil {
+		logger.Error(writerErr, failedStatusUpdate)
+	}
 	logger.Info("Finished reconciling")
 
 	return ctrl.Result{}, nil

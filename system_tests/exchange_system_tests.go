@@ -3,8 +3,10 @@ package system_tests
 import (
 	"context"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo"
@@ -61,6 +63,20 @@ var _ = Describe("Exchange", func() {
 			"Durable":    BeTrue(),
 		}))
 		Expect(exchangeInfo.Arguments).To(HaveKeyWithValue("alternate-exchange", "system-test"))
+
+		By("updating status condition 'Ready'")
+		updatedExchange := topologyv1alpha1.Exchange{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &updatedExchange)).To(Succeed())
+
+		Expect(updatedExchange.Status.Conditions).To(HaveLen(1))
+		readyCondition := updatedExchange.Status.Conditions[0]
+		Expect(string(readyCondition.Type)).To(Equal("Ready"))
+		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))
+		Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
+		Expect(readyCondition.LastTransitionTime).NotTo(Equal(metav1.Time{}))
+
+		By("setting status.observedGeneration")
+		Expect(updatedExchange.Status.ObservedGeneration).To(Equal(updatedExchange.GetGeneration()))
 
 		By("deleting exchange")
 		Expect(k8sClient.Delete(ctx, exchange)).To(Succeed())

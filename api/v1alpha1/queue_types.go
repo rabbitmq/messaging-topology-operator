@@ -50,9 +50,14 @@ type RabbitmqClusterReference struct {
 
 // QueueStatus defines the observed state of Queue
 type QueueStatus struct {
+	// observedGeneration is the most recent successful generation observed for this Queue. It corresponds to the
+	// Queue's generation, which is updated on mutation by the API Server.
+	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
+	Conditions         []Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 
 // Queue is the Schema for the queues API
 type Queue struct {

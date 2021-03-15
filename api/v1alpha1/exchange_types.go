@@ -37,11 +37,14 @@ type ExchangeSpec struct {
 
 // ExchangeStatus defines the observed state of Exchange
 type ExchangeStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// observedGeneration is the most recent successful generation observed for this Exchange. It corresponds to the
+	// Exchange's generation, which is updated on mutation by the API Server.
+	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
+	Conditions         []Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 
 // Exchange is the Schema for the exchanges API
 type Exchange struct {
