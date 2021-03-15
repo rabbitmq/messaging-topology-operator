@@ -35,15 +35,14 @@ func GenerateBindingInfo(binding *topologyv1alpha1.Binding) (*rabbithole.Binding
 	}, nil
 }
 
-// Generate binding properties key which is necessary when deleting a binding
-// Binding properties key is:
-// when routing key and argument are not provided, properties key is "~"
+// Generate the binding properties key which is necessary when deleting a binding
+// when routing key and argument are not provided, properties key is "~".
 // when routing key is set and no argument is provided, properties key is the routing key itself
-// if routing key has character '~', it's replaced by '%7E'
+// if routing key has character '~', it's replaced by '%7E'.
 // when arguments are provided, properties key is the routing key (could be empty) plus the hash of arguments
-// the hash function used is 'erlang:phash2' and it's erlang specific; GeneratePropertiesKey returns empty
-// string if arguments are provided (deletion not supported)
-
+// the hash function used is 'erlang:phash2' and it's erlang specific.
+// GeneratePropertiesKey() returns empty string if arguments are provided
+// See: https://github.com/rabbitmq/rabbitmq-server/blob/52479099ecc9807097ad0af70b6c5d54cb5031e7/deps/rabbitmq_management_agent/src/rabbit_mgmt_format.erl#L297
 func GeneratePropertiesKey(binding *topologyv1alpha1.Binding) string {
 	if binding.Spec.RoutingKey == "" {
 		return "~"

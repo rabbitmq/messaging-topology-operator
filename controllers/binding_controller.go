@@ -143,6 +143,11 @@ func (r *BindingReconciler) declareBinding(ctx context.Context, client *rabbitho
 func (r *BindingReconciler) deleteBinding(ctx context.Context, client *rabbithole.Client, binding *topologyv1alpha1.Binding) error {
 	logger := ctrl.LoggerFrom(ctx)
 
+	if client == nil {
+		logger.Info(noSuchRabbitDeletion)
+		return r.removeFinalizer(ctx, binding)
+	}
+
 	info, err := internal.GenerateBindingInfo(binding)
 	if err != nil {
 		msg := "failed to generate binding info"
@@ -153,7 +158,7 @@ func (r *BindingReconciler) deleteBinding(ctx context.Context, client *rabbithol
 
 	propertiesKey := internal.GeneratePropertiesKey(binding)
 	if propertiesKey == "" {
-		msg := "deletion is not supported when binding arguments are provided; please delete the binding manually"
+		msg := "deletion is not supported when binding arguments are provided; delete the binding manually"
 		r.Recorder.Event(binding, corev1.EventTypeWarning, "FailedDelete", msg)
 		logger.Error(err, msg)
 		return err

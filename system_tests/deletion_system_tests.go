@@ -22,6 +22,7 @@ var _ = Describe("Deletion", func() {
 		queue         topologyv1alpha1.Queue
 		user          topologyv1alpha1.User
 		vhost         topologyv1alpha1.Vhost
+		binding       topologyv1alpha1.Binding
 	)
 
 	BeforeEach(func() {
@@ -43,7 +44,7 @@ var _ = Describe("Deletion", func() {
 				Namespace: namespace,
 			},
 			Spec: topologyv1alpha1.PolicySpec{
-				Name:    "polocy-deletion-test",
+				Name:    "policy-deletion-test",
 				Pattern: ".*",
 				ApplyTo: "queues",
 				Definition: &runtime.RawExtension{
@@ -59,6 +60,18 @@ var _ = Describe("Deletion", func() {
 			},
 			Spec: topologyv1alpha1.QueueSpec{
 				Name:                     "queue-deletion-test",
+				RabbitmqClusterReference: targetClusterRef,
+			},
+		}
+		binding = topologyv1alpha1.Binding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "binding-deletion-test",
+				Namespace: namespace,
+			},
+			Spec:       topologyv1alpha1.BindingSpec{
+				Source:                   "exchange-deletion-test",
+				Destination:              "queue-deletion-test",
+				DestinationType:          "queue",
 				RabbitmqClusterReference: targetClusterRef,
 			},
 		}
@@ -86,6 +99,7 @@ var _ = Describe("Deletion", func() {
 		Expect(k8sClient.Create(ctx, &queue)).To(Succeed())
 		Expect(k8sClient.Create(ctx, &user)).To(Succeed())
 		Expect(k8sClient.Create(ctx, &vhost)).To(Succeed())
+		Expect(k8sClient.Create(ctx, &binding)).To(Succeed())
 	})
 
 	It("handles the referenced RabbitmqCluster being deleted", func() {
@@ -153,6 +167,17 @@ var _ = Describe("Deletion", func() {
 				"get",
 				"vhost",
 				vhost.Name,
+			)
+			return string(output)
+		}, 30, 10).Should(ContainSubstring("not found"))
+		Expect(k8sClient.Delete(ctx, &binding)).To(Succeed())
+		Eventually(func() string {
+			output, _ := kubectl(
+				"-n",
+				binding.Namespace,
+				"get",
+				"bindings.rabbitmq.com",
+				binding.Name,
 			)
 			return string(output)
 		}, 30, 10).Should(ContainSubstring("not found"))
