@@ -85,7 +85,7 @@ var _ = BeforeSuite(func() {
 	}, 10, 1).Should(ContainSubstring("1/1"), "messaging-topology-operator not deployed")
 
 	// setup a RabbitmqCluster used for system tests
-  rmq = setupTestRabbitmqCluster("system-test", namespace)
+	rmq = setupTestRabbitmqCluster(k8sClient, "system-test", namespace)
 
 	rabbitClient, err = generateRabbitClient(context.Background(), clientSet, &topologyv1alpha1.RabbitmqClusterReference{Name: rmq.Name, Namespace: rmq.Namespace})
 	Expect(err).NotTo(HaveOccurred())

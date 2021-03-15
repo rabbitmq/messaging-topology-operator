@@ -25,7 +25,7 @@ var _ = Describe("Deletion", func() {
 	)
 
 	BeforeEach(func() {
-		targetCluster = setupTestRabbitmqCluster("to-be-deleted", namespace)
+		targetCluster = setupTestRabbitmqCluster(k8sClient, "to-be-deleted", namespace)
 		targetClusterRef := topologyv1alpha1.RabbitmqClusterReference{Name: targetCluster.Name, Namespace: targetCluster.Namespace}
 		exchange = topologyv1alpha1.Exchange{
 			ObjectMeta: metav1.ObjectMeta{

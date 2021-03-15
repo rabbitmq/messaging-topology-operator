@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
@@ -146,7 +147,7 @@ func kubernetesNodeIp(ctx context.Context, clientSet *kubernetes.Clientset) stri
 	return nodeIp
 }
 
-func setupTestRabbitmqCluster(name, namespace string) *rabbitmqv1beta1.RabbitmqCluster {
+func setupTestRabbitmqCluster(k8sClient client.Client, name, namespace string) *rabbitmqv1beta1.RabbitmqCluster {
 	// setup a RabbitmqCluster used for system tests
 	rabbitmqCluster := &rabbitmqv1beta1.RabbitmqCluster{
 		ObjectMeta: metav1.ObjectMeta{
