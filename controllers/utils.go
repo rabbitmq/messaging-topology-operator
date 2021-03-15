@@ -124,16 +124,19 @@ func validateResponse(res *http.Response, err error) error {
 }
 
 // return a custom error if status code is 404
-// used in QueueReconciler.deleteQueue(), ExchangeReconcilier.deleteExchange() and UserReconciler.deleteUser()
+// used in all controllers
+
 var NotFound = errors.New("not found")
 
 func validateResponseForDeletion(res *http.Response, err error) error {
-	if res.StatusCode == http.StatusNotFound {
-		return NotFound
-	}
 	if err != nil {
 		return err
 	}
+
+	if res.StatusCode == http.StatusNotFound {
+		return NotFound
+	}
+
 	if res.StatusCode >= http.StatusMultipleChoices {
 		body, _ := ioutil.ReadAll(res.Body)
 		res.Body.Close()

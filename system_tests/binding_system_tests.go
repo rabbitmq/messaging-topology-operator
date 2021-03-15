@@ -5,7 +5,7 @@ import (
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	//"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -74,15 +74,11 @@ var _ = Describe("Binding", func() {
 				Destination:     "test-queue",
 				DestinationType: "queue",
 				RoutingKey:      "test-key",
-				Arguments: &runtime.RawExtension{
-					Raw: []byte(`{"extra-argument": "test"}`),
-				},
 			},
 		}
 	})
 
 	AfterEach(func() {
-		Expect(k8sClient.Delete(ctx, binding)).To(Succeed())
 		Expect(k8sClient.Delete(ctx, queue)).To(Succeed())
 		Expect(k8sClient.Delete(ctx, exchange)).To(Succeed())
 	})
@@ -109,7 +105,6 @@ var _ = Describe("Binding", func() {
 			"DestinationType": Equal(binding.Spec.DestinationType),
 			"RoutingKey":      Equal(binding.Spec.RoutingKey),
 		}))
-		Expect(fetchedBinding.Arguments).To(HaveKeyWithValue("extra-argument", "test"))
 
 		By("updating status condition 'Ready'")
 		updatedBinding := topologyv1alpha1.Binding{}
@@ -124,5 +119,20 @@ var _ = Describe("Binding", func() {
 
 		By("setting status.observedGeneration")
 		Expect(updatedBinding.Status.ObservedGeneration).To(Equal(updatedBinding.GetGeneration()))
+
+		By("deleting binding")
+		Expect(k8sClient.Delete(ctx, binding)).To(Succeed())
+		Eventually(func() bool {
+			bindings, err := rabbitClient.ListBindingsIn(binding.Spec.Vhost)
+			Expect(err).NotTo(HaveOccurred())
+			for _, b := range bindings {
+				if b.Source == binding.Spec.Source {
+					// not deleted yet; return false
+					return false
+				}
+			}
+			// unable to find binding; return true
+			return true
+		}, 10).Should(BeTrue(), "can still find binding 10s after deletion")
 	})
 })
