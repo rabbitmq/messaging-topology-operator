@@ -13,6 +13,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"time"
+
 	"github.com/go-logr/logr"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
@@ -56,7 +58,12 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	// create rabbitmq http rabbitClient
 	rabbitClient, err := rabbitholeClient(ctx, r.Client, q.Spec.RabbitmqClusterReference)
-	if err != nil {
+	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
+	// the Cluster is temporarily down. Requeue until it comes back up.
+	if errors.Is(err, NoSuchRabbitmqClusterError) && q.ObjectMeta.DeletionTimestamp.IsZero() {
+		logger.Info("Could not generate rabbitClient for non existant cluster: " + err.Error())
+		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
+	} else if err != nil && !errors.Is(err, NoSuchRabbitmqClusterError) {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
 	}
@@ -141,6 +148,11 @@ func (r *QueueReconciler) addFinalizerIfNeeded(ctx context.Context, q *topologyv
 // queues could be deleted manually or gone because of AutoDelete
 func (r *QueueReconciler) deleteQueue(ctx context.Context, client *rabbithole.Client, q *topologyv1alpha1.Queue) error {
 	logger := ctrl.LoggerFrom(ctx)
+
+	if client == nil {
+		logger.Info(noSuchRabbitDeletion, "queue", q.Name)
+		return r.removeFinalizer(ctx, q)
+	}
 
 	err := validateResponseForDeletion(client.DeleteQueue(q.Spec.Vhost, q.Spec.Name))
 	if errors.Is(err, NotFound) {

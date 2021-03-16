@@ -13,6 +13,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"time"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
@@ -52,8 +54,14 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	rabbitClient, err := rabbitholeClient(ctx, r.Client, policy.Spec.RabbitmqClusterReference)
-	if err != nil {
+	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
+	// the Cluster is temporarily down. Requeue until it comes back up.
+	if errors.Is(err, NoSuchRabbitmqClusterError) && policy.ObjectMeta.DeletionTimestamp.IsZero() {
+		logger.Info("Could not generate rabbitClient for non existant cluster: " + err.Error())
+		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
+	} else if err != nil && !errors.Is(err, NoSuchRabbitmqClusterError) {
 		logger.Error(err, failedGenerateRabbitClient)
+		return reconcile.Result{}, err
 	}
 
 	if !policy.ObjectMeta.DeletionTimestamp.IsZero() {
@@ -133,6 +141,11 @@ func (r *PolicyReconciler) addFinalizerIfNeeded(ctx context.Context, policy *top
 // if server responds with '404' Not Found, it logs and does not requeue on error
 func (r *PolicyReconciler) deletePolicy(ctx context.Context, client *rabbithole.Client, policy *topologyv1alpha1.Policy) error {
 	logger := ctrl.LoggerFrom(ctx)
+
+	if client == nil {
+		logger.Info(noSuchRabbitDeletion, "policy", policy.Name)
+		return r.removeFinalizer(ctx, policy)
+	}
 
 	err := validateResponseForDeletion(client.DeletePolicy(policy.Spec.Vhost, policy.Spec.Name))
 	if errors.Is(err, NotFound) {
