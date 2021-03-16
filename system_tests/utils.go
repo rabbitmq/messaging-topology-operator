@@ -17,6 +17,7 @@ import (
 	"github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -156,6 +157,11 @@ func setupTestRabbitmqCluster(k8sClient client.Client, name, namespace string) *
 		},
 		Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
 			Replicas: pointer.Int32Ptr(1),
+			Resources: &corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceMemory: resource.MustParse("100Mi"),
+				},
+			},
 			Service: rabbitmqv1beta1.RabbitmqClusterServiceSpec{
 				Type: corev1.ServiceTypeNodePort,
 			},
