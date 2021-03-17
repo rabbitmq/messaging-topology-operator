@@ -10,5 +10,12 @@ resources:
 - bases/rabbitmq.com_policies.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
+patchesStrategicMerge:
+- patches/webhook_in_bindings.yaml
+# +kubebuilder:scaffold:crdkustomizewebhookpatch
+
+- patches/cainjection_in_bindings.yaml
+# +kubebuilder:scaffold:crdkustomizecainjectionpatch
+
 configurations:
 - kustomizeconfig.yaml
