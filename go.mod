@@ -3,6 +3,7 @@ module github.com/rabbitmq/messaging-topology-operator
 go 1.16
 
 require (
+	github.com/elastic/crd-ref-docs v0.0.7
 	github.com/go-logr/logr v0.4.0
 	github.com/michaelklishin/rabbit-hole/v2 v2.6.0
 	github.com/onsi/ginkgo v1.15.2
