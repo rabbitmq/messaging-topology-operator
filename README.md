@@ -9,7 +9,7 @@ Kubernetes operator to manage [RabbitMQ](https://www.rabbitmq.com/) messaging to
 Before deploying Messaging Topology Operator, you need to have:
 
 1. A Running k8s cluster
-2. [Cert Manager](https://cert-manager.io/docs/installation/kubernetes/) installed in the k8s cluster
+2. [cert-manager](https://cert-manager.io/docs/installation/kubernetes/) `1.2.0` or above, installed in the k8s cluster
 3. RabbitMQ [Cluster Operator](https://github.com/rabbitmq/cluster-operator) installed in the k8s cluster
 4. A [RabbitMQ cluster](https://github.com/rabbitmq/cluster-operator/tree/main/docs/examples) deployed using the Cluster Operator
 
