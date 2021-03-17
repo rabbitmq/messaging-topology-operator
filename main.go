@@ -44,7 +44,6 @@ func init() {
 	_ = rabbitmqv1beta1.AddToScheme(scheme)
 
 	_ = topologyv1alpha1.AddToScheme(scheme)
-	_ = rabbitmqcomv1alpha1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
