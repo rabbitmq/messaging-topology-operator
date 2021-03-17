@@ -1,7 +1,10 @@
 package v1alpha1
 
 import (
+	"fmt"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -9,9 +12,9 @@ import (
 
 var logger = logf.Log.WithName("binding-webhook")
 
-func (r *Binding) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (b *Binding) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
+		For(b).
 		Complete()
 }
 
@@ -19,23 +22,28 @@ func (r *Binding) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Validator = &Binding{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *Binding) ValidateCreate() error {
-	logger.Info("validate create", "name", r.Name)
-
+// no validation logic on create
+func (b *Binding) ValidateCreate() error {
 	return nil
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *Binding) ValidateUpdate(old runtime.Object) error {
-	logger.Info("validate update", "name", r.Name)
+// updates on bindings.rabbitmq.com is forbidden
+func (b *Binding) ValidateUpdate(old runtime.Object) error {
+	oldBinding, ok := old.(*Binding)
+	if !ok {
+		return apierrors.NewBadRequest(fmt.Sprintf("expected a binding but got a %T", old))
+	}
 
+	if oldBinding.Spec != b.Spec {
+		return apierrors.NewForbidden(
+			b.GroupResource(),
+			b.Name,
+			field.Forbidden(field.NewPath("spec"), "binding.spec is immutable"))
+	}
 	return nil
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *Binding) ValidateDelete() error {
-	logger.Info("validate delete", "name", r.Name)
-
+// no validation logic on delete
+func (b *Binding) ValidateDelete() error {
 	return nil
 }

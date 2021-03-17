@@ -12,6 +12,7 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // BindingSpec defines the desired state of Binding
@@ -64,6 +65,13 @@ type BindingList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Binding `json:"items"`
+}
+
+func (b *Binding) GroupResource() schema.GroupResource {
+	return schema.GroupResource{
+		Group:    b.GroupVersionKind().Group,
+		Resource: b.GroupVersionKind().Kind,
+	}
 }
 
 func init() {
