@@ -124,5 +124,11 @@ var _ = Describe("Binding", func() {
 
 		By("setting status.observedGeneration")
 		Expect(updatedBinding.Status.ObservedGeneration).To(Equal(updatedBinding.GetGeneration()))
+
+		By("not allowing updates on binding.spec")
+		updateBinding := topologyv1alpha1.Binding{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &updateBinding)).To(Succeed())
+		updatedBinding.Spec.RoutingKey = "new-key"
+		Expect(k8sClient.Update(ctx, &updatedBinding).Error()).To(ContainSubstring("spec: Forbidden: binding.spec is immutable"))
 	})
 })

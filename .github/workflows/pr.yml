@@ -33,6 +33,7 @@ jobs:
         export PATH="$PATH:$GOPATH/bin"
         make install-tools
         kind create cluster --image kindest/node:"$K8S_VERSION"
+        make cert-manager
         make cluster-operator
         DOCKER_REGISTRY_SERVER=local-server OPERATOR_IMAGE=local-operator make deploy-kind
         make system-tests

@@ -123,3 +123,9 @@ generate-manifests:
 	mkdir -p releases
 	kustomize build config/installation/ > releases/messaging-topology-operator.yaml
 
+CERT_MANAGER_VERSION ?=v1.2.0
+cert-manager:
+	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cert-manager.yaml
+
+destroy-cert-manager:
+	kubectl delete -f https://github.com/jetstack/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cert-manager.yaml
