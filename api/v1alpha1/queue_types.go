@@ -12,6 +12,7 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // using runtime.RawExtension to represent queue arguments
@@ -75,6 +76,13 @@ type QueueList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Queue `json:"items"`
+}
+
+func (q *Queue) GroupResource() schema.GroupResource {
+	return schema.GroupResource{
+		Group:    q.GroupVersionKind().Group,
+		Resource: q.GroupVersionKind().Kind,
+	}
 }
 
 func init() {

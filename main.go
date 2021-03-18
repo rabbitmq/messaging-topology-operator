@@ -21,7 +21,6 @@ import (
 
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 
-	rabbitmqcomv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
 	// +kubebuilder:scaffold:imports
@@ -119,8 +118,12 @@ func main() {
 		log.Error(err, "unable to create controller", "controller", policyControllerName)
 		os.Exit(1)
 	}
-	if err = (&rabbitmqcomv1alpha1.Binding{}).SetupWebhookWithManager(mgr); err != nil {
+	if err = (&topologyv1alpha1.Binding{}).SetupWebhookWithManager(mgr); err != nil {
 		log.Error(err, "unable to create webhook", "webhook", "Binding")
+		os.Exit(1)
+	}
+	if err = (&topologyv1alpha1.Queue{}).SetupWebhookWithManager(mgr); err != nil {
+		log.Error(err, "unable to create webhook", "webhook", "Queue")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

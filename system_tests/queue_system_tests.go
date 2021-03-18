@@ -78,6 +78,15 @@ var _ = Describe("Queue Controller", func() {
 		By("setting status.observedGeneration")
 		Expect(updatedQueue.Status.ObservedGeneration).To(Equal(updatedQueue.GetGeneration()))
 
+		By("not allowing certain updates")
+		updateQ := topologyv1alpha1.Queue{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: q.Name, Namespace: q.Namespace}, &updateQ)).To(Succeed())
+		updateQ.Spec.Name = "a-new-name"
+		Expect(k8sClient.Update(ctx, &updateQ).Error()).To(ContainSubstring("spec.name: Forbidden: updates on name, vhost, and rabbitmqClusterReference are all forbidden"))
+		updateQ.Spec.Name = q.Spec.Name
+		updateQ.Spec.Type = "classic"
+		Expect(k8sClient.Update(ctx, &updateQ).Error()).To(ContainSubstring("spec.type: Invalid value: \"classic\": queue type cannot be updated"))
+
 		By("deleting queue")
 		Expect(k8sClient.Delete(ctx, q)).To(Succeed())
 		var err error
