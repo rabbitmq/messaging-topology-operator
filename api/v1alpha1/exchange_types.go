@@ -12,6 +12,7 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // ExchangeSpec defines the desired state of Exchange
@@ -62,6 +63,13 @@ type ExchangeList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Exchange `json:"items"`
+}
+
+func (e *Exchange) GroupResource() schema.GroupResource {
+	return schema.GroupResource{
+		Group:    e.GroupVersionKind().Group,
+		Resource: e.GroupVersionKind().Kind,
+	}
 }
 
 func init() {

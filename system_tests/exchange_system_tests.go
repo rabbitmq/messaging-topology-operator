@@ -65,18 +65,27 @@ var _ = Describe("Exchange", func() {
 		Expect(exchangeInfo.Arguments).To(HaveKeyWithValue("alternate-exchange", "system-test"))
 
 		By("updating status condition 'Ready'")
-		updatedExchange := topologyv1alpha1.Exchange{}
-		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &updatedExchange)).To(Succeed())
+		fetched := topologyv1alpha1.Exchange{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &fetched)).To(Succeed())
 
-		Expect(updatedExchange.Status.Conditions).To(HaveLen(1))
-		readyCondition := updatedExchange.Status.Conditions[0]
+		Expect(fetched.Status.Conditions).To(HaveLen(1))
+		readyCondition := fetched.Status.Conditions[0]
 		Expect(string(readyCondition.Type)).To(Equal("Ready"))
 		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))
 		Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
 		Expect(readyCondition.LastTransitionTime).NotTo(Equal(metav1.Time{}))
 
 		By("setting status.observedGeneration")
-		Expect(updatedExchange.Status.ObservedGeneration).To(Equal(updatedExchange.GetGeneration()))
+		Expect(fetched.Status.ObservedGeneration).To(Equal(fetched.GetGeneration()))
+
+		By("not allowing certain updates")
+		updatedExchange := topologyv1alpha1.Exchange{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &updatedExchange)).To(Succeed())
+		updatedExchange.Spec.Vhost = "/new-vhost"
+		Expect(k8sClient.Update(ctx, &updatedExchange).Error()).To(ContainSubstring("spec.vhost: Forbidden: updates on name, vhost, and rabbitmqClusterReference are all forbidden"))
+		updatedExchange.Spec.Vhost = exchange.Spec.Vhost
+		updatedExchange.Spec.Durable = false
+		Expect(k8sClient.Update(ctx, &updatedExchange).Error()).To(ContainSubstring("spec.durable: Invalid value: false: durable cannot be updated"))
 
 		By("deleting exchange")
 		Expect(k8sClient.Delete(ctx, exchange)).To(Succeed())
