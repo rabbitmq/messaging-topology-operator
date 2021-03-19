@@ -210,15 +210,15 @@ func (r *UserReconciler) importCredentials(ctx context.Context, secretName, secr
 	var credentialsSecret corev1.Secret
 	err := r.Client.Get(ctx, types.NamespacedName{Name: secretName, Namespace: secretNamespace}, &credentialsSecret)
 	if err != nil {
-		return "", "", fmt.Errorf("Could not find password secret %s in namespace %s; Err: %w", secretName, secretNamespace, err)
+		return "", "", fmt.Errorf("could not find password secret %s in namespace %s; Err: %w", secretName, secretNamespace, err)
 	}
 	username, ok := credentialsSecret.Data["username"]
 	if !ok {
-		return "", "", fmt.Errorf("Could not find username key in credentials secret: %s", credentialsSecret.Name)
+		return "", "", fmt.Errorf("could not find username key in credentials secret: %s", credentialsSecret.Name)
 	}
 	password, ok := credentialsSecret.Data["password"]
 	if !ok {
-		return "", "", fmt.Errorf("Could not find password key in credentials secret: %s", credentialsSecret.Name)
+		return "", "", fmt.Errorf("could not find password key in credentials secret: %s", credentialsSecret.Name)
 	}
 
 	logger.Info("Retrieved credentials from Secret", "secretName", secretName, "retrievedUsername", string(username))
@@ -288,7 +288,7 @@ func (r *UserReconciler) addFinalizerIfNeeded(ctx context.Context, user *topolog
 func (r *UserReconciler) getUserCredentials(ctx context.Context, user *topologyv1alpha1.User) (*corev1.Secret, error) {
 	logger := ctrl.LoggerFrom(ctx)
 	if user.Status.Credentials == nil {
-		return nil, fmt.Errorf("This User does not yet have a Credentials Secret created")
+		return nil, fmt.Errorf("this User does not yet have a Credentials Secret created")
 	}
 
 	credentials := &corev1.Secret{}

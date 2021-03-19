@@ -21,11 +21,11 @@ import (
 func GenerateUserSettings(credentials *corev1.Secret, tags []topologyv1alpha1.UserTag) (rabbithole.UserSettings, error) {
 	username, ok := credentials.Data["username"]
 	if !ok {
-		return rabbithole.UserSettings{}, fmt.Errorf("Could not find username in credentials secret %s", credentials.Name)
+		return rabbithole.UserSettings{}, fmt.Errorf("could not find username in credentials secret %s", credentials.Name)
 	}
 	password, ok := credentials.Data["password"]
 	if !ok {
-		return rabbithole.UserSettings{}, fmt.Errorf("Could not find password in credentials secret %s", credentials.Name)
+		return rabbithole.UserSettings{}, fmt.Errorf("could not find password in credentials secret %s", credentials.Name)
 	}
 
 	var userTagStrings []string

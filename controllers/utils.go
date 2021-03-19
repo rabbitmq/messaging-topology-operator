@@ -84,7 +84,7 @@ func managementPort(svc *corev1.Service) (int, error) {
 func rabbitmqClusterFromReference(ctx context.Context, c client.Client, rmq v1alpha1.RabbitmqClusterReference) (*rabbitmqv1beta1.RabbitmqCluster, error) {
 	cluster := &rabbitmqv1beta1.RabbitmqCluster{}
 	if err := c.Get(ctx, types.NamespacedName{Name: rmq.Name, Namespace: rmq.Namespace}, cluster); err != nil {
-		return nil, fmt.Errorf("Failed to get cluster from reference: %s Error: %w", err, NoSuchRabbitmqClusterError)
+		return nil, fmt.Errorf("failed to get cluster from reference: %s Error: %w", err, NoSuchRabbitmqClusterError)
 	}
 	return cluster, nil
 }
