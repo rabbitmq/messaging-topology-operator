@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // PolicySpec defines the desired state of Policy
@@ -64,6 +65,13 @@ type PolicyList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Policy `json:"items"`
+}
+
+func (p *Policy) GroupResource() schema.GroupResource {
+	return schema.GroupResource{
+		Group:    p.GroupVersionKind().Group,
+		Resource: p.GroupVersionKind().Kind,
+	}
 }
 
 func init() {

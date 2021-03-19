@@ -78,7 +78,13 @@ var _ = Describe("Policy", func() {
 		By("setting status.observedGeneration")
 		Expect(updatedPolicy.Status.ObservedGeneration).To(Equal(updatedPolicy.GetGeneration()))
 
-		By("updating policy")
+		By("not allowing updates on certain fields")
+		updateTest := topologyv1alpha1.Policy{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &updateTest)).To(Succeed())
+		updateTest.Spec.Vhost = "/a-new-vhost"
+		Expect(k8sClient.Update(ctx, &updateTest).Error()).To(ContainSubstring("spec.vhost: Forbidden: updates on name, vhost and rabbitmqClusterReference are all forbidden"))
+
+		By("updating policy definitions successfully")
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, policy)).To(Succeed())
 		policy.Spec.Definition = &runtime.RawExtension{
 			Raw: []byte(`{"ha-mode":"exactly",
