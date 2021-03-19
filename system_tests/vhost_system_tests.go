@@ -62,6 +62,12 @@ var _ = Describe("vhost", func() {
 		By("setting status.observedGeneration")
 		Expect(updatedVhost.Status.ObservedGeneration).To(Equal(updatedVhost.GetGeneration()))
 
+		By("not allowing updates on certain fields")
+		updateTest := topologyv1alpha1.Vhost{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace}, &updateTest)).To(Succeed())
+		updateTest.Spec.Name = "new-name"
+		Expect(k8sClient.Update(ctx, &updateTest).Error()).To(ContainSubstring("spec.name: Forbidden: updates on name and rabbitmqClusterReference are all forbidden"))
+
 		By("deleting a vhost")
 		Expect(k8sClient.Delete(ctx, vhost)).To(Succeed())
 		var err error

@@ -130,6 +130,10 @@ func main() {
 		log.Error(err, "unable to create webhook", "webhook", "Exchange")
 		os.Exit(1)
 	}
+	if err = (&topologyv1alpha1.Vhost{}).SetupWebhookWithManager(mgr); err != nil {
+		log.Error(err, "unable to create webhook", "webhook", "Vhost")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	log.Info("starting manager")

@@ -12,7 +12,7 @@ var _ = Describe("exchange webhook", func() {
 
 	var exchange = Exchange{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "update-binding",
+			Name: "test-exchange",
 		},
 		Spec: ExchangeSpec{
 			Name:       "test",
