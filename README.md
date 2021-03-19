@@ -16,7 +16,7 @@ Before deploying Messaging Topology Operator, you need to have:
 If you have `kubectl` configured to access your running k8s cluster, you can then run the following command to install the Messaging Topology Operator:
 
 ```bash
-kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/download/latest/messaging-topology-operator.yml
+kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/latest/download/messaging-topology-operator.yml
 ```
 
 You can create RabbitMQ resources:
