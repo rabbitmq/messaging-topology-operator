@@ -26,12 +26,14 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
-const vhostControllerName = "vhost-controller"
-const queueControllerName = "queue-controller"
-const exchangeControllerName = "exchange-controller"
-const bindingControllerName = "binding-controller"
-const userControllerName = "user-controller"
-const policyControllerName = "policy-controller"
+const (
+	vhostControllerName    = "vhost-controller"
+	queueControllerName    = "queue-controller"
+	exchangeControllerName = "exchange-controller"
+	bindingControllerName  = "binding-controller"
+	userControllerName     = "user-controller"
+	policyControllerName   = "policy-controller"
+)
 
 var (
 	scheme = runtime.NewScheme()
