@@ -5,7 +5,7 @@ metadata:
   namespace: rabbitmq-system
 spec:
   vhost: "/test-vhost" # default to '/' if not provided
-  source: test # an existng exchange
+  source: test # an existing exchange
   destination: test # an existing queue or exchange
   destinationType: queue # can be 'queue' or 'exchange'
   rabbitmqClusterReference:
