@@ -61,6 +61,15 @@ deploy-rbac:
 manifests: install-tools
 	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
+# Generate API reference documentation
+api-reference:
+	crd-ref-docs \
+		--source-path ./api/v1alpha1 \
+		--config ./docs/api/autogen/config.yaml \
+		--templates-dir ./docs/api/autogen/templates \
+		--output-path ./docs/api/rabbitmq.com.ref.asciidoc \
+		--max-depth 30
+
 # Run go fmt against code
 fmt:
 	go fmt ./...
@@ -69,8 +78,8 @@ fmt:
 vet:
 	go vet ./...
 
-# Generate code
-generate: install-tools
+# Generate code & docs
+generate: install-tools api-reference
 	controller-gen object:headerFile="hack/NOTICE.go.txt" paths="./..."
 
 check-env-docker-credentials: check-env-registry-server
