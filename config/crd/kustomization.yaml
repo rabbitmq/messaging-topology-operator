@@ -14,11 +14,17 @@ patchesStrategicMerge:
 - patches/webhook_in_bindings.yaml
 - patches/webhook_in_queues.yaml
 - patches/webhook_in_exchanges.yaml
+- patches/webhook_in_vhosts.yaml
+- patches/webhook_in_policies.yaml
+- patches/webhook_in_users.yaml
 # +kubebuilder:scaffold:crdkustomizewebhookpatch
 
 - patches/cainjection_in_bindings.yaml
 - patches/cainjection_in_queues.yaml
-- patches/webhook_in_exchanges.yaml
+- patches/cainjection_in_exchanges.yaml
+- patches/cainjection_in_vhosts.yaml
+- patches/cainjection_in_policies.yaml
+- patches/cainjection_in_users.yaml
 # +kubebuilder:scaffold:crdkustomizecainjectionpatch
 
 configurations:

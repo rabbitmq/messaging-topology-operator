@@ -115,6 +115,12 @@ var _ = Describe("Users", func() {
 			By("setting status.observedGeneration")
 			Expect(updatedUser.Status.ObservedGeneration).To(Equal(updatedUser.GetGeneration()))
 
+			By("not allowing updates on certain fields")
+			updateTest := topologyv1alpha1.User{}
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &updateTest)).To(Succeed())
+			updateTest.Spec.RabbitmqClusterReference = topologyv1alpha1.RabbitmqClusterReference{Name: "a-new-cluster", Namespace: "default"}
+			Expect(k8sClient.Update(ctx, &updateTest).Error()).To(ContainSubstring("spec.rabbitmqClusterReference: Forbidden: update on rabbitmqClusterReference is forbidden"))
+
 			By("deleting user")
 			Expect(k8sClient.Delete(ctx, user)).To(Succeed())
 			Eventually(func() error {

@@ -1,0 +1,38 @@
+package v1alpha1
+
+import (
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+var _ = Describe("user webhook", func() {
+	var user = User{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test",
+		},
+		Spec: UserSpec{
+			Tags: []UserTag{"policymaker"},
+			RabbitmqClusterReference: RabbitmqClusterReference{
+				Name:      "a-cluster",
+				Namespace: "default",
+			},
+		},
+	}
+
+	It("does not allow updates on RabbitmqClusterReference", func() {
+		new := user.DeepCopy()
+		new.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
+			Name:      "new-cluster",
+			Namespace: "default",
+		}
+		Expect(apierrors.IsForbidden(new.ValidateUpdate(&user))).To(BeTrue())
+	})
+
+	It("allows update on tags", func() {
+		new := user.DeepCopy()
+		new.Spec.Tags = []UserTag{"monitoring"}
+		Expect(new.ValidateUpdate(&user)).To(Succeed())
+	})
+})

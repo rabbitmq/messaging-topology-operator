@@ -11,6 +11,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // VhostSpec defines the desired state of Vhost
@@ -52,6 +53,13 @@ type VhostList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Vhost `json:"items"`
+}
+
+func (v *Vhost) GroupResource() schema.GroupResource {
+	return schema.GroupResource{
+		Group:    v.GroupVersionKind().Group,
+		Resource: v.GroupVersionKind().Kind,
+	}
 }
 
 func init() {
