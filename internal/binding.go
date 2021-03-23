@@ -14,6 +14,7 @@ import (
 	"fmt"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	"strings"
 )
 
 func GenerateBindingInfo(binding *topologyv1alpha1.Binding) (*rabbithole.BindingInfo, error) {
@@ -32,4 +33,24 @@ func GenerateBindingInfo(binding *topologyv1alpha1.Binding) (*rabbithole.Binding
 		RoutingKey:      binding.Spec.RoutingKey,
 		Arguments:       arguments,
 	}, nil
+}
+
+// Generate binding properties key which is necessary when deleting a binding
+// Binding properties key is:
+// when routing key and argument are not provided, properties key is "~"
+// when routing key is set and no argument is provided, properties key is the routing key itself
+// if routing key has character '~', it's replaced by '%7E'
+// when arguments are provided, properties key is the routing key (could be empty) plus the hash of arguments
+// the hash function used is 'erlang:phash2' and it's erlang specific; GeneratePropertiesKey returns empty
+// string if arguments are provided (deletion not supported)
+
+func GeneratePropertiesKey(binding *topologyv1alpha1.Binding) string {
+	if binding.Spec.RoutingKey == "" {
+		return "~"
+	}
+	if binding.Spec.Arguments == nil {
+		return strings.ReplaceAll(binding.Spec.RoutingKey, "~", "%7E")
+	}
+
+	return ""
 }
