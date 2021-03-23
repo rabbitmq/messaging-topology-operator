@@ -12,12 +12,16 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
+	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"time"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -26,6 +30,8 @@ import (
 
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 )
+
+const bindingFinalizer = "deletion.finalizers.bindings.rabbitmq.com"
 
 // BindingReconciler reconciles a Binding object
 type BindingReconciler struct {
@@ -47,11 +53,23 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	rabbitClient, err := rabbitholeClient(ctx, r.Client, binding.Spec.RabbitmqClusterReference)
-	if err != nil {
+
+	if errors.Is(err, NoSuchRabbitmqClusterError) && binding.ObjectMeta.DeletionTimestamp.IsZero() {
+		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
+		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
+	} else if err != nil && !errors.Is(err, NoSuchRabbitmqClusterError) {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
 	}
 
+	if !binding.ObjectMeta.DeletionTimestamp.IsZero() {
+		logger.Info("Deleting")
+		return ctrl.Result{}, r.deleteBinding(ctx, rabbitClient, binding)
+	}
+
+	if err := r.addFinalizerIfNeeded(ctx, binding); err != nil {
+		return ctrl.Result{}, err
+	}
 	spec, err := json.Marshal(binding.Spec)
 	if err != nil {
 		logger.Error(err, failedMarshalSpec)
@@ -103,6 +121,100 @@ func (r *BindingReconciler) declareBinding(ctx context.Context, client *rabbitho
 
 	logger.Info("Successfully declared binding")
 	r.Recorder.Event(binding, corev1.EventTypeNormal, "SuccessfulDeclare", "Successfully declared binding")
+	return nil
+}
+
+// deletes binding from rabbitmq server; bindings have no name; server needs BindingInfo to delete them
+// when server responds with '404' Not Found, it logs and does not requeue on error
+// if no binding argument is set, generating properties key by using internal.GeneratePropertiesKey
+// if binding arguments are set, list all bindings between source/destination to find the binding; if it failed to find corresponding binding, it assumes that the binding is already deleted and returns no error
+func (r *BindingReconciler) deleteBinding(ctx context.Context, client *rabbithole.Client, binding *topologyv1alpha1.Binding) error {
+	logger := ctrl.LoggerFrom(ctx)
+
+	var info *rabbithole.BindingInfo
+	var err error
+	if binding.Spec.Arguments != nil {
+		info, err = r.findBindingInfo(logger, binding, client)
+		if err != nil {
+			return err
+		}
+		if info == nil {
+			logger.Info("cannot find the corresponding binding info in rabbitmq server; binding already deleted")
+			return r.removeFinalizer(ctx, binding)
+		}
+	} else {
+		info, err = internal.GenerateBindingInfo(binding)
+		if err != nil {
+			msg := "failed to generate binding info"
+			r.Recorder.Event(binding, corev1.EventTypeWarning, "FailedDelete", msg)
+			logger.Error(err, msg)
+			return err
+		}
+		info.PropertiesKey = internal.GeneratePropertiesKey(binding)
+	}
+
+	err = validateResponseForDeletion(client.DeleteBinding(binding.Spec.Vhost, *info))
+	if errors.Is(err, NotFound) {
+		logger.Info("cannot find binding in rabbitmq server; already deleted")
+	} else if err != nil {
+		msg := "failed to delete binding"
+		r.Recorder.Event(binding, corev1.EventTypeWarning, "FailedDelete", msg)
+		logger.Error(err, msg)
+		return err
+	}
+
+	logger.Info("Successfully deleted binding")
+	return r.removeFinalizer(ctx, binding)
+}
+
+func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topologyv1alpha1.Binding, client *rabbithole.Client) (*rabbithole.BindingInfo, error) {
+	logger.Info("binding arguments set; listing bindings from server to complete deletion")
+	arguments := make(map[string]interface{})
+	if binding.Spec.Arguments != nil {
+		if err := json.Unmarshal(binding.Spec.Arguments.Raw, &arguments); err != nil {
+			msg := "failed to unmarshall binding arguments"
+			r.Recorder.Event(binding, corev1.EventTypeWarning, "FailedDelete", msg)
+			logger.Error(err, msg)
+			return nil, err
+		}
+	}
+	var bindingInfos []rabbithole.BindingInfo
+	var err error
+	if binding.Spec.DestinationType == "queue" {
+		bindingInfos, err = client.ListQueueBindingsBetween(binding.Spec.Vhost, binding.Spec.Source, binding.Spec.Destination)
+	} else {
+		bindingInfos, err = client.ListExchangeBindingsBetween(binding.Spec.Vhost, binding.Spec.Source, binding.Spec.Destination)
+	}
+	if err != nil {
+		msg := "failed to list binding infos"
+		r.Recorder.Event(binding, corev1.EventTypeWarning, "FailedDelete", msg)
+		logger.Error(err, msg)
+		return nil, err
+	}
+	var info *rabbithole.BindingInfo
+	for _, b := range bindingInfos {
+		if binding.Spec.RoutingKey == b.RoutingKey && reflect.DeepEqual(b.Arguments, arguments) {
+			info = &b
+		}
+	}
+	return info, nil
+}
+
+func (r *BindingReconciler) removeFinalizer(ctx context.Context, binding *topologyv1alpha1.Binding) error {
+	controllerutil.RemoveFinalizer(binding, bindingFinalizer)
+	if err := r.Client.Update(ctx, binding); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *BindingReconciler) addFinalizerIfNeeded(ctx context.Context, binding *topologyv1alpha1.Binding) error {
+	if binding.ObjectMeta.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(binding, bindingFinalizer) {
+		controllerutil.AddFinalizer(binding, bindingFinalizer)
+		if err := r.Client.Update(ctx, binding); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
