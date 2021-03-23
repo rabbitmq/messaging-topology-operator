@@ -130,7 +130,9 @@ cluster-operator:
 ## used in CI pipeline to create release artifact
 generate-manifests:
 	mkdir -p releases
-	kustomize build config/installation/ > releases/messaging-topology-operator.yaml
+	kustomize build config/installation/  > releases/messaging-topology-operator.bak
+	sed '/CERTIFICATE_NAMESPACE.*CERTIFICATE_NAME/d' releases/messaging-topology-operator.bak > releases/messaging-topology-operator.yaml
+	kustomize build config/installation/cert-manager/ > releases/messaging-topology-operator-with-certmanager.yaml
 
 CERT_MANAGER_VERSION ?=v1.2.0
 cert-manager:
