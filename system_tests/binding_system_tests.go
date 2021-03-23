@@ -82,7 +82,6 @@ var _ = Describe("Binding", func() {
 	})
 
 	AfterEach(func() {
-		Expect(k8sClient.Delete(ctx, binding)).To(Succeed())
 		Expect(k8sClient.Delete(ctx, queue)).To(Succeed())
 		Expect(k8sClient.Delete(ctx, exchange)).To(Succeed())
 	})
@@ -130,5 +129,14 @@ var _ = Describe("Binding", func() {
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &updateBinding)).To(Succeed())
 		updatedBinding.Spec.RoutingKey = "new-key"
 		Expect(k8sClient.Update(ctx, &updatedBinding).Error()).To(ContainSubstring("invalid: spec.routingKey: Invalid value: \"new-key\": routingKey cannot be updated"))
+
+		By("deleting binding from rabbitmq server")
+		Expect(k8sClient.Delete(ctx, binding)).To(Succeed())
+		Eventually(func() int {
+			var err error
+			bindings, err := rabbitClient.ListQueueBindingsBetween(binding.Spec.Vhost, binding.Spec.Source, binding.Spec.Destination)
+			Expect(err).NotTo(HaveOccurred())
+			return len(bindings)
+		}, 10, 2).Should(Equal(0), "cannot find created binding")
 	})
 })

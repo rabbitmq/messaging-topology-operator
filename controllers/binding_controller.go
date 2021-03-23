@@ -124,20 +124,23 @@ func (r *BindingReconciler) declareBinding(ctx context.Context, client *rabbitho
 	return nil
 }
 
-// deletes binding from rabbitmq server
-// bindings have no name; server needs BindingInfo to delete them
-// if server responds with '404' Not Found, it logs and does not requeue on error
-// if no binding arguments are set, generating properties key by using internal.GeneratePropertiesKey
-// if binding arguments are set, list all bindings between source/destination to find the binding
+// deletes binding from rabbitmq server; bindings have no name; server needs BindingInfo to delete them
+// when server responds with '404' Not Found, it logs and does not requeue on error
+// if no binding argument is set, generating properties key by using internal.GeneratePropertiesKey
+// if binding arguments are set, list all bindings between source/destination to find the binding; if it failed to find corresponding binding, it assumes that the binding is already deleted and returns no error
 func (r *BindingReconciler) deleteBinding(ctx context.Context, client *rabbithole.Client, binding *topologyv1alpha1.Binding) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	var info *rabbithole.BindingInfo
 	var err error
 	if binding.Spec.Arguments != nil {
-		info, err = r.findBindingInfo(logger, binding, client, info)
+		info, err = r.findBindingInfo(logger, binding, client)
 		if err != nil {
 			return err
+		}
+		if info == nil {
+			logger.Info("cannot find the corresponding binding info in rabbitmq server; binding already deleted")
+			return r.removeFinalizer(ctx, binding)
 		}
 	} else {
 		info, err = internal.GenerateBindingInfo(binding)
@@ -164,7 +167,7 @@ func (r *BindingReconciler) deleteBinding(ctx context.Context, client *rabbithol
 	return r.removeFinalizer(ctx, binding)
 }
 
-func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topologyv1alpha1.Binding, client *rabbithole.Client, info *rabbithole.BindingInfo) (*rabbithole.BindingInfo, error) {
+func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topologyv1alpha1.Binding, client *rabbithole.Client) (*rabbithole.BindingInfo, error) {
 	logger.Info("binding arguments set; listing bindings from server to complete deletion")
 	arguments := make(map[string]interface{})
 	if binding.Spec.Arguments != nil {
@@ -188,6 +191,7 @@ func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topolog
 		logger.Error(err, msg)
 		return nil, err
 	}
+	var info *rabbithole.BindingInfo
 	for _, b := range bindingInfos {
 		if reflect.DeepEqual(b.Arguments, arguments) {
 			info = &b
