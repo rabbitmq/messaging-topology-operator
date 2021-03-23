@@ -129,6 +129,6 @@ var _ = Describe("Binding", func() {
 		updateBinding := topologyv1alpha1.Binding{}
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &updateBinding)).To(Succeed())
 		updatedBinding.Spec.RoutingKey = "new-key"
-		Expect(k8sClient.Update(ctx, &updatedBinding).Error()).To(ContainSubstring("spec: Forbidden: binding.spec is immutable"))
+		Expect(k8sClient.Update(ctx, &updatedBinding).Error()).To(ContainSubstring("invalid: spec.routingKey: Invalid value: \"new-key\": routingKey cannot be updated"))
 	})
 })
