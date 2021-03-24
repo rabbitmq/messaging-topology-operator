@@ -69,14 +69,6 @@ func (b *Binding) ValidateUpdate(old runtime.Object) error {
 		))
 	}
 
-	if b.Spec.DestinationType != oldBinding.Spec.DestinationType {
-		allErrs = append(allErrs, field.Invalid(
-			field.NewPath("spec", "destinationType"),
-			b.Spec.DestinationType,
-			"destinationType cannot be updated",
-		))
-	}
-
 	if b.Spec.RoutingKey != oldBinding.Spec.RoutingKey {
 		allErrs = append(allErrs, field.Invalid(
 			field.NewPath("spec", "routingKey"),
