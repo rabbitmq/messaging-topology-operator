@@ -8,7 +8,7 @@ Before deploying Messaging Topology Operator, you need to have:
 
 ## Installation
 
-Download the latest release manifests https://github.com/rabbitmq/messaging-topology-operator/releases/latest/download/messaging-topology-operator.yml.
+Download the latest release manifests https://github.com/rabbitmq/messaging-topology-operator/releases/latest/download/messaging-topology-operator.yaml.
 
 The Messaging Topology Operator has multiple [admission webhooks](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/). You need to generate the webhook certificate and place it in multiple places in the manifest:
 
@@ -27,10 +27,10 @@ The Messaging Topology Operator has multiple [admission webhooks](https://kubern
       tls.key: # generated key
     ```
     This secret will be mounted to the operator container, where all webhooks will run from.
-1. Add webhook ca certificate in downloaded release manifest `messaging-topology-operator.yml`. There are 6 admission webhooks, one for each CRD type.
+1. Add webhook ca certificate in downloaded release manifest `messaging-topology-operator.yaml`. There are 6 admission webhooks, one for each CRD type.
 Look for keyword `caBundle` in the manifest, and paste the webhook ca cert in there (6 places because there are 6 webhooks).
 1. Now you are ready to deploy. If you have `kubectl` configured to access your running k8s cluster, you can then run:
 
 ```bash
-kubectl apply -f messaging-topology-operator.yml
+kubectl apply -f messaging-topology-operator.yaml
 ```

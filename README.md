@@ -15,7 +15,7 @@ Before deploying Messaging Topology Operator, you need to have:
 If you have [cert-manager](https://cert-manager.io/docs/installation/kubernetes/) `1.2.0` or above installed in your k8s cluster, and `kubectl` configured to access your running k8s cluster, you can then run the following command to install the Messaging Topology Operator:
 
 ```bash
-kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/latest/download/messaging-topology-operator-with-certmanager.yml
+kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/latest/download/messaging-topology-operator-with-certmanager.yaml
 ```
 
 You can create RabbitMQ resources:
@@ -30,7 +30,7 @@ You can create RabbitMQ resources:
 ## Install without cert-manager
 
 If you do not have cert-manager installed in your k8s cluster, you will need to generate certificates used by admission webhooks yourself and include them in the operator and webhooks manifests.
-You can follow [this doc](./docs/installation/install-without-certmanager.md). 
+You can follow [this doc](./docs/installation/install-without-certmanager.md).
 
 ## Contributing
 
