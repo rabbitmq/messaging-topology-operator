@@ -13,29 +13,28 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	"k8s.io/apimachinery/pkg/types"
 
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 )
 
 var _ = Describe("Users", func() {
 	var (
 		namespace = MustHaveEnv("NAMESPACE")
 		ctx       = context.Background()
-		user      *topologyv1alpha1.User
+		user      *topology.User
 	)
 
 	When("relying on the operator to generate a username and password", func() {
 		BeforeEach(func() {
-			user = &topologyv1alpha1.User{
+			user = &topology.User{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "user",
 					Namespace: namespace,
 				},
-				Spec: topologyv1alpha1.UserSpec{
-					RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
-						Name:      rmq.Name,
-						Namespace: rmq.Namespace,
+				Spec: topology.UserSpec{
+					RabbitmqClusterReference: topology.RabbitmqClusterReference{
+						Name: rmq.Name,
 					},
-					Tags: []topologyv1alpha1.UserTag{"policymaker", "management"},
+					Tags: []topology.UserTag{"policymaker", "management"},
 				},
 			}
 		})
@@ -78,7 +77,7 @@ var _ = Describe("Users", func() {
 
 			By("creating a client credential set that can be authenticated")
 			var err error
-			managementEndpoint, err := managementEndpoint(ctx, clientSet, &user.Spec.RabbitmqClusterReference)
+			managementEndpoint, err := managementEndpoint(ctx, clientSet, user.Namespace, user.Spec.RabbitmqClusterReference.Name)
 			Expect(err).NotTo(HaveOccurred())
 			client, err := rabbithole.NewClient(managementEndpoint, rawUsername, rawPassword)
 			Expect(err).NotTo(HaveOccurred())
@@ -86,7 +85,7 @@ var _ = Describe("Users", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Referencing the location of the Secret in the User's Status")
-			generatedUser := &topologyv1alpha1.User{}
+			generatedUser := &topology.User{}
 			Eventually(func() *corev1.LocalObjectReference {
 				err := k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, generatedUser)
 				if err != nil {
@@ -102,7 +101,7 @@ var _ = Describe("Users", func() {
 			Expect(generatedUser.Status.Credentials.Name).To(Equal(generatedSecret.Name))
 
 			By("updating status condition 'Ready'")
-			updatedUser := topologyv1alpha1.User{}
+			updatedUser := topology.User{}
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &updatedUser)).To(Succeed())
 
 			Expect(updatedUser.Status.Conditions).To(HaveLen(1))
@@ -116,9 +115,9 @@ var _ = Describe("Users", func() {
 			Expect(updatedUser.Status.ObservedGeneration).To(Equal(updatedUser.GetGeneration()))
 
 			By("not allowing updates on certain fields")
-			updateTest := topologyv1alpha1.User{}
+			updateTest := topology.User{}
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &updateTest)).To(Succeed())
-			updateTest.Spec.RabbitmqClusterReference = topologyv1alpha1.RabbitmqClusterReference{Name: "a-new-cluster", Namespace: "default"}
+			updateTest.Spec.RabbitmqClusterReference = topology.RabbitmqClusterReference{Name: "a-new-cluster"}
 			Expect(k8sClient.Update(ctx, &updateTest).Error()).To(ContainSubstring("spec.rabbitmqClusterReference: Forbidden: update on rabbitmqClusterReference is forbidden"))
 
 			By("deleting user")
@@ -154,15 +153,14 @@ var _ = Describe("Users", func() {
 				},
 			}
 			Expect(k8sClient.Create(ctx, &credentialSecret, &client.CreateOptions{})).To(Succeed())
-			user = &topologyv1alpha1.User{
+			user = &topology.User{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "user-2",
 					Namespace: namespace,
 				},
-				Spec: topologyv1alpha1.UserSpec{
-					RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
-						Name:      rmq.Name,
-						Namespace: rmq.Namespace,
+				Spec: topology.UserSpec{
+					RabbitmqClusterReference: topology.RabbitmqClusterReference{
+						Name: rmq.Name,
 					},
 					ImportCredentialsSecret: &corev1.LocalObjectReference{
 						Name: credentialSecret.Name,

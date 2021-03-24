@@ -1,4 +1,4 @@
-apiVersion: rabbitmq.com/v1alpha1
+apiVersion: rabbitmq.com/v1alpha2
 kind: Exchange
 metadata:
   name: exchange-sample

@@ -8,14 +8,14 @@ import (
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe("GenerateUserSettings", func() {
 	var credentialSecret corev1.Secret
-	var userTags []topologyv1alpha1.UserTag
+	var userTags []topology.UserTag
 
 	BeforeEach(func() {
 		credentialSecret = corev1.Secret{
@@ -25,7 +25,7 @@ var _ = Describe("GenerateUserSettings", func() {
 				"password": []byte("a-secure-password"),
 			},
 		}
-		userTags = []topologyv1alpha1.UserTag{"administrator", "monitoring"}
+		userTags = []topology.UserTag{"administrator", "monitoring"}
 	})
 
 	It("generates the expected rabbithole.UserSettings", func() {

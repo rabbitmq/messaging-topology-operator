@@ -28,7 +28,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 )
 
 const policyFinalizer = "deletion.finalizers.policies.rabbitmq.com"
@@ -47,13 +47,13 @@ type PolicyReconciler struct {
 func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
-	policy := &topologyv1alpha1.Policy{}
+	policy := &topology.Policy{}
 
 	if err := r.Get(ctx, req.NamespacedName, policy); err != nil {
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
 
-	rabbitClient, err := rabbitholeClient(ctx, r.Client, policy.Spec.RabbitmqClusterReference)
+	rabbitClient, err := rabbitholeClient(ctx, r.Client, policy.Spec.RabbitmqClusterReference, policy.Namespace)
 	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
 	// the Cluster is temporarily down. Requeue until it comes back up.
 	if errors.Is(err, NoSuchRabbitmqClusterError) && policy.ObjectMeta.DeletionTimestamp.IsZero() {
@@ -83,7 +83,7 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	if err := r.putPolicy(ctx, rabbitClient, policy); err != nil {
 		// Set Condition 'Ready' to false with message
-		policy.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.NotReady(err.Error())}
+		policy.Status.Conditions = []topology.Condition{topology.NotReady(err.Error())}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, policy)
 		}); writerErr != nil {
@@ -92,7 +92,7 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	policy.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.Ready()}
+	policy.Status.Conditions = []topology.Condition{topology.Ready()}
 	policy.Status.ObservedGeneration = policy.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, policy)
@@ -105,7 +105,7 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 }
 
 // creates or updates a given policy using rabbithole client.PutPolicy
-func (r *PolicyReconciler) putPolicy(ctx context.Context, client *rabbithole.Client, policy *topologyv1alpha1.Policy) error {
+func (r *PolicyReconciler) putPolicy(ctx context.Context, client *rabbithole.Client, policy *topology.Policy) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	generatePolicy, err := internal.GeneratePolicy(policy)
@@ -127,7 +127,7 @@ func (r *PolicyReconciler) putPolicy(ctx context.Context, client *rabbithole.Cli
 	return nil
 }
 
-func (r *PolicyReconciler) addFinalizerIfNeeded(ctx context.Context, policy *topologyv1alpha1.Policy) error {
+func (r *PolicyReconciler) addFinalizerIfNeeded(ctx context.Context, policy *topology.Policy) error {
 	if policy.ObjectMeta.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(policy, policyFinalizer) {
 		controllerutil.AddFinalizer(policy, policyFinalizer)
 		if err := r.Client.Update(ctx, policy); err != nil {
@@ -139,7 +139,7 @@ func (r *PolicyReconciler) addFinalizerIfNeeded(ctx context.Context, policy *top
 
 // deletes policy from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
-func (r *PolicyReconciler) deletePolicy(ctx context.Context, client *rabbithole.Client, policy *topologyv1alpha1.Policy) error {
+func (r *PolicyReconciler) deletePolicy(ctx context.Context, client *rabbithole.Client, policy *topology.Policy) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	if client == nil {
@@ -159,7 +159,7 @@ func (r *PolicyReconciler) deletePolicy(ctx context.Context, client *rabbithole.
 	return r.removeFinalizer(ctx, policy)
 }
 
-func (r *PolicyReconciler) removeFinalizer(ctx context.Context, policy *topologyv1alpha1.Policy) error {
+func (r *PolicyReconciler) removeFinalizer(ctx context.Context, policy *topology.Policy) error {
 	controllerutil.RemoveFinalizer(policy, policyFinalizer)
 	if err := r.Client.Update(ctx, policy); err != nil {
 		return err
@@ -169,6 +169,6 @@ func (r *PolicyReconciler) removeFinalizer(ctx context.Context, policy *topology
 
 func (r *PolicyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&topologyv1alpha1.Policy{}).
+		For(&topology.Policy{}).
 		Complete(r)
 }

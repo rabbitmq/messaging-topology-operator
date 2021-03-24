@@ -18,7 +18,7 @@ import (
 
 	"github.com/go-logr/logr"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-var apiGVStr = topologyv1alpha1.GroupVersion.String()
+var apiGVStr = topology.GroupVersion.String()
 
 const (
 	userFinalizer = "deletion.finalizers.users.rabbitmq.com"
@@ -55,12 +55,12 @@ type UserReconciler struct {
 func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
-	user := &topologyv1alpha1.User{}
+	user := &topology.User{}
 	if err := r.Get(ctx, req.NamespacedName, user); err != nil {
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
 
-	rabbitClient, err := rabbitholeClient(ctx, r.Client, user.Spec.RabbitmqClusterReference)
+	rabbitClient, err := rabbitholeClient(ctx, r.Client, user.Spec.RabbitmqClusterReference, user.Namespace)
 	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
 	// the Cluster is temporarily down. Requeue until it comes back up.
 	if errors.Is(err, NoSuchRabbitmqClusterError) && user.ObjectMeta.DeletionTimestamp.IsZero() {
@@ -102,7 +102,7 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	if err := r.declareUser(ctx, rabbitClient, user); err != nil {
 		// Set Condition 'Ready' to false with message
-		user.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.NotReady(err.Error())}
+		user.Status.Conditions = []topology.Condition{topology.NotReady(err.Error())}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, user)
 		}); writerErr != nil {
@@ -111,7 +111,7 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, err
 	}
 
-	user.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.Ready()}
+	user.Status.Conditions = []topology.Condition{topology.Ready()}
 	user.Status.ObservedGeneration = user.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, user)
@@ -124,7 +124,7 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return ctrl.Result{}, nil
 }
 
-func (r *UserReconciler) declareCredentials(ctx context.Context, user *topologyv1alpha1.User) error {
+func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.User) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	username, password, err := r.generateCredentials(ctx, user)
@@ -173,7 +173,7 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topologyv
 	return nil
 }
 
-func (r *UserReconciler) generateCredentials(ctx context.Context, user *topologyv1alpha1.User) (string, string, error) {
+func (r *UserReconciler) generateCredentials(ctx context.Context, user *topology.User) (string, string, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
 	var err error
@@ -225,7 +225,7 @@ func (r *UserReconciler) importCredentials(ctx context.Context, secretName, secr
 	return string(username), string(password), nil
 }
 
-func (r *UserReconciler) setUserStatus(ctx context.Context, user *topologyv1alpha1.User) error {
+func (r *UserReconciler) setUserStatus(ctx context.Context, user *topology.User) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	credentials := &corev1.LocalObjectReference{
@@ -241,7 +241,7 @@ func (r *UserReconciler) setUserStatus(ctx context.Context, user *topologyv1alph
 	return nil
 }
 
-func (r *UserReconciler) declareUser(ctx context.Context, client *rabbithole.Client, user *topologyv1alpha1.User) error {
+func (r *UserReconciler) declareUser(ctx context.Context, client *rabbithole.Client, user *topology.User) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	credentials, err := r.getUserCredentials(ctx, user)
@@ -275,7 +275,7 @@ func (r *UserReconciler) declareUser(ctx context.Context, client *rabbithole.Cli
 }
 
 // addFinalizerIfNeeded adds a deletion finalizer if the User does not have one yet and is not marked for deletion
-func (r *UserReconciler) addFinalizerIfNeeded(ctx context.Context, user *topologyv1alpha1.User) error {
+func (r *UserReconciler) addFinalizerIfNeeded(ctx context.Context, user *topology.User) error {
 	if user.ObjectMeta.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(user, userFinalizer) {
 		controllerutil.AddFinalizer(user, userFinalizer)
 		if err := r.Client.Update(ctx, user); err != nil {
@@ -285,7 +285,7 @@ func (r *UserReconciler) addFinalizerIfNeeded(ctx context.Context, user *topolog
 	return nil
 }
 
-func (r *UserReconciler) getUserCredentials(ctx context.Context, user *topologyv1alpha1.User) (*corev1.Secret, error) {
+func (r *UserReconciler) getUserCredentials(ctx context.Context, user *topology.User) (*corev1.Secret, error) {
 	logger := ctrl.LoggerFrom(ctx)
 	if user.Status.Credentials == nil {
 		return nil, fmt.Errorf("this User does not yet have a Credentials Secret created")
@@ -301,7 +301,7 @@ func (r *UserReconciler) getUserCredentials(ctx context.Context, user *topologyv
 	return credentials, nil
 }
 
-func (r *UserReconciler) deleteUser(ctx context.Context, client *rabbithole.Client, user *topologyv1alpha1.User) error {
+func (r *UserReconciler) deleteUser(ctx context.Context, client *rabbithole.Client, user *topology.User) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	if client == nil {
@@ -329,7 +329,7 @@ func (r *UserReconciler) deleteUser(ctx context.Context, client *rabbithole.Clie
 	return r.removeFinalizer(ctx, user)
 }
 
-func (r *UserReconciler) removeFinalizer(ctx context.Context, user *topologyv1alpha1.User) error {
+func (r *UserReconciler) removeFinalizer(ctx context.Context, user *topology.User) error {
 	controllerutil.RemoveFinalizer(user, userFinalizer)
 	if err := r.Client.Update(ctx, user); err != nil {
 		return err
@@ -342,7 +342,7 @@ func (r *UserReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&topologyv1alpha1.User{}).
+		For(&topology.User{}).
 		Owns(&corev1.Secret{}).
 		Complete(r)
 }

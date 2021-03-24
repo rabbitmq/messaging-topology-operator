@@ -1,4 +1,4 @@
-package v1alpha1
+package v1alpha2
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ func (r *Vhost) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1alpha1-vhost,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=vhosts,versions=v1alpha1,name=vvhost.kb.io,sideEffects=none,admissionReviewVersions=v1
+// +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1alpha2-vhost,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=vhosts,versions=v1alpha2,name=vvhost.kb.io,sideEffects=none,admissionReviewVersions=v1
 
 var _ webhook.Validator = &Vhost{}
 

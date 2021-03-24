@@ -13,26 +13,25 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 )
 
 var _ = Describe("Queue Controller", func() {
 	var (
 		namespace = MustHaveEnv("NAMESPACE")
 		ctx       = context.Background()
-		q         *topologyv1alpha1.Queue
+		q         *topology.Queue
 	)
 
 	BeforeEach(func() {
-		q = &topologyv1alpha1.Queue{
+		q = &topology.Queue{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "queue-test",
 				Namespace: namespace,
 			},
-			Spec: topologyv1alpha1.QueueSpec{
-				RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
-					Name:      rmq.Name,
-					Namespace: rmq.Namespace,
+			Spec: topology.QueueSpec{
+				RabbitmqClusterReference: topology.RabbitmqClusterReference{
+					Name: rmq.Name,
 				},
 				Name:       "queue-test",
 				Type:       "quorum",
@@ -65,7 +64,7 @@ var _ = Describe("Queue Controller", func() {
 		Expect(qInfo.Arguments).To(HaveKeyWithValue("x-queue-type", "quorum"))
 
 		By("updating status condition 'Ready'")
-		updatedQueue := topologyv1alpha1.Queue{}
+		updatedQueue := topology.Queue{}
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: q.Name, Namespace: q.Namespace}, &updatedQueue)).To(Succeed())
 
 		Expect(updatedQueue.Status.Conditions).To(HaveLen(1))
@@ -79,7 +78,7 @@ var _ = Describe("Queue Controller", func() {
 		Expect(updatedQueue.Status.ObservedGeneration).To(Equal(updatedQueue.GetGeneration()))
 
 		By("not allowing certain updates")
-		updateQ := topologyv1alpha1.Queue{}
+		updateQ := topology.Queue{}
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: q.Name, Namespace: q.Namespace}, &updateQ)).To(Succeed())
 		updateQ.Spec.Name = "a-new-name"
 		Expect(k8sClient.Update(ctx, &updateQ).Error()).To(ContainSubstring("spec.name: Forbidden: updates on name, vhost, and rabbitmqClusterReference are all forbidden"))

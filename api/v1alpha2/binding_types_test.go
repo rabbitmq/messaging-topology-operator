@@ -1,4 +1,4 @@
-package v1alpha1
+package v1alpha2
 
 import (
 	"context"
@@ -19,8 +19,7 @@ var _ = Describe("Binding spec", func() {
 		expectedSpec := BindingSpec{
 			Vhost: "/",
 			RabbitmqClusterReference: RabbitmqClusterReference{
-				Name:      "some-cluster",
-				Namespace: namespace,
+				Name: "some-cluster",
 			},
 		}
 
@@ -31,8 +30,7 @@ var _ = Describe("Binding spec", func() {
 			},
 			Spec: BindingSpec{
 				RabbitmqClusterReference: RabbitmqClusterReference{
-					Name:      "some-cluster",
-					Namespace: namespace,
+					Name: "some-cluster",
 				},
 			},
 		}
@@ -61,8 +59,7 @@ var _ = Describe("Binding spec", func() {
 					Raw: []byte(`{"argument":"argument-value"}`),
 				},
 				RabbitmqClusterReference: RabbitmqClusterReference{
-					Name:      "random-cluster",
-					Namespace: namespace,
+					Name: "random-cluster",
 				},
 			},
 		}
@@ -80,8 +77,7 @@ var _ = Describe("Binding spec", func() {
 		Expect(fetchedBinding.Spec.RoutingKey).To(Equal("akey"))
 		Expect(fetchedBinding.Spec.RabbitmqClusterReference).To(Equal(
 			RabbitmqClusterReference{
-				Name:      "random-cluster",
-				Namespace: namespace,
+				Name: "random-cluster",
 			}))
 		Expect(fetchedBinding.Spec.Arguments.Raw).To(Equal([]byte(`{"argument":"argument-value"}`)))
 	})

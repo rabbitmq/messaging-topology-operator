@@ -14,7 +14,7 @@ import (
 	"testing"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -43,7 +43,7 @@ var (
 var _ = BeforeSuite(func() {
 	namespace := MustHaveEnv("NAMESPACE")
 	scheme := runtime.NewScheme()
-	Expect(topologyv1alpha1.AddToScheme(scheme)).To(Succeed())
+	Expect(topology.AddToScheme(scheme)).To(Succeed())
 	Expect(rabbitmqv1beta1.AddToScheme(scheme)).To(Succeed())
 	Expect(defaultscheme.AddToScheme(scheme)).To(Succeed())
 	restConfig, err := createRestConfig()
@@ -87,7 +87,7 @@ var _ = BeforeSuite(func() {
 	// setup a RabbitmqCluster used for system tests
 	rmq = setupTestRabbitmqCluster(k8sClient, "system-test", namespace)
 
-	rabbitClient, err = generateRabbitClient(context.Background(), clientSet, &topologyv1alpha1.RabbitmqClusterReference{Name: rmq.Name, Namespace: rmq.Namespace})
+	rabbitClient, err = generateRabbitClient(context.Background(), clientSet, namespace, rmq.Name)
 	Expect(err).NotTo(HaveOccurred())
 })
 

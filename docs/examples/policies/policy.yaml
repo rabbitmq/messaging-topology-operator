@@ -1,4 +1,4 @@
-apiVersion: rabbitmq.com/v1alpha1
+apiVersion: rabbitmq.com/v1alpha2
 kind: Policy
 metadata:
   name: policy-example
@@ -11,8 +11,7 @@ spec:
   definition: # policy definition
     expires: 1800000
   rabbitmqClusterReference:
-    name: test
-    namespace: rabbitmq-system
+    name: test # rabbitmqCluster must exist in the same namespace as this resource
 # status:
 #   conditions:
 #   - lastTransitionTime: ""

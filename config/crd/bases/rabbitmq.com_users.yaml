@@ -16,7 +16,7 @@ spec:
     singular: user
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - name: v1alpha2
     schema:
       openAPIV3Schema:
         description: User is the Schema for the users API.
@@ -56,11 +56,8 @@ spec:
                 properties:
                   name:
                     type: string
-                  namespace:
-                    type: string
                 required:
                 - name
-                - namespace
                 type: object
               tags:
                 description: List of permissions tags to associate with the user.

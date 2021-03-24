@@ -16,7 +16,7 @@ spec:
     singular: binding
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - name: v1alpha2
     schema:
       openAPIV3Schema:
         description: Binding is the Schema for the bindings API
@@ -52,11 +52,8 @@ spec:
                 properties:
                   name:
                     type: string
-                  namespace:
-                    type: string
                 required:
                 - name
-                - namespace
                 type: object
               routingKey:
                 type: string

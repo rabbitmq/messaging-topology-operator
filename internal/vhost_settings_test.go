@@ -3,20 +3,20 @@ package internal_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("GenerateVhostSettings", func() {
-	var v *topologyv1alpha1.Vhost
+	var v *topology.Vhost
 
 	BeforeEach(func() {
-		v = &topologyv1alpha1.Vhost{
+		v = &topology.Vhost{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "test",
 			},
-			Spec: topologyv1alpha1.VhostSpec{
+			Spec: topology.VhostSpec{
 				Tracing: true,
 			},
 		}

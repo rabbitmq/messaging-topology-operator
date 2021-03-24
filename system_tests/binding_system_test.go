@@ -13,43 +13,41 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 )
 
 var _ = Describe("Binding", func() {
 	var (
 		namespace = MustHaveEnv("NAMESPACE")
 		ctx       = context.Background()
-		binding   *topologyv1alpha1.Binding
-		queue     *topologyv1alpha1.Queue
-		exchange  *topologyv1alpha1.Exchange
+		binding   *topology.Binding
+		queue     *topology.Queue
+		exchange  *topology.Exchange
 	)
 
 	BeforeEach(func() {
-		exchange = &topologyv1alpha1.Exchange{
+		exchange = &topology.Exchange{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-exchange",
 				Namespace: namespace,
 			},
-			Spec: topologyv1alpha1.ExchangeSpec{
+			Spec: topology.ExchangeSpec{
 				Name: "test-exchange",
-				RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
-					Name:      rmq.Name,
-					Namespace: rmq.Namespace,
+				RabbitmqClusterReference: topology.RabbitmqClusterReference{
+					Name: rmq.Name,
 				},
 			},
 		}
 		Expect(k8sClient.Create(ctx, exchange, &client.CreateOptions{})).To(Succeed())
-		queue = &topologyv1alpha1.Queue{
+		queue = &topology.Queue{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-queue",
 				Namespace: namespace,
 			},
-			Spec: topologyv1alpha1.QueueSpec{
+			Spec: topology.QueueSpec{
 				Name: "test-queue",
-				RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
-					Name:      rmq.Name,
-					Namespace: rmq.Namespace,
+				RabbitmqClusterReference: topology.RabbitmqClusterReference{
+					Name: rmq.Name,
 				},
 			},
 		}
@@ -60,15 +58,14 @@ var _ = Describe("Binding", func() {
 			return err
 		}, 10, 2).Should(BeNil()) // wait for queue to be available; or else binding will fail to create
 
-		binding = &topologyv1alpha1.Binding{
+		binding = &topology.Binding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "binding-test",
 				Namespace: namespace,
 			},
-			Spec: topologyv1alpha1.BindingSpec{
-				RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
-					Name:      rmq.Name,
-					Namespace: rmq.Namespace,
+			Spec: topology.BindingSpec{
+				RabbitmqClusterReference: topology.RabbitmqClusterReference{
+					Name: rmq.Name,
 				},
 				Source:          "test-exchange",
 				Destination:     "test-queue",
@@ -111,7 +108,7 @@ var _ = Describe("Binding", func() {
 		Expect(fetchedBinding.Arguments).To(HaveKeyWithValue("extra-argument", "test"))
 
 		By("updating status condition 'Ready'")
-		updatedBinding := topologyv1alpha1.Binding{}
+		updatedBinding := topology.Binding{}
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &updatedBinding)).To(Succeed())
 
 		Expect(updatedBinding.Status.Conditions).To(HaveLen(1))
@@ -125,7 +122,7 @@ var _ = Describe("Binding", func() {
 		Expect(updatedBinding.Status.ObservedGeneration).To(Equal(updatedBinding.GetGeneration()))
 
 		By("not allowing updates on binding.spec")
-		updateBinding := topologyv1alpha1.Binding{}
+		updateBinding := topology.Binding{}
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &updateBinding)).To(Succeed())
 		updatedBinding.Spec.RoutingKey = "new-key"
 		Expect(k8sClient.Update(ctx, &updatedBinding).Error()).To(ContainSubstring("invalid: spec.routingKey: Invalid value: \"new-key\": routingKey cannot be updated"))

@@ -13,26 +13,25 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 )
 
 var _ = Describe("Policy", func() {
 	var (
 		namespace = MustHaveEnv("NAMESPACE")
 		ctx       = context.Background()
-		policy    *topologyv1alpha1.Policy
+		policy    *topology.Policy
 	)
 
 	BeforeEach(func() {
-		policy = &topologyv1alpha1.Policy{
+		policy = &topology.Policy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "policy-test",
 				Namespace: namespace,
 			},
-			Spec: topologyv1alpha1.PolicySpec{
-				RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
-					Name:      rmq.Name,
-					Namespace: rmq.Namespace,
+			Spec: topology.PolicySpec{
+				RabbitmqClusterReference: topology.RabbitmqClusterReference{
+					Name: rmq.Name,
 				},
 				Name:    "policy-test",
 				Pattern: "test-queue",
@@ -65,7 +64,7 @@ var _ = Describe("Policy", func() {
 		Expect(fetchedPolicy.Definition).To(HaveKeyWithValue("ha-mode", "all"))
 
 		By("updating status condition 'Ready'")
-		updatedPolicy := topologyv1alpha1.Policy{}
+		updatedPolicy := topology.Policy{}
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &updatedPolicy)).To(Succeed())
 
 		Expect(updatedPolicy.Status.Conditions).To(HaveLen(1))
@@ -79,7 +78,7 @@ var _ = Describe("Policy", func() {
 		Expect(updatedPolicy.Status.ObservedGeneration).To(Equal(updatedPolicy.GetGeneration()))
 
 		By("not allowing updates on certain fields")
-		updateTest := topologyv1alpha1.Policy{}
+		updateTest := topology.Policy{}
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &updateTest)).To(Succeed())
 		updateTest.Spec.Vhost = "/a-new-vhost"
 		Expect(k8sClient.Update(ctx, &updateTest).Error()).To(ContainSubstring("spec.vhost: Forbidden: updates on name, vhost and rabbitmqClusterReference are all forbidden"))

@@ -13,26 +13,25 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 )
 
 var _ = Describe("Exchange", func() {
 	var (
 		namespace = MustHaveEnv("NAMESPACE")
 		ctx       = context.Background()
-		exchange  *topologyv1alpha1.Exchange
+		exchange  *topology.Exchange
 	)
 
 	BeforeEach(func() {
-		exchange = &topologyv1alpha1.Exchange{
+		exchange = &topology.Exchange{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "exchange-test",
 				Namespace: namespace,
 			},
-			Spec: topologyv1alpha1.ExchangeSpec{
-				RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
-					Name:      rmq.Name,
-					Namespace: rmq.Namespace,
+			Spec: topology.ExchangeSpec{
+				RabbitmqClusterReference: topology.RabbitmqClusterReference{
+					Name: rmq.Name,
 				},
 				Name:       "exchange-test",
 				Type:       "fanout",
@@ -65,7 +64,7 @@ var _ = Describe("Exchange", func() {
 		Expect(exchangeInfo.Arguments).To(HaveKeyWithValue("alternate-exchange", "system-test"))
 
 		By("updating status condition 'Ready'")
-		fetched := topologyv1alpha1.Exchange{}
+		fetched := topology.Exchange{}
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &fetched)).To(Succeed())
 
 		Expect(fetched.Status.Conditions).To(HaveLen(1))
@@ -79,7 +78,7 @@ var _ = Describe("Exchange", func() {
 		Expect(fetched.Status.ObservedGeneration).To(Equal(fetched.GetGeneration()))
 
 		By("not allowing certain updates")
-		updatedExchange := topologyv1alpha1.Exchange{}
+		updatedExchange := topology.Exchange{}
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &updatedExchange)).To(Succeed())
 		updatedExchange.Spec.Vhost = "/new-vhost"
 		Expect(k8sClient.Update(ctx, &updatedExchange).Error()).To(ContainSubstring("spec.vhost: Forbidden: updates on name, vhost, and rabbitmqClusterReference are all forbidden"))

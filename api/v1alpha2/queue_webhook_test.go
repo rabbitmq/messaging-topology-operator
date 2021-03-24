@@ -1,4 +1,4 @@
-package v1alpha1
+package v1alpha2
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -20,8 +20,7 @@ var _ = Describe("queue webhook", func() {
 			Durable:    false,
 			AutoDelete: true,
 			RabbitmqClusterReference: RabbitmqClusterReference{
-				Name:      "some-cluster",
-				Namespace: "default",
+				Name: "some-cluster",
 			},
 		},
 	}
@@ -41,8 +40,7 @@ var _ = Describe("queue webhook", func() {
 	It("does not allow updates on RabbitmqClusterReference", func() {
 		newQueue := queue.DeepCopy()
 		newQueue.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
-			Name:      "new-cluster",
-			Namespace: "default",
+			Name: "new-cluster",
 		}
 		Expect(apierrors.IsForbidden(newQueue.ValidateUpdate(&queue))).To(BeTrue())
 	})

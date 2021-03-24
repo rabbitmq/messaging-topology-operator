@@ -1,4 +1,4 @@
-apiVersion: rabbitmq.com/v1alpha1
+apiVersion: rabbitmq.com/v1alpha2
 kind: Queue
 metadata:
   name: qq-example
@@ -7,8 +7,7 @@ spec:
   name: test # name of the queue
   vhost: "/test-vhost" # default to '/' if not provided
   rabbitmqClusterReference:
-    name: test
-    namespace: rabbitmq-system
+    name: test # rabbitmqCluster must exist in the same namespace as this resource
   type: quorum # without providing a queue type, rabbitmq creates a classic queue
   autoDelete: false
   durable: true

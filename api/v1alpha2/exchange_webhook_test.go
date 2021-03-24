@@ -1,4 +1,4 @@
-package v1alpha1
+package v1alpha2
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -21,8 +21,7 @@ var _ = Describe("exchange webhook", func() {
 			Durable:    false,
 			AutoDelete: true,
 			RabbitmqClusterReference: RabbitmqClusterReference{
-				Name:      "some-cluster",
-				Namespace: "default",
+				Name: "some-cluster",
 			},
 		},
 	}
@@ -42,8 +41,7 @@ var _ = Describe("exchange webhook", func() {
 	It("does not allow updates on RabbitmqClusterReference", func() {
 		newExchange := exchange.DeepCopy()
 		newExchange.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
-			Name:      "new-cluster",
-			Namespace: "default",
+			Name: "new-cluster",
 		}
 		Expect(apierrors.IsForbidden(newExchange.ValidateUpdate(&exchange))).To(BeTrue())
 	})

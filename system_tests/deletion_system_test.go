@@ -4,7 +4,7 @@ import (
 	"context"
 
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -17,32 +17,32 @@ var _ = Describe("Deletion", func() {
 		namespace     = MustHaveEnv("NAMESPACE")
 		ctx           = context.Background()
 		targetCluster *rabbitmqv1beta1.RabbitmqCluster
-		exchange      topologyv1alpha1.Exchange
-		policy        topologyv1alpha1.Policy
-		queue         topologyv1alpha1.Queue
-		user          topologyv1alpha1.User
-		vhost         topologyv1alpha1.Vhost
+		exchange      topology.Exchange
+		policy        topology.Policy
+		queue         topology.Queue
+		user          topology.User
+		vhost         topology.Vhost
 	)
 
 	BeforeEach(func() {
 		targetCluster = setupTestRabbitmqCluster(k8sClient, "to-be-deleted", namespace)
-		targetClusterRef := topologyv1alpha1.RabbitmqClusterReference{Name: targetCluster.Name, Namespace: targetCluster.Namespace}
-		exchange = topologyv1alpha1.Exchange{
+		targetClusterRef := topology.RabbitmqClusterReference{Name: targetCluster.Name}
+		exchange = topology.Exchange{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "exchange-deletion-test",
 				Namespace: namespace,
 			},
-			Spec: topologyv1alpha1.ExchangeSpec{
+			Spec: topology.ExchangeSpec{
 				Name:                     "exchange-deletion-test",
 				RabbitmqClusterReference: targetClusterRef,
 			},
 		}
-		policy = topologyv1alpha1.Policy{
+		policy = topology.Policy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "policy-deletion-test",
 				Namespace: namespace,
 			},
-			Spec: topologyv1alpha1.PolicySpec{
+			Spec: topology.PolicySpec{
 				Name:    "polocy-deletion-test",
 				Pattern: ".*",
 				ApplyTo: "queues",
@@ -52,31 +52,31 @@ var _ = Describe("Deletion", func() {
 				RabbitmqClusterReference: targetClusterRef,
 			},
 		}
-		queue = topologyv1alpha1.Queue{
+		queue = topology.Queue{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "queue-deletion-test",
 				Namespace: namespace,
 			},
-			Spec: topologyv1alpha1.QueueSpec{
+			Spec: topology.QueueSpec{
 				Name:                     "queue-deletion-test",
 				RabbitmqClusterReference: targetClusterRef,
 			},
 		}
-		user = topologyv1alpha1.User{
+		user = topology.User{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "user-deletion-test",
 				Namespace: namespace,
 			},
-			Spec: topologyv1alpha1.UserSpec{
+			Spec: topology.UserSpec{
 				RabbitmqClusterReference: targetClusterRef,
 			},
 		}
-		vhost = topologyv1alpha1.Vhost{
+		vhost = topology.Vhost{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "vhost-deletion-test",
 				Namespace: namespace,
 			},
-			Spec: topologyv1alpha1.VhostSpec{
+			Spec: topology.VhostSpec{
 				Name:                     "vhost-deletion-test",
 				RabbitmqClusterReference: targetClusterRef,
 			},

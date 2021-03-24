@@ -16,7 +16,7 @@ spec:
     singular: vhost
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - name: v1alpha2
     schema:
       openAPIV3Schema:
         description: Vhost is the Schema for the vhosts API
@@ -45,11 +45,8 @@ spec:
                 properties:
                   name:
                     type: string
-                  namespace:
-                    type: string
                 required:
                 - name
-                - namespace
                 type: object
               tracing:
                 type: boolean

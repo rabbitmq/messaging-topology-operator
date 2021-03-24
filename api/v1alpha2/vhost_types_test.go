@@ -1,4 +1,4 @@
-package v1alpha1
+package v1alpha2
 
 import (
 	"context"
@@ -19,8 +19,7 @@ var _ = Describe("Vhost", func() {
 			Name:    "test-vhost",
 			Tracing: false,
 			RabbitmqClusterReference: RabbitmqClusterReference{
-				Name:      "some-cluster",
-				Namespace: namespace,
+				Name: "some-cluster",
 			},
 		}
 
@@ -32,8 +31,7 @@ var _ = Describe("Vhost", func() {
 			Spec: VhostSpec{
 				Name: "test-vhost",
 				RabbitmqClusterReference: RabbitmqClusterReference{
-					Name:      "some-cluster",
-					Namespace: namespace,
+					Name: "some-cluster",
 				},
 			},
 		}
@@ -56,8 +54,7 @@ var _ = Describe("Vhost", func() {
 				Name:    "vhost-with-tracing",
 				Tracing: true,
 				RabbitmqClusterReference: RabbitmqClusterReference{
-					Name:      "random-cluster",
-					Namespace: namespace,
+					Name: "random-cluster",
 				},
 			},
 		}
@@ -71,8 +68,7 @@ var _ = Describe("Vhost", func() {
 		Expect(fetched.Spec.Tracing).To(BeTrue())
 		Expect(fetched.Spec.Name).To(Equal("vhost-with-tracing"))
 		Expect(fetched.Spec.RabbitmqClusterReference).To(Equal(RabbitmqClusterReference{
-			Name:      "random-cluster",
-			Namespace: "default",
+			Name: "random-cluster",
 		}))
 	})
 })

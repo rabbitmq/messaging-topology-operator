@@ -28,7 +28,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 )
 
 const exchangeFinalizer = "deletion.finalizers.exchanges.rabbitmq.com"
@@ -47,12 +47,12 @@ type ExchangeReconciler struct {
 func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
-	exchange := &topologyv1alpha1.Exchange{}
+	exchange := &topology.Exchange{}
 	if err := r.Get(ctx, req.NamespacedName, exchange); err != nil {
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
 
-	rabbitClient, err := rabbitholeClient(ctx, r.Client, exchange.Spec.RabbitmqClusterReference)
+	rabbitClient, err := rabbitholeClient(ctx, r.Client, exchange.Spec.RabbitmqClusterReference, exchange.Namespace)
 	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
 	// the Cluster is temporarily down. Requeue until it comes back up.
 	if errors.Is(err, NoSuchRabbitmqClusterError) && exchange.ObjectMeta.DeletionTimestamp.IsZero() {
@@ -82,7 +82,7 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	if err := r.declareExchange(ctx, rabbitClient, exchange); err != nil {
 		// Set Condition 'Ready' to false with message
-		exchange.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.NotReady(err.Error())}
+		exchange.Status.Conditions = []topology.Condition{topology.NotReady(err.Error())}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, exchange)
 		}); writerErr != nil {
@@ -91,7 +91,7 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, err
 	}
 
-	exchange.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.Ready()}
+	exchange.Status.Conditions = []topology.Condition{topology.Ready()}
 	exchange.Status.ObservedGeneration = exchange.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, exchange)
@@ -103,7 +103,7 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	return ctrl.Result{}, nil
 }
 
-func (r *ExchangeReconciler) declareExchange(ctx context.Context, client *rabbithole.Client, exchange *topologyv1alpha1.Exchange) error {
+func (r *ExchangeReconciler) declareExchange(ctx context.Context, client *rabbithole.Client, exchange *topology.Exchange) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	settings, err := internal.GenerateExchangeSettings(exchange)
@@ -127,7 +127,7 @@ func (r *ExchangeReconciler) declareExchange(ctx context.Context, client *rabbit
 }
 
 // addFinalizerIfNeeded adds a deletion finalizer if the Exchange does not have one yet and is not marked for deletion
-func (r *ExchangeReconciler) addFinalizerIfNeeded(ctx context.Context, e *topologyv1alpha1.Exchange) error {
+func (r *ExchangeReconciler) addFinalizerIfNeeded(ctx context.Context, e *topology.Exchange) error {
 	if e.ObjectMeta.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(e, exchangeFinalizer) {
 		controllerutil.AddFinalizer(e, exchangeFinalizer)
 		if err := r.Client.Update(ctx, e); err != nil {
@@ -139,7 +139,7 @@ func (r *ExchangeReconciler) addFinalizerIfNeeded(ctx context.Context, e *topolo
 
 // deletes exchange from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
-func (r *ExchangeReconciler) deleteExchange(ctx context.Context, client *rabbithole.Client, exchange *topologyv1alpha1.Exchange) error {
+func (r *ExchangeReconciler) deleteExchange(ctx context.Context, client *rabbithole.Client, exchange *topology.Exchange) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	if client == nil {
@@ -159,7 +159,7 @@ func (r *ExchangeReconciler) deleteExchange(ctx context.Context, client *rabbith
 	return r.removeFinalizer(ctx, exchange)
 }
 
-func (r *ExchangeReconciler) removeFinalizer(ctx context.Context, e *topologyv1alpha1.Exchange) error {
+func (r *ExchangeReconciler) removeFinalizer(ctx context.Context, e *topology.Exchange) error {
 	controllerutil.RemoveFinalizer(e, exchangeFinalizer)
 	if err := r.Client.Update(ctx, e); err != nil {
 		return err
@@ -169,6 +169,6 @@ func (r *ExchangeReconciler) removeFinalizer(ctx context.Context, e *topologyv1a
 
 func (r *ExchangeReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&topologyv1alpha1.Exchange{}).
+		For(&topology.Exchange{}).
 		Complete(r)
 }

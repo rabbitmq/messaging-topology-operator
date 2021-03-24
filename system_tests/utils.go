@@ -14,7 +14,6 @@ import (
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	. "github.com/onsi/gomega"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
-	"github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -68,13 +67,13 @@ func MustHaveEnv(name string) string {
 	return value
 }
 
-func generateRabbitClient(ctx context.Context, clientSet *kubernetes.Clientset, rmq *v1alpha1.RabbitmqClusterReference) (*rabbithole.Client, error) {
-	endpoint, err := managementEndpoint(ctx, clientSet, rmq)
+func generateRabbitClient(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) (*rabbithole.Client, error) {
+	endpoint, err := managementEndpoint(ctx, clientSet, namespace, name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get management endpoint: %w", err)
 	}
 
-	username, password, err := getUsernameAndPassword(ctx, clientSet, rmq)
+	username, password, err := getUsernameAndPassword(ctx, clientSet, namespace, name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get username and password: %v", err)
 	}
@@ -87,9 +86,9 @@ func generateRabbitClient(ctx context.Context, clientSet *kubernetes.Clientset, 
 	return rabbitClient, nil
 }
 
-func getUsernameAndPassword(ctx context.Context, clientSet *kubernetes.Clientset, rmq *v1alpha1.RabbitmqClusterReference) (string, string, error) {
-	secretName := fmt.Sprintf("%s-default-user", rmq.Name)
-	secret, err := clientSet.CoreV1().Secrets(rmq.Namespace).Get(ctx, secretName, metav1.GetOptions{})
+func getUsernameAndPassword(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) (string, string, error) {
+	secretName := fmt.Sprintf("%s-default-user", name)
+	secret, err := clientSet.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
 		return "", "", err
 	}
@@ -104,13 +103,13 @@ func getUsernameAndPassword(ctx context.Context, clientSet *kubernetes.Clientset
 	return string(username), string(password), nil
 }
 
-func managementEndpoint(ctx context.Context, clientSet *kubernetes.Clientset, rmq *v1alpha1.RabbitmqClusterReference) (string, error) {
+func managementEndpoint(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) (string, error) {
 	nodeIp := kubernetesNodeIp(ctx, clientSet)
 	if nodeIp == "" {
 		return "", errors.New("failed to get kubernetes Node IP")
 	}
 
-	nodePort := managementNodePort(ctx, clientSet, rmq)
+	nodePort := managementNodePort(ctx, clientSet, namespace, name)
 	if nodePort == "" {
 		return "", errors.New("failed to get NodePort for management")
 	}
@@ -118,9 +117,9 @@ func managementEndpoint(ctx context.Context, clientSet *kubernetes.Clientset, rm
 	return fmt.Sprintf("http://%s:%s", nodeIp, nodePort), nil
 }
 
-func managementNodePort(ctx context.Context, clientSet *kubernetes.Clientset, rmq *v1alpha1.RabbitmqClusterReference) string {
-	svc, err := clientSet.CoreV1().Services(rmq.Namespace).
-		Get(ctx, rmq.Name, metav1.GetOptions{})
+func managementNodePort(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) string {
+	svc, err := clientSet.CoreV1().Services(namespace).
+		Get(ctx, name, metav1.GetOptions{})
 
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	for _, port := range svc.Spec.Ports {

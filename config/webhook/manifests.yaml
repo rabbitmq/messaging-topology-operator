@@ -12,14 +12,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-rabbitmq-com-v1alpha1-binding
+      path: /validate-rabbitmq-com-v1alpha2-binding
   failurePolicy: Fail
   name: vbinding.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
     apiVersions:
-    - v1alpha1
+    - v1alpha2
     operations:
     - CREATE
     - UPDATE
@@ -32,14 +32,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-rabbitmq-com-v1alpha1-exchange
+      path: /validate-rabbitmq-com-v1alpha2-exchange
   failurePolicy: Fail
   name: vexchange.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
     apiVersions:
-    - v1alpha1
+    - v1alpha2
     operations:
     - CREATE
     - UPDATE
@@ -52,14 +52,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-rabbitmq-com-v1alpha1-policy
+      path: /validate-rabbitmq-com-v1alpha2-policy
   failurePolicy: Fail
   name: vpolicy.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
     apiVersions:
-    - v1alpha1
+    - v1alpha2
     operations:
     - CREATE
     - UPDATE
@@ -72,14 +72,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-rabbitmq-com-v1alpha1-queue
+      path: /validate-rabbitmq-com-v1alpha2-queue
   failurePolicy: Fail
   name: vqueue.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
     apiVersions:
-    - v1alpha1
+    - v1alpha2
     operations:
     - CREATE
     - UPDATE
@@ -92,14 +92,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-rabbitmq-com-v1alpha1-user
+      path: /validate-rabbitmq-com-v1alpha2-user
   failurePolicy: Fail
   name: vuser.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
     apiVersions:
-    - v1alpha1
+    - v1alpha2
     operations:
     - CREATE
     - UPDATE
@@ -112,14 +112,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-rabbitmq-com-v1alpha1-vhost
+      path: /validate-rabbitmq-com-v1alpha2-vhost
   failurePolicy: Fail
   name: vvhost.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
     apiVersions:
-    - v1alpha1
+    - v1alpha2
     operations:
     - CREATE
     - UPDATE

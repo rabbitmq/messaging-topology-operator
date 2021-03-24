@@ -1,4 +1,4 @@
-package v1alpha1
+package v1alpha2
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -20,8 +20,7 @@ var _ = Describe("policy webhook", func() {
 			ApplyTo:  "all",
 			Priority: 0,
 			RabbitmqClusterReference: RabbitmqClusterReference{
-				Name:      "a-cluster",
-				Namespace: "default",
+				Name: "a-cluster",
 			},
 		},
 	}
@@ -41,8 +40,7 @@ var _ = Describe("policy webhook", func() {
 	It("does not allow updates on RabbitmqClusterReference", func() {
 		newPolicy := policy.DeepCopy()
 		newPolicy.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
-			Name:      "new-cluster",
-			Namespace: "default",
+			Name: "new-cluster",
 		}
 		Expect(apierrors.IsForbidden(newPolicy.ValidateUpdate(&policy))).To(BeTrue())
 	})

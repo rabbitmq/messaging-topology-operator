@@ -11,9 +11,9 @@ package internal
 
 import (
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 )
 
-func GenerateVhostSettings(v *topologyv1alpha1.Vhost) *rabbithole.VhostSettings {
+func GenerateVhostSettings(v *topology.Vhost) *rabbithole.VhostSettings {
 	return &rabbithole.VhostSettings{Tracing: v.Spec.Tracing}
 }
