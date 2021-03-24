@@ -29,8 +29,7 @@ var _ = Describe("Policy", func() {
 					Raw: []byte(`{"key":"value"}`),
 				},
 				RabbitmqClusterReference: RabbitmqClusterReference{
-					Name:      "some-cluster",
-					Namespace: namespace,
+					Name: "some-cluster",
 				},
 			},
 		}
@@ -41,8 +40,7 @@ var _ = Describe("Policy", func() {
 			Namespace: policy.Namespace,
 		}, fetched)).To(Succeed())
 		Expect(fetched.Spec.RabbitmqClusterReference).To(Equal(RabbitmqClusterReference{
-			Name:      "some-cluster",
-			Namespace: namespace,
+			Name: "some-cluster",
 		}))
 		Expect(fetched.Spec.Name).To(Equal("test-policy"))
 		Expect(fetched.Spec.Vhost).To(Equal("/"))
@@ -68,8 +66,7 @@ var _ = Describe("Policy", func() {
 					Raw: []byte(`{"key":"value"}`),
 				},
 				RabbitmqClusterReference: RabbitmqClusterReference{
-					Name:      "random-cluster",
-					Namespace: namespace,
+					Name: "random-cluster",
 				},
 			},
 		}
@@ -87,8 +84,7 @@ var _ = Describe("Policy", func() {
 		Expect(fetched.Spec.Priority).To(Equal(100))
 		Expect(fetched.Spec.RabbitmqClusterReference).To(Equal(
 			RabbitmqClusterReference{
-				Name:      "random-cluster",
-				Namespace: namespace,
+				Name: "random-cluster",
 			}))
 		Expect(fetched.Spec.Definition.Raw).To(Equal([]byte(`{"key":"value"}`)))
 	})
@@ -108,8 +104,7 @@ var _ = Describe("Policy", func() {
 					},
 					ApplyTo: "yo-yo",
 					RabbitmqClusterReference: RabbitmqClusterReference{
-						Name:      "some-cluster",
-						Namespace: namespace,
+						Name: "some-cluster",
 					},
 				},
 			}

@@ -30,8 +30,7 @@ var _ = Describe("vhost", func() {
 			Spec: topologyv1alpha1.VhostSpec{
 				Name: "test",
 				RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
-					Name:      rmq.Name,
-					Namespace: rmq.Namespace,
+					Name: rmq.Name,
 				},
 			},
 		}

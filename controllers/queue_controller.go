@@ -57,7 +57,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	// create rabbitmq http rabbitClient
-	rabbitClient, err := rabbitholeClient(ctx, r.Client, q.Spec.RabbitmqClusterReference)
+	rabbitClient, err := rabbitholeClient(ctx, r.Client, q.Spec.RabbitmqClusterReference, q.Namespace)
 	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
 	// the Cluster is temporarily down. Requeue until it comes back up.
 	if errors.Is(err, NoSuchRabbitmqClusterError) && q.ObjectMeta.DeletionTimestamp.IsZero() {

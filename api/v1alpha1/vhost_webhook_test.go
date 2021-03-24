@@ -17,8 +17,7 @@ var _ = Describe("vhost webhook", func() {
 			Name:    "test",
 			Tracing: false,
 			RabbitmqClusterReference: RabbitmqClusterReference{
-				Name:      "a-cluster",
-				Namespace: "default",
+				Name: "a-cluster",
 			},
 		},
 	}
@@ -32,8 +31,7 @@ var _ = Describe("vhost webhook", func() {
 	It("does not allow updates on RabbitmqClusterReference", func() {
 		newVhost := vhost.DeepCopy()
 		newVhost.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
-			Name:      "new-cluster",
-			Namespace: "default",
+			Name: "new-cluster",
 		}
 		Expect(apierrors.IsForbidden(newVhost.ValidateUpdate(&vhost))).To(BeTrue())
 	})

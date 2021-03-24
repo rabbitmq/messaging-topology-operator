@@ -31,8 +31,8 @@ var NoSuchRabbitmqClusterError = errors.New("RabbitmqCluster object does not exi
 
 // returns a http client for the given RabbitmqCluster
 // assumes the RabbitmqCluster is reachable using its service's ClusterIP
-func rabbitholeClient(ctx context.Context, c client.Client, rmq v1alpha1.RabbitmqClusterReference) (*rabbithole.Client, error) {
-	svc, secret, err := serviceSecretFromReference(ctx, c, rmq)
+func rabbitholeClient(ctx context.Context, c client.Client, rmq v1alpha1.RabbitmqClusterReference, namespace string) (*rabbithole.Client, error) {
+	svc, secret, err := serviceSecretFromReference(ctx, c, rmq, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get service or secret object from specified rabbitmqcluster: %w", err)
 	}
@@ -81,28 +81,28 @@ func managementPort(svc *corev1.Service) (int, error) {
 	return 0, fmt.Errorf("failed to find 'management' or 'management-tls' from service %s", svc.Name)
 }
 
-func rabbitmqClusterFromReference(ctx context.Context, c client.Client, rmq v1alpha1.RabbitmqClusterReference) (*rabbitmqv1beta1.RabbitmqCluster, error) {
+func rabbitmqClusterFromReference(ctx context.Context, c client.Client, rmq v1alpha1.RabbitmqClusterReference, namespace string) (*rabbitmqv1beta1.RabbitmqCluster, error) {
 	cluster := &rabbitmqv1beta1.RabbitmqCluster{}
-	if err := c.Get(ctx, types.NamespacedName{Name: rmq.Name, Namespace: rmq.Namespace}, cluster); err != nil {
+	if err := c.Get(ctx, types.NamespacedName{Name: rmq.Name, Namespace: namespace}, cluster); err != nil {
 		return nil, fmt.Errorf("failed to get cluster from reference: %s Error: %w", err, NoSuchRabbitmqClusterError)
 	}
 	return cluster, nil
 }
 
-func serviceSecretFromReference(ctx context.Context, c client.Client, rmq v1alpha1.RabbitmqClusterReference) (*corev1.Service, *corev1.Secret, error) {
-	cluster, err := rabbitmqClusterFromReference(ctx, c, rmq)
+func serviceSecretFromReference(ctx context.Context, c client.Client, rmq v1alpha1.RabbitmqClusterReference, namespace string) (*corev1.Service, *corev1.Secret, error) {
+	cluster, err := rabbitmqClusterFromReference(ctx, c, rmq, namespace)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	secret := &corev1.Secret{}
 	// TODO: use cluster.Status.Binding instead of cluster.Status.DefaultUser.SecretReference.Name after the PR exposes Status.Binding is released
-	if err := c.Get(ctx, types.NamespacedName{Namespace: rmq.Namespace, Name: cluster.Status.DefaultUser.SecretReference.Name}, secret); err != nil {
+	if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.DefaultUser.SecretReference.Name}, secret); err != nil {
 		return nil, nil, err
 	}
 
 	svc := &corev1.Service{}
-	if err := c.Get(ctx, types.NamespacedName{Namespace: rmq.Namespace, Name: cluster.Status.DefaultUser.ServiceReference.Name}, svc); err != nil {
+	if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.DefaultUser.ServiceReference.Name}, svc); err != nil {
 		return nil, nil, err
 	}
 	return svc, secret, nil

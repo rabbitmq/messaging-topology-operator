@@ -87,7 +87,7 @@ var _ = BeforeSuite(func() {
 	// setup a RabbitmqCluster used for system tests
 	rmq = setupTestRabbitmqCluster(k8sClient, "system-test", namespace)
 
-	rabbitClient, err = generateRabbitClient(context.Background(), clientSet, &topologyv1alpha1.RabbitmqClusterReference{Name: rmq.Name, Namespace: rmq.Namespace})
+	rabbitClient, err = generateRabbitClient(context.Background(), clientSet, namespace, rmq.Name)
 	Expect(err).NotTo(HaveOccurred())
 })
 

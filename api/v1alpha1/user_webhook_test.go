@@ -15,8 +15,7 @@ var _ = Describe("user webhook", func() {
 		Spec: UserSpec{
 			Tags: []UserTag{"policymaker"},
 			RabbitmqClusterReference: RabbitmqClusterReference{
-				Name:      "a-cluster",
-				Namespace: "default",
+				Name: "a-cluster",
 			},
 		},
 	}
@@ -24,8 +23,7 @@ var _ = Describe("user webhook", func() {
 	It("does not allow updates on RabbitmqClusterReference", func() {
 		new := user.DeepCopy()
 		new.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
-			Name:      "new-cluster",
-			Namespace: "default",
+			Name: "new-cluster",
 		}
 		Expect(apierrors.IsForbidden(new.ValidateUpdate(&user))).To(BeTrue())
 	})

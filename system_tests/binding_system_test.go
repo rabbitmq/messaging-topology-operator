@@ -34,8 +34,7 @@ var _ = Describe("Binding", func() {
 			Spec: topologyv1alpha1.ExchangeSpec{
 				Name: "test-exchange",
 				RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
-					Name:      rmq.Name,
-					Namespace: rmq.Namespace,
+					Name: rmq.Name,
 				},
 			},
 		}
@@ -48,8 +47,7 @@ var _ = Describe("Binding", func() {
 			Spec: topologyv1alpha1.QueueSpec{
 				Name: "test-queue",
 				RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
-					Name:      rmq.Name,
-					Namespace: rmq.Namespace,
+					Name: rmq.Name,
 				},
 			},
 		}
@@ -67,8 +65,7 @@ var _ = Describe("Binding", func() {
 			},
 			Spec: topologyv1alpha1.BindingSpec{
 				RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
-					Name:      rmq.Name,
-					Namespace: rmq.Namespace,
+					Name: rmq.Name,
 				},
 				Source:          "test-exchange",
 				Destination:     "test-queue",

@@ -22,8 +22,7 @@ var _ = Describe("Queue spec", func() {
 			Durable:    false,
 			AutoDelete: false,
 			RabbitmqClusterReference: RabbitmqClusterReference{
-				Name:      "some-cluster",
-				Namespace: namespace,
+				Name: "some-cluster",
 			},
 		}
 
@@ -35,8 +34,7 @@ var _ = Describe("Queue spec", func() {
 			Spec: QueueSpec{
 				Name: "test-queue",
 				RabbitmqClusterReference: RabbitmqClusterReference{
-					Name:      "some-cluster",
-					Namespace: namespace,
+					Name: "some-cluster",
 				},
 			},
 		}
@@ -65,8 +63,7 @@ var _ = Describe("Queue spec", func() {
 					Raw: []byte(`{"yoyo":10}`),
 				},
 				RabbitmqClusterReference: RabbitmqClusterReference{
-					Name:      "random-cluster",
-					Namespace: namespace,
+					Name: "random-cluster",
 				},
 			},
 		}
@@ -84,8 +81,7 @@ var _ = Describe("Queue spec", func() {
 		Expect(fetchedQ.Spec.AutoDelete).To(BeTrue())
 		Expect(fetchedQ.Spec.RabbitmqClusterReference).To(Equal(
 			RabbitmqClusterReference{
-				Name:      "random-cluster",
-				Namespace: namespace,
+				Name: "random-cluster",
 			}))
 		Expect(fetchedQ.Spec.Arguments.Raw).To(Equal([]byte(`{"yoyo":10}`)))
 	})

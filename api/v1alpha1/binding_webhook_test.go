@@ -20,8 +20,7 @@ var _ = Describe("Binding webhook", func() {
 			Destination:     "test",
 			DestinationType: "queue",
 			RabbitmqClusterReference: RabbitmqClusterReference{
-				Name:      "some-cluster",
-				Namespace: "default",
+				Name: "some-cluster",
 			},
 		},
 	}
@@ -35,8 +34,7 @@ var _ = Describe("Binding webhook", func() {
 	It("does not allow updates on RabbitmqClusterReference", func() {
 		newBinding := oldBinding.DeepCopy()
 		newBinding.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
-			Name:      "new-cluster",
-			Namespace: "default",
+			Name: "new-cluster",
 		}
 		Expect(apierrors.IsForbidden(newBinding.ValidateUpdate(&oldBinding))).To(BeTrue())
 	})

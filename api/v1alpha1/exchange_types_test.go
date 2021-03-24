@@ -23,8 +23,7 @@ var _ = Describe("Exchange spec", func() {
 			AutoDelete: false,
 			Type:       "direct",
 			RabbitmqClusterReference: RabbitmqClusterReference{
-				Name:      "some-cluster",
-				Namespace: namespace,
+				Name: "some-cluster",
 			},
 		}
 
@@ -36,8 +35,7 @@ var _ = Describe("Exchange spec", func() {
 			Spec: ExchangeSpec{
 				Name: "test-exchange",
 				RabbitmqClusterReference: RabbitmqClusterReference{
-					Name:      "some-cluster",
-					Namespace: namespace,
+					Name: "some-cluster",
 				},
 			},
 		}
@@ -66,8 +64,7 @@ var _ = Describe("Exchange spec", func() {
 					Raw: []byte(`{"alternative-exchange":"alternative-name"}`),
 				},
 				RabbitmqClusterReference: RabbitmqClusterReference{
-					Name:      "random-cluster",
-					Namespace: namespace,
+					Name: "random-cluster",
 				},
 			},
 		}
@@ -85,8 +82,7 @@ var _ = Describe("Exchange spec", func() {
 		Expect(fetchedExchange.Spec.AutoDelete).To(BeTrue())
 		Expect(fetchedExchange.Spec.RabbitmqClusterReference).To(Equal(
 			RabbitmqClusterReference{
-				Name:      "random-cluster",
-				Namespace: namespace,
+				Name: "random-cluster",
 			}))
 		Expect(fetchedExchange.Spec.Arguments.Raw).To(Equal([]byte(`{"alternative-exchange":"alternative-name"}`)))
 	})

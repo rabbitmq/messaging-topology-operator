@@ -56,11 +56,8 @@ spec:
                 properties:
                   name:
                     type: string
-                  namespace:
-                    type: string
                 required:
                 - name
-                - namespace
                 type: object
               tags:
                 description: List of permissions tags to associate with the user.

@@ -45,8 +45,6 @@ type QueueSpec struct {
 type RabbitmqClusterReference struct {
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`
-	// +kubebuilder:validation:Required
-	Namespace string `json:"namespace"`
 }
 
 // QueueStatus defines the observed state of Queue

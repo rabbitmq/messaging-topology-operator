@@ -7,8 +7,7 @@ spec:
   name: example # name of the exchange
   vhost: "/test-vhost" # default to '/' if not provided
   rabbitmqClusterReference:
-    name: test
-    namespace: rabbitmq-system
+    name: test # rabbitmqCluster must exist in the same namespace as this resource
   type: fanout # default to 'direct' if not provided
   autoDelete: false
   durable: true

@@ -43,7 +43,7 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
 
-	rabbitClient, err := rabbitholeClient(ctx, r.Client, vhost.Spec.RabbitmqClusterReference)
+	rabbitClient, err := rabbitholeClient(ctx, r.Client, vhost.Spec.RabbitmqClusterReference, vhost.Namespace)
 	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
 	// the Cluster is temporarily down. Requeue until it comes back up.
 	if errors.Is(err, NoSuchRabbitmqClusterError) && vhost.ObjectMeta.DeletionTimestamp.IsZero() {

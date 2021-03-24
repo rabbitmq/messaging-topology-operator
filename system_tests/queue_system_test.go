@@ -31,8 +31,7 @@ var _ = Describe("Queue Controller", func() {
 			},
 			Spec: topologyv1alpha1.QueueSpec{
 				RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
-					Name:      rmq.Name,
-					Namespace: rmq.Namespace,
+					Name: rmq.Name,
 				},
 				Name:       "queue-test",
 				Type:       "quorum",

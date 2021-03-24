@@ -24,8 +24,7 @@ var _ = Describe("user spec", func() {
 			},
 			Spec: UserSpec{
 				RabbitmqClusterReference: RabbitmqClusterReference{
-					Name:      "some-cluster",
-					Namespace: namespace,
+					Name: "some-cluster",
 				},
 			},
 		}
@@ -36,8 +35,7 @@ var _ = Describe("user spec", func() {
 			Namespace: user.Namespace,
 		}, fetcheduser)).To(Succeed())
 		Expect(fetcheduser.Spec.RabbitmqClusterReference).To(Equal(RabbitmqClusterReference{
-			Name:      "some-cluster",
-			Namespace: namespace,
+			Name: "some-cluster",
 		}))
 		Expect(len(fetcheduser.Spec.Tags)).To(Equal(0))
 	})
@@ -58,8 +56,7 @@ var _ = Describe("user spec", func() {
 						Name: "secret-name",
 					},
 					RabbitmqClusterReference: RabbitmqClusterReference{
-						Name:      "some-cluster",
-						Namespace: namespace,
+						Name: "some-cluster",
 					},
 				},
 			}
@@ -77,8 +74,7 @@ var _ = Describe("user spec", func() {
 					Namespace: user.Namespace,
 				}, fetchedUser)).To(Succeed())
 				Expect(fetchedUser.Spec.RabbitmqClusterReference).To(Equal(RabbitmqClusterReference{
-					Name:      "some-cluster",
-					Namespace: namespace,
+					Name: "some-cluster",
 				}))
 				Expect(fetchedUser.Spec.ImportCredentialsSecret.Name).To(Equal("secret-name"))
 				Expect(fetchedUser.Spec.Tags).To(Equal([]UserTag{"policymaker", "monitoring"}))

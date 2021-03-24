@@ -32,8 +32,7 @@ var _ = Describe("Users", func() {
 				},
 				Spec: topologyv1alpha1.UserSpec{
 					RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
-						Name:      rmq.Name,
-						Namespace: rmq.Namespace,
+						Name: rmq.Name,
 					},
 					Tags: []topologyv1alpha1.UserTag{"policymaker", "management"},
 				},
@@ -78,7 +77,7 @@ var _ = Describe("Users", func() {
 
 			By("creating a client credential set that can be authenticated")
 			var err error
-			managementEndpoint, err := managementEndpoint(ctx, clientSet, &user.Spec.RabbitmqClusterReference)
+			managementEndpoint, err := managementEndpoint(ctx, clientSet, user.Namespace, user.Spec.RabbitmqClusterReference.Name)
 			Expect(err).NotTo(HaveOccurred())
 			client, err := rabbithole.NewClient(managementEndpoint, rawUsername, rawPassword)
 			Expect(err).NotTo(HaveOccurred())
@@ -118,7 +117,7 @@ var _ = Describe("Users", func() {
 			By("not allowing updates on certain fields")
 			updateTest := topologyv1alpha1.User{}
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &updateTest)).To(Succeed())
-			updateTest.Spec.RabbitmqClusterReference = topologyv1alpha1.RabbitmqClusterReference{Name: "a-new-cluster", Namespace: "default"}
+			updateTest.Spec.RabbitmqClusterReference = topologyv1alpha1.RabbitmqClusterReference{Name: "a-new-cluster"}
 			Expect(k8sClient.Update(ctx, &updateTest).Error()).To(ContainSubstring("spec.rabbitmqClusterReference: Forbidden: update on rabbitmqClusterReference is forbidden"))
 
 			By("deleting user")
@@ -161,8 +160,7 @@ var _ = Describe("Users", func() {
 				},
 				Spec: topologyv1alpha1.UserSpec{
 					RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
-						Name:      rmq.Name,
-						Namespace: rmq.Namespace,
+						Name: rmq.Name,
 					},
 					ImportCredentialsSecret: &corev1.LocalObjectReference{
 						Name: credentialSecret.Name,

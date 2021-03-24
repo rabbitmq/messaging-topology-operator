@@ -31,8 +31,7 @@ var _ = Describe("Exchange", func() {
 			},
 			Spec: topologyv1alpha1.ExchangeSpec{
 				RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
-					Name:      rmq.Name,
-					Namespace: rmq.Namespace,
+					Name: rmq.Name,
 				},
 				Name:       "exchange-test",
 				Type:       "fanout",

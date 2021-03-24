@@ -31,8 +31,7 @@ var _ = Describe("Policy", func() {
 			},
 			Spec: topologyv1alpha1.PolicySpec{
 				RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
-					Name:      rmq.Name,
-					Namespace: rmq.Namespace,
+					Name: rmq.Name,
 				},
 				Name:    "policy-test",
 				Pattern: "test-queue",
