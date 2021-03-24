@@ -32,36 +32,6 @@ var _ = Describe("Binding webhook", func() {
 		Expect(apierrors.IsForbidden(newBinding.ValidateUpdate(&oldBinding))).To(BeTrue())
 	})
 
-	It("does not allow updates on source", func() {
-		newBinding := oldBinding.DeepCopy()
-		newBinding.Spec.Source = "updated-source"
-		Expect(apierrors.IsForbidden(newBinding.ValidateUpdate(&oldBinding))).To(BeTrue())
-	})
-
-	It("does not allow updates on destination", func() {
-		newBinding := oldBinding.DeepCopy()
-		newBinding.Spec.Destination = "updated-des"
-		Expect(apierrors.IsForbidden(newBinding.ValidateUpdate(&oldBinding))).To(BeTrue())
-	})
-
-	It("does not allow updates on destination type", func() {
-		newBinding := oldBinding.DeepCopy()
-		newBinding.Spec.DestinationType = "exchange"
-		Expect(apierrors.IsForbidden(newBinding.ValidateUpdate(&oldBinding))).To(BeTrue())
-	})
-
-	It("does not allow updates on routing key", func() {
-		newBinding := oldBinding.DeepCopy()
-		newBinding.Spec.RoutingKey = "not-allowed"
-		Expect(apierrors.IsForbidden(newBinding.ValidateUpdate(&oldBinding))).To(BeTrue())
-	})
-
-	It("does not allow updates on binding arguments", func() {
-		newBinding := oldBinding.DeepCopy()
-		newBinding.Spec.Arguments = &runtime.RawExtension{Raw: []byte(`{"new":"new-value"}`)}
-		Expect(apierrors.IsForbidden(newBinding.ValidateUpdate(&oldBinding))).To(BeTrue())
-	})
-
 	It("does not allow updates on RabbitmqClusterReference", func() {
 		newBinding := oldBinding.DeepCopy()
 		newBinding.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
@@ -69,5 +39,35 @@ var _ = Describe("Binding webhook", func() {
 			Namespace: "default",
 		}
 		Expect(apierrors.IsForbidden(newBinding.ValidateUpdate(&oldBinding))).To(BeTrue())
+	})
+
+	It("does not allow updates on source", func() {
+		newBinding := oldBinding.DeepCopy()
+		newBinding.Spec.Source = "updated-source"
+		Expect(apierrors.IsInvalid(newBinding.ValidateUpdate(&oldBinding))).To(BeTrue())
+	})
+
+	It("does not allow updates on destination", func() {
+		newBinding := oldBinding.DeepCopy()
+		newBinding.Spec.Destination = "updated-des"
+		Expect(apierrors.IsInvalid(newBinding.ValidateUpdate(&oldBinding))).To(BeTrue())
+	})
+
+	It("does not allow updates on destination type", func() {
+		newBinding := oldBinding.DeepCopy()
+		newBinding.Spec.DestinationType = "exchange"
+		Expect(apierrors.IsInvalid(newBinding.ValidateUpdate(&oldBinding))).To(BeTrue())
+	})
+
+	It("does not allow updates on routing key", func() {
+		newBinding := oldBinding.DeepCopy()
+		newBinding.Spec.RoutingKey = "not-allowed"
+		Expect(apierrors.IsInvalid(newBinding.ValidateUpdate(&oldBinding))).To(BeTrue())
+	})
+
+	It("does not allow updates on binding arguments", func() {
+		newBinding := oldBinding.DeepCopy()
+		newBinding.Spec.Arguments = &runtime.RawExtension{Raw: []byte(`{"new":"new-value"}`)}
+		Expect(apierrors.IsInvalid(newBinding.ValidateUpdate(&oldBinding))).To(BeTrue())
 	})
 })
