@@ -13,11 +13,11 @@ import (
 	"encoding/json"
 	"fmt"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	"strings"
 )
 
-func GenerateBindingInfo(binding *topologyv1alpha1.Binding) (*rabbithole.BindingInfo, error) {
+func GenerateBindingInfo(binding *topology.Binding) (*rabbithole.BindingInfo, error) {
 	arguments := make(map[string]interface{})
 	if binding.Spec.Arguments != nil {
 		if err := json.Unmarshal(binding.Spec.Arguments.Raw, &arguments); err != nil {
@@ -44,7 +44,7 @@ func GenerateBindingInfo(binding *topologyv1alpha1.Binding) (*rabbithole.Binding
 // the hash function used is 'erlang:phash2' and it's erlang specific; GeneratePropertiesKey returns empty
 // string if arguments are provided (deletion not supported)
 
-func GeneratePropertiesKey(binding *topologyv1alpha1.Binding) string {
+func GeneratePropertiesKey(binding *topology.Binding) string {
 	if binding.Spec.RoutingKey == "" {
 		return "~"
 	}

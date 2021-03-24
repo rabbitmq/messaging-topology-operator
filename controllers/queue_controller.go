@@ -17,7 +17,7 @@ import (
 
 	"github.com/go-logr/logr"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -51,7 +51,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	logger := ctrl.LoggerFrom(ctx)
 
 	// fetched the q and return if q no longer exists
-	q := &topologyv1alpha1.Queue{}
+	q := &topology.Queue{}
 	if err := r.Get(ctx, req.NamespacedName, q); err != nil {
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
@@ -88,7 +88,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	if err := r.declareQueue(ctx, rabbitClient, q); err != nil {
 		// Set Condition 'Ready' to false with message
-		q.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.NotReady(err.Error())}
+		q.Status.Conditions = []topology.Condition{topology.NotReady(err.Error())}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, q)
 		}); writerErr != nil {
@@ -97,7 +97,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, err
 	}
 
-	q.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.Ready()}
+	q.Status.Conditions = []topology.Condition{topology.Ready()}
 	q.Status.ObservedGeneration = q.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, q)
@@ -109,7 +109,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	return ctrl.Result{}, nil
 }
 
-func (r *QueueReconciler) declareQueue(ctx context.Context, client *rabbithole.Client, q *topologyv1alpha1.Queue) error {
+func (r *QueueReconciler) declareQueue(ctx context.Context, client *rabbithole.Client, q *topology.Queue) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	queueSettings, err := internal.GenerateQueueSettings(q)
@@ -133,7 +133,7 @@ func (r *QueueReconciler) declareQueue(ctx context.Context, client *rabbithole.C
 }
 
 // addFinalizerIfNeeded adds a deletion finalizer if the Queue does not have one yet and is not marked for deletion
-func (r *QueueReconciler) addFinalizerIfNeeded(ctx context.Context, q *topologyv1alpha1.Queue) error {
+func (r *QueueReconciler) addFinalizerIfNeeded(ctx context.Context, q *topology.Queue) error {
 	if q.ObjectMeta.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(q, deletionFinalizer) {
 		controllerutil.AddFinalizer(q, deletionFinalizer)
 		if err := r.Client.Update(ctx, q); err != nil {
@@ -146,7 +146,7 @@ func (r *QueueReconciler) addFinalizerIfNeeded(ctx context.Context, q *topologyv
 // deletes queue from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
 // queues could be deleted manually or gone because of AutoDelete
-func (r *QueueReconciler) deleteQueue(ctx context.Context, client *rabbithole.Client, q *topologyv1alpha1.Queue) error {
+func (r *QueueReconciler) deleteQueue(ctx context.Context, client *rabbithole.Client, q *topology.Queue) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	if client == nil {
@@ -166,7 +166,7 @@ func (r *QueueReconciler) deleteQueue(ctx context.Context, client *rabbithole.Cl
 	return r.removeFinalizer(ctx, q)
 }
 
-func (r *QueueReconciler) removeFinalizer(ctx context.Context, q *topologyv1alpha1.Queue) error {
+func (r *QueueReconciler) removeFinalizer(ctx context.Context, q *topology.Queue) error {
 	controllerutil.RemoveFinalizer(q, deletionFinalizer)
 	if err := r.Client.Update(ctx, q); err != nil {
 		return err
@@ -176,6 +176,6 @@ func (r *QueueReconciler) removeFinalizer(ctx context.Context, q *topologyv1alph
 
 func (r *QueueReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&topologyv1alpha1.Queue{}).
+		For(&topology.Queue{}).
 		Complete(r)
 }

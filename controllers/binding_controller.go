@@ -28,7 +28,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 )
 
 const bindingFinalizer = "deletion.finalizers.bindings.rabbitmq.com"
@@ -47,7 +47,7 @@ type BindingReconciler struct {
 func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
-	binding := &topologyv1alpha1.Binding{}
+	binding := &topology.Binding{}
 	if err := r.Get(ctx, req.NamespacedName, binding); err != nil {
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
@@ -80,7 +80,7 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	if err := r.declareBinding(ctx, rabbitClient, binding); err != nil {
 		// Set Condition 'Ready' to false with message
-		binding.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.NotReady(err.Error())}
+		binding.Status.Conditions = []topology.Condition{topology.NotReady(err.Error())}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, binding)
 		}); writerErr != nil {
@@ -89,7 +89,7 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	binding.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.Ready()}
+	binding.Status.Conditions = []topology.Condition{topology.Ready()}
 	binding.Status.ObservedGeneration = binding.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, binding)
@@ -101,7 +101,7 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	return ctrl.Result{}, nil
 }
 
-func (r *BindingReconciler) declareBinding(ctx context.Context, client *rabbithole.Client, binding *topologyv1alpha1.Binding) error {
+func (r *BindingReconciler) declareBinding(ctx context.Context, client *rabbithole.Client, binding *topology.Binding) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	info, err := internal.GenerateBindingInfo(binding)
@@ -128,7 +128,7 @@ func (r *BindingReconciler) declareBinding(ctx context.Context, client *rabbitho
 // when server responds with '404' Not Found, it logs and does not requeue on error
 // if no binding argument is set, generating properties key by using internal.GeneratePropertiesKey
 // if binding arguments are set, list all bindings between source/destination to find the binding; if it failed to find corresponding binding, it assumes that the binding is already deleted and returns no error
-func (r *BindingReconciler) deleteBinding(ctx context.Context, client *rabbithole.Client, binding *topologyv1alpha1.Binding) error {
+func (r *BindingReconciler) deleteBinding(ctx context.Context, client *rabbithole.Client, binding *topology.Binding) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	var info *rabbithole.BindingInfo
@@ -167,7 +167,7 @@ func (r *BindingReconciler) deleteBinding(ctx context.Context, client *rabbithol
 	return r.removeFinalizer(ctx, binding)
 }
 
-func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topologyv1alpha1.Binding, client *rabbithole.Client) (*rabbithole.BindingInfo, error) {
+func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topology.Binding, client *rabbithole.Client) (*rabbithole.BindingInfo, error) {
 	logger.Info("binding arguments set; listing bindings from server to complete deletion")
 	arguments := make(map[string]interface{})
 	if binding.Spec.Arguments != nil {
@@ -200,7 +200,7 @@ func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topolog
 	return info, nil
 }
 
-func (r *BindingReconciler) removeFinalizer(ctx context.Context, binding *topologyv1alpha1.Binding) error {
+func (r *BindingReconciler) removeFinalizer(ctx context.Context, binding *topology.Binding) error {
 	controllerutil.RemoveFinalizer(binding, bindingFinalizer)
 	if err := r.Client.Update(ctx, binding); err != nil {
 		return err
@@ -208,7 +208,7 @@ func (r *BindingReconciler) removeFinalizer(ctx context.Context, binding *topolo
 	return nil
 }
 
-func (r *BindingReconciler) addFinalizerIfNeeded(ctx context.Context, binding *topologyv1alpha1.Binding) error {
+func (r *BindingReconciler) addFinalizerIfNeeded(ctx context.Context, binding *topology.Binding) error {
 	if binding.ObjectMeta.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(binding, bindingFinalizer) {
 		controllerutil.AddFinalizer(binding, bindingFinalizer)
 		if err := r.Client.Update(ctx, binding); err != nil {
@@ -220,6 +220,6 @@ func (r *BindingReconciler) addFinalizerIfNeeded(ctx context.Context, binding *t
 
 func (r *BindingReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&topologyv1alpha1.Binding{}).
+		For(&topology.Binding{}).
 		Complete(r)
 }

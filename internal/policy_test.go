@@ -3,21 +3,21 @@ package internal_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	. "github.com/rabbitmq/messaging-topology-operator/internal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 var _ = Describe("GeneratePolicy", func() {
-	var p *topologyv1alpha1.Policy
+	var p *topology.Policy
 
 	BeforeEach(func() {
-		p = &topologyv1alpha1.Policy{
+		p = &topology.Policy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "new-policy",
 			},
-			Spec: topologyv1alpha1.PolicySpec{
+			Spec: topology.PolicySpec{
 				Name:       "new-p",
 				Vhost:      "/new-vhost",
 				ApplyTo:    "exchanges",

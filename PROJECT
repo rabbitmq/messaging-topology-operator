@@ -3,20 +3,20 @@ repo: github.com/rabbitmq/messaging-topology-operator
 resources:
 - group: rabbitmq.com
   kind: Queue
-  version: v1alpha1
+  version: v1alpha2
 - group: rabbitmq.com
   kind: Exchange
-  version: v1alpha1
+  version: v1alpha2
 - group: rabbitmq.com
   kind: Binding
-  version: v1alpha1
+  version: v1alpha2
 - group: rabbitmq.com
   kind: User
-  version: v1alpha1
+  version: v1alpha2
 - group: rabbitmq.com
   kind: Vhost
-  version: v1alpha1
+  version: v1alpha2
 - group: rabbitmq.com
   kind: Policy
-  version: v1alpha1
+  version: v1alpha2
 version: "2"

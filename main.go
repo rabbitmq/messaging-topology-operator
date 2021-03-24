@@ -21,7 +21,7 @@ import (
 
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
 	// +kubebuilder:scaffold:imports
 )
@@ -44,7 +44,7 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 	_ = rabbitmqv1beta1.AddToScheme(scheme)
 
-	_ = topologyv1alpha1.AddToScheme(scheme)
+	_ = topology.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -120,27 +120,27 @@ func main() {
 		log.Error(err, "unable to create controller", "controller", policyControllerName)
 		os.Exit(1)
 	}
-	if err = (&topologyv1alpha1.Binding{}).SetupWebhookWithManager(mgr); err != nil {
+	if err = (&topology.Binding{}).SetupWebhookWithManager(mgr); err != nil {
 		log.Error(err, "unable to create webhook", "webhook", "Binding")
 		os.Exit(1)
 	}
-	if err = (&topologyv1alpha1.Queue{}).SetupWebhookWithManager(mgr); err != nil {
+	if err = (&topology.Queue{}).SetupWebhookWithManager(mgr); err != nil {
 		log.Error(err, "unable to create webhook", "webhook", "Queue")
 		os.Exit(1)
 	}
-	if err = (&topologyv1alpha1.Exchange{}).SetupWebhookWithManager(mgr); err != nil {
+	if err = (&topology.Exchange{}).SetupWebhookWithManager(mgr); err != nil {
 		log.Error(err, "unable to create webhook", "webhook", "Exchange")
 		os.Exit(1)
 	}
-	if err = (&topologyv1alpha1.Vhost{}).SetupWebhookWithManager(mgr); err != nil {
+	if err = (&topology.Vhost{}).SetupWebhookWithManager(mgr); err != nil {
 		log.Error(err, "unable to create webhook", "webhook", "Vhost")
 		os.Exit(1)
 	}
-	if err = (&topologyv1alpha1.Policy{}).SetupWebhookWithManager(mgr); err != nil {
+	if err = (&topology.Policy{}).SetupWebhookWithManager(mgr); err != nil {
 		log.Error(err, "unable to create webhook", "webhook", "Policy")
 		os.Exit(1)
 	}
-	if err = (&topologyv1alpha1.User{}).SetupWebhookWithManager(mgr); err != nil {
+	if err = (&topology.User{}).SetupWebhookWithManager(mgr); err != nil {
 		log.Error(err, "unable to create webhook", "webhook", "User")
 		os.Exit(1)
 	}

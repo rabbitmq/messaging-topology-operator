@@ -1,4 +1,4 @@
-package v1alpha1
+package v1alpha2
 
 import (
 	"path/filepath"
@@ -24,7 +24,7 @@ func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	RunSpecsWithDefaultAndCustomReporters(t,
-		"v1alpha1 Suite",
+		"v1alpha2 Suite",
 		[]Reporter{printer.NewlineReporter{}})
 }
 

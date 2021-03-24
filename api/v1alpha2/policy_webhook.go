@@ -1,4 +1,4 @@
-package v1alpha1
+package v1alpha2
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ func (p *Policy) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1alpha1-policy,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=policies,versions=v1alpha1,name=vpolicy.kb.io,sideEffects=none,admissionReviewVersions=v1
+// +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1alpha2-policy,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=policies,versions=v1alpha2,name=vpolicy.kb.io,sideEffects=none,admissionReviewVersions=v1
 
 var _ webhook.Validator = &Policy{}
 

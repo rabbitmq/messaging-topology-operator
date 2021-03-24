@@ -7,7 +7,7 @@ This product is licensed to you under the Mozilla Public License 2.0 license (th
 This product may include a number of subcomponents with separate copyright notices and license terms. Your use of these subcomponents is subject to the terms and conditions of the subcomponent's license, as noted in the LICENSE file.
 */
 
-package v1alpha1
+package v1alpha2
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,33 +15,31 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// BindingSpec defines the desired state of Binding
-type BindingSpec struct {
+// ExchangeSpec defines the desired state of Exchange
+type ExchangeSpec struct {
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
 	// Default to vhost '/'
 	// +kubebuilder:default:=/
 	Vhost string `json:"vhost,omitempty"`
-	// +kubebuilder:validation:Optional
-	Source string `json:"source,omitempty"`
-	// +kubebuilder:validation:Optional
-	Destination string `json:"destination,omitempty"`
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:Enum=exchange;queue
-	DestinationType string `json:"destinationType,omitempty"`
-	// +kubebuilder:validation:Optional
-	RoutingKey string `json:"routingKey,omitempty"`
+	// +kubebuilder:validation:Enum=direct;fanout;headers;topic
+	// +kubebuilder:default:=direct
+	Type       string `json:"type,omitempty"`
+	Durable    bool   `json:"durable,omitempty"`
+	AutoDelete bool   `json:"autoDelete,omitempty"`
 	// +kubebuilder:validation:Type=object
 	// +kubebuilder:pruning:PreserveUnknownFields
 	Arguments *runtime.RawExtension `json:"arguments,omitempty"`
-	// Reference to the RabbitmqCluster that the binding will be created in.
+	// Reference to the RabbitmqCluster that the exchange will be created in.
 	// Required property.
 	// +kubebuilder:validation:Required
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
 }
 
-// BindingStatus defines the observed state of Binding
-type BindingStatus struct {
-	// observedGeneration is the most recent successful generation observed for this Binding. It corresponds to the
-	// Binding's generation, which is updated on mutation by the API Server.
+// ExchangeStatus defines the observed state of Exchange
+type ExchangeStatus struct {
+	// observedGeneration is the most recent successful generation observed for this Exchange. It corresponds to the
+	// Exchange's generation, which is updated on mutation by the API Server.
 	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
 	Conditions         []Condition `json:"conditions,omitempty"`
 }
@@ -49,31 +47,31 @@ type BindingStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
-// Binding is the Schema for the bindings API
-type Binding struct {
+// Exchange is the Schema for the exchanges API
+type Exchange struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   BindingSpec   `json:"spec,omitempty"`
-	Status BindingStatus `json:"status,omitempty"`
+	Spec   ExchangeSpec   `json:"spec,omitempty"`
+	Status ExchangeStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// BindingList contains a list of Binding
-type BindingList struct {
+// ExchangeList contains a list of Exchange
+type ExchangeList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Binding `json:"items"`
+	Items           []Exchange `json:"items"`
 }
 
-func (b *Binding) GroupResource() schema.GroupResource {
+func (e *Exchange) GroupResource() schema.GroupResource {
 	return schema.GroupResource{
-		Group:    b.GroupVersionKind().Group,
-		Resource: b.GroupVersionKind().Kind,
+		Group:    e.GroupVersionKind().Group,
+		Resource: e.GroupVersionKind().Kind,
 	}
 }
 
 func init() {
-	SchemeBuilder.Register(&Binding{}, &BindingList{})
+	SchemeBuilder.Register(&Exchange{}, &ExchangeList{})
 }

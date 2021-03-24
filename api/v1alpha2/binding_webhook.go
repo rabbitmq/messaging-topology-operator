@@ -1,4 +1,4 @@
-package v1alpha1
+package v1alpha2
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ func (b *Binding) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1alpha1-binding,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=bindings,versions=v1alpha1,name=vbinding.kb.io,sideEffects=none,admissionReviewVersions=v1
+// +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1alpha2-binding,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=bindings,versions=v1alpha2,name=vbinding.kb.io,sideEffects=none,admissionReviewVersions=v1
 
 var _ webhook.Validator = &Binding{}
 

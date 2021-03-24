@@ -19,7 +19,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 )
 
 const vhostFinalizer = "deletion.finalizers.vhosts.rabbitmq.com"
@@ -38,7 +38,7 @@ type VhostReconciler struct {
 func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
-	vhost := &topologyv1alpha1.Vhost{}
+	vhost := &topology.Vhost{}
 	if err := r.Get(ctx, req.NamespacedName, vhost); err != nil {
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
@@ -74,7 +74,7 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	if err := r.putVhost(ctx, rabbitClient, vhost); err != nil {
 		// Set Condition 'Ready' to false with message
-		vhost.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.NotReady(err.Error())}
+		vhost.Status.Conditions = []topology.Condition{topology.NotReady(err.Error())}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, vhost)
 		}); writerErr != nil {
@@ -83,7 +83,7 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, err
 	}
 
-	vhost.Status.Conditions = []topologyv1alpha1.Condition{topologyv1alpha1.Ready()}
+	vhost.Status.Conditions = []topology.Condition{topology.Ready()}
 	vhost.Status.ObservedGeneration = vhost.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, vhost)
@@ -95,7 +95,7 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	return ctrl.Result{}, nil
 }
 
-func (r *VhostReconciler) putVhost(ctx context.Context, client *rabbithole.Client, vhost *topologyv1alpha1.Vhost) error {
+func (r *VhostReconciler) putVhost(ctx context.Context, client *rabbithole.Client, vhost *topology.Vhost) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	vhostSettings := internal.GenerateVhostSettings(vhost)
@@ -112,7 +112,7 @@ func (r *VhostReconciler) putVhost(ctx context.Context, client *rabbithole.Clien
 	return nil
 }
 
-func (r *VhostReconciler) addFinalizerIfNeeded(ctx context.Context, vhost *topologyv1alpha1.Vhost) error {
+func (r *VhostReconciler) addFinalizerIfNeeded(ctx context.Context, vhost *topology.Vhost) error {
 	if vhost.ObjectMeta.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(vhost, vhostFinalizer) {
 		controllerutil.AddFinalizer(vhost, vhostFinalizer)
 		if err := r.Client.Update(ctx, vhost); err != nil {
@@ -124,7 +124,7 @@ func (r *VhostReconciler) addFinalizerIfNeeded(ctx context.Context, vhost *topol
 
 // deletes vhost from server
 // if server responds with '404' Not Found, it logs and does not requeue on error
-func (r *VhostReconciler) deleteVhost(ctx context.Context, client *rabbithole.Client, vhost *topologyv1alpha1.Vhost) error {
+func (r *VhostReconciler) deleteVhost(ctx context.Context, client *rabbithole.Client, vhost *topology.Vhost) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	if client == nil {
@@ -145,7 +145,7 @@ func (r *VhostReconciler) deleteVhost(ctx context.Context, client *rabbithole.Cl
 	return r.removeFinalizer(ctx, vhost)
 }
 
-func (r *VhostReconciler) removeFinalizer(ctx context.Context, vhost *topologyv1alpha1.Vhost) error {
+func (r *VhostReconciler) removeFinalizer(ctx context.Context, vhost *topology.Vhost) error {
 	controllerutil.RemoveFinalizer(vhost, vhostFinalizer)
 	if err := r.Client.Update(ctx, vhost); err != nil {
 		return err
@@ -155,6 +155,6 @@ func (r *VhostReconciler) removeFinalizer(ctx context.Context, vhost *topologyv1
 
 func (r *VhostReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&topologyv1alpha1.Vhost{}).
+		For(&topology.Vhost{}).
 		Complete(r)
 }

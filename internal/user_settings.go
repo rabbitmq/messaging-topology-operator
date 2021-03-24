@@ -14,11 +14,11 @@ import (
 	"strings"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	corev1 "k8s.io/api/core/v1"
 )
 
-func GenerateUserSettings(credentials *corev1.Secret, tags []topologyv1alpha1.UserTag) (rabbithole.UserSettings, error) {
+func GenerateUserSettings(credentials *corev1.Secret, tags []topology.UserTag) (rabbithole.UserSettings, error) {
 	username, ok := credentials.Data["username"]
 	if !ok {
 		return rabbithole.UserSettings{}, fmt.Errorf("could not find username in credentials secret %s", credentials.Name)

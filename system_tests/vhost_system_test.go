@@ -10,7 +10,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 )
 
 var _ = Describe("vhost", func() {
@@ -18,18 +18,18 @@ var _ = Describe("vhost", func() {
 	var (
 		namespace = MustHaveEnv("NAMESPACE")
 		ctx       = context.Background()
-		vhost     = &topologyv1alpha1.Vhost{}
+		vhost     = &topology.Vhost{}
 	)
 
 	BeforeEach(func() {
-		vhost = &topologyv1alpha1.Vhost{
+		vhost = &topology.Vhost{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test",
 				Namespace: namespace,
 			},
-			Spec: topologyv1alpha1.VhostSpec{
+			Spec: topology.VhostSpec{
 				Name: "test",
-				RabbitmqClusterReference: topologyv1alpha1.RabbitmqClusterReference{
+				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: rmq.Name,
 				},
 			},
@@ -48,7 +48,7 @@ var _ = Describe("vhost", func() {
 		Expect(fetched.Tracing).To(BeFalse())
 
 		By("updating status condition 'Ready'")
-		updatedVhost := topologyv1alpha1.Vhost{}
+		updatedVhost := topology.Vhost{}
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace}, &updatedVhost)).To(Succeed())
 
 		Expect(updatedVhost.Status.Conditions).To(HaveLen(1))
@@ -62,7 +62,7 @@ var _ = Describe("vhost", func() {
 		Expect(updatedVhost.Status.ObservedGeneration).To(Equal(updatedVhost.GetGeneration()))
 
 		By("not allowing updates on certain fields")
-		updateTest := topologyv1alpha1.Vhost{}
+		updateTest := topology.Vhost{}
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace}, &updateTest)).To(Succeed())
 		updateTest.Spec.Name = "new-name"
 		Expect(k8sClient.Update(ctx, &updateTest).Error()).To(ContainSubstring("spec.name: Forbidden: updates on name and rabbitmqClusterReference are all forbidden"))
