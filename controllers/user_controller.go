@@ -233,7 +233,9 @@ func (r *UserReconciler) setUserStatus(ctx context.Context, user *topology.User)
 	}
 	user.Status.Credentials = credentials
 	if err := r.Status().Update(ctx, user); err != nil {
-		logger.Error(err, "Failed to update secret status credentials", "user", user.Name, "secretRef", credentials)
+		msg := "Failed to update secret status credentials"
+		r.Recorder.Event(user, corev1.EventTypeWarning, "FailedStatusUpdate", msg)
+		logger.Error(err, msg, "user", user.Name, "secretRef", credentials)
 		return err
 	}
 	logger.Info("Successfully updated secret status credentials", "user", user.Name, "secretRef", credentials)
