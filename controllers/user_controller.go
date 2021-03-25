@@ -233,7 +233,9 @@ func (r *UserReconciler) setUserStatus(ctx context.Context, user *topology.User)
 	}
 	user.Status.Credentials = credentials
 	if err := r.Status().Update(ctx, user); err != nil {
-		logger.Error(err, "Failed to update secret status credentials", "user", user.Name, "secretRef", credentials)
+		msg := "Failed to update secret status credentials"
+		r.Recorder.Event(user, corev1.EventTypeWarning, "FailedStatusUpdate", msg)
+		logger.Error(err, msg, "user", user.Name, "secretRef", credentials)
 		return err
 	}
 	logger.Info("Successfully updated secret status credentials", "user", user.Name, "secretRef", credentials)
@@ -286,18 +288,13 @@ func (r *UserReconciler) addFinalizerIfNeeded(ctx context.Context, user *topolog
 }
 
 func (r *UserReconciler) getUserCredentials(ctx context.Context, user *topology.User) (*corev1.Secret, error) {
-	logger := ctrl.LoggerFrom(ctx)
 	if user.Status.Credentials == nil {
 		return nil, fmt.Errorf("this User does not yet have a Credentials Secret created")
 	}
-
 	credentials := &corev1.Secret{}
 	if err := r.Get(ctx, types.NamespacedName{Name: user.Status.Credentials.Name, Namespace: user.Namespace}, credentials); err != nil {
-		logger.Error(err, "Failed to retrieve user credentials secret from status", "user", user.Name, "secretCredentials", user.Status.Credentials)
 		return nil, err
 	}
-
-	logger.Info("Successfully retrieved credentials", "user", user.Name, "secretCredentials", user.Status.Credentials)
 	return credentials, nil
 }
 

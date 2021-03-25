@@ -21,16 +21,16 @@ var _ = Describe("user webhook", func() {
 	}
 
 	It("does not allow updates on RabbitmqClusterReference", func() {
-		new := user.DeepCopy()
-		new.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
-			Name: "new-cluster",
+		newUser := user.DeepCopy()
+		newUser.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
+			Name: "newUser-cluster",
 		}
-		Expect(apierrors.IsForbidden(new.ValidateUpdate(&user))).To(BeTrue())
+		Expect(apierrors.IsForbidden(newUser.ValidateUpdate(&user))).To(BeTrue())
 	})
 
 	It("allows update on tags", func() {
-		new := user.DeepCopy()
-		new.Spec.Tags = []UserTag{"monitoring"}
-		Expect(new.ValidateUpdate(&user)).To(Succeed())
+		newUser := user.DeepCopy()
+		newUser.Spec.Tags = []UserTag{"monitoring"}
+		Expect(newUser.ValidateUpdate(&user)).To(Succeed())
 	})
 })
