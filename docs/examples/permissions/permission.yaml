@@ -1,11 +1,15 @@
 apiVersion: rabbitmq.com/v1alpha2
-kind: User
+kind: Permission
 metadata:
-  name: user-sample
+  name: testuser-permission
   namespace: rabbitmq-system
 spec:
-  tags:
-  - management # available tags are 'management', 'policymaker', 'monitoring' and 'administrator'
+  vhost: "/" # name of a vhost
+  user: "test-user" # name of a RabbitMQ user
+  permissions:
+    write: ".*"
+    configure: ".*"
+    read: ".*"
   rabbitmqClusterReference:
     name: sample  # rabbitmqCluster must exist in the same namespace as this resource
 # status:
@@ -15,3 +19,4 @@ spec:
 #     type: Ready
 #     Reason: "SuccessfulCreateOrUpdate" # status false result in reason FailedCreateOrUpdate
 #     Message: "" # set when status is false
+

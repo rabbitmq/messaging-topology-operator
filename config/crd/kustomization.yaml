@@ -8,6 +8,7 @@ resources:
 - bases/rabbitmq.com_users.yaml
 - bases/rabbitmq.com_vhosts.yaml
 - bases/rabbitmq.com_policies.yaml
+- bases/rabbitmq.com_permissions.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:
@@ -17,6 +18,7 @@ patchesStrategicMerge:
 - patches/webhook_in_vhosts.yaml
 - patches/webhook_in_policies.yaml
 - patches/webhook_in_users.yaml
+- patches/webhook_in_permissions.yaml
 # +kubebuilder:scaffold:crdkustomizewebhookpatch
 
 - patches/cainjection_in_bindings.yaml
@@ -25,6 +27,7 @@ patchesStrategicMerge:
 - patches/cainjection_in_vhosts.yaml
 - patches/cainjection_in_policies.yaml
 - patches/cainjection_in_users.yaml
+- patches/cainjection_in_permissions.yaml
 # +kubebuilder:scaffold:crdkustomizecainjectionpatch
 
 configurations:
