@@ -19,4 +19,7 @@ resources:
 - group: rabbitmq.com
   kind: Policy
   version: v1alpha2
+- group: rabbitmq.com
+  kind: Permission
+  version: v1alpha2
 version: "2"

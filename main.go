@@ -33,6 +33,7 @@ const (
 	bindingControllerName  = "binding-controller"
 	userControllerName     = "user-controller"
 	policyControllerName   = "policy-controller"
+	permissionControllerName   = "permission-controller"
 )
 
 var (
@@ -120,6 +121,16 @@ func main() {
 		log.Error(err, "unable to create controller", "controller", policyControllerName)
 		os.Exit(1)
 	}
+	if err = (&controllers.PermissionReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("Permission"),
+		Scheme: mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorderFor(permissionControllerName),
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", permissionControllerName)
+		os.Exit(1)
+	}
+
 	if err = (&topology.Binding{}).SetupWebhookWithManager(mgr); err != nil {
 		log.Error(err, "unable to create webhook", "webhook", "Binding")
 		os.Exit(1)

@@ -18,6 +18,8 @@ Package v1alpha2 contains API Schema definitions for the rabbitmq.com v1alpha2 A
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-bindinglist[$$BindingList$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-exchange[$$Exchange$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-exchangelist[$$ExchangeList$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-permission[$$Permission$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-permissionlist[$$PermissionList$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-policy[$$Policy$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-policylist[$$PolicyList$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-queue[$$Queue$$]
@@ -122,6 +124,7 @@ BindingStatus defines the observed state of Binding
 ****
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-bindingstatus[$$BindingStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-exchangestatus[$$ExchangeStatus$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-permissionstatus[$$PermissionStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-policystatus[$$PolicyStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-queuestatus[$$QueueStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-userstatus[$$UserStatus$$]
@@ -230,6 +233,86 @@ ExchangeStatus defines the observed state of Exchange
 |===
 | Field | Description
 | *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Exchange. It corresponds to the Exchange's generation, which is updated on mutation by the API Server.
+| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-condition[$$Condition$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-permission"]
+==== Permission 
+
+Permission is the Schema for the permissions API
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-permissionlist[$$PermissionList$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `rabbitmq.com/v1alpha2`
+| *`kind`* __string__ | `Permission`
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-permissionspec[$$PermissionSpec$$]__ | 
+| *`status`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-permissionstatus[$$PermissionStatus$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-permissionlist"]
+==== PermissionList 
+
+PermissionList contains a list of Permission
+
+
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `rabbitmq.com/v1alpha2`
+| *`kind`* __string__ | `PermissionList`
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-permission[$$Permission$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-permissionspec"]
+==== PermissionSpec 
+
+PermissionSpec defines the desired state of Permission
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-permission[$$Permission$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`user`* __string__ | Name of the user; has to an existing user. Required property.
+| *`vhost`* __string__ | Required property; has to an existing vhost.
+| *`permissions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-vhostpermissions[$$VhostPermissions$$]__ | 
+| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that both the provided user and vhost are. Required property.
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-permissionstatus"]
+==== PermissionStatus 
+
+PermissionStatus defines the observed state of Permission
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-permission[$$Permission$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Permission. It corresponds to the Permission's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-condition[$$Condition$$]__ | 
 |===
 
@@ -409,6 +492,7 @@ QueueStatus defines the observed state of Queue
 ****
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-bindingspec[$$BindingSpec$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-exchangespec[$$ExchangeSpec$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-permissionspec[$$PermissionSpec$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-policyspec[$$PolicySpec$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-queuespec[$$QueueSpec$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-userspec[$$UserSpec$$]
@@ -553,6 +637,25 @@ VhostList contains a list of Vhost
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-vhost[$$Vhost$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-vhostpermissions"]
+==== VhostPermissions 
+
+Defines a RabbitMQ user permissions in the specified vhost. All properties are required: configure, write, and read. For more information, see official doc: https://www.rabbitmq.com/access-control.html#user-management
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-permissionspec[$$PermissionSpec$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`configure`* __string__ | 
+| *`write`* __string__ | 
+| *`read`* __string__ | 
 |===
 
 

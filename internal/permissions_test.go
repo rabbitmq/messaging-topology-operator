@@ -1,0 +1,37 @@
+package internal_test
+
+import (
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
+	. "github.com/rabbitmq/messaging-topology-operator/internal"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+var _ = Describe("GeneratePermissions", func() {
+	var p *topology.Permission
+
+	BeforeEach(func() {
+		p = &topology.Permission{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "user-permissions",
+			},
+			Spec: topology.PermissionSpec{
+				User:  "a-user",
+				Vhost: "/new-vhost",
+				Permissions: topology.VhostPermissions{
+					Configure: ".*",
+					Write:     ".~",
+					Read:      ".^",
+				},
+			},
+		}
+	})
+
+	It("sets 'Configure', 'Write' and 'Read' correctly", func() {
+		rmqPermissions := GeneratePermissions(p)
+		Expect(rmqPermissions.Read).To(Equal(".^"))
+		Expect(rmqPermissions.Write).To(Equal(".~"))
+		Expect(rmqPermissions.Configure).To(Equal(".*"))
+	})
+})
