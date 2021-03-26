@@ -38,8 +38,9 @@ spec:
             properties:
               permissions:
                 description: 'Defines a RabbitMQ user permissions in the specified
-                  vhost. All properties are required: configure, write, and read.
-                  For more information, see official doc: https://www.rabbitmq.com/access-control.html#user-management'
+                  vhost. By not setting a property (configure/write/read), it result
+                  in an empty string which does not not match any permission. For
+                  more information, see official doc: https://www.rabbitmq.com/access-control.html#user-management'
                 properties:
                   configure:
                     type: string
@@ -47,10 +48,6 @@ spec:
                     type: string
                   write:
                     type: string
-                required:
-                - configure
-                - read
-                - write
                 type: object
               rabbitmqClusterReference:
                 description: Reference to the RabbitmqCluster that both the provided

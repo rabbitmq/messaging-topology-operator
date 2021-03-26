@@ -643,7 +643,7 @@ VhostList contains a list of Vhost
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-vhostpermissions"]
 ==== VhostPermissions 
 
-Defines a RabbitMQ user permissions in the specified vhost. All properties are required: configure, write, and read. For more information, see official doc: https://www.rabbitmq.com/access-control.html#user-management
+Defines a RabbitMQ user permissions in the specified vhost. By not setting a property (configure/write/read), it result in an empty string which does not not match any permission. For more information, see official doc: https://www.rabbitmq.com/access-control.html#user-management
 
 .Appears In:
 ****

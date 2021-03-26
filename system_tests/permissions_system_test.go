@@ -52,7 +52,7 @@ var _ = Describe("Permission", func() {
 
 		permission = &topology.Permission{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testuser-permission",
+				Name:      "user-permission",
 				Namespace: namespace,
 			},
 			Spec: topology.PermissionSpec{
@@ -60,7 +60,6 @@ var _ = Describe("Permission", func() {
 				User:  username,
 				Permissions: topology.VhostPermissions{
 					Configure: ".*",
-					Write:     ".*",
 					Read:      ".*",
 				},
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
@@ -103,6 +102,32 @@ var _ = Describe("Permission", func() {
 
 		By("setting status.observedGeneration")
 		Expect(updatedPermission.Status.ObservedGeneration).To(Equal(updatedPermission.GetGeneration()))
+
+		By("not allowing updates on certain fields")
+		updateTest := topology.Permission{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &updateTest)).To(Succeed())
+		updateTest.Spec.Vhost = "/a-new-vhost"
+		Expect(k8sClient.Update(ctx, &updateTest).Error()).To(ContainSubstring("spec.vhost: Forbidden: updates on user, vhost and rabbitmqClusterReference are all forbidden"))
+
+		By("updating policy definitions successfully")
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, permission)).To(Succeed())
+		permission.Spec.Permissions.Write = ".*"
+		permission.Spec.Permissions.Read = "^$"
+		Expect(k8sClient.Update(ctx, permission, &client.UpdateOptions{})).To(Succeed())
+
+		Eventually(func() string {
+			var err error
+			fetchedPermissionInfo, err = rabbitClient.GetPermissionsIn(permission.Spec.Vhost, username)
+			Expect(err).NotTo(HaveOccurred())
+			return fetchedPermissionInfo.Write
+		}, 20, 2).Should(Equal(".*"))
+		Expect(fetchedPermissionInfo).To(MatchFields(IgnoreExtras, Fields{
+			"Vhost":     Equal(permission.Spec.Vhost),
+			"User":      Equal(permission.Spec.User),
+			"Configure": Equal(permission.Spec.Permissions.Configure),
+			"Read":      Equal("^$"),
+			"Write":     Equal(".*"),
+		}))
 
 		By("revoking permissions successfully")
 		Expect(k8sClient.Delete(ctx, permission)).To(Succeed())

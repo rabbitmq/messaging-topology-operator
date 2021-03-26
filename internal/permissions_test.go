@@ -19,19 +19,25 @@ var _ = Describe("GeneratePermissions", func() {
 			Spec: topology.PermissionSpec{
 				User:  "a-user",
 				Vhost: "/new-vhost",
-				Permissions: topology.VhostPermissions{
-					Configure: ".*",
-					Write:     ".~",
-					Read:      ".^",
-				},
 			},
 		}
 	})
 
-	It("sets 'Configure', 'Write' and 'Read' correctly", func() {
+	It("sets 'Configure' correctly", func() {
+		p.Spec.Permissions.Configure = ".*"
 		rmqPermissions := GeneratePermissions(p)
-		Expect(rmqPermissions.Read).To(Equal(".^"))
-		Expect(rmqPermissions.Write).To(Equal(".~"))
 		Expect(rmqPermissions.Configure).To(Equal(".*"))
+	})
+
+	It("sets 'Write' correctly", func() {
+		p.Spec.Permissions.Write = ".~"
+		rmqPermissions := GeneratePermissions(p)
+		Expect(rmqPermissions.Write).To(Equal(".~"))
+	})
+
+	It("sets 'Read' correctly", func() {
+		p.Spec.Permissions.Read = "^$"
+		rmqPermissions := GeneratePermissions(p)
+		Expect(rmqPermissions.Read).To(Equal("^$"))
 	})
 })

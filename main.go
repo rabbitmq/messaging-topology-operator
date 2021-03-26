@@ -27,13 +27,13 @@ import (
 )
 
 const (
-	vhostControllerName    = "vhost-controller"
-	queueControllerName    = "queue-controller"
-	exchangeControllerName = "exchange-controller"
-	bindingControllerName  = "binding-controller"
-	userControllerName     = "user-controller"
-	policyControllerName   = "policy-controller"
-	permissionControllerName   = "permission-controller"
+	vhostControllerName      = "vhost-controller"
+	queueControllerName      = "queue-controller"
+	exchangeControllerName   = "exchange-controller"
+	bindingControllerName    = "binding-controller"
+	userControllerName       = "user-controller"
+	policyControllerName     = "policy-controller"
+	permissionControllerName = "permission-controller"
 )
 
 var (
@@ -122,9 +122,9 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&controllers.PermissionReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Permission"),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("Permission"),
+		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor(permissionControllerName),
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", permissionControllerName)
@@ -153,6 +153,10 @@ func main() {
 	}
 	if err = (&topology.User{}).SetupWebhookWithManager(mgr); err != nil {
 		log.Error(err, "unable to create webhook", "webhook", "User")
+		os.Exit(1)
+	}
+	if err = (&topology.Permission{}).SetupWebhookWithManager(mgr); err != nil {
+		log.Error(err, "unable to create webhook", "webhook", "Permission")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
