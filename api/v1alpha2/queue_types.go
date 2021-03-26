@@ -55,6 +55,7 @@ type QueueStatus struct {
 	Conditions         []Condition `json:"conditions,omitempty"`
 }
 
+// +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
@@ -67,6 +68,7 @@ type Queue struct {
 	Status QueueStatus `json:"status,omitempty"`
 }
 
+// +genclient
 // +kubebuilder:object:root=true
 
 // QueueList contains a list of Queue

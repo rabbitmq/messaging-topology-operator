@@ -34,6 +34,7 @@ type VhostStatus struct {
 	Conditions         []Condition `json:"conditions,omitempty"`
 }
 
+// +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
@@ -46,6 +47,7 @@ type Vhost struct {
 	Status VhostStatus `json:"status,omitempty"`
 }
 
+// +genclient
 // +kubebuilder:object:root=true
 
 // VhostList contains a list of Vhost

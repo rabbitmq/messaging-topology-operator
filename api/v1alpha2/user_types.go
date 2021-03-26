@@ -51,6 +51,7 @@ type UserStatus struct {
 // +kubebuilder:validation:Enum=management;policymaker;monitoring;administrator
 type UserTag string
 
+// +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
@@ -66,6 +67,7 @@ type User struct {
 	Status UserStatus `json:"status,omitempty"`
 }
 
+// +genclient
 // +kubebuilder:object:root=true
 
 // UserList contains a list of Users.
