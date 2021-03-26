@@ -57,7 +57,6 @@ type Exchange struct {
 	Status ExchangeStatus `json:"status,omitempty"`
 }
 
-// +genclient
 // +kubebuilder:object:root=true
 
 // ExchangeList contains a list of Exchange

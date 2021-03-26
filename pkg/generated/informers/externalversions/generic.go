@@ -46,28 +46,16 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=rabbitmq.com, Version=v1alpha2
 	case v1alpha2.SchemeGroupVersion.WithResource("bindings"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1alpha2().Bindings().Informer()}, nil
-	case v1alpha2.SchemeGroupVersion.WithResource("bindinglists"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1alpha2().BindingLists().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("exchanges"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1alpha2().Exchanges().Informer()}, nil
-	case v1alpha2.SchemeGroupVersion.WithResource("exchangelists"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1alpha2().ExchangeLists().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("policies"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1alpha2().Policies().Informer()}, nil
-	case v1alpha2.SchemeGroupVersion.WithResource("policylists"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1alpha2().PolicyLists().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("queues"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1alpha2().Queues().Informer()}, nil
-	case v1alpha2.SchemeGroupVersion.WithResource("queuelists"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1alpha2().QueueLists().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("users"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1alpha2().Users().Informer()}, nil
-	case v1alpha2.SchemeGroupVersion.WithResource("userlists"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1alpha2().UserLists().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("vhosts"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1alpha2().Vhosts().Informer()}, nil
-	case v1alpha2.SchemeGroupVersion.WithResource("vhostlists"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1alpha2().VhostLists().Informer()}, nil
 
 	}
 

@@ -59,7 +59,6 @@ type Binding struct {
 	Status BindingStatus `json:"status,omitempty"`
 }
 
-// +genclient
 // +kubebuilder:object:root=true
 
 // BindingList contains a list of Binding

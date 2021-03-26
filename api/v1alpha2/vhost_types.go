@@ -47,7 +47,6 @@ type Vhost struct {
 	Status VhostStatus `json:"status,omitempty"`
 }
 
-// +genclient
 // +kubebuilder:object:root=true
 
 // VhostList contains a list of Vhost

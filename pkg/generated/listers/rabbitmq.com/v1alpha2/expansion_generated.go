@@ -17,14 +17,6 @@ type BindingListerExpansion interface{}
 // BindingNamespaceLister.
 type BindingNamespaceListerExpansion interface{}
 
-// BindingListListerExpansion allows custom methods to be added to
-// BindingListLister.
-type BindingListListerExpansion interface{}
-
-// BindingListNamespaceListerExpansion allows custom methods to be added to
-// BindingListNamespaceLister.
-type BindingListNamespaceListerExpansion interface{}
-
 // ExchangeListerExpansion allows custom methods to be added to
 // ExchangeLister.
 type ExchangeListerExpansion interface{}
@@ -32,14 +24,6 @@ type ExchangeListerExpansion interface{}
 // ExchangeNamespaceListerExpansion allows custom methods to be added to
 // ExchangeNamespaceLister.
 type ExchangeNamespaceListerExpansion interface{}
-
-// ExchangeListListerExpansion allows custom methods to be added to
-// ExchangeListLister.
-type ExchangeListListerExpansion interface{}
-
-// ExchangeListNamespaceListerExpansion allows custom methods to be added to
-// ExchangeListNamespaceLister.
-type ExchangeListNamespaceListerExpansion interface{}
 
 // PolicyListerExpansion allows custom methods to be added to
 // PolicyLister.
@@ -49,14 +33,6 @@ type PolicyListerExpansion interface{}
 // PolicyNamespaceLister.
 type PolicyNamespaceListerExpansion interface{}
 
-// PolicyListListerExpansion allows custom methods to be added to
-// PolicyListLister.
-type PolicyListListerExpansion interface{}
-
-// PolicyListNamespaceListerExpansion allows custom methods to be added to
-// PolicyListNamespaceLister.
-type PolicyListNamespaceListerExpansion interface{}
-
 // QueueListerExpansion allows custom methods to be added to
 // QueueLister.
 type QueueListerExpansion interface{}
@@ -64,14 +40,6 @@ type QueueListerExpansion interface{}
 // QueueNamespaceListerExpansion allows custom methods to be added to
 // QueueNamespaceLister.
 type QueueNamespaceListerExpansion interface{}
-
-// QueueListListerExpansion allows custom methods to be added to
-// QueueListLister.
-type QueueListListerExpansion interface{}
-
-// QueueListNamespaceListerExpansion allows custom methods to be added to
-// QueueListNamespaceLister.
-type QueueListNamespaceListerExpansion interface{}
 
 // UserListerExpansion allows custom methods to be added to
 // UserLister.
@@ -81,14 +49,6 @@ type UserListerExpansion interface{}
 // UserNamespaceLister.
 type UserNamespaceListerExpansion interface{}
 
-// UserListListerExpansion allows custom methods to be added to
-// UserListLister.
-type UserListListerExpansion interface{}
-
-// UserListNamespaceListerExpansion allows custom methods to be added to
-// UserListNamespaceLister.
-type UserListNamespaceListerExpansion interface{}
-
 // VhostListerExpansion allows custom methods to be added to
 // VhostLister.
 type VhostListerExpansion interface{}
@@ -96,11 +56,3 @@ type VhostListerExpansion interface{}
 // VhostNamespaceListerExpansion allows custom methods to be added to
 // VhostNamespaceLister.
 type VhostNamespaceListerExpansion interface{}
-
-// VhostListListerExpansion allows custom methods to be added to
-// VhostListLister.
-type VhostListListerExpansion interface{}
-
-// VhostListNamespaceListerExpansion allows custom methods to be added to
-// VhostListNamespaceLister.
-type VhostListNamespaceListerExpansion interface{}

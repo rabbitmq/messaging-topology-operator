@@ -18,17 +18,11 @@ import (
 type RabbitmqV1alpha2Interface interface {
 	RESTClient() rest.Interface
 	BindingsGetter
-	BindingListsGetter
 	ExchangesGetter
-	ExchangeListsGetter
 	PoliciesGetter
-	PolicyListsGetter
 	QueuesGetter
-	QueueListsGetter
 	UsersGetter
-	UserListsGetter
 	VhostsGetter
-	VhostListsGetter
 }
 
 // RabbitmqV1alpha2Client is used to interact with features provided by the rabbitmq.com group.
@@ -40,48 +34,24 @@ func (c *RabbitmqV1alpha2Client) Bindings(namespace string) BindingInterface {
 	return newBindings(c, namespace)
 }
 
-func (c *RabbitmqV1alpha2Client) BindingLists(namespace string) BindingListInterface {
-	return newBindingLists(c, namespace)
-}
-
 func (c *RabbitmqV1alpha2Client) Exchanges(namespace string) ExchangeInterface {
 	return newExchanges(c, namespace)
-}
-
-func (c *RabbitmqV1alpha2Client) ExchangeLists(namespace string) ExchangeListInterface {
-	return newExchangeLists(c, namespace)
 }
 
 func (c *RabbitmqV1alpha2Client) Policies(namespace string) PolicyInterface {
 	return newPolicies(c, namespace)
 }
 
-func (c *RabbitmqV1alpha2Client) PolicyLists(namespace string) PolicyListInterface {
-	return newPolicyLists(c, namespace)
-}
-
 func (c *RabbitmqV1alpha2Client) Queues(namespace string) QueueInterface {
 	return newQueues(c, namespace)
-}
-
-func (c *RabbitmqV1alpha2Client) QueueLists(namespace string) QueueListInterface {
-	return newQueueLists(c, namespace)
 }
 
 func (c *RabbitmqV1alpha2Client) Users(namespace string) UserInterface {
 	return newUsers(c, namespace)
 }
 
-func (c *RabbitmqV1alpha2Client) UserLists(namespace string) UserListInterface {
-	return newUserLists(c, namespace)
-}
-
 func (c *RabbitmqV1alpha2Client) Vhosts(namespace string) VhostInterface {
 	return newVhosts(c, namespace)
-}
-
-func (c *RabbitmqV1alpha2Client) VhostLists(namespace string) VhostListInterface {
-	return newVhostLists(c, namespace)
 }
 
 // NewForConfig creates a new RabbitmqV1alpha2Client for the given config.

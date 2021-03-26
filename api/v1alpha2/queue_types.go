@@ -68,7 +68,6 @@ type Queue struct {
 	Status QueueStatus `json:"status,omitempty"`
 }
 
-// +genclient
 // +kubebuilder:object:root=true
 
 // QueueList contains a list of Queue

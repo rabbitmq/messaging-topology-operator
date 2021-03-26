@@ -17,28 +17,16 @@ import (
 type Interface interface {
 	// Bindings returns a BindingInformer.
 	Bindings() BindingInformer
-	// BindingLists returns a BindingListInformer.
-	BindingLists() BindingListInformer
 	// Exchanges returns a ExchangeInformer.
 	Exchanges() ExchangeInformer
-	// ExchangeLists returns a ExchangeListInformer.
-	ExchangeLists() ExchangeListInformer
 	// Policies returns a PolicyInformer.
 	Policies() PolicyInformer
-	// PolicyLists returns a PolicyListInformer.
-	PolicyLists() PolicyListInformer
 	// Queues returns a QueueInformer.
 	Queues() QueueInformer
-	// QueueLists returns a QueueListInformer.
-	QueueLists() QueueListInformer
 	// Users returns a UserInformer.
 	Users() UserInformer
-	// UserLists returns a UserListInformer.
-	UserLists() UserListInformer
 	// Vhosts returns a VhostInformer.
 	Vhosts() VhostInformer
-	// VhostLists returns a VhostListInformer.
-	VhostLists() VhostListInformer
 }
 
 type version struct {
@@ -57,19 +45,9 @@ func (v *version) Bindings() BindingInformer {
 	return &bindingInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// BindingLists returns a BindingListInformer.
-func (v *version) BindingLists() BindingListInformer {
-	return &bindingListInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
 // Exchanges returns a ExchangeInformer.
 func (v *version) Exchanges() ExchangeInformer {
 	return &exchangeInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// ExchangeLists returns a ExchangeListInformer.
-func (v *version) ExchangeLists() ExchangeListInformer {
-	return &exchangeListInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Policies returns a PolicyInformer.
@@ -77,19 +55,9 @@ func (v *version) Policies() PolicyInformer {
 	return &policyInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// PolicyLists returns a PolicyListInformer.
-func (v *version) PolicyLists() PolicyListInformer {
-	return &policyListInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
 // Queues returns a QueueInformer.
 func (v *version) Queues() QueueInformer {
 	return &queueInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// QueueLists returns a QueueListInformer.
-func (v *version) QueueLists() QueueListInformer {
-	return &queueListInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Users returns a UserInformer.
@@ -97,17 +65,7 @@ func (v *version) Users() UserInformer {
 	return &userInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// UserLists returns a UserListInformer.
-func (v *version) UserLists() UserListInformer {
-	return &userListInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
 // Vhosts returns a VhostInformer.
 func (v *version) Vhosts() VhostInformer {
 	return &vhostInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// VhostLists returns a VhostListInformer.
-func (v *version) VhostLists() VhostListInformer {
-	return &vhostListInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

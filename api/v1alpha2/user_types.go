@@ -67,7 +67,6 @@ type User struct {
 	Status UserStatus `json:"status,omitempty"`
 }
 
-// +genclient
 // +kubebuilder:object:root=true
 
 // UserList contains a list of Users.

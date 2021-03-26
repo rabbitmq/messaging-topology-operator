@@ -7,4 +7,6 @@ import (
 	// Import code-generator to use in build tools
 	_ "k8s.io/code-generator"
 	_ "k8s.io/kube-openapi/cmd/openapi-gen"
+	// Import fakery
+	_ "k8s.io/client-go/discovery/fake"
 )

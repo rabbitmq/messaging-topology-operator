@@ -11,24 +11,12 @@ package v1alpha2
 
 type BindingExpansion interface{}
 
-type BindingListExpansion interface{}
-
 type ExchangeExpansion interface{}
-
-type ExchangeListExpansion interface{}
 
 type PolicyExpansion interface{}
 
-type PolicyListExpansion interface{}
-
 type QueueExpansion interface{}
-
-type QueueListExpansion interface{}
 
 type UserExpansion interface{}
 
-type UserListExpansion interface{}
-
 type VhostExpansion interface{}
-
-type VhostListExpansion interface{}

@@ -59,7 +59,6 @@ type Policy struct {
 	Status PolicyStatus `json:"status,omitempty"`
 }
 
-// +genclient
 // +kubebuilder:object:root=true
 
 // PolicyList contains a list of Policy

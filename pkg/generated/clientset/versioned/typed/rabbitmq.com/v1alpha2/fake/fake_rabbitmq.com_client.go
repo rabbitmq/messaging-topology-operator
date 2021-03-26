@@ -23,48 +23,24 @@ func (c *FakeRabbitmqV1alpha2) Bindings(namespace string) v1alpha2.BindingInterf
 	return &FakeBindings{c, namespace}
 }
 
-func (c *FakeRabbitmqV1alpha2) BindingLists(namespace string) v1alpha2.BindingListInterface {
-	return &FakeBindingLists{c, namespace}
-}
-
 func (c *FakeRabbitmqV1alpha2) Exchanges(namespace string) v1alpha2.ExchangeInterface {
 	return &FakeExchanges{c, namespace}
-}
-
-func (c *FakeRabbitmqV1alpha2) ExchangeLists(namespace string) v1alpha2.ExchangeListInterface {
-	return &FakeExchangeLists{c, namespace}
 }
 
 func (c *FakeRabbitmqV1alpha2) Policies(namespace string) v1alpha2.PolicyInterface {
 	return &FakePolicies{c, namespace}
 }
 
-func (c *FakeRabbitmqV1alpha2) PolicyLists(namespace string) v1alpha2.PolicyListInterface {
-	return &FakePolicyLists{c, namespace}
-}
-
 func (c *FakeRabbitmqV1alpha2) Queues(namespace string) v1alpha2.QueueInterface {
 	return &FakeQueues{c, namespace}
-}
-
-func (c *FakeRabbitmqV1alpha2) QueueLists(namespace string) v1alpha2.QueueListInterface {
-	return &FakeQueueLists{c, namespace}
 }
 
 func (c *FakeRabbitmqV1alpha2) Users(namespace string) v1alpha2.UserInterface {
 	return &FakeUsers{c, namespace}
 }
 
-func (c *FakeRabbitmqV1alpha2) UserLists(namespace string) v1alpha2.UserListInterface {
-	return &FakeUserLists{c, namespace}
-}
-
 func (c *FakeRabbitmqV1alpha2) Vhosts(namespace string) v1alpha2.VhostInterface {
 	return &FakeVhosts{c, namespace}
-}
-
-func (c *FakeRabbitmqV1alpha2) VhostLists(namespace string) v1alpha2.VhostListInterface {
-	return &FakeVhostLists{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate
