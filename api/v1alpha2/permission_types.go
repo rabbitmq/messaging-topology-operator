@@ -7,13 +7,14 @@ import (
 
 // PermissionSpec defines the desired state of Permission
 type PermissionSpec struct {
-	// Name of the user; has to an existing user.
-	// Required property.
+	// Name of an existing user; required property.
 	// +kubebuilder:validation:Required
 	User string `json:"user"`
-	// Required property; has to an existing vhost.
+	// Name of an existing vhost; required property.
 	// +kubebuilder:validation:Required
 	Vhost string `json:"vhost"`
+	// Permissions to grant to the user in the specific vhost; required property.
+	// See RabbitMQ doc for more information: https://www.rabbitmq.com/access-control.html#user-management
 	// +kubebuilder:validation:Required
 	Permissions VhostPermissions `json:"permissions"`
 	// Reference to the RabbitmqCluster that both the provided user and vhost are.
@@ -22,9 +23,8 @@ type PermissionSpec struct {
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
 }
 
-// Defines a RabbitMQ user permissions in the specified vhost.
+// Set of RabbitMQ permissions: configure, read and write.
 // By not setting a property (configure/write/read), it result in an empty string which does not not match any permission.
-// For more information, see official doc: https://www.rabbitmq.com/access-control.html#user-management
 type VhostPermissions struct {
 	// +kubebuilder:validation:Optional
 	Configure string `json:"configure,omitempty"`

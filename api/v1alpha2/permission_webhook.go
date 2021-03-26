@@ -19,7 +19,7 @@ func (p *Permission) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Validator = &Permission{}
 
-// no validation on update
+// no validation on create
 func (p *Permission) ValidateCreate() error {
 	return nil
 }

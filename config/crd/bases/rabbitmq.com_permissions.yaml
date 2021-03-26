@@ -37,10 +37,8 @@ spec:
             description: PermissionSpec defines the desired state of Permission
             properties:
               permissions:
-                description: 'Defines a RabbitMQ user permissions in the specified
-                  vhost. By not setting a property (configure/write/read), it result
-                  in an empty string which does not not match any permission. For
-                  more information, see official doc: https://www.rabbitmq.com/access-control.html#user-management'
+                description: 'Permissions to grant to the user in the specific vhost;
+                  required property. See RabbitMQ doc for more information: https://www.rabbitmq.com/access-control.html#user-management'
                 properties:
                   configure:
                     type: string
@@ -59,10 +57,10 @@ spec:
                 - name
                 type: object
               user:
-                description: Name of the user; has to an existing user. Required property.
+                description: Name of an existing user; required property.
                 type: string
               vhost:
-                description: Required property; has to an existing vhost.
+                description: Name of an existing vhost; required property.
                 type: string
             required:
             - permissions
