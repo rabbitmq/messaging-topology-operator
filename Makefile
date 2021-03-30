@@ -11,7 +11,9 @@ list:    ## list Makefile targets
 
 install-tools:
 	go mod download
-	grep _ tools/tools.go | awk -F '"' '{print $$2}' | xargs -t go install
+	grep _ tools/tools.go | awk -F '"' '{print $$2}' | grep -v k8s.io/code-generator | xargs -t go install
+	# This one just needs to be fetched and not installed. So we grep it out above, and just do a go get for it.
+	go get -d k8s.io/code-generator
 
 unit-tests: install-tools generate fmt vet manifests ## Run unit tests
 	ginkgo -r --randomizeAllSpecs api/ internal/
