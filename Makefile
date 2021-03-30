@@ -81,6 +81,7 @@ vet:
 # Generate code & docs
 generate: install-tools api-reference
 	controller-gen object:headerFile="hack/NOTICE.go.txt" paths="./..."
+	./hack/update-codegen.sh
 
 check-env-docker-credentials: check-env-registry-server
 ifndef DOCKER_REGISTRY_USERNAME
