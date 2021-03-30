@@ -15,7 +15,6 @@ import (
 	"errors"
 	"time"
 
-	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
@@ -36,9 +35,10 @@ const policyFinalizer = "deletion.finalizers.policies.rabbitmq.com"
 // PolicyReconciler reconciles a Policy object
 type PolicyReconciler struct {
 	client.Client
-	Log      logr.Logger
-	Scheme   *runtime.Scheme
-	Recorder record.EventRecorder
+	Log                   logr.Logger
+	Scheme                *runtime.Scheme
+	Recorder              record.EventRecorder
+	RabbitmqClientFactory internal.RabbitMQClientFactory
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=policies,verbs=get;list;watch;create;update;patch;delete
@@ -53,13 +53,13 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
 
-	rabbitClient, err := rabbitholeClient(ctx, r.Client, policy.Spec.RabbitmqClusterReference, policy.Namespace)
+	rabbitClient, err := r.RabbitmqClientFactory(ctx, r.Client, policy.Spec.RabbitmqClusterReference, policy.Namespace)
 	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
 	// the Cluster is temporarily down. Requeue until it comes back up.
-	if errors.Is(err, NoSuchRabbitmqClusterError) && policy.ObjectMeta.DeletionTimestamp.IsZero() {
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && policy.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info("Could not generate rabbitClient for non existant cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
-	} else if err != nil && !errors.Is(err, NoSuchRabbitmqClusterError) {
+	} else if err != nil && !errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
 	}
@@ -105,7 +105,7 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 }
 
 // creates or updates a given policy using rabbithole client.PutPolicy
-func (r *PolicyReconciler) putPolicy(ctx context.Context, client *rabbithole.Client, policy *topology.Policy) error {
+func (r *PolicyReconciler) putPolicy(ctx context.Context, client internal.RabbitMQClient, policy *topology.Policy) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	generatePolicy, err := internal.GeneratePolicy(policy)
@@ -139,7 +139,7 @@ func (r *PolicyReconciler) addFinalizerIfNeeded(ctx context.Context, policy *top
 
 // deletes policy from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
-func (r *PolicyReconciler) deletePolicy(ctx context.Context, client *rabbithole.Client, policy *topology.Policy) error {
+func (r *PolicyReconciler) deletePolicy(ctx context.Context, client internal.RabbitMQClient, policy *topology.Policy) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	if client == nil {

@@ -13,15 +13,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"reflect"
+	"time"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"time"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -36,9 +37,10 @@ const bindingFinalizer = "deletion.finalizers.bindings.rabbitmq.com"
 // BindingReconciler reconciles a Binding object
 type BindingReconciler struct {
 	client.Client
-	Log      logr.Logger
-	Scheme   *runtime.Scheme
-	Recorder record.EventRecorder
+	Log                   logr.Logger
+	Scheme                *runtime.Scheme
+	Recorder              record.EventRecorder
+	RabbitmqClientFactory internal.RabbitMQClientFactory
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=bindings,verbs=get;list;watch;create;update;patch;delete
@@ -52,12 +54,12 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
 
-	rabbitClient, err := rabbitholeClient(ctx, r.Client, binding.Spec.RabbitmqClusterReference, binding.Namespace)
+	rabbitClient, err := r.RabbitmqClientFactory(ctx, r.Client, binding.Spec.RabbitmqClusterReference, binding.Namespace)
 
-	if errors.Is(err, NoSuchRabbitmqClusterError) && binding.ObjectMeta.DeletionTimestamp.IsZero() {
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && binding.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
-	} else if err != nil && !errors.Is(err, NoSuchRabbitmqClusterError) {
+	} else if err != nil && !errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
 	}
@@ -101,7 +103,7 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	return ctrl.Result{}, nil
 }
 
-func (r *BindingReconciler) declareBinding(ctx context.Context, client *rabbithole.Client, binding *topology.Binding) error {
+func (r *BindingReconciler) declareBinding(ctx context.Context, client internal.RabbitMQClient, binding *topology.Binding) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	info, err := internal.GenerateBindingInfo(binding)
@@ -128,7 +130,7 @@ func (r *BindingReconciler) declareBinding(ctx context.Context, client *rabbitho
 // when server responds with '404' Not Found, it logs and does not requeue on error
 // if no binding argument is set, generating properties key by using internal.GeneratePropertiesKey
 // if binding arguments are set, list all bindings between source/destination to find the binding; if it failed to find corresponding binding, it assumes that the binding is already deleted and returns no error
-func (r *BindingReconciler) deleteBinding(ctx context.Context, client *rabbithole.Client, binding *topology.Binding) error {
+func (r *BindingReconciler) deleteBinding(ctx context.Context, client internal.RabbitMQClient, binding *topology.Binding) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	var info *rabbithole.BindingInfo
@@ -167,7 +169,7 @@ func (r *BindingReconciler) deleteBinding(ctx context.Context, client *rabbithol
 	return r.removeFinalizer(ctx, binding)
 }
 
-func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topology.Binding, client *rabbithole.Client) (*rabbithole.BindingInfo, error) {
+func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topology.Binding, client internal.RabbitMQClient) (*rabbithole.BindingInfo, error) {
 	logger.Info("binding arguments set; listing bindings from server to complete deletion")
 	arguments := make(map[string]interface{})
 	if binding.Spec.Arguments != nil {

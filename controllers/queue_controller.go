@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
@@ -34,9 +33,10 @@ const deletionFinalizer = "deletion.finalizers.queues.rabbitmq.com"
 // QueueReconciler reconciles a RabbitMQ Queue
 type QueueReconciler struct {
 	client.Client
-	Log      logr.Logger
-	Scheme   *runtime.Scheme
-	Recorder record.EventRecorder
+	Log                   logr.Logger
+	Scheme                *runtime.Scheme
+	Recorder              record.EventRecorder
+	RabbitmqClientFactory internal.RabbitMQClientFactory
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=queues,verbs=get;list;watch;create;update;patch;delete
@@ -57,13 +57,13 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	// create rabbitmq http rabbitClient
-	rabbitClient, err := rabbitholeClient(ctx, r.Client, q.Spec.RabbitmqClusterReference, q.Namespace)
+	rabbitClient, err := r.RabbitmqClientFactory(ctx, r.Client, q.Spec.RabbitmqClusterReference, q.Namespace)
 	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
 	// the Cluster is temporarily down. Requeue until it comes back up.
-	if errors.Is(err, NoSuchRabbitmqClusterError) && q.ObjectMeta.DeletionTimestamp.IsZero() {
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && q.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info("Could not generate rabbitClient for non existant cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
-	} else if err != nil && !errors.Is(err, NoSuchRabbitmqClusterError) {
+	} else if err != nil && !errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
 	}
@@ -109,7 +109,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	return ctrl.Result{}, nil
 }
 
-func (r *QueueReconciler) declareQueue(ctx context.Context, client *rabbithole.Client, q *topology.Queue) error {
+func (r *QueueReconciler) declareQueue(ctx context.Context, client internal.RabbitMQClient, q *topology.Queue) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	queueSettings, err := internal.GenerateQueueSettings(q)
@@ -146,7 +146,7 @@ func (r *QueueReconciler) addFinalizerIfNeeded(ctx context.Context, q *topology.
 // deletes queue from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
 // queues could be deleted manually or gone because of AutoDelete
-func (r *QueueReconciler) deleteQueue(ctx context.Context, client *rabbithole.Client, q *topology.Queue) error {
+func (r *QueueReconciler) deleteQueue(ctx context.Context, client internal.RabbitMQClient, q *topology.Queue) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	if client == nil {

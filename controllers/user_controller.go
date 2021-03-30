@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
@@ -43,9 +42,10 @@ const (
 // UserReconciler reconciles a User object
 type UserReconciler struct {
 	client.Client
-	Log      logr.Logger
-	Scheme   *runtime.Scheme
-	Recorder record.EventRecorder
+	Log                   logr.Logger
+	Scheme                *runtime.Scheme
+	Recorder              record.EventRecorder
+	RabbitmqClientFactory internal.RabbitMQClientFactory
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=users,verbs=get;list;watch;create;update;patch;delete
@@ -60,13 +60,13 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
 
-	rabbitClient, err := rabbitholeClient(ctx, r.Client, user.Spec.RabbitmqClusterReference, user.Namespace)
+	rabbitClient, err := r.RabbitmqClientFactory(ctx, r.Client, user.Spec.RabbitmqClusterReference, user.Namespace)
 	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
 	// the Cluster is temporarily down. Requeue until it comes back up.
-	if errors.Is(err, NoSuchRabbitmqClusterError) && user.ObjectMeta.DeletionTimestamp.IsZero() {
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && user.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info("Could not generate rabbitClient for non existant cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
-	} else if err != nil && !errors.Is(err, NoSuchRabbitmqClusterError) {
+	} else if err != nil && !errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
 	}
@@ -243,7 +243,7 @@ func (r *UserReconciler) setUserStatus(ctx context.Context, user *topology.User)
 	return nil
 }
 
-func (r *UserReconciler) declareUser(ctx context.Context, client *rabbithole.Client, user *topology.User) error {
+func (r *UserReconciler) declareUser(ctx context.Context, client internal.RabbitMQClient, user *topology.User) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	credentials, err := r.getUserCredentials(ctx, user)
@@ -298,7 +298,7 @@ func (r *UserReconciler) getUserCredentials(ctx context.Context, user *topology.
 	return credentials, nil
 }
 
-func (r *UserReconciler) deleteUser(ctx context.Context, client *rabbithole.Client, user *topology.User) error {
+func (r *UserReconciler) deleteUser(ctx context.Context, client internal.RabbitMQClient, user *topology.User) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	if client == nil {

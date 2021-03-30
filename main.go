@@ -23,6 +23,7 @@ import (
 
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
+	"github.com/rabbitmq/messaging-topology-operator/internal"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -68,64 +69,71 @@ func main() {
 	}
 
 	if err = (&controllers.QueueReconciler{
-		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("Queue"),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor(queueControllerName),
+		Client:                mgr.GetClient(),
+		Log:                   ctrl.Log.WithName("controllers").WithName("Queue"),
+		Scheme:                mgr.GetScheme(),
+		Recorder:              mgr.GetEventRecorderFor(queueControllerName),
+		RabbitmqClientFactory: internal.RabbitholeClientFactory,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", queueControllerName)
 		os.Exit(1)
 	}
 	if err = (&controllers.ExchangeReconciler{
-		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("Exchange"),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor(exchangeControllerName),
+		Client:                mgr.GetClient(),
+		Log:                   ctrl.Log.WithName("controllers").WithName("Exchange"),
+		Scheme:                mgr.GetScheme(),
+		Recorder:              mgr.GetEventRecorderFor(exchangeControllerName),
+		RabbitmqClientFactory: internal.RabbitholeClientFactory,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", exchangeControllerName)
 		os.Exit(1)
 	}
 	if err = (&controllers.BindingReconciler{
-		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("Binding"),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor(bindingControllerName),
+		Client:                mgr.GetClient(),
+		Log:                   ctrl.Log.WithName("controllers").WithName("Binding"),
+		Scheme:                mgr.GetScheme(),
+		Recorder:              mgr.GetEventRecorderFor(bindingControllerName),
+		RabbitmqClientFactory: internal.RabbitholeClientFactory,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", bindingControllerName)
 		os.Exit(1)
 	}
 	if err = (&controllers.UserReconciler{
-		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("User"),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor(userControllerName),
+		Client:                mgr.GetClient(),
+		Log:                   ctrl.Log.WithName("controllers").WithName("User"),
+		Scheme:                mgr.GetScheme(),
+		Recorder:              mgr.GetEventRecorderFor(userControllerName),
+		RabbitmqClientFactory: internal.RabbitholeClientFactory,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", userControllerName)
 		os.Exit(1)
 	}
 	if err = (&controllers.VhostReconciler{
-		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("Vhost"),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor(vhostControllerName),
+		Client:                mgr.GetClient(),
+		Log:                   ctrl.Log.WithName("controllers").WithName("Vhost"),
+		Scheme:                mgr.GetScheme(),
+		Recorder:              mgr.GetEventRecorderFor(vhostControllerName),
+		RabbitmqClientFactory: internal.RabbitholeClientFactory,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", vhostControllerName)
 		os.Exit(1)
 	}
 	if err = (&controllers.PolicyReconciler{
-		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("Policy"),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor(policyControllerName),
+		Client:                mgr.GetClient(),
+		Log:                   ctrl.Log.WithName("controllers").WithName("Policy"),
+		Scheme:                mgr.GetScheme(),
+		Recorder:              mgr.GetEventRecorderFor(policyControllerName),
+		RabbitmqClientFactory: internal.RabbitholeClientFactory,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", policyControllerName)
 		os.Exit(1)
 	}
 	if err = (&controllers.PermissionReconciler{
-		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("Permission"),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor(permissionControllerName),
+		Client:                mgr.GetClient(),
+		Log:                   ctrl.Log.WithName("controllers").WithName("Permission"),
+		Scheme:                mgr.GetScheme(),
+		Recorder:              mgr.GetEventRecorderFor(permissionControllerName),
+		RabbitmqClientFactory: internal.RabbitholeClientFactory,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", permissionControllerName)
 		os.Exit(1)

@@ -10,103 +10,11 @@ This product may include a number of subcomponents with separate copyright notic
 package controllers
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-
-	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
-	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
-	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"net"
-
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
 )
-
-var NoSuchRabbitmqClusterError = errors.New("RabbitmqCluster object does not exist")
-
-// returns a http client for the given RabbitmqCluster
-// assumes the RabbitmqCluster is reachable using its service's ClusterIP
-func rabbitholeClient(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, namespace string) (*rabbithole.Client, error) {
-	svc, secret, err := serviceSecretFromReference(ctx, c, rmq, namespace)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get service or secret object from specified rabbitmqcluster: %w", err)
-	}
-
-	ip := net.ParseIP(svc.Spec.ClusterIP)
-	if ip == nil {
-		return nil, fmt.Errorf("failed to get Cluster IP: invalid ClusterIP %q", svc.Spec.ClusterIP)
-	}
-
-	port, err := managementPort(svc)
-	if err != nil {
-		return nil, err
-	}
-
-	endpoint := fmt.Sprintf("http://%s:%d", ip.String(), port)
-
-	defaultUser, found := secret.Data["username"]
-	if !found {
-		return nil, errors.New("failed to retrieve username: key username missing from secret")
-	}
-
-	defaultUserPass, found := secret.Data["password"]
-	if !found {
-		return nil, errors.New("failed to retrieve username: key password missing from secret")
-	}
-
-	rabbitholeClient, err := rabbithole.NewClient(endpoint, string(defaultUser), string(defaultUserPass))
-	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate rabbit rabbitholeClient: %v", err)
-	}
-
-	return rabbitholeClient, nil
-}
-
-// returns RabbitMQ management port from given service
-// if both "management-tls" and "management" ports are present, returns the "management-tls" port
-func managementPort(svc *corev1.Service) (int, error) {
-	for _, port := range svc.Spec.Ports {
-		if port.Name == "management-tls" {
-			return int(port.Port), nil
-		}
-		if port.Name == "management" {
-			return int(port.Port), nil
-		}
-	}
-	return 0, fmt.Errorf("failed to find 'management' or 'management-tls' from service %s", svc.Name)
-}
-
-func rabbitmqClusterFromReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, namespace string) (*rabbitmqv1beta1.RabbitmqCluster, error) {
-	cluster := &rabbitmqv1beta1.RabbitmqCluster{}
-	if err := c.Get(ctx, types.NamespacedName{Name: rmq.Name, Namespace: namespace}, cluster); err != nil {
-		return nil, fmt.Errorf("failed to get cluster from reference: %s Error: %w", err, NoSuchRabbitmqClusterError)
-	}
-	return cluster, nil
-}
-
-func serviceSecretFromReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, namespace string) (*corev1.Service, *corev1.Secret, error) {
-	cluster, err := rabbitmqClusterFromReference(ctx, c, rmq, namespace)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	secret := &corev1.Secret{}
-	// TODO: use cluster.Status.Binding instead of cluster.Status.DefaultUser.SecretReference.Name after the PR exposes Status.Binding is released
-	if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.DefaultUser.SecretReference.Name}, secret); err != nil {
-		return nil, nil, err
-	}
-
-	svc := &corev1.Service{}
-	if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.DefaultUser.ServiceReference.Name}, svc); err != nil {
-		return nil, nil, err
-	}
-	return svc, secret, nil
-}
 
 // TODO: check possible status code response from RabbitMQ
 // validate status code above 300 might not be all failure case
