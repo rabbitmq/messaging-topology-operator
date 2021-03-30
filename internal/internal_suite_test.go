@@ -14,9 +14,15 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/ghttp"
 )
 
 func TestResource(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Internal Suite")
+}
+
+func mockRabbitMQServer() *ghttp.Server {
+	server := ghttp.NewServer()
+	return server
 }

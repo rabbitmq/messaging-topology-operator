@@ -4,14 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
+	"time"
+
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"time"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -26,9 +26,10 @@ const permissionFinalizer = "deletion.finalizers.permissions.rabbitmq.com"
 // PermissionReconciler reconciles a Permission object
 type PermissionReconciler struct {
 	client.Client
-	Log      logr.Logger
-	Scheme   *runtime.Scheme
-	Recorder record.EventRecorder
+	Log                   logr.Logger
+	Scheme                *runtime.Scheme
+	Recorder              record.EventRecorder
+	RabbitmqClientFactory internal.RabbitMQClientFactory
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=permissions,verbs=get;list;watch;create;update;patch;delete
@@ -42,13 +43,13 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
 
-	rabbitClient, err := rabbitholeClient(ctx, r.Client, permission.Spec.RabbitmqClusterReference, permission.Namespace)
+	rabbitClient, err := r.RabbitmqClientFactory(ctx, r.Client, permission.Spec.RabbitmqClusterReference, permission.Namespace)
 	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
 	// the Cluster is temporarily down. Requeue until it comes back up.
-	if errors.Is(err, NoSuchRabbitmqClusterError) && permission.ObjectMeta.DeletionTimestamp.IsZero() {
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && permission.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
-	} else if err != nil && !errors.Is(err, NoSuchRabbitmqClusterError) {
+	} else if err != nil && !errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
 	}
@@ -93,7 +94,7 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	return ctrl.Result{}, nil
 }
 
-func (r *PermissionReconciler) updatePermissions(ctx context.Context, client *rabbithole.Client, permission *topology.Permission) error {
+func (r *PermissionReconciler) updatePermissions(ctx context.Context, client internal.RabbitMQClient, permission *topology.Permission) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	if err := validateResponse(client.UpdatePermissionsIn(permission.Spec.Vhost, permission.Spec.User, internal.GeneratePermissions(permission))); err != nil {
@@ -118,7 +119,7 @@ func (r *PermissionReconciler) addFinalizerIfNeeded(ctx context.Context, permiss
 	return nil
 }
 
-func (r *PermissionReconciler) revokePermissions(ctx context.Context, client *rabbithole.Client, permission *topology.Permission) error {
+func (r *PermissionReconciler) revokePermissions(ctx context.Context, client internal.RabbitMQClient, permission *topology.Permission) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	if client == nil {

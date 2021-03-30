@@ -292,9 +292,9 @@ PermissionSpec defines the desired state of Permission
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`user`* __string__ | Name of the user; has to an existing user. Required property.
-| *`vhost`* __string__ | Required property; has to an existing vhost.
-| *`permissions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-vhostpermissions[$$VhostPermissions$$]__ | 
+| *`user`* __string__ | Name of an existing user; required property.
+| *`vhost`* __string__ | Name of an existing vhost; required property.
+| *`permissions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-vhostpermissions[$$VhostPermissions$$]__ | Permissions to grant to the user in the specific vhost; required property. See RabbitMQ doc for more information: https://www.rabbitmq.com/access-control.html#user-management
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that both the provided user and vhost are. Required property.
 |===
 
@@ -643,7 +643,7 @@ VhostList contains a list of Vhost
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-vhostpermissions"]
 ==== VhostPermissions 
 
-Defines a RabbitMQ user permissions in the specified vhost. By not setting a property (configure/write/read), it result in an empty string which does not not match any permission. For more information, see official doc: https://www.rabbitmq.com/access-control.html#user-management
+Set of RabbitMQ permissions: configure, read and write. By not setting a property (configure/write/read), it result in an empty string which does not not match any permission.
 
 .Appears In:
 ****
