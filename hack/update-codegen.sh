@@ -26,7 +26,7 @@ cp api/v1alpha2/* api/rabbitmq.com/v1alpha2/
 bash "${CODEGEN_PKG}"/generate-groups.sh "client,informer,lister" \
   github.com/rabbitmq/messaging-topology-operator/pkg/generated github.com/rabbitmq/messaging-topology-operator/api \
   rabbitmq.com:v1alpha2 \
-  --go-header-file "${SCRIPT_ROOT}"/hack/boilerplate.go.txt --output-base "${CODEGEN_OUTPUT_BASE}"
+  --go-header-file "${SCRIPT_ROOT}"/hack/NOTICE.go.txt --output-base "${CODEGEN_OUTPUT_BASE}"
 
 if [ -d "${CODEGEN_OUTPUT_GENERATED}" ]; then
   mkdir -p "${SCRIPT_ROOT}"/pkg/generated
