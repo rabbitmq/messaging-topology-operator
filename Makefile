@@ -11,7 +11,11 @@ list:    ## list Makefile targets
 
 install-tools:
 	go mod download
-	grep _ tools/tools.go | awk -F '"' '{print $$2}' | xargs -t go install
+	grep _ tools/tools.go | awk -F '"' '{print $$2}' | grep -v k8s.io/code-generator | xargs -t go install
+	# This one just needs to be fetched and not installed, get & mod so it ends up in the right place.
+	# Note we grep it out above, and just do a go get & go mod for it.
+	go get -d k8s.io/code-generator
+	go mod vendor
 
 unit-tests: install-tools generate fmt vet manifests ## Run unit tests
 	ginkgo -r --randomizeAllSpecs api/ internal/
@@ -81,6 +85,7 @@ vet:
 # Generate code & docs
 generate: install-tools api-reference
 	controller-gen object:headerFile="hack/NOTICE.go.txt" paths="./..."
+	./hack/update-codegen.sh
 
 check-env-docker-credentials: check-env-registry-server
 ifndef DOCKER_REGISTRY_USERNAME

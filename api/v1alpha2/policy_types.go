@@ -46,6 +46,7 @@ type PolicyStatus struct {
 	Conditions         []Condition `json:"conditions,omitempty"`
 }
 
+// +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
