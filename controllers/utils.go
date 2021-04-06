@@ -32,7 +32,7 @@ func validateResponse(res *http.Response, err error) error {
 }
 
 // return a custom error if status code is 404
-// used in QueueReconciler.deleteQueue(), ExchangeReconcilier.revokePermissions() and UserReconciler.deleteUser()
+// used in all controllers when deleting objects from rabbitmq server
 var NotFound = errors.New("not found")
 
 func validateResponseForDeletion(res *http.Response, err error) error {
