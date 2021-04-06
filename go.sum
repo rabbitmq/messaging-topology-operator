@@ -497,7 +497,6 @@ github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182aff
 github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369/go.mod h1:BSXmuO+STAnVfrANrmjBb36TMTDstsz7MSK+HVaYKv4=
 github.com/maxbrunsfeld/counterfeiter/v6 v6.4.1 h1:hZD/8vBuw7x1WqRXD/WGjVjipbbo/HcDBgySYYbrUSk=
 github.com/maxbrunsfeld/counterfeiter/v6 v6.4.1/go.mod h1:DK1Cjkc0E49ShgRVs5jy5ASrM15svSnem3K/hiSGD8o=
-github.com/michaelklishin/rabbit-hole/v2 v2.6.0 h1:oMLErqUVIYpXClYujgkCXtJNLswnth0LlJ8G3lKPF30=
 github.com/michaelklishin/rabbit-hole/v2 v2.6.0/go.mod h1:VZQTDutXFmoyrLvlRjM79MEPb0+xCLLhV5yBTjwMWkM=
 github.com/michaelklishin/rabbit-hole/v2 v2.7.0 h1:y+M7/XG4KYGku90mjBP3RdvNbnlM7US2fEHlMogFUJY=
 github.com/michaelklishin/rabbit-hole/v2 v2.7.0/go.mod h1:VZQTDutXFmoyrLvlRjM79MEPb0+xCLLhV5yBTjwMWkM=
