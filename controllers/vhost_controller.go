@@ -47,7 +47,7 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
 	// the Cluster is temporarily down. Requeue until it comes back up.
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && vhost.ObjectMeta.DeletionTimestamp.IsZero() {
-		logger.Info("Could not generate rabbitClient for non existant cluster: " + err.Error())
+		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
 	} else if err != nil && !errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		logger.Error(err, failedGenerateRabbitClient)
