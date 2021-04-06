@@ -11,7 +11,6 @@ package internal
 
 import (
 	"fmt"
-	"strings"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
@@ -35,7 +34,7 @@ func GenerateUserSettings(credentials *corev1.Secret, tags []topology.UserTag) (
 
 	return rabbithole.UserSettings{
 		Name: string(username),
-		Tags: strings.Join(userTagStrings, ","),
+		Tags: userTagStrings,
 		// To avoid sending raw passwords over the wire, compute a password hash using a random salt
 		// and use this in the UserSettings instead.
 		// For more information on this hashing algorithm, see

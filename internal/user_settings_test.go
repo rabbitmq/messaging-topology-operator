@@ -3,7 +3,6 @@ package internal_test
 import (
 	"crypto/sha512"
 	"encoding/base64"
-	"strings"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	. "github.com/onsi/ginkgo"
@@ -32,7 +31,7 @@ var _ = Describe("GenerateUserSettings", func() {
 		settings, err := internal.GenerateUserSettings(&credentialSecret, userTags)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(settings.Name).To(Equal("my-rabbit-user"))
-		Expect(strings.Split(settings.Tags, ",")).To(ConsistOf("administrator", "monitoring"))
+		Expect(settings.Tags).To(ConsistOf("administrator", "monitoring"))
 		Expect(settings.HashingAlgorithm.String()).To(Equal(rabbithole.HashingAlgorithmSHA512.String()))
 
 		// The first 4 bytes of the PasswordHash will be the salt used in the hashing algorithm.
