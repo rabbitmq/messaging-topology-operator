@@ -51,6 +51,7 @@ type UserStatus struct {
 // +kubebuilder:validation:Enum=management;policymaker;monitoring;administrator
 type UserTag string
 
+// +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
