@@ -70,7 +70,7 @@ var _ = Describe("Users", func() {
 
 			Expect(*userInfo).To(MatchFields(IgnoreExtras, Fields{
 				"Name":             Equal(rawUsername),
-				"Tags":             Equal("policymaker,management"),
+				"Tags":             ConsistOf("policymaker", "management"),
 				"HashingAlgorithm": Equal(rabbithole.HashingAlgorithmSHA512),
 			}))
 			Expect(userInfo.PasswordHash).NotTo(BeEmpty())

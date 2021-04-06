@@ -110,11 +110,12 @@ type FakeRabbitMQClient struct {
 		result1 *http.Response
 		result2 error
 	}
-	DeleteQueueStub        func(string, string) (*http.Response, error)
+	DeleteQueueStub        func(string, string, ...rabbithole.QueueDeleteOptions) (*http.Response, error)
 	deleteQueueMutex       sync.RWMutex
 	deleteQueueArgsForCall []struct {
 		arg1 string
 		arg2 string
+		arg3 []rabbithole.QueueDeleteOptions
 	}
 	deleteQueueReturns struct {
 		result1 *http.Response
@@ -699,19 +700,20 @@ func (fake *FakeRabbitMQClient) DeletePolicyReturnsOnCall(i int, result1 *http.R
 	}{result1, result2}
 }
 
-func (fake *FakeRabbitMQClient) DeleteQueue(arg1 string, arg2 string) (*http.Response, error) {
+func (fake *FakeRabbitMQClient) DeleteQueue(arg1 string, arg2 string, arg3 ...rabbithole.QueueDeleteOptions) (*http.Response, error) {
 	fake.deleteQueueMutex.Lock()
 	ret, specificReturn := fake.deleteQueueReturnsOnCall[len(fake.deleteQueueArgsForCall)]
 	fake.deleteQueueArgsForCall = append(fake.deleteQueueArgsForCall, struct {
 		arg1 string
 		arg2 string
-	}{arg1, arg2})
+		arg3 []rabbithole.QueueDeleteOptions
+	}{arg1, arg2, arg3})
 	stub := fake.DeleteQueueStub
 	fakeReturns := fake.deleteQueueReturns
-	fake.recordInvocation("DeleteQueue", []interface{}{arg1, arg2})
+	fake.recordInvocation("DeleteQueue", []interface{}{arg1, arg2, arg3})
 	fake.deleteQueueMutex.Unlock()
 	if stub != nil {
-		return stub(arg1, arg2)
+		return stub(arg1, arg2, arg3...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -725,17 +727,17 @@ func (fake *FakeRabbitMQClient) DeleteQueueCallCount() int {
 	return len(fake.deleteQueueArgsForCall)
 }
 
-func (fake *FakeRabbitMQClient) DeleteQueueCalls(stub func(string, string) (*http.Response, error)) {
+func (fake *FakeRabbitMQClient) DeleteQueueCalls(stub func(string, string, ...rabbithole.QueueDeleteOptions) (*http.Response, error)) {
 	fake.deleteQueueMutex.Lock()
 	defer fake.deleteQueueMutex.Unlock()
 	fake.DeleteQueueStub = stub
 }
 
-func (fake *FakeRabbitMQClient) DeleteQueueArgsForCall(i int) (string, string) {
+func (fake *FakeRabbitMQClient) DeleteQueueArgsForCall(i int) (string, string, []rabbithole.QueueDeleteOptions) {
 	fake.deleteQueueMutex.RLock()
 	defer fake.deleteQueueMutex.RUnlock()
 	argsForCall := fake.deleteQueueArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeRabbitMQClient) DeleteQueueReturns(result1 *http.Response, result2 error) {
