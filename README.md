@@ -26,6 +26,7 @@ You can create RabbitMQ resources:
 4. [User](./docs/examples/users)
 5. [Vhost](./docs/examples/vhosts)
 6. [Policy](./docs/examples/policies)
+7. [Permissions](./docs/examples/permissions)
 
 ## Install without cert-manager
 

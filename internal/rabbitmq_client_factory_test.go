@@ -81,7 +81,7 @@ var _ = Describe("RabbitholeClientFactory", func() {
 			Spec: corev1.ServiceSpec{
 				ClusterIP: fakeRabbitMQURL.Hostname(),
 				Ports: []corev1.ServicePort{
-					corev1.ServicePort{
+					{
 						Name: "management",
 						Port: int32(fakeRabbitMQPort),
 					},
