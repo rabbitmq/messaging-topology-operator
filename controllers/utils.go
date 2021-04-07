@@ -22,6 +22,9 @@ func validateResponse(res *http.Response, err error) error {
 	if err != nil {
 		return err
 	}
+	if res == nil {
+		return errors.New("failed to validate empty HTTP response")
+	}
 
 	if res.StatusCode >= http.StatusMultipleChoices {
 		body, _ := ioutil.ReadAll(res.Body)
