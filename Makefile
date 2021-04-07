@@ -15,7 +15,6 @@ install-tools:
 	# This one just needs to be fetched and not installed, get & mod so it ends up in the right place.
 	# Note we grep it out above, and just do a go get & go mod for it.
 	go get -d k8s.io/code-generator
-	go mod vendor
 
 unit-tests: install-tools generate fmt vet manifests ## Run unit tests
 	ginkgo -r --randomizeAllSpecs api/ internal/
@@ -85,6 +84,8 @@ vet:
 # Generate code & docs
 generate: install-tools api-reference
 	controller-gen object:headerFile="hack/NOTICE.go.txt" paths="./..."
+
+generate-client-set:
 	./hack/update-codegen.sh
 
 check-env-docker-credentials: check-env-registry-server
