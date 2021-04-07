@@ -51,11 +51,10 @@ var _ = Describe("RabbitholeClientFactory", func() {
 				Namespace: "rabbitmq-system",
 			},
 			Status: rabbitmqv1beta1.RabbitmqClusterStatus{
+				Binding: &corev1.LocalObjectReference{
+					Name: "rmq-default-user-credentials",
+				},
 				DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
-					SecretReference: &rabbitmqv1beta1.RabbitmqClusterSecretReference{
-						Name:      "rmq-default-user-credentials",
-						Namespace: "rabbitmq-system",
-					},
 					ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
 						Name:      "rmq-service",
 						Namespace: "rabbitmq-system",
@@ -96,7 +95,7 @@ var _ = Describe("RabbitholeClientFactory", func() {
 	AfterEach(func() {
 		fakeRabbitMQServer.Close()
 	})
-	It("generates a rabbithole client which makes sucessful requests to the RabbitMQ Server", func() {
+	It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
 		generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(generatedClient).NotTo(BeNil())
