@@ -7,3 +7,14 @@ const (
 	failedGenerateRabbitClient = "Failed to generate http rabbitClient"
 	noSuchRabbitDeletion       = "RabbitmqCluster is already gone: cannot find its connection secret"
 )
+
+// names for each of the controllers
+const (
+	VhostControllerName      = "vhost-controller"
+	QueueControllerName      = "queue-controller"
+	ExchangeControllerName   = "exchange-controller"
+	BindingControllerName    = "binding-controller"
+	UserControllerName       = "user-controller"
+	PolicyControllerName     = "policy-controller"
+	PermissionControllerName = "permission-controller"
+)

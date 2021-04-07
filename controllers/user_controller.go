@@ -323,6 +323,7 @@ func (r *UserReconciler) deleteUser(ctx context.Context, client internal.RabbitM
 		logger.Error(err, msg, "user", user.Name)
 		return err
 	}
+	r.Recorder.Event(user, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted user")
 	return r.removeFinalizer(ctx, user)
 }
 

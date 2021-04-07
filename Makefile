@@ -19,6 +19,11 @@ install-tools:
 unit-tests: install-tools generate fmt vet manifests ## Run unit tests
 	ginkgo -r --randomizeAllSpecs api/ internal/
 
+integration-tests: install-tools generate fmt vet manifests ## Run integration tests
+	ginkgo -r --randomizeAllSpecs controllers/
+
+local-tests: unit-tests integration-tests ## Run all local tests (unit & integration)
+
 system-tests: ## run end-to-end tests against Kubernetes cluster defined in ~/.kube/config. Expects cluster operator and messaging topology operator to be installed in the cluster
 	NAMESPACE="rabbitmq-system" ginkgo -randomizeAllSpecs -r system_tests/
 

@@ -22,6 +22,9 @@ func validateResponse(res *http.Response, err error) error {
 	if err != nil {
 		return err
 	}
+	if res == nil {
+		return errors.New("failed to validate empty HTTP response")
+	}
 
 	if res.StatusCode >= http.StatusMultipleChoices {
 		body, _ := ioutil.ReadAll(res.Body)
@@ -36,16 +39,8 @@ func validateResponse(res *http.Response, err error) error {
 var NotFound = errors.New("not found")
 
 func validateResponseForDeletion(res *http.Response, err error) error {
-	if res.StatusCode == http.StatusNotFound {
+	if res != nil && res.StatusCode == http.StatusNotFound {
 		return NotFound
 	}
-	if err != nil {
-		return err
-	}
-	if res.StatusCode >= http.StatusMultipleChoices {
-		body, _ := ioutil.ReadAll(res.Body)
-		res.Body.Close()
-		return fmt.Errorf("request failed with status code %d and body %q", res.StatusCode, body)
-	}
-	return nil
+	return validateResponse(res, err)
 }
