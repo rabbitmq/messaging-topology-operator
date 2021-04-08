@@ -120,8 +120,7 @@ func serviceSecretFromReference(ctx context.Context, c client.Client, rmq topolo
 	}
 
 	secret := &corev1.Secret{}
-	// TODO: use cluster.Status.Binding instead of cluster.Status.DefaultUser.SecretReference.Name after the PR exposes Status.Binding is released
-	if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.DefaultUser.SecretReference.Name}, secret); err != nil {
+	if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.Binding.Name}, secret); err != nil {
 		return nil, nil, err
 	}
 
