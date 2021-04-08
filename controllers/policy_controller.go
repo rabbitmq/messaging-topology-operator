@@ -156,6 +156,7 @@ func (r *PolicyReconciler) deletePolicy(ctx context.Context, client internal.Rab
 		logger.Error(err, msg, "policy", policy.Spec.Name)
 		return err
 	}
+	r.Recorder.Event(policy, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted policy")
 	return r.removeFinalizer(ctx, policy)
 }
 

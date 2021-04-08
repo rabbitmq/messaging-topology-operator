@@ -36,89 +36,87 @@ var _ = Describe("UserController", func() {
 			}
 		})
 
-		Context("Creating a user", func() {
-			When("the RabbitMQ Client returns a HTTP error response", func() {
-				BeforeEach(func() {
-					userName = "test-user-http-error"
-					fakeRabbitMQClient.PutUserReturns(&http.Response{
-						Status:     "418 I'm a teapot",
-						StatusCode: 418,
-					}, errors.New("Some HTTP error"))
-				})
-
-				It("sets the status condition to indicate a failure to reconcile", func() {
-					Expect(client.Create(ctx, &user)).To(Succeed())
-					EventuallyWithOffset(1, func() []topology.Condition {
-						_ = client.Get(
-							ctx,
-							types.NamespacedName{Name: user.Name, Namespace: user.Namespace},
-							&user,
-						)
-
-						return user.Status.Conditions
-					}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-						"Type":    Equal(topology.ConditionType("Ready")),
-						"Reason":  Equal("FailedCreateOrUpdate"),
-						"Status":  Equal(corev1.ConditionFalse),
-						"Message": ContainSubstring("Some HTTP error"),
-					})))
-				})
+		When("the RabbitMQ Client returns a HTTP error response", func() {
+			BeforeEach(func() {
+				userName = "test-user-http-error"
+				fakeRabbitMQClient.PutUserReturns(&http.Response{
+					Status:     "418 I'm a teapot",
+					StatusCode: 418,
+				}, errors.New("Some HTTP error"))
 			})
 
-			When("the RabbitMQ Client returns a Go error response", func() {
-				BeforeEach(func() {
-					userName = "test-user-go-error"
-					fakeRabbitMQClient.PutUserReturns(nil, errors.New("Hit a exception"))
-				})
+			It("sets the status condition to indicate a failure to reconcile", func() {
+				Expect(client.Create(ctx, &user)).To(Succeed())
+				EventuallyWithOffset(1, func() []topology.Condition {
+					_ = client.Get(
+						ctx,
+						types.NamespacedName{Name: user.Name, Namespace: user.Namespace},
+						&user,
+					)
 
-				It("sets the status condition to indicate a failure to reconcile", func() {
-					Expect(client.Create(ctx, &user)).To(Succeed())
-					EventuallyWithOffset(1, func() []topology.Condition {
-						_ = client.Get(
-							ctx,
-							types.NamespacedName{Name: user.Name, Namespace: user.Namespace},
-							&user,
-						)
-
-						return user.Status.Conditions
-					}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-						"Type":    Equal(topology.ConditionType("Ready")),
-						"Reason":  Equal("FailedCreateOrUpdate"),
-						"Status":  Equal(corev1.ConditionFalse),
-						"Message": ContainSubstring("Hit a exception"),
-					})))
-				})
-			})
-
-			When("the RabbitMQ Client successfully creates a user", func() {
-				BeforeEach(func() {
-					userName = "test-user-success"
-					fakeRabbitMQClient.PutUserReturns(&http.Response{
-						Status:     "201 Created",
-						StatusCode: http.StatusCreated,
-					}, nil)
-				})
-
-				It("sets the status condition to indicate a success in reconciling", func() {
-					Expect(client.Create(ctx, &user)).To(Succeed())
-					EventuallyWithOffset(1, func() []topology.Condition {
-						_ = client.Get(
-							ctx,
-							types.NamespacedName{Name: user.Name, Namespace: user.Namespace},
-							&user,
-						)
-
-						return user.Status.Conditions
-					}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-						"Type":   Equal(topology.ConditionType("Ready")),
-						"Reason": Equal("SuccessfulCreateOrUpdate"),
-						"Status": Equal(corev1.ConditionTrue),
-					})))
-				})
+					return user.Status.Conditions
+				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+					"Type":    Equal(topology.ConditionType("Ready")),
+					"Reason":  Equal("FailedCreateOrUpdate"),
+					"Status":  Equal(corev1.ConditionFalse),
+					"Message": ContainSubstring("Some HTTP error"),
+				})))
 			})
 		})
 
-		Context("Deleting a user", func() {
+		When("the RabbitMQ Client returns a Go error response", func() {
+			BeforeEach(func() {
+				userName = "test-user-go-error"
+				fakeRabbitMQClient.PutUserReturns(nil, errors.New("Hit a exception"))
+			})
+
+			It("sets the status condition to indicate a failure to reconcile", func() {
+				Expect(client.Create(ctx, &user)).To(Succeed())
+				EventuallyWithOffset(1, func() []topology.Condition {
+					_ = client.Get(
+						ctx,
+						types.NamespacedName{Name: user.Name, Namespace: user.Namespace},
+						&user,
+					)
+
+					return user.Status.Conditions
+				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+					"Type":    Equal(topology.ConditionType("Ready")),
+					"Reason":  Equal("FailedCreateOrUpdate"),
+					"Status":  Equal(corev1.ConditionFalse),
+					"Message": ContainSubstring("Hit a exception"),
+				})))
+			})
+		})
+
+		When("the RabbitMQ Client successfully creates a user", func() {
+			BeforeEach(func() {
+				userName = "test-user-success"
+				fakeRabbitMQClient.PutUserReturns(&http.Response{
+					Status:     "201 Created",
+					StatusCode: http.StatusCreated,
+				}, nil)
+			})
+
+			It("sets the status condition to indicate a success in reconciling", func() {
+				Expect(client.Create(ctx, &user)).To(Succeed())
+				EventuallyWithOffset(1, func() []topology.Condition {
+					_ = client.Get(
+						ctx,
+						types.NamespacedName{Name: user.Name, Namespace: user.Namespace},
+						&user,
+					)
+
+					return user.Status.Conditions
+				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(topology.ConditionType("Ready")),
+					"Reason": Equal("SuccessfulCreateOrUpdate"),
+					"Status": Equal(corev1.ConditionTrue),
+				})))
+			})
+		})
+
+		When("Deleting a user", func() {
 			JustBeforeEach(func() {
 				fakeRabbitMQClient.PutUserReturns(&http.Response{
 					Status:     "201 Created",

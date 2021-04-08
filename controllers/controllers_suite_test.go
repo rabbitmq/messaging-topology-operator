@@ -11,6 +11,7 @@ package controllers_test
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
 
@@ -40,9 +41,10 @@ var (
 	client                    runtimeClient.Client
 	clientSet                 *kubernetes.Clientset
 	ctx                       = context.Background()
-	fakeRabbitMQClient        internalfakes.FakeRabbitMQClient
+	fakeRabbitMQClient        *internalfakes.FakeRabbitMQClient
+	fakeRabbitMQClientError   error
 	fakeRabbitMQClientFactory = func(ctx context.Context, c runtimeClient.Client, rmq topology.RabbitmqClusterReference, namespace string) (internal.RabbitMQClient, error) {
-		return &fakeRabbitMQClient, nil
+		return fakeRabbitMQClient, fakeRabbitMQClientError
 	}
 	fakeRecorder *record.FakeRecorder
 )
@@ -135,7 +137,8 @@ var _ = BeforeSuite(func(done Done) {
 }, 60)
 
 var _ = BeforeEach(func() {
-	fakeRabbitMQClient = internalfakes.FakeRabbitMQClient{}
+	fakeRabbitMQClient = &internalfakes.FakeRabbitMQClient{}
+	fakeRabbitMQClientError = nil
 })
 
 var _ = AfterEach(func() {
@@ -156,4 +159,14 @@ func observedEvents() []string {
 		events = append(events, <-fakeRecorder.Events)
 	}
 	return events
+}
+
+func prepareClientError() {
+	fakeRabbitMQClient = nil
+	fakeRabbitMQClientError = errors.New("such a golang error")
+}
+
+func prepareNoSuchClusterError() {
+	fakeRabbitMQClient = nil
+	fakeRabbitMQClientError = internal.NoSuchRabbitmqClusterError
 }

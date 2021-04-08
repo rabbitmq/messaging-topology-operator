@@ -142,6 +142,7 @@ func (r *VhostReconciler) deleteVhost(ctx context.Context, client internal.Rabbi
 		return err
 	}
 
+	r.Recorder.Event(vhost, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted vhost")
 	return r.removeFinalizer(ctx, vhost)
 }
 

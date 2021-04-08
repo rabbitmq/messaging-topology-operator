@@ -163,6 +163,7 @@ func (r *QueueReconciler) deleteQueue(ctx context.Context, client internal.Rabbi
 		logger.Error(err, msg, "queue", q.Spec.Name)
 		return err
 	}
+	r.Recorder.Event(q, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted queue")
 	return r.removeFinalizer(ctx, q)
 }
 

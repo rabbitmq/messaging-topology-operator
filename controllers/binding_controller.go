@@ -166,6 +166,7 @@ func (r *BindingReconciler) deleteBinding(ctx context.Context, client internal.R
 	}
 
 	logger.Info("Successfully deleted binding")
+	r.Recorder.Event(binding, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted binding")
 	return r.removeFinalizer(ctx, binding)
 }
 

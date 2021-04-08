@@ -136,6 +136,7 @@ func (r *PermissionReconciler) revokePermissions(ctx context.Context, client int
 		logger.Error(err, msg, "user", permission.Spec.User, "vhost", permission.Spec.Vhost)
 		return err
 	}
+	r.Recorder.Event(permission, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted permission")
 	return r.removeFinalizer(ctx, permission)
 }
 

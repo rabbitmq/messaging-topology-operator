@@ -156,6 +156,7 @@ func (r *ExchangeReconciler) deleteExchange(ctx context.Context, client internal
 		logger.Error(err, msg, "exchange", exchange.Spec.Name)
 		return err
 	}
+	r.Recorder.Event(exchange, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted exchange")
 	return r.removeFinalizer(ctx, exchange)
 }
 
