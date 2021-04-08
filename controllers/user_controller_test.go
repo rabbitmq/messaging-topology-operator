@@ -18,24 +18,24 @@ import (
 )
 
 var _ = Describe("UserController", func() {
+	var user topology.User
+	var userName string
+
+	JustBeforeEach(func() {
+		user = topology.User{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      userName,
+				Namespace: "default",
+			},
+			Spec: topology.UserSpec{
+				RabbitmqClusterReference: topology.RabbitmqClusterReference{
+					Name: "example-rabbit",
+				},
+			},
+		}
+	})
+
 	When("creating a user", func() {
-		var user topology.User
-		var userName string
-
-		JustBeforeEach(func() {
-			user = topology.User{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      userName,
-					Namespace: "default",
-				},
-				Spec: topology.UserSpec{
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name: "example-rabbit",
-					},
-				},
-			}
-		})
-
 		When("the RabbitMQ Client returns a HTTP error response", func() {
 			BeforeEach(func() {
 				userName = "test-user-http-error"
@@ -115,84 +115,84 @@ var _ = Describe("UserController", func() {
 				})))
 			})
 		})
+	})
 
-		When("Deleting a user", func() {
-			JustBeforeEach(func() {
-				fakeRabbitMQClient.PutUserReturns(&http.Response{
-					Status:     "201 Created",
-					StatusCode: http.StatusCreated,
+	When("Deleting a user", func() {
+		JustBeforeEach(func() {
+			fakeRabbitMQClient.PutUserReturns(&http.Response{
+				Status:     "201 Created",
+				StatusCode: http.StatusCreated,
+			}, nil)
+			Expect(client.Create(ctx, &user)).To(Succeed())
+			EventuallyWithOffset(1, func() []topology.Condition {
+				_ = client.Get(
+					ctx,
+					types.NamespacedName{Name: user.Name, Namespace: user.Namespace},
+					&user,
+				)
+
+				return user.Status.Conditions
+			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":   Equal(topology.ConditionType("Ready")),
+				"Reason": Equal("SuccessfulCreateOrUpdate"),
+				"Status": Equal(corev1.ConditionTrue),
+			})))
+		})
+
+		When("the RabbitMQ Client returns a HTTP error response", func() {
+			BeforeEach(func() {
+				userName = "delete-user-http-error"
+				fakeRabbitMQClient.DeleteUserReturns(&http.Response{
+					Status:     "502 Bad Gateway",
+					StatusCode: http.StatusBadGateway,
+					Body:       ioutil.NopCloser(bytes.NewBufferString("Hello World")),
 				}, nil)
-				Expect(client.Create(ctx, &user)).To(Succeed())
-				EventuallyWithOffset(1, func() []topology.Condition {
-					_ = client.Get(
-						ctx,
-						types.NamespacedName{Name: user.Name, Namespace: user.Namespace},
-						&user,
-					)
-
-					return user.Status.Conditions
-				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(topology.ConditionType("Ready")),
-					"Reason": Equal("SuccessfulCreateOrUpdate"),
-					"Status": Equal(corev1.ConditionTrue),
-				})))
 			})
 
-			When("the RabbitMQ Client returns a HTTP error response", func() {
-				BeforeEach(func() {
-					userName = "delete-user-http-error"
-					fakeRabbitMQClient.DeleteUserReturns(&http.Response{
-						Status:     "502 Bad Gateway",
-						StatusCode: http.StatusBadGateway,
-						Body:       ioutil.NopCloser(bytes.NewBufferString("Hello World")),
-					}, nil)
-				})
+			It("raises an event to indicate a failure to delete", func() {
+				Expect(client.Delete(ctx, &user)).To(Succeed())
+				Consistently(func() bool {
+					err := client.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{})
+					return apierrors.IsNotFound(err)
+				}, 5).Should(BeFalse())
+				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete user"))
+			})
+		})
 
-				It("raises an event to indicate a failure to delete", func() {
-					Expect(client.Delete(ctx, &user)).To(Succeed())
-					Consistently(func() bool {
-						err := client.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{})
-						return apierrors.IsNotFound(err)
-					}, 5).Should(BeFalse())
-					Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete user"))
-				})
+		When("the RabbitMQ Client returns a Go error response", func() {
+			BeforeEach(func() {
+				userName = "delete-user-go-error"
+				fakeRabbitMQClient.DeleteUserReturns(nil, errors.New("some error"))
 			})
 
-			When("the RabbitMQ Client returns a Go error response", func() {
-				BeforeEach(func() {
-					userName = "delete-user-go-error"
-					fakeRabbitMQClient.DeleteUserReturns(nil, errors.New("some error"))
-				})
+			It("raises an event to indicate a failure to delete", func() {
+				Expect(client.Delete(ctx, &user)).To(Succeed())
+				Consistently(func() bool {
+					err := client.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{})
+					return apierrors.IsNotFound(err)
+				}, 5).Should(BeFalse())
+				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete user"))
+			})
+		})
 
-				It("raises an event to indicate a failure to delete", func() {
-					Expect(client.Delete(ctx, &user)).To(Succeed())
-					Consistently(func() bool {
-						err := client.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{})
-						return apierrors.IsNotFound(err)
-					}, 5).Should(BeFalse())
-					Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete user"))
-				})
+		When("the RabbitMQ Client successfully deletes a user", func() {
+			BeforeEach(func() {
+				userName = "delete-user-success"
+				fakeRabbitMQClient.DeleteUserReturns(&http.Response{
+					Status:     "204 No Content",
+					StatusCode: http.StatusNoContent,
+				}, nil)
 			})
 
-			When("the RabbitMQ Client successfully deletes a user", func() {
-				BeforeEach(func() {
-					userName = "delete-user-success"
-					fakeRabbitMQClient.DeleteUserReturns(&http.Response{
-						Status:     "204 No Content",
-						StatusCode: http.StatusNoContent,
-					}, nil)
-				})
-
-				It("raises an event to indicate a successful deletion", func() {
-					Expect(client.Delete(ctx, &user)).To(Succeed())
-					Eventually(func() bool {
-						err := client.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{})
-						return apierrors.IsNotFound(err)
-					}, 5).Should(BeTrue())
-					observedEvents := observedEvents()
-					Expect(observedEvents).NotTo(ContainElement("Warning FailedDelete failed to delete user"))
-					Expect(observedEvents).To(ContainElement("Normal SuccessfulDelete successfully deleted user"))
-				})
+			It("raises an event to indicate a successful deletion", func() {
+				Expect(client.Delete(ctx, &user)).To(Succeed())
+				Eventually(func() bool {
+					err := client.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{})
+					return apierrors.IsNotFound(err)
+				}, 5).Should(BeTrue())
+				observedEvents := observedEvents()
+				Expect(observedEvents).NotTo(ContainElement("Warning FailedDelete failed to delete user"))
+				Expect(observedEvents).To(ContainElement("Normal SuccessfulDelete successfully deleted user"))
 			})
 		})
 	})

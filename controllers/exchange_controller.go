@@ -13,6 +13,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"time"
 
 	"github.com/rabbitmq/messaging-topology-operator/internal"
@@ -142,8 +143,9 @@ func (r *ExchangeReconciler) addFinalizerIfNeeded(ctx context.Context, e *topolo
 func (r *ExchangeReconciler) deleteExchange(ctx context.Context, client internal.RabbitMQClient, exchange *topology.Exchange) error {
 	logger := ctrl.LoggerFrom(ctx)
 
-	if client == nil {
+	if client == nil || reflect.ValueOf(client).IsNil() {
 		logger.Info(noSuchRabbitDeletion, "exchange", exchange.Name)
+		r.Recorder.Event(exchange, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted exchange")
 		return r.removeFinalizer(ctx, exchange)
 	}
 

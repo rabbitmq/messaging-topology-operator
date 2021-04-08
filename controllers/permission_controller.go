@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"time"
 
 	"github.com/rabbitmq/messaging-topology-operator/internal"
@@ -122,8 +123,9 @@ func (r *PermissionReconciler) addFinalizerIfNeeded(ctx context.Context, permiss
 func (r *PermissionReconciler) revokePermissions(ctx context.Context, client internal.RabbitMQClient, permission *topology.Permission) error {
 	logger := ctrl.LoggerFrom(ctx)
 
-	if client == nil {
+	if client == nil || reflect.ValueOf(client).IsNil() {
 		logger.Info(noSuchRabbitDeletion, "permission", permission.Name)
+		r.Recorder.Event(permission, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted permission")
 		return r.removeFinalizer(ctx, permission)
 	}
 

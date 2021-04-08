@@ -133,6 +133,12 @@ func (r *BindingReconciler) declareBinding(ctx context.Context, client internal.
 func (r *BindingReconciler) deleteBinding(ctx context.Context, client internal.RabbitMQClient, binding *topology.Binding) error {
 	logger := ctrl.LoggerFrom(ctx)
 
+	if client == nil || reflect.ValueOf(client).IsNil() {
+		logger.Info(noSuchRabbitDeletion, "binding", binding.Name)
+		r.Recorder.Event(binding, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted binding")
+		return r.removeFinalizer(ctx, binding)
+	}
+
 	var info *rabbithole.BindingInfo
 	var err error
 	if binding.Spec.Arguments != nil {

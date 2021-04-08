@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"time"
 
 	"github.com/rabbitmq/messaging-topology-operator/internal"
@@ -127,8 +128,9 @@ func (r *VhostReconciler) addFinalizerIfNeeded(ctx context.Context, vhost *topol
 func (r *VhostReconciler) deleteVhost(ctx context.Context, client internal.RabbitMQClient, vhost *topology.Vhost) error {
 	logger := ctrl.LoggerFrom(ctx)
 
-	if client == nil {
+	if client == nil || reflect.ValueOf(client).IsNil() {
 		logger.Info(noSuchRabbitDeletion, "vhost", vhost.Name)
+		r.Recorder.Event(vhost, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted vhost")
 		return r.removeFinalizer(ctx, vhost)
 	}
 
