@@ -14,6 +14,8 @@ spec:
     listKind: UserList
     plural: users
     singular: user
+    categories:
+    - all
   scope: Namespaced
   versions:
   - name: v1alpha2
