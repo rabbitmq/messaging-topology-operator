@@ -175,21 +175,22 @@ var _ = Describe("bindingController", func() {
 			})
 		})
 
-		When("the RabbitMQ Client fails to generate", func() {
-			When("the cluster cannot be found", func() {
-				BeforeEach(func() {
-					bindingName = "delete-binding-client-not-found-error"
-				})
+		When("the RabbitMQ cluster is nil", func() {
+			BeforeEach(func() {
+				bindingName = "delete-binding-client-not-found-error"
+			})
 
-				It("successfully deletes the binding regardless", func() {
-					prepareNoSuchClusterError()
-					Expect(client.Delete(ctx, &binding)).To(Succeed())
-					Eventually(func() bool {
-						err := client.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &topology.Binding{})
-						return apierrors.IsNotFound(err)
-					}, 5).Should(BeTrue())
-					Expect(observedEvents()).To(ContainElement("Normal SuccessfulDelete successfully deleted binding"))
-				})
+			JustBeforeEach(func() {
+				prepareNoSuchClusterError()
+			})
+
+			It("successfully deletes the binding regardless", func() {
+				Expect(client.Delete(ctx, &binding)).To(Succeed())
+				Eventually(func() bool {
+					err := client.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &topology.Binding{})
+					return apierrors.IsNotFound(err)
+				}, 5).Should(BeTrue())
+				Expect(observedEvents()).To(ContainElement("Normal SuccessfulDelete successfully deleted binding"))
 			})
 		})
 
