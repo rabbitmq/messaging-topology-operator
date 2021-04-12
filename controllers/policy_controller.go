@@ -13,6 +13,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"time"
 
 	"github.com/rabbitmq/messaging-topology-operator/internal"
@@ -142,8 +143,9 @@ func (r *PolicyReconciler) addFinalizerIfNeeded(ctx context.Context, policy *top
 func (r *PolicyReconciler) deletePolicy(ctx context.Context, client internal.RabbitMQClient, policy *topology.Policy) error {
 	logger := ctrl.LoggerFrom(ctx)
 
-	if client == nil {
+	if client == nil || reflect.ValueOf(client).IsNil() {
 		logger.Info(noSuchRabbitDeletion, "policy", policy.Name)
+		r.Recorder.Event(policy, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted policy")
 		return r.removeFinalizer(ctx, policy)
 	}
 
@@ -156,6 +158,7 @@ func (r *PolicyReconciler) deletePolicy(ctx context.Context, client internal.Rab
 		logger.Error(err, msg, "policy", policy.Spec.Name)
 		return err
 	}
+	r.Recorder.Event(policy, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted policy")
 	return r.removeFinalizer(ctx, policy)
 }
 

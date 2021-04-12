@@ -13,6 +13,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -149,8 +150,9 @@ func (r *QueueReconciler) addFinalizerIfNeeded(ctx context.Context, q *topology.
 func (r *QueueReconciler) deleteQueue(ctx context.Context, client internal.RabbitMQClient, q *topology.Queue) error {
 	logger := ctrl.LoggerFrom(ctx)
 
-	if client == nil {
+	if client == nil || reflect.ValueOf(client).IsNil() {
 		logger.Info(noSuchRabbitDeletion, "queue", q.Name)
+		r.Recorder.Event(q, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted queue")
 		return r.removeFinalizer(ctx, q)
 	}
 
@@ -163,6 +165,7 @@ func (r *QueueReconciler) deleteQueue(ctx context.Context, client internal.Rabbi
 		logger.Error(err, msg, "queue", q.Spec.Name)
 		return err
 	}
+	r.Recorder.Event(q, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted queue")
 	return r.removeFinalizer(ctx, q)
 }
 
