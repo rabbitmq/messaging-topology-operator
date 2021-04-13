@@ -43,6 +43,7 @@ type PermissionStatus struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:categories=all
 // +kubebuilder:subresource:status
 
 // Permission is the Schema for the permissions API
