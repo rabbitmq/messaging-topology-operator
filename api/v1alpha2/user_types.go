@@ -52,7 +52,9 @@ type UserStatus struct {
 type UserTag string
 
 // +genclient
+
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:categories=all
 // +kubebuilder:subresource:status
 
 // User is the Schema for the users API.

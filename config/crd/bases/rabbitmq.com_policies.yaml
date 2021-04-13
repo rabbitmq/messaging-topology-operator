@@ -10,12 +10,12 @@ metadata:
 spec:
   group: rabbitmq.com
   names:
+    categories:
+    - all
     kind: Policy
     listKind: PolicyList
     plural: policies
     singular: policy
-    categories:
-    - all
   scope: Namespaced
   versions:
   - name: v1alpha2
