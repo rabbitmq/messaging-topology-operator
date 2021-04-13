@@ -119,6 +119,13 @@ func serviceSecretFromReference(ctx context.Context, c client.Client, rmq topolo
 		return nil, nil, err
 	}
 
+	if cluster.Status.Binding == nil {
+		return nil, nil, errors.New("no status.binding set")
+	}
+	if cluster.Status.DefaultUser == nil {
+		return nil, nil, errors.New("no status.defaultUser set")
+	}
+
 	secret := &corev1.Secret{}
 	if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.Binding.Name}, secret); err != nil {
 		return nil, nil, err
