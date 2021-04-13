@@ -92,9 +92,11 @@ var _ = Describe("RabbitholeClientFactory", func() {
 		s.AddKnownTypes(rabbitmqv1beta1.SchemeBuilder.GroupVersion, existingRabbitMQCluster)
 		fakeClient = fake.NewClientBuilder().WithScheme(s).WithRuntimeObjects(objs...).Build()
 	})
+
 	AfterEach(func() {
 		fakeRabbitMQServer.Close()
 	})
+
 	It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
 		generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
 		Expect(err).NotTo(HaveOccurred())
@@ -105,4 +107,54 @@ var _ = Describe("RabbitholeClientFactory", func() {
 		Expect(len(fakeRabbitMQServer.ReceivedRequests())).To(Equal(1))
 	})
 
+	When("RabbitmqCluster does not have status.binding set", func() {
+		It("errors", func() {
+			incomplete := &rabbitmqv1beta1.RabbitmqCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rmq-incomplete",
+					Namespace: "rabbitmq-system",
+				},
+				Status: rabbitmqv1beta1.RabbitmqClusterStatus{
+					DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
+						ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
+							Name:      "rmq-service",
+							Namespace: "rabbitmq-system",
+						},
+					},
+				},
+			}
+			objs := []runtime.Object{incomplete}
+			s := scheme.Scheme
+			s.AddKnownTypes(rabbitmqv1beta1.SchemeBuilder.GroupVersion, existingRabbitMQCluster)
+			fakeClient = fake.NewClientBuilder().WithScheme(s).WithRuntimeObjects(objs...).Build()
+
+			generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: incomplete.Name}, incomplete.Namespace)
+			Expect(generatedClient).To(BeNil())
+			Expect(err.Error()).To(ContainSubstring("no status.binding set"))
+		})
+	})
+
+	When("RabbitmqCluster does not have status.defaultUser set", func() {
+		It("errors", func() {
+			incomplete := &rabbitmqv1beta1.RabbitmqCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rmq-incomplete",
+					Namespace: "rabbitmq-system",
+				},
+				Status: rabbitmqv1beta1.RabbitmqClusterStatus{
+					Binding: &corev1.LocalObjectReference{
+						Name: "rmq-default-user-credentials",
+					},
+				},
+			}
+			objs := []runtime.Object{incomplete}
+			s := scheme.Scheme
+			s.AddKnownTypes(rabbitmqv1beta1.SchemeBuilder.GroupVersion, existingRabbitMQCluster)
+			fakeClient = fake.NewClientBuilder().WithScheme(s).WithRuntimeObjects(objs...).Build()
+
+			generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: incomplete.Name}, incomplete.Namespace)
+			Expect(generatedClient).To(BeNil())
+			Expect(err.Error()).To(ContainSubstring("no status.defaultUser set"))
+		})
+	})
 })
