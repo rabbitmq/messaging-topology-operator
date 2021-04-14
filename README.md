@@ -33,6 +33,13 @@ You can create RabbitMQ resources:
 If you do not have cert-manager installed in your k8s cluster, you will need to generate certificates used by admission webhooks yourself and include them in the operator and webhooks manifests.
 You can follow [this doc](./docs/installation/install-without-certmanager.md).
 
+## RabbitMQCluster requirements
+
+Messaging Topology Operator is tested with the latest release of RabbitMQ [Cluster Operator](https://github.com/rabbitmq/cluster-operator).
+It uses the generated default user secret from RabbitmqCluster (set in `rabbitmqcluster.status.binding`) to authenticate with RabbitMQ server.
+If your RabbitmqCluster is deployed with import definitions or provided default user credentials,
+the default user secret from `rabbitmqcluster.status.binding` may not be correct and Messaging Topology Operator will fail with authentication error.
+
 ## Contributing
 
 This project follows the typical GitHub pull request model. Before starting any work, please either comment on an [existing issue](https://github.com/rabbitmq/messaging-topology-operator/issues), or file a new one.
