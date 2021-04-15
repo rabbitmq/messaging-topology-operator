@@ -10,11 +10,12 @@ const (
 
 // names for each of the controllers
 const (
-	VhostControllerName      = "vhost-controller"
-	QueueControllerName      = "queue-controller"
-	ExchangeControllerName   = "exchange-controller"
-	BindingControllerName    = "binding-controller"
-	UserControllerName       = "user-controller"
-	PolicyControllerName     = "policy-controller"
-	PermissionControllerName = "permission-controller"
+	VhostControllerName             = "vhost-controller"
+	QueueControllerName             = "queue-controller"
+	ExchangeControllerName          = "exchange-controller"
+	BindingControllerName           = "binding-controller"
+	UserControllerName              = "user-controller"
+	PolicyControllerName            = "policy-controller"
+	PermissionControllerName        = "permission-controller"
+	SchemaReplicationControllerName = "schema-replication-controller"
 )

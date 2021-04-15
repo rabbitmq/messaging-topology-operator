@@ -21,6 +21,7 @@ import (
 
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 
+	rabbitmqcomv1alpha2 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
@@ -37,6 +38,7 @@ func init() {
 	_ = rabbitmqv1beta1.AddToScheme(scheme)
 
 	_ = topology.AddToScheme(scheme)
+	_ = rabbitmqcomv1alpha2.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -126,6 +128,16 @@ func main() {
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.PermissionControllerName)
+		os.Exit(1)
+	}
+	if err = (&controllers.SchemaReplicationReconciler{
+		Client:                mgr.GetClient(),
+		Log:                   ctrl.Log.WithName("controllers").WithName("SchemaReplication"),
+		Scheme:                mgr.GetScheme(),
+		Recorder:              mgr.GetEventRecorderFor(controllers.SchemaReplicationControllerName),
+		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", controllers.SchemaReplicationControllerName)
 		os.Exit(1)
 	}
 
