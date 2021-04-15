@@ -12,6 +12,8 @@ package controllers_test
 import (
 	"context"
 	"errors"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"path/filepath"
 	"testing"
 
@@ -124,6 +126,13 @@ var _ = BeforeSuite(func(done Done) {
 		RabbitmqClientFactory: fakeRabbitMQClientFactory,
 	}).SetupWithManager(mgr)
 	Expect(err).ToNot(HaveOccurred())
+	err = (&controllers.SchemaReplicationReconciler{
+		Client:                mgr.GetClient(),
+		Scheme:                mgr.GetScheme(),
+		Recorder:              fakeRecorder,
+		RabbitmqClientFactory: fakeRabbitMQClientFactory,
+	}).SetupWithManager(mgr)
+	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
 		err = mgr.Start(ctrl.SetupSignalHandler())
@@ -132,6 +141,21 @@ var _ = BeforeSuite(func(done Done) {
 
 	client = mgr.GetClient()
 	Expect(client).ToNot(BeNil())
+
+	// used in schema-replication-controller test
+	secret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "endpoints-secret",
+			Namespace: "default",
+		},
+		Type: corev1.SecretTypeOpaque,
+		Data: map[string][]byte{
+			"username":  []byte("a-random-user"),
+			"password":  []byte("a-random-password"),
+			"endpoints": []byte("a.endpoints.local:5672,b.endpoints.local:5672,c.endpoints.local:5672"),
+		},
+	}
+	Expect(client.Create(ctx, &secret)).To(Succeed())
 
 	close(done)
 }, 60)

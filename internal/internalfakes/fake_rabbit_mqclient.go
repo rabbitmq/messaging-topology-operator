@@ -96,6 +96,19 @@ type FakeRabbitMQClient struct {
 		result1 *http.Response
 		result2 error
 	}
+	DeleteGlobalParameterStub        func(string) (*http.Response, error)
+	deleteGlobalParameterMutex       sync.RWMutex
+	deleteGlobalParameterArgsForCall []struct {
+		arg1 string
+	}
+	deleteGlobalParameterReturns struct {
+		result1 *http.Response
+		result2 error
+	}
+	deleteGlobalParameterReturnsOnCall map[int]struct {
+		result1 *http.Response
+		result2 error
+	}
 	DeletePolicyStub        func(string, string) (*http.Response, error)
 	deletePolicyMutex       sync.RWMutex
 	deletePolicyArgsForCall []struct {
@@ -179,6 +192,20 @@ type FakeRabbitMQClient struct {
 	}
 	listQueueBindingsBetweenReturnsOnCall map[int]struct {
 		result1 []rabbithole.BindingInfo
+		result2 error
+	}
+	PutGlobalParameterStub        func(string, interface{}) (*http.Response, error)
+	putGlobalParameterMutex       sync.RWMutex
+	putGlobalParameterArgsForCall []struct {
+		arg1 string
+		arg2 interface{}
+	}
+	putGlobalParameterReturns struct {
+		result1 *http.Response
+		result2 error
+	}
+	putGlobalParameterReturnsOnCall map[int]struct {
+		result1 *http.Response
 		result2 error
 	}
 	PutPolicyStub        func(string, string, rabbithole.Policy) (*http.Response, error)
@@ -635,6 +662,70 @@ func (fake *FakeRabbitMQClient) DeleteExchangeReturnsOnCall(i int, result1 *http
 	}{result1, result2}
 }
 
+func (fake *FakeRabbitMQClient) DeleteGlobalParameter(arg1 string) (*http.Response, error) {
+	fake.deleteGlobalParameterMutex.Lock()
+	ret, specificReturn := fake.deleteGlobalParameterReturnsOnCall[len(fake.deleteGlobalParameterArgsForCall)]
+	fake.deleteGlobalParameterArgsForCall = append(fake.deleteGlobalParameterArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.DeleteGlobalParameterStub
+	fakeReturns := fake.deleteGlobalParameterReturns
+	fake.recordInvocation("DeleteGlobalParameter", []interface{}{arg1})
+	fake.deleteGlobalParameterMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeRabbitMQClient) DeleteGlobalParameterCallCount() int {
+	fake.deleteGlobalParameterMutex.RLock()
+	defer fake.deleteGlobalParameterMutex.RUnlock()
+	return len(fake.deleteGlobalParameterArgsForCall)
+}
+
+func (fake *FakeRabbitMQClient) DeleteGlobalParameterCalls(stub func(string) (*http.Response, error)) {
+	fake.deleteGlobalParameterMutex.Lock()
+	defer fake.deleteGlobalParameterMutex.Unlock()
+	fake.DeleteGlobalParameterStub = stub
+}
+
+func (fake *FakeRabbitMQClient) DeleteGlobalParameterArgsForCall(i int) string {
+	fake.deleteGlobalParameterMutex.RLock()
+	defer fake.deleteGlobalParameterMutex.RUnlock()
+	argsForCall := fake.deleteGlobalParameterArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeRabbitMQClient) DeleteGlobalParameterReturns(result1 *http.Response, result2 error) {
+	fake.deleteGlobalParameterMutex.Lock()
+	defer fake.deleteGlobalParameterMutex.Unlock()
+	fake.DeleteGlobalParameterStub = nil
+	fake.deleteGlobalParameterReturns = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRabbitMQClient) DeleteGlobalParameterReturnsOnCall(i int, result1 *http.Response, result2 error) {
+	fake.deleteGlobalParameterMutex.Lock()
+	defer fake.deleteGlobalParameterMutex.Unlock()
+	fake.DeleteGlobalParameterStub = nil
+	if fake.deleteGlobalParameterReturnsOnCall == nil {
+		fake.deleteGlobalParameterReturnsOnCall = make(map[int]struct {
+			result1 *http.Response
+			result2 error
+		})
+	}
+	fake.deleteGlobalParameterReturnsOnCall[i] = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeRabbitMQClient) DeletePolicy(arg1 string, arg2 string) (*http.Response, error) {
 	fake.deletePolicyMutex.Lock()
 	ret, specificReturn := fake.deletePolicyReturnsOnCall[len(fake.deletePolicyArgsForCall)]
@@ -1026,6 +1117,71 @@ func (fake *FakeRabbitMQClient) ListQueueBindingsBetweenReturnsOnCall(i int, res
 	}{result1, result2}
 }
 
+func (fake *FakeRabbitMQClient) PutGlobalParameter(arg1 string, arg2 interface{}) (*http.Response, error) {
+	fake.putGlobalParameterMutex.Lock()
+	ret, specificReturn := fake.putGlobalParameterReturnsOnCall[len(fake.putGlobalParameterArgsForCall)]
+	fake.putGlobalParameterArgsForCall = append(fake.putGlobalParameterArgsForCall, struct {
+		arg1 string
+		arg2 interface{}
+	}{arg1, arg2})
+	stub := fake.PutGlobalParameterStub
+	fakeReturns := fake.putGlobalParameterReturns
+	fake.recordInvocation("PutGlobalParameter", []interface{}{arg1, arg2})
+	fake.putGlobalParameterMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeRabbitMQClient) PutGlobalParameterCallCount() int {
+	fake.putGlobalParameterMutex.RLock()
+	defer fake.putGlobalParameterMutex.RUnlock()
+	return len(fake.putGlobalParameterArgsForCall)
+}
+
+func (fake *FakeRabbitMQClient) PutGlobalParameterCalls(stub func(string, interface{}) (*http.Response, error)) {
+	fake.putGlobalParameterMutex.Lock()
+	defer fake.putGlobalParameterMutex.Unlock()
+	fake.PutGlobalParameterStub = stub
+}
+
+func (fake *FakeRabbitMQClient) PutGlobalParameterArgsForCall(i int) (string, interface{}) {
+	fake.putGlobalParameterMutex.RLock()
+	defer fake.putGlobalParameterMutex.RUnlock()
+	argsForCall := fake.putGlobalParameterArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeRabbitMQClient) PutGlobalParameterReturns(result1 *http.Response, result2 error) {
+	fake.putGlobalParameterMutex.Lock()
+	defer fake.putGlobalParameterMutex.Unlock()
+	fake.PutGlobalParameterStub = nil
+	fake.putGlobalParameterReturns = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRabbitMQClient) PutGlobalParameterReturnsOnCall(i int, result1 *http.Response, result2 error) {
+	fake.putGlobalParameterMutex.Lock()
+	defer fake.putGlobalParameterMutex.Unlock()
+	fake.PutGlobalParameterStub = nil
+	if fake.putGlobalParameterReturnsOnCall == nil {
+		fake.putGlobalParameterReturnsOnCall = make(map[int]struct {
+			result1 *http.Response
+			result2 error
+		})
+	}
+	fake.putGlobalParameterReturnsOnCall[i] = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeRabbitMQClient) PutPolicy(arg1 string, arg2 string, arg3 rabbithole.Policy) (*http.Response, error) {
 	fake.putPolicyMutex.Lock()
 	ret, specificReturn := fake.putPolicyReturnsOnCall[len(fake.putPolicyArgsForCall)]
@@ -1303,6 +1459,8 @@ func (fake *FakeRabbitMQClient) Invocations() map[string][][]interface{} {
 	defer fake.deleteBindingMutex.RUnlock()
 	fake.deleteExchangeMutex.RLock()
 	defer fake.deleteExchangeMutex.RUnlock()
+	fake.deleteGlobalParameterMutex.RLock()
+	defer fake.deleteGlobalParameterMutex.RUnlock()
 	fake.deletePolicyMutex.RLock()
 	defer fake.deletePolicyMutex.RUnlock()
 	fake.deleteQueueMutex.RLock()
@@ -1315,6 +1473,8 @@ func (fake *FakeRabbitMQClient) Invocations() map[string][][]interface{} {
 	defer fake.listExchangeBindingsBetweenMutex.RUnlock()
 	fake.listQueueBindingsBetweenMutex.RLock()
 	defer fake.listQueueBindingsBetweenMutex.RUnlock()
+	fake.putGlobalParameterMutex.RLock()
+	defer fake.putGlobalParameterMutex.RUnlock()
 	fake.putPolicyMutex.RLock()
 	defer fake.putPolicyMutex.RUnlock()
 	fake.putUserMutex.RLock()

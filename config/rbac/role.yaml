@@ -154,6 +154,26 @@ rules:
 - apiGroups:
   - rabbitmq.com
   resources:
+  - schemareplications
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - schemareplications/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - rabbitmq.com
+  resources:
   - users
   verbs:
   - create
