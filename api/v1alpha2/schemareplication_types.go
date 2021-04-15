@@ -12,6 +12,7 @@ package v1alpha2
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // SchemaReplicationSpec defines the desired state of SchemaReplication
@@ -20,7 +21,8 @@ type SchemaReplicationSpec struct {
 	// +kubebuilder:validation:Required
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
 	// Defines a Secret which contains credentials to be used for schema replication.
-	// The Secret must contain the keys `endpoints`, `username` and `password` in its Data field, or the controller errors.
+	// The Secret must contain the keys `endpoints`, `username` and `password` in its Data field, or operator will error.
+	// `endpoints` should be one or multiple endpoints separated by ','.
 	// +kubebuilder:validation:Required
 	UpstreamSecret *corev1.LocalObjectReference `json:"upstreamSecret,omitempty"`
 }
@@ -58,4 +60,11 @@ type SchemaReplicationList struct {
 
 func init() {
 	SchemeBuilder.Register(&SchemaReplication{}, &SchemaReplicationList{})
+}
+
+func (s *SchemaReplication) GroupResource() schema.GroupResource {
+	return schema.GroupResource{
+		Group:    s.GroupVersionKind().Group,
+		Resource: s.GroupVersionKind().Kind,
+	}
 }

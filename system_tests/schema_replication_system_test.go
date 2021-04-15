@@ -91,6 +91,12 @@ var _ = Describe("schema replication", func() {
 		By("setting status.observedGeneration")
 		Expect(updatedReplication.Status.ObservedGeneration).To(Equal(updatedReplication.GetGeneration()))
 
+		By("not allowing updates on rabbitmqClusterReference")
+		updateTest := topology.SchemaReplication{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace}, &updateTest)).To(Succeed())
+		updateTest.Spec.RabbitmqClusterReference.Name = "new-cluster"
+		Expect(k8sClient.Update(ctx, &updateTest).Error()).To(ContainSubstring("spec.rabbitmqClusterReference: Forbidden: update on rabbitmqClusterReference is forbidden"))
+
 		By("unsetting schema replication upstream global parameters on deletion")
 		Expect(k8sClient.Delete(ctx, replication)).To(Succeed())
 		Eventually(func() []rabbithole.GlobalRuntimeParameter {

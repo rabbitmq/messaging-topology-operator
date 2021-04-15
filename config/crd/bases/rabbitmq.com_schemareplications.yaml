@@ -50,7 +50,8 @@ spec:
               upstreamSecret:
                 description: Defines a Secret which contains credentials to be used
                   for schema replication. The Secret must contain the keys `endpoints`,
-                  `username` and `password` in its Data field, or the controller errors.
+                  `username` and `password` in its Data field, or operator will error.
+                  `endpoints` should be one or multiple endpoints separated by ','.
                 properties:
                   name:
                     description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
