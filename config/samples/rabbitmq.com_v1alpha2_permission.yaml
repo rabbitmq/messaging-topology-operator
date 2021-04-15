@@ -1,7 +1,0 @@
-apiVersion: rabbitmq.com/v1alpha2
-kind: Permission
-metadata:
-  name: permission-sample
-spec:
-  # Add fields here
-  foo: bar
