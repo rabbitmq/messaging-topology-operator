@@ -10,6 +10,8 @@ This product may include a number of subcomponents with separate copyright notic
 package internal_test
 
 import (
+	"net/url"
+	"strconv"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -22,7 +24,22 @@ func TestResource(t *testing.T) {
 	RunSpecs(t, "Internal Suite")
 }
 
-func mockRabbitMQServer() *ghttp.Server {
-	server := ghttp.NewServer()
-	return server
+func mockRabbitMQServer(tls bool) *ghttp.Server {
+	if tls {
+		return ghttp.NewTLSServer()
+	} else {
+		return ghttp.NewServer()
+	}
+}
+
+func mockRabbitMQURLPort(fakeRabbitMQServer *ghttp.Server) (*url.URL, int, error) {
+	fakeRabbitMQURL, err := url.Parse(fakeRabbitMQServer.URL())
+	if err != nil {
+		return nil, 0, err
+	}
+	fakeRabbitMQPort, err := strconv.Atoi(fakeRabbitMQURL.Port())
+	if err != nil {
+		return nil, 0, err
+	}
+	return fakeRabbitMQURL, fakeRabbitMQPort, nil
 }

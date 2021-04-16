@@ -11,8 +11,9 @@ package system_tests
 
 import (
 	"context"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
@@ -85,7 +86,8 @@ var _ = BeforeSuite(func() {
 	}, 10, 1).Should(ContainSubstring("1/1"), "messaging-topology-operator not deployed")
 
 	// setup a RabbitmqCluster used for system tests
-	rmq = setupTestRabbitmqCluster(k8sClient, "system-test", namespace)
+	rmq = basicTestRabbitmqCluster("system-test", namespace)
+	setupTestRabbitmqCluster(k8sClient, rmq)
 
 	rabbitClient, err = generateRabbitClient(context.Background(), clientSet, namespace, rmq.Name)
 	Expect(err).NotTo(HaveOccurred())

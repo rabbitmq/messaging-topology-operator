@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/url"
-	"strconv"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	. "github.com/onsi/ginkgo"
@@ -22,17 +21,20 @@ import (
 )
 
 var _ = Describe("RabbitholeClientFactory", func() {
-
 	var (
-		ctx                      = context.Background()
-		fakeRabbitMQServer       *ghttp.Server
-		existingRabbitMQCluster  *rabbitmqv1beta1.RabbitmqCluster
+		objs                     []runtime.Object
+		fakeClient               client.Client
 		existingRabbitMQUsername = "abc123"
 		existingRabbitMQPassword = "foo1234"
-		fakeClient               client.Client
+		existingRabbitMQCluster  *rabbitmqv1beta1.RabbitmqCluster
+		existingCredentialSecret *corev1.Secret
+		existingService          *corev1.Service
+		ctx                      = context.Background()
+		fakeRabbitMQServer       *ghttp.Server
+		fakeRabbitMQURL          *url.URL
+		fakeRabbitMQPort         int
 	)
-	BeforeEach(func() {
-		fakeRabbitMQServer = mockRabbitMQServer()
+	JustBeforeEach(func() {
 		fakeRabbitMQServer.RouteToHandler("PUT", "/api/users/example-user", func(w http.ResponseWriter, req *http.Request) {
 			user, password, ok := req.BasicAuth()
 			if !(ok && user == existingRabbitMQUsername && password == existingRabbitMQPassword) {
@@ -40,81 +42,32 @@ var _ = Describe("RabbitholeClientFactory", func() {
 				return
 			}
 		})
-		fakeRabbitMQURL, err := url.Parse(fakeRabbitMQServer.URL())
-		Expect(err).NotTo(HaveOccurred())
-		fakeRabbitMQPort, err := strconv.Atoi(fakeRabbitMQURL.Port())
-		Expect(err).NotTo(HaveOccurred())
 
-		existingRabbitMQCluster = &rabbitmqv1beta1.RabbitmqCluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "rmq",
-				Namespace: "rabbitmq-system",
-			},
-			Status: rabbitmqv1beta1.RabbitmqClusterStatus{
-				Binding: &corev1.LocalObjectReference{
-					Name: "rmq-default-user-credentials",
-				},
-				DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
-					ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
-						Name:      "rmq-service",
-						Namespace: "rabbitmq-system",
-					},
-				},
-			},
-		}
-		existingCredentialSecret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "rmq-default-user-credentials",
-				Namespace: "rabbitmq-system",
-			},
-			Data: map[string][]byte{
-				"username": []byte(existingRabbitMQUsername),
-				"password": []byte(existingRabbitMQPassword),
-			},
-		}
-		existingService := &corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "rmq-service",
-				Namespace: "rabbitmq-system",
-			},
-			Spec: corev1.ServiceSpec{
-				ClusterIP: fakeRabbitMQURL.Hostname(),
-				Ports: []corev1.ServicePort{
-					{
-						Name: "management",
-						Port: int32(fakeRabbitMQPort),
-					},
-				},
-			},
-		}
-		objs := []runtime.Object{existingRabbitMQCluster, existingCredentialSecret, existingService}
 		s := scheme.Scheme
-		s.AddKnownTypes(rabbitmqv1beta1.SchemeBuilder.GroupVersion, existingRabbitMQCluster)
+		s.AddKnownTypes(rabbitmqv1beta1.SchemeBuilder.GroupVersion, &rabbitmqv1beta1.RabbitmqCluster{})
 		fakeClient = fake.NewClientBuilder().WithScheme(s).WithRuntimeObjects(objs...).Build()
 	})
-
 	AfterEach(func() {
 		fakeRabbitMQServer.Close()
 	})
 
-	It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
-		generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(generatedClient).NotTo(BeNil())
+	When("the RabbitmqCluster is configured without TLS", func() {
+		BeforeEach(func() {
+			fakeRabbitMQServer = mockRabbitMQServer(false)
 
-		_, err = generatedClient.PutUser("example-user", rabbithole.UserSettings{})
-		Expect(err).NotTo(HaveOccurred())
-		Expect(len(fakeRabbitMQServer.ReceivedRequests())).To(Equal(1))
-	})
+			var err error
+			fakeRabbitMQURL, fakeRabbitMQPort, err = mockRabbitMQURLPort(fakeRabbitMQServer)
+			Expect(err).NotTo(HaveOccurred())
 
-	When("RabbitmqCluster does not have status.binding set", func() {
-		It("errors", func() {
-			incomplete := &rabbitmqv1beta1.RabbitmqCluster{
+			existingRabbitMQCluster = &rabbitmqv1beta1.RabbitmqCluster{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq-incomplete",
+					Name:      "rmq",
 					Namespace: "rabbitmq-system",
 				},
 				Status: rabbitmqv1beta1.RabbitmqClusterStatus{
+					Binding: &corev1.LocalObjectReference{
+						Name: "rmq-default-user-credentials",
+					},
 					DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
 						ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
 							Name:      "rmq-service",
@@ -123,38 +76,172 @@ var _ = Describe("RabbitholeClientFactory", func() {
 					},
 				},
 			}
-			objs := []runtime.Object{incomplete}
-			s := scheme.Scheme
-			s.AddKnownTypes(rabbitmqv1beta1.SchemeBuilder.GroupVersion, existingRabbitMQCluster)
-			fakeClient = fake.NewClientBuilder().WithScheme(s).WithRuntimeObjects(objs...).Build()
+			existingCredentialSecret = &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rmq-default-user-credentials",
+					Namespace: "rabbitmq-system",
+				},
+				Data: map[string][]byte{
+					"username": []byte(existingRabbitMQUsername),
+					"password": []byte(existingRabbitMQPassword),
+				},
+			}
+			existingService = &corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rmq-service",
+					Namespace: "rabbitmq-system",
+				},
+				Spec: corev1.ServiceSpec{
+					ClusterIP: fakeRabbitMQURL.Hostname(),
+					Ports: []corev1.ServicePort{
+						{
+							Name: "management",
+							Port: int32(fakeRabbitMQPort),
+						},
+					},
+				},
+			}
+			objs = []runtime.Object{existingRabbitMQCluster, existingCredentialSecret, existingService}
+		})
 
-			generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: incomplete.Name}, incomplete.Namespace)
-			Expect(generatedClient).To(BeNil())
-			Expect(err.Error()).To(ContainSubstring("no status.binding set"))
+		It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
+			generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(generatedClient).NotTo(BeNil())
+
+			_, err = generatedClient.PutUser("example-user", rabbithole.UserSettings{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(fakeRabbitMQServer.ReceivedRequests())).To(Equal(1))
+		})
+
+		When("RabbitmqCluster does not have status.binding set", func() {
+			BeforeEach(func() {
+				*existingRabbitMQCluster = rabbitmqv1beta1.RabbitmqCluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rmq-incomplete",
+						Namespace: "rabbitmq-system",
+					},
+					Status: rabbitmqv1beta1.RabbitmqClusterStatus{
+						DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
+							ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
+								Name:      "rmq-service",
+								Namespace: "rabbitmq-system",
+							},
+						},
+					},
+				}
+			})
+
+			It("errors", func() {
+				generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
+				Expect(generatedClient).To(BeNil())
+				Expect(err.Error()).To(ContainSubstring("no status.binding set"))
+			})
+		})
+
+		When("RabbitmqCluster does not have status.defaultUser set", func() {
+			BeforeEach(func() {
+				*existingRabbitMQCluster = rabbitmqv1beta1.RabbitmqCluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rmq-incomplete",
+						Namespace: "rabbitmq-system",
+					},
+					Status: rabbitmqv1beta1.RabbitmqClusterStatus{
+						Binding: &corev1.LocalObjectReference{
+							Name: "rmq-default-user-credentials",
+						},
+					},
+				}
+			})
+
+			It("errors", func() {
+				generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
+				Expect(generatedClient).To(BeNil())
+				Expect(err.Error()).To(ContainSubstring("no status.defaultUser set"))
+			})
 		})
 	})
 
-	When("RabbitmqCluster does not have status.defaultUser set", func() {
-		It("errors", func() {
-			incomplete := &rabbitmqv1beta1.RabbitmqCluster{
+	When("the RabbitmqCluster is configured with TLS", func() {
+		BeforeEach(func() {
+			fakeRabbitMQServer = mockRabbitMQServer(true)
+
+			var err error
+			fakeRabbitMQURL, fakeRabbitMQPort, err = mockRabbitMQURLPort(fakeRabbitMQServer)
+			Expect(err).NotTo(HaveOccurred())
+
+			existingRabbitMQCluster = &rabbitmqv1beta1.RabbitmqCluster{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq-incomplete",
+					Name:      "rmq",
 					Namespace: "rabbitmq-system",
 				},
 				Status: rabbitmqv1beta1.RabbitmqClusterStatus{
 					Binding: &corev1.LocalObjectReference{
 						Name: "rmq-default-user-credentials",
 					},
+					DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
+						ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
+							Name:      "rmq-service",
+							Namespace: "rabbitmq-system",
+						},
+					},
 				},
 			}
-			objs := []runtime.Object{incomplete}
-			s := scheme.Scheme
-			s.AddKnownTypes(rabbitmqv1beta1.SchemeBuilder.GroupVersion, existingRabbitMQCluster)
-			fakeClient = fake.NewClientBuilder().WithScheme(s).WithRuntimeObjects(objs...).Build()
+			existingCredentialSecret = &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rmq-default-user-credentials",
+					Namespace: "rabbitmq-system",
+				},
+				Data: map[string][]byte{
+					"username": []byte(existingRabbitMQUsername),
+					"password": []byte(existingRabbitMQPassword),
+				},
+			}
+			existingService = &corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rmq-service",
+					Namespace: "rabbitmq-system",
+				},
+				Spec: corev1.ServiceSpec{
+					ClusterIP: fakeRabbitMQURL.Hostname(),
+					Ports: []corev1.ServicePort{
+						{
+							Name: "management",
+							Port: int32(fakeRabbitMQPort),
+						},
+					},
+				},
+			}
+			existingCertSecret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "tls-certs",
+					Namespace: "rabbitmq-system",
+				},
+				Type: corev1.SecretTypeTLS,
+				Data: map[string][]byte{
+					corev1.TLSCertKey:       []byte("somecertstring"),
+					corev1.TLSPrivateKeyKey: []byte("somekeystring"),
+				},
+			}
+			existingService.Spec.Ports = append(existingService.Spec.Ports, corev1.ServicePort{
+				Name: "management-tls",
+				Port: int32(fakeRabbitMQPort),
+			})
+			existingRabbitMQCluster.Spec.TLS = rabbitmqv1beta1.TLSSpec{
+				SecretName:             existingCertSecret.Name,
+				DisableNonTLSListeners: true,
+			}
+			objs = []runtime.Object{existingRabbitMQCluster, existingCredentialSecret, existingCertSecret, existingService}
+		})
 
-			generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: incomplete.Name}, incomplete.Namespace)
-			Expect(generatedClient).To(BeNil())
-			Expect(err.Error()).To(ContainSubstring("no status.defaultUser set"))
+		It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
+			generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(generatedClient).NotTo(BeNil())
+
+			_, err = generatedClient.PutUser("example-user", rabbithole.UserSettings{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(fakeRabbitMQServer.ReceivedRequests())).To(Equal(1))
 		})
 	})
 })

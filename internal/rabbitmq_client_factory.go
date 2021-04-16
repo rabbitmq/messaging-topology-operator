@@ -11,6 +11,8 @@ package internal
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"net"
@@ -55,23 +57,21 @@ var NoSuchRabbitmqClusterError = errors.New("RabbitmqCluster object does not exi
 
 // returns a http client for the given RabbitmqCluster
 // assumes the RabbitmqCluster is reachable using its service's ClusterIP
-func generateRabbitholeClient(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, namespace string) (RabbitMQClient, error) {
-	svc, secret, err := serviceSecretFromReference(ctx, c, rmq, namespace)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get service or secret object from specified rabbitmqcluster: %w", err)
-	}
-
-	ip := net.ParseIP(svc.Spec.ClusterIP)
-	if ip == nil {
-		return nil, fmt.Errorf("failed to get Cluster IP: invalid ClusterIP %q", svc.Spec.ClusterIP)
-	}
-
-	port, err := managementPort(svc)
+func generateRabbitholeClient(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, namespace string) (rabbitmqClient RabbitMQClient, err error) {
+	cluster, err := rabbitmqClusterFromReference(ctx, c, rmq, namespace)
 	if err != nil {
 		return nil, err
 	}
 
-	endpoint := fmt.Sprintf("http://%s:%d", ip.String(), port)
+	svc, secret, err := serviceSecretFromCluster(ctx, c, cluster, namespace)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get service or secret object from specified rabbitmqcluster: %w", err)
+	}
+
+	endpoint, err := managementEndpoint(cluster, svc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get endpoint from specified rabbitmqcluster: %w", err)
+	}
 
 	defaultUser, found := secret.Data["username"]
 	if !found {
@@ -83,12 +83,51 @@ func generateRabbitholeClient(ctx context.Context, c client.Client, rmq topology
 		return nil, errors.New("failed to retrieve username: key password missing from secret")
 	}
 
-	rabbitmqClient, err := rabbithole.NewClient(endpoint, string(defaultUser), string(defaultUserPass))
-	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate rabbit rabbitmqClient: %v", err)
+	if cluster.TLSEnabled() {
+		// create TLS config for https request
+		cfg := new(tls.Config)
+		systemCertPool, err := x509.SystemCertPool()
+		if err != nil {
+			return nil, err
+		}
+		cfg.RootCAs = systemCertPool
+		cfg.InsecureSkipVerify = true
+
+		transport := &http.Transport{TLSClientConfig: cfg}
+		rabbitmqClient, err = rabbithole.NewTLSClient(endpoint, string(defaultUser), string(defaultUserPass), transport)
+		if err != nil {
+			return nil, fmt.Errorf("failed to instantiate rabbit rabbitmqClient: %v", err)
+		}
+	} else {
+		rabbitmqClient, err = rabbithole.NewClient(endpoint, string(defaultUser), string(defaultUserPass))
+		if err != nil {
+			return nil, fmt.Errorf("failed to instantiate rabbit rabbitmqClient: %v", err)
+		}
+	}
+	return rabbitmqClient, nil
+}
+
+func managementEndpoint(cluster *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service) (string, error) {
+	ip := net.ParseIP(svc.Spec.ClusterIP)
+	if ip == nil {
+		return "", fmt.Errorf("failed to get Cluster IP: invalid ClusterIP %q", svc.Spec.ClusterIP)
 	}
 
-	return rabbitmqClient, nil
+	port, err := managementPort(svc)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%s://%s:%d", managementScheme(cluster), ip.String(), port), nil
+}
+
+// returns RabbitMQ management scheme from given cluster
+func managementScheme(cluster *rabbitmqv1beta1.RabbitmqCluster) string {
+	if cluster.TLSEnabled() {
+		return "https"
+	} else {
+		return "http"
+	}
 }
 
 // returns RabbitMQ management port from given service
@@ -113,12 +152,7 @@ func rabbitmqClusterFromReference(ctx context.Context, c client.Client, rmq topo
 	return cluster, nil
 }
 
-func serviceSecretFromReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, namespace string) (*corev1.Service, *corev1.Secret, error) {
-	cluster, err := rabbitmqClusterFromReference(ctx, c, rmq, namespace)
-	if err != nil {
-		return nil, nil, err
-	}
-
+func serviceSecretFromCluster(ctx context.Context, c client.Client, cluster *rabbitmqv1beta1.RabbitmqCluster, namespace string) (*corev1.Service, *corev1.Secret, error) {
 	if cluster.Status.Binding == nil {
 		return nil, nil, errors.New("no status.binding set")
 	}
