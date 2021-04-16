@@ -7,7 +7,7 @@ require (
 	github.com/elastic/crd-ref-docs v0.0.7
 	github.com/go-logr/logr v0.4.0
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.4.1
-	github.com/michaelklishin/rabbit-hole/v2 v2.7.0
+	github.com/michaelklishin/rabbit-hole/v2 v2.8.0
 	github.com/onsi/ginkgo v1.16.1
 	github.com/onsi/gomega v1.11.0
 	github.com/rabbitmq/cluster-operator v1.6.0

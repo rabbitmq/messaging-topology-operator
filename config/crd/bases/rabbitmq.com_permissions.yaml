@@ -10,12 +10,12 @@ metadata:
 spec:
   group: rabbitmq.com
   names:
+    categories:
+    - all
     kind: Permission
     listKind: PermissionList
     plural: permissions
     singular: permission
-    categories:
-    - all
   scope: Namespaced
   versions:
   - name: v1alpha2

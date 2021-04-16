@@ -45,7 +45,9 @@ type ExchangeStatus struct {
 }
 
 // +genclient
+
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:categories=all
 // +kubebuilder:subresource:status
 
 // Exchange is the Schema for the exchanges API

@@ -99,14 +99,14 @@ func (r *PermissionReconciler) updatePermissions(ctx context.Context, client int
 	logger := ctrl.LoggerFrom(ctx)
 
 	if err := validateResponse(client.UpdatePermissionsIn(permission.Spec.Vhost, permission.Spec.User, internal.GeneratePermissions(permission))); err != nil {
-		msg := "failed to set permissions"
+		msg := "failed to set permission"
 		r.Recorder.Event(permission, corev1.EventTypeWarning, "FailedUpdate", msg)
 		logger.Error(err, msg, "user", permission.Spec.User, "vhost", permission.Spec.Vhost)
 		return err
 	}
 
-	logger.Info("Successfully set permissions", "user", permission.Spec.User, "vhost", permission.Spec.Vhost)
-	r.Recorder.Event(permission, corev1.EventTypeNormal, "SuccessfulUpdate", "Successfully set permissions")
+	logger.Info("Successfully set permission", "user", permission.Spec.User, "vhost", permission.Spec.Vhost)
+	r.Recorder.Event(permission, corev1.EventTypeNormal, "SuccessfulUpdate", "successfully set permission")
 	return nil
 }
 
@@ -131,9 +131,9 @@ func (r *PermissionReconciler) revokePermissions(ctx context.Context, client int
 
 	err := validateResponseForDeletion(client.ClearPermissionsIn(permission.Spec.Vhost, permission.Spec.User))
 	if errors.Is(err, NotFound) {
-		logger.Info("cannot find user or vhost in rabbitmq server; no need to revoke permissions", "user", permission.Spec.User, "vhost", permission.Spec.Vhost)
+		logger.Info("cannot find user or vhost in rabbitmq server; no need to delete permission", "user", permission.Spec.User, "vhost", permission.Spec.Vhost)
 	} else if err != nil {
-		msg := "failed to revoke permissions"
+		msg := "failed to delete permission"
 		r.Recorder.Event(permission, corev1.EventTypeWarning, "FailedDelete", msg)
 		logger.Error(err, msg, "user", permission.Spec.User, "vhost", permission.Spec.Vhost)
 		return err

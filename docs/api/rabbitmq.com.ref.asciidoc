@@ -24,6 +24,8 @@ Package v1alpha2 contains API Schema definitions for the rabbitmq.com v1alpha2 A
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-policylist[$$PolicyList$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-queue[$$Queue$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-queuelist[$$QueueList$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-schemareplication[$$SchemaReplication$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-schemareplicationlist[$$SchemaReplicationList$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-user[$$User$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-userlist[$$UserList$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-vhost[$$Vhost$$]
@@ -127,6 +129,7 @@ BindingStatus defines the observed state of Binding
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-permissionstatus[$$PermissionStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-policystatus[$$PolicyStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-queuestatus[$$QueueStatus$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-schemareplicationstatus[$$SchemaReplicationStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-userstatus[$$UserStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-vhoststatus[$$VhostStatus$$]
 ****
@@ -495,6 +498,7 @@ QueueStatus defines the observed state of Queue
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-permissionspec[$$PermissionSpec$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-policyspec[$$PolicySpec$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-queuespec[$$QueueSpec$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-schemareplicationspec[$$SchemaReplicationSpec$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-userspec[$$UserSpec$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-vhostspec[$$VhostSpec$$]
 ****
@@ -503,6 +507,84 @@ QueueStatus defines the observed state of Queue
 |===
 | Field | Description
 | *`name`* __string__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-schemareplication"]
+==== SchemaReplication 
+
+SchemaReplication is the Schema for the schemareplications API This feature requires Tanzu RabbitMQ with schema replication plugin. For more information, see: https://tanzu.vmware.com/rabbitmq and https://www.rabbitmq.com/definitions-standby.html.
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-schemareplicationlist[$$SchemaReplicationList$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `rabbitmq.com/v1alpha2`
+| *`kind`* __string__ | `SchemaReplication`
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-schemareplicationspec[$$SchemaReplicationSpec$$]__ | 
+| *`status`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-schemareplicationstatus[$$SchemaReplicationStatus$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-schemareplicationlist"]
+==== SchemaReplicationList 
+
+SchemaReplicationList contains a list of SchemaReplication
+
+
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `rabbitmq.com/v1alpha2`
+| *`kind`* __string__ | `SchemaReplicationList`
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-schemareplication[$$SchemaReplication$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-schemareplicationspec"]
+==== SchemaReplicationSpec 
+
+SchemaReplicationSpec defines the desired state of SchemaReplication
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-schemareplication[$$SchemaReplication$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that schema replication would be set for. Must be an existing cluster.
+| *`upstreamSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Defines a Secret which contains credentials to be used for schema replication. The Secret must contain the keys `endpoints`, `username` and `password` in its Data field, or operator will error. `endpoints` should be one or multiple endpoints separated by ','.
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-schemareplicationstatus"]
+==== SchemaReplicationStatus 
+
+SchemaReplicationStatus defines the observed state of SchemaReplication
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-schemareplication[$$SchemaReplication$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Queue. It corresponds to the Queue's generation, which is updated on mutation by the API Server.
+| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha2-condition[$$Condition$$]__ | 
 |===
 
 

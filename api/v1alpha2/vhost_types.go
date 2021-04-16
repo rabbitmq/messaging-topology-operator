@@ -35,7 +35,9 @@ type VhostStatus struct {
 }
 
 // +genclient
+
 // +kubebuilder:object:root=true
+// +kubebuilder:resource:categories=all
 // +kubebuilder:subresource:status
 
 // Vhost is the Schema for the vhosts API

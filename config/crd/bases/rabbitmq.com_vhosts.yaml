@@ -10,12 +10,12 @@ metadata:
 spec:
   group: rabbitmq.com
   names:
+    categories:
+    - all
     kind: Vhost
     listKind: VhostList
     plural: vhosts
     singular: vhost
-    categories:
-    - all
   scope: Namespaced
   versions:
   - name: v1alpha2

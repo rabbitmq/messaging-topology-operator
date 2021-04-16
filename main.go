@@ -128,6 +128,16 @@ func main() {
 		log.Error(err, "unable to create controller", "controller", controllers.PermissionControllerName)
 		os.Exit(1)
 	}
+	if err = (&controllers.SchemaReplicationReconciler{
+		Client:                mgr.GetClient(),
+		Log:                   ctrl.Log.WithName("controllers").WithName("SchemaReplication"),
+		Scheme:                mgr.GetScheme(),
+		Recorder:              mgr.GetEventRecorderFor(controllers.SchemaReplicationControllerName),
+		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", controllers.SchemaReplicationControllerName)
+		os.Exit(1)
+	}
 
 	if err = (&topology.Binding{}).SetupWebhookWithManager(mgr); err != nil {
 		log.Error(err, "unable to create webhook", "webhook", "Binding")
@@ -155,6 +165,10 @@ func main() {
 	}
 	if err = (&topology.Permission{}).SetupWebhookWithManager(mgr); err != nil {
 		log.Error(err, "unable to create webhook", "webhook", "Permission")
+		os.Exit(1)
+	}
+	if err = (&topology.SchemaReplication{}).SetupWebhookWithManager(mgr); err != nil {
+		log.Error(err, "unable to create webhook", "webhook", "SchemaReplication")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

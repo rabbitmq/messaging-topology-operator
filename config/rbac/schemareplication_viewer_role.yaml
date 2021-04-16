@@ -1,0 +1,20 @@
+# permissions for end users to view schemareplications.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: schemareplication-viewer-role
+rules:
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - schemareplications
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - schemareplications/status
+  verbs:
+  - get

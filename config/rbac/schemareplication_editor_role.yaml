@@ -1,0 +1,24 @@
+# permissions for end users to edit schemareplications.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: schemareplication-editor-role
+rules:
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - schemareplications
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - schemareplications/status
+  verbs:
+  - get

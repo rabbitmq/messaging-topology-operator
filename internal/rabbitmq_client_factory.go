@@ -45,6 +45,8 @@ type RabbitMQClient interface {
 	DeleteExchange(string, string) (*http.Response, error)
 	PutVhost(string, rabbithole.VhostSettings) (*http.Response, error)
 	DeleteVhost(string) (*http.Response, error)
+	PutGlobalParameter(name string, value interface{}) (*http.Response, error)
+	DeleteGlobalParameter(name string) (*http.Response, error)
 }
 
 type RabbitMQClientFactory func(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, namespace string) (RabbitMQClient, error)

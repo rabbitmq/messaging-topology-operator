@@ -6,22 +6,22 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.5.0
   creationTimestamp: null
-  name: exchanges.rabbitmq.com
+  name: schemareplications.rabbitmq.com
 spec:
   group: rabbitmq.com
   names:
-    categories:
-    - all
-    kind: Exchange
-    listKind: ExchangeList
-    plural: exchanges
-    singular: exchange
+    kind: SchemaReplication
+    listKind: SchemaReplicationList
+    plural: schemareplications
+    singular: schemareplication
   scope: Namespaced
   versions:
   - name: v1alpha2
     schema:
       openAPIV3Schema:
-        description: Exchange is the Schema for the exchanges API
+        description: 'SchemaReplication is the Schema for the schemareplications API
+          This feature requires Tanzu RabbitMQ with schema replication plugin. For
+          more information, see: https://tanzu.vmware.com/rabbitmq and https://www.rabbitmq.com/definitions-standby.html.'
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -36,44 +36,33 @@ spec:
           metadata:
             type: object
           spec:
-            description: ExchangeSpec defines the desired state of Exchange
+            description: SchemaReplicationSpec defines the desired state of SchemaReplication
             properties:
-              arguments:
-                type: object
-                x-kubernetes-preserve-unknown-fields: true
-              autoDelete:
-                type: boolean
-              durable:
-                type: boolean
-              name:
-                type: string
               rabbitmqClusterReference:
-                description: Reference to the RabbitmqCluster that the exchange will
-                  be created in. Required property.
+                description: Reference to the RabbitmqCluster that schema replication
+                  would be set for. Must be an existing cluster.
                 properties:
                   name:
                     type: string
                 required:
                 - name
                 type: object
-              type:
-                default: direct
-                enum:
-                - direct
-                - fanout
-                - headers
-                - topic
-                type: string
-              vhost:
-                default: /
-                description: Default to vhost '/'
-                type: string
+              upstreamSecret:
+                description: Defines a Secret which contains credentials to be used
+                  for schema replication. The Secret must contain the keys `endpoints`,
+                  `username` and `password` in its Data field, or operator will error.
+                  `endpoints` should be one or multiple endpoints separated by ','.
+                properties:
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                      TODO: Add other useful fields. apiVersion, kind, uid?'
+                    type: string
+                type: object
             required:
-            - name
             - rabbitmqClusterReference
             type: object
           status:
-            description: ExchangeStatus defines the observed state of Exchange
+            description: SchemaReplicationStatus defines the observed state of SchemaReplication
             properties:
               conditions:
                 items:
@@ -103,7 +92,7 @@ spec:
                 type: array
               observedGeneration:
                 description: observedGeneration is the most recent successful generation
-                  observed for this Exchange. It corresponds to the Exchange's generation,
+                  observed for this Queue. It corresponds to the Queue's generation,
                   which is updated on mutation by the API Server.
                 format: int64
                 type: integer
