@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -14,14 +12,10 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/cloudflare/cfssl/csr"
-	"github.com/cloudflare/cfssl/helpers"
-	"github.com/cloudflare/cfssl/initca"
-	"github.com/cloudflare/cfssl/signer"
-	"github.com/cloudflare/cfssl/signer/local"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	. "github.com/onsi/gomega"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
+	"github.com/rabbitmq/messaging-topology-operator/internal/testutils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -196,13 +190,12 @@ func setupTestRabbitmqCluster(k8sClient client.Client, rabbitmqCluster *rabbitmq
 
 func createTLSSecret(secretName, secretNamespace, hostname string) (string, []byte, []byte) {
 	// create cert files
-	serverCertPath, serverCertFile := createCertFile(2, "server.crt")
-	serverKeyPath, serverKeyFile := createCertFile(2, "server.key")
-	caCertPath, caCertFile := createCertFile(2, "ca.crt")
+	serverCertPath, serverCertFile := testutils.CreateCertFile(2, "server.crt")
+	serverKeyPath, serverKeyFile := testutils.CreateCertFile(2, "server.key")
+	caCertPath, caCertFile := testutils.CreateCertFile(2, "ca.crt")
 
 	// generate and write cert and key to file
-	caCert, caKey, err := createCertificateChain(hostname, caCertFile, serverCertFile, serverKeyFile)
-	ExpectWithOffset(1, err).To(Succeed())
+	caCert, caKey := testutils.CreateCertificateChain(2, hostname, caCertFile, serverCertFile, serverKeyFile)
 	// create k8s tls secret
 	ExpectWithOffset(1, k8sCreateTLSSecret(secretName, secretNamespace, serverCertPath, serverKeyPath)).To(Succeed())
 
@@ -213,23 +206,14 @@ func createTLSSecret(secretName, secretNamespace, hostname string) (string, []by
 }
 
 func updateTLSSecret(secretName, secretNamespace, hostname string, caCert, caKey []byte) {
-	serverCertPath, serverCertFile := createCertFile(2, "server.crt")
-	serverKeyPath, serverKeyFile := createCertFile(2, "server.key")
+	serverCertPath, serverCertFile := testutils.CreateCertFile(2, "server.crt")
+	serverKeyPath, serverKeyFile := testutils.CreateCertFile(2, "server.key")
 
-	ExpectWithOffset(1, generateCertandKey(hostname, caCert, caKey, serverCertFile, serverKeyFile)).To(Succeed())
+	testutils.GenerateCertandKey(2, hostname, caCert, caKey, serverCertFile, serverKeyFile)
 	ExpectWithOffset(1, k8sCreateTLSSecret(secretName, secretNamespace, serverCertPath, serverKeyPath)).To(Succeed())
 
 	ExpectWithOffset(1, os.Remove(serverKeyPath)).To(Succeed())
 	ExpectWithOffset(1, os.Remove(serverCertPath)).To(Succeed())
-}
-
-func createCertFile(offset int, fileName string) (string, *os.File) {
-	tmpDir, err := ioutil.TempDir("", "certs")
-	ExpectWithOffset(offset, err).ToNot(HaveOccurred())
-	path := filepath.Join(tmpDir, fileName)
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0755)
-	ExpectWithOffset(offset, err).ToNot(HaveOccurred())
-	return path, file
 }
 
 func k8sSecretExists(secretName, secretNamespace string) (bool, error) {
@@ -290,95 +274,4 @@ func k8sDeleteSecret(secretName, secretNamespace string) error {
 	}
 
 	return nil
-}
-
-// generate a pair of certificate and key, given a cacert
-func generateCertandKey(hostname string, caCert, caKey []byte, certWriter, keyWriter io.Writer) error {
-	caPriv, err := helpers.ParsePrivateKeyPEM(caKey)
-	if err != nil {
-		return err
-	}
-
-	caPub, err := helpers.ParseCertificatePEM(caCert)
-	if err != nil {
-		return err
-	}
-
-	s, err := local.NewSigner(caPriv, caPub, signer.DefaultSigAlgo(caPriv), nil)
-	if err != nil {
-		return err
-	}
-
-	// create server cert
-	serverReq := &csr.CertificateRequest{
-		Names: []csr.Name{
-			{
-				C:  "UK",
-				ST: "London",
-				L:  "London",
-				O:  "VMWare",
-				OU: "RabbitMQ",
-			},
-		},
-		CN:         "tests-server",
-		Hosts:      []string{hostname},
-		KeyRequest: &csr.KeyRequest{A: "rsa", S: 2048},
-	}
-
-	serverCsr, serverKey, err := csr.ParseRequest(serverReq)
-	if err != nil {
-		return err
-	}
-
-	signReq := signer.SignRequest{Hosts: serverReq.Hosts, Request: string(serverCsr)}
-	serverCert, err := s.Sign(signReq)
-	if err != nil {
-		return err
-	}
-
-	_, err = certWriter.Write(serverCert)
-	if err != nil {
-		return err
-	}
-	_, err = keyWriter.Write(serverKey)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// creates a CA cert, and uses it to sign another cert
-// it returns the generated ca cert and key so they can be reused
-func createCertificateChain(hostname string, caCertWriter, certWriter, keyWriter io.Writer) ([]byte, []byte, error) {
-	// create a CA cert
-	caReq := &csr.CertificateRequest{
-		Names: []csr.Name{
-			{
-				C:  "UK",
-				ST: "London",
-				L:  "London",
-				O:  "VMWare",
-				OU: "RabbitMQ",
-			},
-		},
-		CN:         "tests-CA",
-		Hosts:      []string{hostname},
-		KeyRequest: &csr.KeyRequest{A: "rsa", S: 2048},
-	}
-
-	caCert, _, caKey, err := initca.New(caReq)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	_, err = caCertWriter.Write(caCert)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if err := generateCertandKey(hostname, caCert, caKey, certWriter, keyWriter); err != nil {
-		return nil, nil, err
-	}
-
-	return caCert, caKey, nil
 }
