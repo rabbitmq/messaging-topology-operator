@@ -11,7 +11,10 @@ package system_tests
 
 import (
 	"context"
+	"embed"
 	"testing"
+
+	_ "embed"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -39,6 +42,8 @@ var (
 	rabbitClient *rabbithole.Client
 	clientSet    *kubernetes.Clientset
 	rmq          *rabbitmqv1beta1.RabbitmqCluster
+	//go:embed fixtures
+	fixtures embed.FS
 )
 
 var _ = BeforeSuite(func() {

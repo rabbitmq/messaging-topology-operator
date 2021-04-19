@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -19,6 +20,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -132,6 +134,14 @@ func managementNodePort(ctx context.Context, clientSet *kubernetes.Clientset, na
 	return ""
 }
 
+func clusterIP(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) string {
+	svc, err := clientSet.CoreV1().Services(namespace).
+		Get(ctx, name, metav1.GetOptions{})
+
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	return svc.Spec.ClusterIP
+}
+
 func kubernetesNodeIp(ctx context.Context, clientSet *kubernetes.Clientset) string {
 	nodes, err := clientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
@@ -186,6 +196,26 @@ func setupTestRabbitmqCluster(k8sClient client.Client, rabbitmqCluster *rabbitmq
 		}
 		return string(output)
 	}, 120, 10).Should(Equal("'True'"))
+	Expect(k8sClient.Get(context.Background(), types.NamespacedName{Name: rabbitmqCluster.Name, Namespace: rabbitmqCluster.Namespace}, rabbitmqCluster)).To(Succeed())
+}
+
+func updateTestRabbitmqCluster(k8sClient client.Client, rabbitmqCluster *rabbitmqv1beta1.RabbitmqCluster) {
+	// update a RabbitmqCluster used for system tests
+	Expect(k8sClient.Update(context.Background(), rabbitmqCluster)).To(Succeed())
+	Eventually(func() string {
+		output, err := kubectl(
+			"-n",
+			rabbitmqCluster.Namespace,
+			"get",
+			"rabbitmqclusters",
+			rabbitmqCluster.Name,
+			"-ojsonpath='{.status.conditions[?(@.type==\"AllReplicasReady\")].status}'",
+		)
+		if err != nil {
+			Expect(string(output)).To(ContainSubstring("not found"))
+		}
+		return string(output)
+	}, 120, 10).Should(Equal("'True'"))
 }
 
 func createTLSSecret(secretName, secretNamespace, hostname string) (string, []byte, []byte) {
@@ -196,6 +226,20 @@ func createTLSSecret(secretName, secretNamespace, hostname string) (string, []by
 
 	// generate and write cert and key to file
 	caCert, caKey := testutils.CreateCertificateChain(2, hostname, caCertFile, serverCertFile, serverKeyFile)
+
+	tmpfile, err := ioutil.TempFile("", "ca.key")
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	defer os.Remove(tmpfile.Name())
+
+	_, err = tmpfile.Write(caKey)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	err = tmpfile.Close()
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	// create CA tls secret
+	ExpectWithOffset(1, k8sCreateTLSSecret(secretName+"-ca", secretNamespace, caCertPath, tmpfile.Name())).To(Succeed())
 	// create k8s tls secret
 	ExpectWithOffset(1, k8sCreateTLSSecret(secretName, secretNamespace, serverCertPath, serverKeyPath)).To(Succeed())
 

@@ -2,7 +2,9 @@ package system_tests
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/google/uuid"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,14 +29,29 @@ var _ = Describe("Management over TLS", func() {
 
 	BeforeEach(func() {
 		targetCluster = basicTestRabbitmqCluster("tls-cluster", namespace)
-
-		hostname := kubernetesNodeIp(ctx, clientSet)
-		_, _, _ = createTLSSecret("rabbitmq-tls-test-secret", namespace, hostname)
-
-		targetCluster.Spec.TLS.SecretName = "rabbitmq-tls-test-secret"
-		targetCluster.Spec.TLS.DisableNonTLSListeners = true
-
+		targetCluster.Spec.Service.Type = "ClusterIP"
 		setupTestRabbitmqCluster(k8sClient, targetCluster)
+
+		secretName := fmt.Sprintf("rmq-test-cert-%v", uuid.New())
+		hostname := clusterIP(ctx, clientSet, namespace, "tls-cluster")
+		_, _, _ = createTLSSecret(secretName, namespace, hostname)
+
+		patchBytes, _ := fixtures.ReadFile("fixtures/patch-test-ca.yaml")
+		_, err := kubectl(
+			"-n",
+			namespace,
+			"patch",
+			"deployment",
+			"messaging-topology-operator",
+			"--patch",
+			fmt.Sprintf(string(patchBytes), secretName+"-ca"),
+		)
+		Expect(err).NotTo(HaveOccurred())
+
+		targetCluster.Spec.TLS.SecretName = secretName
+		targetCluster.Spec.TLS.DisableNonTLSListeners = true
+		updateTestRabbitmqCluster(k8sClient, targetCluster)
+
 		targetClusterRef = topology.RabbitmqClusterReference{Name: targetCluster.Name}
 	})
 
@@ -49,7 +66,7 @@ var _ = Describe("Management over TLS", func() {
 				exchange.Name,
 			)
 			return string(output)
-		}, 30, 10).Should(ContainSubstring("not found"))
+		}, 90, 10).Should(ContainSubstring("not found"))
 		Expect(k8sClient.Delete(ctx, &policy)).To(Succeed())
 		Eventually(func() string {
 			output, _ := kubectl(
@@ -60,7 +77,7 @@ var _ = Describe("Management over TLS", func() {
 				policy.Name,
 			)
 			return string(output)
-		}, 30, 10).Should(ContainSubstring("not found"))
+		}, 90, 10).Should(ContainSubstring("not found"))
 		Expect(k8sClient.Delete(ctx, &queue)).To(Succeed())
 		Eventually(func() string {
 			output, _ := kubectl(
@@ -71,7 +88,7 @@ var _ = Describe("Management over TLS", func() {
 				queue.Name,
 			)
 			return string(output)
-		}, 30, 10).Should(ContainSubstring("not found"))
+		}, 90, 10).Should(ContainSubstring("not found"))
 		Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
 		Eventually(func() string {
 			output, _ := kubectl(
@@ -82,7 +99,7 @@ var _ = Describe("Management over TLS", func() {
 				user.Name,
 			)
 			return string(output)
-		}, 30, 10).Should(ContainSubstring("not found"))
+		}, 90, 10).Should(ContainSubstring("not found"))
 		Expect(k8sClient.Delete(ctx, &vhost)).To(Succeed())
 		Eventually(func() string {
 			output, _ := kubectl(
@@ -93,7 +110,7 @@ var _ = Describe("Management over TLS", func() {
 				vhost.Name,
 			)
 			return string(output)
-		}, 30, 10).Should(ContainSubstring("not found"))
+		}, 90, 10).Should(ContainSubstring("not found"))
 		Expect(k8sClient.Delete(ctx, &rabbitmqv1beta1.RabbitmqCluster{ObjectMeta: metav1.ObjectMeta{Name: targetCluster.Name, Namespace: targetCluster.Namespace}})).To(Succeed())
 		Eventually(func() string {
 			output, _ := kubectl(
