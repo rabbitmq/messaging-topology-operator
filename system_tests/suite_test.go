@@ -14,8 +14,6 @@ import (
 	"embed"
 	"testing"
 
-	_ "embed"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
