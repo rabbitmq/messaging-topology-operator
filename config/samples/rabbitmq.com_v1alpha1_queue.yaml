@@ -1,4 +1,0 @@
-apiVersion: rabbitmq.com/v1alpha2
-kind: Queue
-metadata:
-  name: test
