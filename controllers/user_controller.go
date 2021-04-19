@@ -11,6 +11,7 @@ package controllers
 
 import (
 	"context"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -61,7 +62,15 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
 
-	rabbitClient, err := r.RabbitmqClientFactory(ctx, r.Client, user.Spec.RabbitmqClusterReference, user.Namespace)
+	systemCertPool, err := x509.SystemCertPool()
+	if err != nil {
+		msg := "failed to retrieve system trusted certs"
+		r.Recorder.Event(user, corev1.EventTypeWarning, "FailedUpdate", msg)
+		logger.Error(err, msg)
+		return ctrl.Result{}, err
+	}
+
+	rabbitClient, err := r.RabbitmqClientFactory(ctx, r.Client, user.Spec.RabbitmqClusterReference, user.Namespace, systemCertPool)
 	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
 	// the Cluster is temporarily down. Requeue until it comes back up.
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && user.ObjectMeta.DeletionTimestamp.IsZero() {

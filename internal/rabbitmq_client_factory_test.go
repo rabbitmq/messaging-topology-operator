@@ -2,6 +2,9 @@ package internal_test
 
 import (
 	"context"
+	"crypto/x509"
+	"errors"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 
@@ -33,7 +36,15 @@ var _ = Describe("RabbitholeClientFactory", func() {
 		fakeRabbitMQServer       *ghttp.Server
 		fakeRabbitMQURL          *url.URL
 		fakeRabbitMQPort         int
+		certPool                 *x509.CertPool
+		serverCertPath           string
+		serverKeyPath            string
+		caCertPath               string
+		caCertBytes              []byte
 	)
+	BeforeEach(func() {
+		certPool = x509.NewCertPool()
+	})
 	JustBeforeEach(func() {
 		fakeRabbitMQServer.RouteToHandler("PUT", "/api/users/example-user", func(w http.ResponseWriter, req *http.Request) {
 			user, password, ok := req.BasicAuth()
@@ -53,7 +64,7 @@ var _ = Describe("RabbitholeClientFactory", func() {
 
 	When("the RabbitmqCluster is configured without TLS", func() {
 		BeforeEach(func() {
-			fakeRabbitMQServer = mockRabbitMQServer(false)
+			fakeRabbitMQServer = mockRabbitMQServer()
 
 			var err error
 			fakeRabbitMQURL, fakeRabbitMQPort, err = mockRabbitMQURLPort(fakeRabbitMQServer)
@@ -105,7 +116,7 @@ var _ = Describe("RabbitholeClientFactory", func() {
 		})
 
 		It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
-			generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
+			generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, certPool)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(generatedClient).NotTo(BeNil())
 
@@ -133,7 +144,7 @@ var _ = Describe("RabbitholeClientFactory", func() {
 			})
 
 			It("errors", func() {
-				generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
+				generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, certPool)
 				Expect(generatedClient).To(BeNil())
 				Expect(err.Error()).To(ContainSubstring("no status.binding set"))
 			})
@@ -155,7 +166,7 @@ var _ = Describe("RabbitholeClientFactory", func() {
 			})
 
 			It("errors", func() {
-				generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
+				generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, certPool)
 				Expect(generatedClient).To(BeNil())
 				Expect(err.Error()).To(ContainSubstring("no status.defaultUser set"))
 			})
@@ -164,12 +175,18 @@ var _ = Describe("RabbitholeClientFactory", func() {
 
 	When("the RabbitmqCluster is configured with TLS", func() {
 		BeforeEach(func() {
-			fakeRabbitMQServer = mockRabbitMQServer(true)
+			fakeRabbitMQServer, serverCertPath, serverKeyPath, caCertPath = mockRabbitMQTLSServer()
 
 			var err error
 			fakeRabbitMQURL, fakeRabbitMQPort, err = mockRabbitMQURLPort(fakeRabbitMQServer)
 			Expect(err).NotTo(HaveOccurred())
 
+			certBytes, err := ioutil.ReadFile(serverCertPath)
+			Expect(err).NotTo(HaveOccurred())
+			keyBytes, err := ioutil.ReadFile(serverKeyPath)
+			Expect(err).NotTo(HaveOccurred())
+			caCertBytes, err = ioutil.ReadFile(caCertPath)
+			Expect(err).NotTo(HaveOccurred())
 			existingRabbitMQCluster = &rabbitmqv1beta1.RabbitmqCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rmq",
@@ -219,8 +236,8 @@ var _ = Describe("RabbitholeClientFactory", func() {
 				},
 				Type: corev1.SecretTypeTLS,
 				Data: map[string][]byte{
-					corev1.TLSCertKey:       []byte("somecertstring"),
-					corev1.TLSPrivateKeyKey: []byte("somekeystring"),
+					corev1.TLSCertKey:       certBytes,
+					corev1.TLSPrivateKeyKey: keyBytes,
 				},
 			}
 			existingService.Spec.Ports = append(existingService.Spec.Ports, corev1.ServicePort{
@@ -234,14 +251,31 @@ var _ = Describe("RabbitholeClientFactory", func() {
 			objs = []runtime.Object{existingRabbitMQCluster, existingCredentialSecret, existingCertSecret, existingService}
 		})
 
-		It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
-			generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(generatedClient).NotTo(BeNil())
+		When("the CA that signed the certs is not trusted", func() {
+			It("generates a rabbithole client which fails to authenticate with the cluster", func() {
+				generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, certPool)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(generatedClient).NotTo(BeNil())
 
-			_, err = generatedClient.PutUser("example-user", rabbithole.UserSettings{})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(len(fakeRabbitMQServer.ReceivedRequests())).To(Equal(1))
+				_, err = generatedClient.PutUser("example-user", rabbithole.UserSettings{})
+				Expect(errors.As(err, &x509.UnknownAuthorityError{})).To(BeTrue())
+			})
+		})
+
+		When("the CA that signed the certs is trusted", func() {
+			JustBeforeEach(func() {
+				ok := certPool.AppendCertsFromPEM(caCertBytes)
+				Expect(ok).To(BeTrue())
+			})
+			It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
+				generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, certPool)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(generatedClient).NotTo(BeNil())
+
+				_, err = generatedClient.PutUser("example-user", rabbithole.UserSettings{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(len(fakeRabbitMQServer.ReceivedRequests())).To(Equal(1))
+			})
 		})
 	})
 })

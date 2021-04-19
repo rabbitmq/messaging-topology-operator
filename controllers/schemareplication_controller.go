@@ -2,18 +2,20 @@ package controllers
 
 import (
 	"context"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
+	"time"
+
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"time"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -46,7 +48,15 @@ func (r *SchemaReplicationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
 
-	rabbitClient, err := r.RabbitmqClientFactory(ctx, r.Client, replication.Spec.RabbitmqClusterReference, replication.Namespace)
+	systemCertPool, err := x509.SystemCertPool()
+	if err != nil {
+		msg := "failed to retrieve system trusted certs"
+		r.Recorder.Event(replication, corev1.EventTypeWarning, "FailedUpdate", msg)
+		logger.Error(err, msg)
+		return ctrl.Result{}, err
+	}
+
+	rabbitClient, err := r.RabbitmqClientFactory(ctx, r.Client, replication.Spec.RabbitmqClusterReference, replication.Namespace, systemCertPool)
 	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
 	// the Cluster is temporarily down. Requeue until it comes back up.
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && replication.ObjectMeta.DeletionTimestamp.IsZero() {

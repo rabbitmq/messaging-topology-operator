@@ -49,17 +49,17 @@ type RabbitMQClient interface {
 	DeleteGlobalParameter(name string) (*http.Response, error)
 }
 
-type RabbitMQClientFactory func(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, namespace string) (RabbitMQClient, error)
+type RabbitMQClientFactory func(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, namespace string, certPool *x509.CertPool) (RabbitMQClient, error)
 
-var RabbitholeClientFactory RabbitMQClientFactory = func(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, namespace string) (RabbitMQClient, error) {
-	return generateRabbitholeClient(ctx, c, rmq, namespace)
+var RabbitholeClientFactory RabbitMQClientFactory = func(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, namespace string, certPool *x509.CertPool) (RabbitMQClient, error) {
+	return generateRabbitholeClient(ctx, c, rmq, namespace, certPool)
 }
 
 var NoSuchRabbitmqClusterError = errors.New("RabbitmqCluster object does not exist")
 
 // returns a http client for the given RabbitmqCluster
 // assumes the RabbitmqCluster is reachable using its service's ClusterIP
-func generateRabbitholeClient(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, namespace string) (rabbitmqClient RabbitMQClient, err error) {
+func generateRabbitholeClient(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, namespace string, certPool *x509.CertPool) (rabbitmqClient RabbitMQClient, err error) {
 	cluster, err := rabbitmqClusterFromReference(ctx, c, rmq, namespace)
 	if err != nil {
 		return nil, err
@@ -88,12 +88,7 @@ func generateRabbitholeClient(ctx context.Context, c client.Client, rmq topology
 	if cluster.TLSEnabled() {
 		// create TLS config for https request
 		cfg := new(tls.Config)
-		systemCertPool, err := x509.SystemCertPool()
-		if err != nil {
-			return nil, err
-		}
-		cfg.RootCAs = systemCertPool
-		cfg.InsecureSkipVerify = true
+		cfg.RootCAs = certPool
 
 		transport := &http.Transport{TLSClientConfig: cfg}
 		rabbitmqClient, err = rabbithole.NewTLSClient(endpoint, string(defaultUser), string(defaultUserPass), transport)

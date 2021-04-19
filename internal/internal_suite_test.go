@@ -10,6 +10,7 @@ This product may include a number of subcomponents with separate copyright notic
 package internal_test
 
 import (
+	"crypto/tls"
 	"net/url"
 	"strconv"
 	"testing"
@@ -17,6 +18,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
+	"github.com/rabbitmq/messaging-topology-operator/internal/testutils"
 )
 
 func TestResource(t *testing.T) {
@@ -24,12 +26,26 @@ func TestResource(t *testing.T) {
 	RunSpecs(t, "Internal Suite")
 }
 
-func mockRabbitMQServer(tls bool) *ghttp.Server {
-	if tls {
-		return ghttp.NewTLSServer()
-	} else {
-		return ghttp.NewServer()
-	}
+func mockRabbitMQServer() *ghttp.Server {
+	return ghttp.NewServer()
+}
+
+func mockRabbitMQTLSServer() (*ghttp.Server, string, string, string) {
+	fakeRabbitMQServer := ghttp.NewUnstartedServer()
+
+	// create cert files
+	serverCertPath, serverCertFile := testutils.CreateCertFile(1, "server.crt")
+	serverKeyPath, serverKeyFile := testutils.CreateCertFile(1, "server.key")
+	caCertPath, caCertFile := testutils.CreateCertFile(1, "ca.crt")
+
+	// generate and write cert and key to file
+	_, _ = testutils.CreateCertificateChain(1, "127.0.0.1", caCertFile, serverCertFile, serverKeyFile)
+
+	cert, err := tls.LoadX509KeyPair(serverCertPath, serverKeyPath)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	fakeRabbitMQServer.HTTPTestServer.TLS = &tls.Config{Certificates: []tls.Certificate{cert}}
+	fakeRabbitMQServer.HTTPTestServer.StartTLS()
+	return fakeRabbitMQServer, serverCertPath, serverKeyPath, caCertPath
 }
 
 func mockRabbitMQURLPort(fakeRabbitMQServer *ghttp.Server) (*url.URL, int, error) {

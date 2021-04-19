@@ -11,11 +11,13 @@ package controllers_test
 
 import (
 	"context"
+	"crypto/x509"
 	"errors"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"path/filepath"
 	"testing"
+
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -45,7 +47,7 @@ var (
 	ctx                       = context.Background()
 	fakeRabbitMQClient        *internalfakes.FakeRabbitMQClient
 	fakeRabbitMQClientError   error
-	fakeRabbitMQClientFactory = func(ctx context.Context, c runtimeClient.Client, rmq topology.RabbitmqClusterReference, namespace string) (internal.RabbitMQClient, error) {
+	fakeRabbitMQClientFactory = func(ctx context.Context, c runtimeClient.Client, rmq topology.RabbitmqClusterReference, namespace string, certPool *x509.CertPool) (internal.RabbitMQClient, error) {
 		return fakeRabbitMQClient, fakeRabbitMQClientError
 	}
 	fakeRecorder *record.FakeRecorder
