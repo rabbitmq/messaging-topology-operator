@@ -63,15 +63,22 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	rabbitClient, err := r.RabbitmqClientFactory(ctx, r.Client, binding.Spec.RabbitmqClusterReference, binding.Namespace, systemCertPool)
-
-	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && binding.ObjectMeta.DeletionTimestamp.IsZero() {
+	rmq, svc, secret, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, binding.Spec.RabbitmqClusterReference, binding.Namespace)
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !binding.ObjectMeta.DeletionTimestamp.IsZero() {
+		logger.Info(noSuchRabbitDeletion, "binding", binding.Name)
+		r.Recorder.Event(binding, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted binding")
+		return reconcile.Result{}, r.removeFinalizer(ctx, binding)
+	}
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
-	} else if err != nil && !errors.Is(err, internal.NoSuchRabbitmqClusterError) {
+	}
+	if err != nil {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
 	}
+
+	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, secret, serviceDNSAddress(svc), systemCertPool)
 
 	if !binding.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info("Deleting")
@@ -141,12 +148,6 @@ func (r *BindingReconciler) declareBinding(ctx context.Context, client internal.
 // if binding arguments are set, list all bindings between source/destination to find the binding; if it failed to find corresponding binding, it assumes that the binding is already deleted and returns no error
 func (r *BindingReconciler) deleteBinding(ctx context.Context, client internal.RabbitMQClient, binding *topology.Binding) error {
 	logger := ctrl.LoggerFrom(ctx)
-
-	if client == nil || reflect.ValueOf(client).IsNil() {
-		logger.Info(noSuchRabbitDeletion, "binding", binding.Name)
-		r.Recorder.Event(binding, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted binding")
-		return r.removeFinalizer(ctx, binding)
-	}
 
 	var info *rabbithole.BindingInfo
 	var err error

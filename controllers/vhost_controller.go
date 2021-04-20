@@ -5,7 +5,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"errors"
-	"reflect"
 	"time"
 
 	"github.com/rabbitmq/messaging-topology-operator/internal"
@@ -53,16 +52,22 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, err
 	}
 
-	rabbitClient, err := r.RabbitmqClientFactory(ctx, r.Client, vhost.Spec.RabbitmqClusterReference, vhost.Namespace, systemCertPool)
-	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
-	// the Cluster is temporarily down. Requeue until it comes back up.
-	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && vhost.ObjectMeta.DeletionTimestamp.IsZero() {
+	rmq, svc, secret, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, vhost.Spec.RabbitmqClusterReference, vhost.Namespace)
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !vhost.ObjectMeta.DeletionTimestamp.IsZero() {
+		logger.Info(noSuchRabbitDeletion, "vhost", vhost.Name)
+		r.Recorder.Event(vhost, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted vhost")
+		return reconcile.Result{}, r.removeFinalizer(ctx, vhost)
+	}
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
-	} else if err != nil && !errors.Is(err, internal.NoSuchRabbitmqClusterError) {
+	}
+	if err != nil {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
 	}
+
+	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, secret, serviceDNSAddress(svc), systemCertPool)
 
 	// Check if the vhost has been marked for deletion
 	if !vhost.ObjectMeta.DeletionTimestamp.IsZero() {
@@ -136,12 +141,6 @@ func (r *VhostReconciler) addFinalizerIfNeeded(ctx context.Context, vhost *topol
 // if server responds with '404' Not Found, it logs and does not requeue on error
 func (r *VhostReconciler) deleteVhost(ctx context.Context, client internal.RabbitMQClient, vhost *topology.Vhost) error {
 	logger := ctrl.LoggerFrom(ctx)
-
-	if client == nil || reflect.ValueOf(client).IsNil() {
-		logger.Info(noSuchRabbitDeletion, "vhost", vhost.Name)
-		r.Recorder.Event(vhost, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted vhost")
-		return r.removeFinalizer(ctx, vhost)
-	}
 
 	err := validateResponseForDeletion(client.DeleteVhost(vhost.Spec.Name))
 	if errors.Is(err, NotFound) {

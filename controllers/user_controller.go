@@ -15,7 +15,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -70,16 +69,22 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, err
 	}
 
-	rabbitClient, err := r.RabbitmqClientFactory(ctx, r.Client, user.Spec.RabbitmqClusterReference, user.Namespace, systemCertPool)
-	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
-	// the Cluster is temporarily down. Requeue until it comes back up.
-	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && user.ObjectMeta.DeletionTimestamp.IsZero() {
+	rmq, svc, secret, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, user.Spec.RabbitmqClusterReference, user.Namespace)
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !user.ObjectMeta.DeletionTimestamp.IsZero() {
+		logger.Info(noSuchRabbitDeletion, "user", user.Name)
+		r.Recorder.Event(user, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted user")
+		return reconcile.Result{}, r.removeFinalizer(ctx, user)
+	}
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
-	} else if err != nil && !errors.Is(err, internal.NoSuchRabbitmqClusterError) {
+	}
+	if err != nil {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
 	}
+
+	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, secret, serviceDNSAddress(svc), systemCertPool)
 
 	// Check if the user has been marked for deletion
 	if !user.ObjectMeta.DeletionTimestamp.IsZero() {
@@ -310,12 +315,6 @@ func (r *UserReconciler) getUserCredentials(ctx context.Context, user *topology.
 
 func (r *UserReconciler) deleteUser(ctx context.Context, client internal.RabbitMQClient, user *topology.User) error {
 	logger := ctrl.LoggerFrom(ctx)
-
-	if client == nil || reflect.ValueOf(client).IsNil() {
-		logger.Info(noSuchRabbitDeletion, "user", user.Name)
-		r.Recorder.Event(user, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted user")
-		return r.removeFinalizer(ctx, user)
-	}
 
 	credentials, err := r.getUserCredentials(ctx, user)
 	if err != nil {

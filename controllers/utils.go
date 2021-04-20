@@ -14,6 +14,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+
+	corev1 "k8s.io/api/core/v1"
 )
 
 // TODO: check possible status code response from RabbitMQ
@@ -43,4 +45,8 @@ func validateResponseForDeletion(res *http.Response, err error) error {
 		return NotFound
 	}
 	return validateResponse(res, err)
+}
+
+func serviceDNSAddress(svc *corev1.Service) string {
+	return fmt.Sprintf("%s.%s.svc.cluster.local", svc.Name, svc.Namespace)
 }

@@ -14,7 +14,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"errors"
-	"reflect"
 	"time"
 
 	"github.com/rabbitmq/messaging-topology-operator/internal"
@@ -62,16 +61,22 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, err
 	}
 
-	rabbitClient, err := r.RabbitmqClientFactory(ctx, r.Client, exchange.Spec.RabbitmqClusterReference, exchange.Namespace, systemCertPool)
-	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
-	// the Cluster is temporarily down. Requeue until it comes back up.
-	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && exchange.ObjectMeta.DeletionTimestamp.IsZero() {
+	rmq, svc, secret, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, exchange.Spec.RabbitmqClusterReference, exchange.Namespace)
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !exchange.ObjectMeta.DeletionTimestamp.IsZero() {
+		logger.Info(noSuchRabbitDeletion, "exchange", exchange.Name)
+		r.Recorder.Event(exchange, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted exchange")
+		return reconcile.Result{}, r.removeFinalizer(ctx, exchange)
+	}
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
-	} else if err != nil && !errors.Is(err, internal.NoSuchRabbitmqClusterError) {
+	}
+	if err != nil {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
 	}
+
+	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, secret, serviceDNSAddress(svc), systemCertPool)
 
 	if !exchange.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info("Deleting")
@@ -151,12 +156,6 @@ func (r *ExchangeReconciler) addFinalizerIfNeeded(ctx context.Context, e *topolo
 // if server responds with '404' Not Found, it logs and does not requeue on error
 func (r *ExchangeReconciler) deleteExchange(ctx context.Context, client internal.RabbitMQClient, exchange *topology.Exchange) error {
 	logger := ctrl.LoggerFrom(ctx)
-
-	if client == nil || reflect.ValueOf(client).IsNil() {
-		logger.Info(noSuchRabbitDeletion, "exchange", exchange.Name)
-		r.Recorder.Event(exchange, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted exchange")
-		return r.removeFinalizer(ctx, exchange)
-	}
 
 	err := validateResponseForDeletion(client.DeleteExchange(exchange.Spec.Vhost, exchange.Spec.Name))
 	if errors.Is(err, NotFound) {

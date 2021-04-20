@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
 	"time"
 
 	"github.com/rabbitmq/messaging-topology-operator/internal"
@@ -56,16 +55,22 @@ func (r *SchemaReplicationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, err
 	}
 
-	rabbitClient, err := r.RabbitmqClientFactory(ctx, r.Client, replication.Spec.RabbitmqClusterReference, replication.Namespace, systemCertPool)
-	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
-	// the Cluster is temporarily down. Requeue until it comes back up.
-	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && replication.ObjectMeta.DeletionTimestamp.IsZero() {
+	rmq, svc, secret, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, replication.Spec.RabbitmqClusterReference, replication.Namespace)
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !replication.ObjectMeta.DeletionTimestamp.IsZero() {
+		logger.Info(noSuchRabbitDeletion, "replication", replication.Name)
+		r.Recorder.Event(replication, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted replication")
+		return reconcile.Result{}, r.removeFinalizer(ctx, replication)
+	}
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
-	} else if err != nil && !errors.Is(err, internal.NoSuchRabbitmqClusterError) {
+	}
+	if err != nil {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
 	}
+
+	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, secret, serviceDNSAddress(svc), systemCertPool)
 
 	if !replication.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info("Deleting")
@@ -143,12 +148,6 @@ func (r *SchemaReplicationReconciler) addFinalizerIfNeeded(ctx context.Context, 
 
 func (r *SchemaReplicationReconciler) deleteSchemaReplicationParameters(ctx context.Context, client internal.RabbitMQClient, replication *topology.SchemaReplication) error {
 	logger := ctrl.LoggerFrom(ctx)
-
-	if client == nil || reflect.ValueOf(client).IsNil() {
-		logger.Info(noSuchRabbitDeletion, "schemaReplication", replication.Name)
-		r.Recorder.Event(replication, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted schemaReplication")
-		return r.removeFinalizer(ctx, replication)
-	}
 
 	err := validateResponseForDeletion(client.DeleteGlobalParameter(schemaReplicationParameterName))
 	if errors.Is(err, NotFound) {

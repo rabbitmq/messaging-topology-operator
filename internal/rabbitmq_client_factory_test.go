@@ -1,7 +1,6 @@
 package internal_test
 
 import (
-	"context"
 	"crypto/x509"
 	"errors"
 	"io/ioutil"
@@ -13,26 +12,18 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
-	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-var _ = Describe("RabbitholeClientFactory", func() {
+var _ = Describe("ParseRabbitmqClusterReference", func() {
 	var (
-		objs                     []runtime.Object
-		fakeClient               client.Client
 		existingRabbitMQUsername = "abc123"
 		existingRabbitMQPassword = "foo1234"
 		existingRabbitMQCluster  *rabbitmqv1beta1.RabbitmqCluster
 		existingCredentialSecret *corev1.Secret
 		existingService          *corev1.Service
-		ctx                      = context.Background()
 		fakeRabbitMQServer       *ghttp.Server
 		fakeRabbitMQURL          *url.URL
 		fakeRabbitMQPort         int
@@ -53,10 +44,6 @@ var _ = Describe("RabbitholeClientFactory", func() {
 				return
 			}
 		})
-
-		s := scheme.Scheme
-		s.AddKnownTypes(rabbitmqv1beta1.SchemeBuilder.GroupVersion, &rabbitmqv1beta1.RabbitmqCluster{})
-		fakeClient = fake.NewClientBuilder().WithScheme(s).WithRuntimeObjects(objs...).Build()
 	})
 	AfterEach(func() {
 		fakeRabbitMQServer.Close()
@@ -112,64 +99,16 @@ var _ = Describe("RabbitholeClientFactory", func() {
 					},
 				},
 			}
-			objs = []runtime.Object{existingRabbitMQCluster, existingCredentialSecret, existingService}
 		})
 
 		It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
-			generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, certPool)
+			generatedClient, err := internal.RabbitholeClientFactory(existingRabbitMQCluster, existingService, existingCredentialSecret, fakeRabbitMQURL.Hostname(), certPool)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(generatedClient).NotTo(BeNil())
 
 			_, err = generatedClient.PutUser("example-user", rabbithole.UserSettings{})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(fakeRabbitMQServer.ReceivedRequests())).To(Equal(1))
-		})
-
-		When("RabbitmqCluster does not have status.binding set", func() {
-			BeforeEach(func() {
-				*existingRabbitMQCluster = rabbitmqv1beta1.RabbitmqCluster{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "rmq-incomplete",
-						Namespace: "rabbitmq-system",
-					},
-					Status: rabbitmqv1beta1.RabbitmqClusterStatus{
-						DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
-							ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
-								Name:      "rmq-service",
-								Namespace: "rabbitmq-system",
-							},
-						},
-					},
-				}
-			})
-
-			It("errors", func() {
-				generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, certPool)
-				Expect(generatedClient).To(BeNil())
-				Expect(err.Error()).To(ContainSubstring("no status.binding set"))
-			})
-		})
-
-		When("RabbitmqCluster does not have status.defaultUser set", func() {
-			BeforeEach(func() {
-				*existingRabbitMQCluster = rabbitmqv1beta1.RabbitmqCluster{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "rmq-incomplete",
-						Namespace: "rabbitmq-system",
-					},
-					Status: rabbitmqv1beta1.RabbitmqClusterStatus{
-						Binding: &corev1.LocalObjectReference{
-							Name: "rmq-default-user-credentials",
-						},
-					},
-				}
-			})
-
-			It("errors", func() {
-				generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, certPool)
-				Expect(generatedClient).To(BeNil())
-				Expect(err.Error()).To(ContainSubstring("no status.defaultUser set"))
-			})
 		})
 	})
 
@@ -248,12 +187,11 @@ var _ = Describe("RabbitholeClientFactory", func() {
 				SecretName:             existingCertSecret.Name,
 				DisableNonTLSListeners: true,
 			}
-			objs = []runtime.Object{existingRabbitMQCluster, existingCredentialSecret, existingCertSecret, existingService}
 		})
 
 		When("the CA that signed the certs is not trusted", func() {
 			It("generates a rabbithole client which fails to authenticate with the cluster", func() {
-				generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, certPool)
+				generatedClient, err := internal.RabbitholeClientFactory(existingRabbitMQCluster, existingService, existingCredentialSecret, fakeRabbitMQURL.Hostname(), certPool)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(generatedClient).NotTo(BeNil())
 
@@ -268,7 +206,7 @@ var _ = Describe("RabbitholeClientFactory", func() {
 				Expect(ok).To(BeTrue())
 			})
 			It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
-				generatedClient, err := internal.RabbitholeClientFactory(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, certPool)
+				generatedClient, err := internal.RabbitholeClientFactory(existingRabbitMQCluster, existingService, existingCredentialSecret, fakeRabbitMQURL.Hostname(), certPool)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(generatedClient).NotTo(BeNil())
 
