@@ -1,7 +1,7 @@
 apiVersion: rabbitmq.com/v1alpha2
 kind: Vhost
 metadata:
-  name: vhost-sample
+  name: test-vhost
   namespace: rabbitmq-system
 spec:
   name: test-vhost # vhost name

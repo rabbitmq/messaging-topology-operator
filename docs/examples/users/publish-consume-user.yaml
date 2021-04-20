@@ -1,0 +1,34 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-user-credentials
+type: Opaque
+data:
+  username: dGVzdC11c2Vy # base64 encoded "test-user"
+  password: dmVyeXNlY3VyZXB3
+---
+apiVersion: rabbitmq.com/v1alpha2
+kind: User
+metadata:
+  name: test-user
+spec:
+  rabbitmqClusterReference:
+    name: test
+  importCredentialsSecret:
+    name: test-user-credentials
+---
+apiVersion: rabbitmq.com/v1alpha2
+kind: Permission
+metadata:
+  name: testuser-permission
+  namespace: rabbitmq-system
+spec:
+  vhost: "test-vhost"
+  user: "test-user" # name corresponds to the username we provided in "test-user-credentials" secret
+  permissions:
+    write: ".*"
+    configure: ""
+    read: ".*"
+  rabbitmqClusterReference:
+    name: test
