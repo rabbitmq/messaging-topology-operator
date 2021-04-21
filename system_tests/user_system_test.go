@@ -125,14 +125,14 @@ var _ = Describe("Users", func() {
 			Eventually(func() error {
 				_, err = rabbitClient.GetUser(rawUsername)
 				return err
-			}, 5).Should(HaveOccurred())
+			}, 30).Should(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Object Not Found"))
 
 			By("deleting the credentials secret")
 			Eventually(func() error {
 				err := k8sClient.Get(ctx, generatedSecretKey, generatedSecret)
 				return err
-			}, 5).Should(HaveOccurred())
+			}, 30).Should(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Object Not Found"))
 		})
 	})
