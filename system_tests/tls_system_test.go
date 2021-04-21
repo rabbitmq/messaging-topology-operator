@@ -15,7 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Management over TLS", func() {
+var _ = Describe("RabbitmqCluster with TLS", func() {
 	var (
 		namespace        = MustHaveEnv("NAMESPACE")
 		ctx              = context.Background()
@@ -26,7 +26,6 @@ var _ = Describe("Management over TLS", func() {
 
 	BeforeEach(func() {
 		targetCluster = basicTestRabbitmqCluster("tls-cluster", namespace)
-		targetCluster.Spec.Service.Type = "ClusterIP"
 		setupTestRabbitmqCluster(k8sClient, targetCluster)
 
 		secretName := fmt.Sprintf("rmq-test-cert-%v", uuid.New())

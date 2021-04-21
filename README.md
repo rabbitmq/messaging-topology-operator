@@ -39,6 +39,7 @@ Messaging Topology Operator is tested with the latest release of RabbitMQ [Clust
 It uses the generated default user secret from RabbitmqCluster (set in `rabbitmqcluster.status.binding`) to authenticate with RabbitMQ server.
 If your RabbitmqCluster is deployed with import definitions or provided default user credentials,
 the default user secret from `rabbitmqcluster.status.binding` may not be correct and Messaging Topology Operator will fail with authentication error.
+If your RabbitmqCluster is configured to serve management traffic over TLS, you may need to configure the Messaging Topology Operator to trust the CA that signed the server's certificates. For more information, see [this doc](./docs/installation/management-over-https.md).
 
 ## Contributing
 

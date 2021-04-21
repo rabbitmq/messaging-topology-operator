@@ -47,6 +47,8 @@ func validateResponseForDeletion(res *http.Response, err error) error {
 	return validateResponse(res, err)
 }
 
+// serviceDNSAddress returns the cluster-local DNS entry associated
+// with the provided Service
 func serviceDNSAddress(svc *corev1.Service) string {
 	return fmt.Sprintf("%s.%s.svc.cluster.local", svc.Name, svc.Namespace)
 }
