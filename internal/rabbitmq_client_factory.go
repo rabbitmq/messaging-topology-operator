@@ -10,7 +10,6 @@ This product may include a number of subcomponents with separate copyright notic
 package internal
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -18,11 +17,9 @@ import (
 	"net/http"
 
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . RabbitMQClient
@@ -91,9 +88,9 @@ func generateRabbitholeClient(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.
 }
 
 func managementEndpoint(cluster *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, hostname string) (string, error) {
-	port, err := managementPort(svc)
-	if err != nil {
-		return "", err
+	port := managementPort(svc)
+	if port == 0 {
+		return "", fmt.Errorf("failed to find 'management' or 'management-tls' from service %s", svc.Name)
 	}
 
 	return fmt.Sprintf("%s://%s:%d", managementScheme(cluster), hostname, port), nil
@@ -110,39 +107,15 @@ func managementScheme(cluster *rabbitmqv1beta1.RabbitmqCluster) string {
 
 // returns RabbitMQ management port from given service
 // if both "management-tls" and "management" ports are present, returns the "management-tls" port
-func managementPort(svc *corev1.Service) (int, error) {
-	var foundPort int
+func managementPort(svc *corev1.Service) int {
+	var httpPort int
 	for _, port := range svc.Spec.Ports {
 		if port.Name == "management-tls" {
-			return int(port.Port), nil
+			return int(port.Port)
 		}
 		if port.Name == "management" {
-			foundPort = int(port.Port)
+			httpPort = int(port.Port)
 		}
 	}
-	if foundPort != 0 {
-		return foundPort, nil
-	} else {
-		return 0, fmt.Errorf("failed to find 'management' or 'management-tls' from service %s", svc.Name)
-	}
-}
-
-func serviceSecretFromCluster(ctx context.Context, c client.Client, cluster *rabbitmqv1beta1.RabbitmqCluster, namespace string) (*corev1.Service, *corev1.Secret, error) {
-	if cluster.Status.Binding == nil {
-		return nil, nil, errors.New("no status.binding set")
-	}
-	if cluster.Status.DefaultUser == nil {
-		return nil, nil, errors.New("no status.defaultUser set")
-	}
-
-	secret := &corev1.Secret{}
-	if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.Binding.Name}, secret); err != nil {
-		return nil, nil, err
-	}
-
-	svc := &corev1.Service{}
-	if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.DefaultUser.ServiceReference.Name}, svc); err != nil {
-		return nil, nil, err
-	}
-	return svc, secret, nil
+	return httpPort
 }
