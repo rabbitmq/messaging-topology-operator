@@ -97,7 +97,7 @@ var _ = Describe("Users", func() {
 				}
 
 				return nil
-			}, 5).ShouldNot(BeNil())
+			}, 30).ShouldNot(BeNil())
 			Expect(generatedUser.Status.Credentials.Name).To(Equal(generatedSecret.Name))
 
 			By("updating status condition 'Ready'")

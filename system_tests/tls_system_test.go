@@ -9,6 +9,7 @@ import (
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -47,6 +48,7 @@ var _ = Describe("Management over TLS", func() {
 		)
 		Expect(err).NotTo(HaveOccurred())
 
+		Expect(k8sClient.Get(context.Background(), types.NamespacedName{Name: targetCluster.Name, Namespace: targetCluster.Namespace}, targetCluster)).To(Succeed())
 		targetCluster.Spec.TLS.SecretName = secretName
 		targetCluster.Spec.TLS.DisableNonTLSListeners = true
 		updateTestRabbitmqCluster(k8sClient, targetCluster)

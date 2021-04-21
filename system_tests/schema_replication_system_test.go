@@ -2,6 +2,7 @@ package system_tests
 
 import (
 	"context"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,7 +66,7 @@ var _ = Describe("schema replication", func() {
 			allGlobalParams, err = rabbitClient.ListGlobalParameters()
 			Expect(err).NotTo(HaveOccurred())
 			return allGlobalParams
-		}, 5, 2).Should(HaveLen(3)) // cluster_name and internal_cluster_id are set by default by RabbitMQ
+		}, 30, 2).Should(HaveLen(3)) // cluster_name and internal_cluster_id are set by default by RabbitMQ
 
 		Expect(allGlobalParams).To(ContainElement(
 			rabbithole.GlobalRuntimeParameter{
@@ -104,6 +105,6 @@ var _ = Describe("schema replication", func() {
 			allGlobalParams, err = rabbitClient.ListGlobalParameters()
 			Expect(err).NotTo(HaveOccurred())
 			return allGlobalParams
-		}, 5, 2).Should(HaveLen(2)) // cluster_name and internal_cluster_id are set by default by RabbitMQ
+		}, 30, 2).Should(HaveLen(2)) // cluster_name and internal_cluster_id are set by default by RabbitMQ
 	})
 })
