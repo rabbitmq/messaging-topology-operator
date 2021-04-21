@@ -1,16 +1,17 @@
+---
 apiVersion: rabbitmq.com/v1alpha2
 kind: Exchange
 metadata:
-  name: exchange-example
+  name: fanout
   namespace: rabbitmq-system
 spec:
-  name: example # name of the exchange
+  name: fanout-exchange # name of the exchange
   vhost: "/test-vhost" # default to '/' if not provided
-  rabbitmqClusterReference:
-    name: test # rabbitmqCluster must exist in the same namespace as this resource
   type: fanout # default to 'direct' if not provided
   autoDelete: false
   durable: true
+  rabbitmqClusterReference:
+    name: test # rabbitmqCluster must exist in the same namespace as this resource
 # status:
 #   conditions:
 #   - lastTransitionTime: ""
