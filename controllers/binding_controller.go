@@ -11,7 +11,6 @@ package controllers
 
 import (
 	"context"
-	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"reflect"
@@ -55,11 +54,8 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
 
-	systemCertPool, err := x509.SystemCertPool()
+	systemCertPool, err := extractSystemCertPool(ctx, r.Recorder, binding)
 	if err != nil {
-		msg := "failed to retrieve system trusted certs"
-		r.Recorder.Event(binding, corev1.EventTypeWarning, "FailedUpdate", msg)
-		logger.Error(err, msg)
 		return ctrl.Result{}, err
 	}
 

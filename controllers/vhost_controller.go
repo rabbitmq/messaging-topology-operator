@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"time"
@@ -44,11 +43,8 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
 
-	systemCertPool, err := x509.SystemCertPool()
+	systemCertPool, err := extractSystemCertPool(ctx, r.Recorder, vhost)
 	if err != nil {
-		msg := "failed to retrieve system trusted certs"
-		r.Recorder.Event(vhost, corev1.EventTypeWarning, "FailedUpdate", msg)
-		logger.Error(err, msg)
 		return ctrl.Result{}, err
 	}
 
