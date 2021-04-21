@@ -73,11 +73,15 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
 	}
 	if err != nil {
-		logger.Error(err, failedGenerateRabbitClient)
+		logger.Error(err, failedParseClusterRef)
 		return reconcile.Result{}, err
 	}
 
 	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, secret, serviceDNSAddress(svc), systemCertPool)
+	if err != nil {
+		logger.Error(err, failedGenerateRabbitClient)
+		return reconcile.Result{}, err
+	}
 
 	if !policy.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info("Deleting")

@@ -63,11 +63,15 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
 	}
 	if err != nil {
-		logger.Error(err, failedGenerateRabbitClient)
+		logger.Error(err, failedParseClusterRef)
 		return reconcile.Result{}, err
 	}
 
 	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, secret, serviceDNSAddress(svc), systemCertPool)
+	if err != nil {
+		logger.Error(err, failedGenerateRabbitClient)
+		return reconcile.Result{}, err
+	}
 
 	// Check if the vhost has been marked for deletion
 	if !vhost.ObjectMeta.DeletionTimestamp.IsZero() {

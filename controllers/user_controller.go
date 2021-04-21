@@ -80,11 +80,15 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
 	}
 	if err != nil {
-		logger.Error(err, failedGenerateRabbitClient)
+		logger.Error(err, failedParseClusterRef)
 		return reconcile.Result{}, err
 	}
 
 	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, secret, serviceDNSAddress(svc), systemCertPool)
+	if err != nil {
+		logger.Error(err, failedGenerateRabbitClient)
+		return reconcile.Result{}, err
+	}
 
 	// Check if the user has been marked for deletion
 	if !user.ObjectMeta.DeletionTimestamp.IsZero() {

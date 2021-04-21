@@ -175,25 +175,6 @@ var _ = Describe("vhost-controller", func() {
 			})
 		})
 
-		When("the RabbitMQ cluster is nil", func() {
-			BeforeEach(func() {
-				vhostName = "delete-client-not-found-error"
-			})
-
-			JustBeforeEach(func() {
-				prepareNoSuchClusterError()
-			})
-
-			It("successfully deletes the vhost regardless", func() {
-				Expect(client.Delete(ctx, &vhost)).To(Succeed())
-				Eventually(func() bool {
-					err := client.Get(ctx, types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace}, &topology.Vhost{})
-					return apierrors.IsNotFound(err)
-				}, 5).Should(BeTrue())
-				Expect(observedEvents()).To(ContainElement("Normal SuccessfulDelete successfully deleted vhost"))
-			})
-		})
-
 		When("the RabbitMQ Client successfully deletes a vhost", func() {
 			BeforeEach(func() {
 				vhostName = "delete-vhost-success"

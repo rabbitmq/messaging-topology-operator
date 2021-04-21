@@ -5,6 +5,7 @@ const (
 	failedStatusUpdate         = "failed to update object status"
 	failedMarshalSpec          = "failed to marshal spec"
 	failedGenerateRabbitClient = "failed to generate http rabbitClient"
+	failedParseClusterRef      = "failed to retrieve cluster from reference"
 	noSuchRabbitDeletion       = "RabbitmqCluster is already gone: cannot find its connection secret"
 )
 

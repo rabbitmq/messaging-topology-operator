@@ -12,13 +12,13 @@ package controllers_test
 import (
 	"context"
 	"crypto/x509"
-	"errors"
 	"go/build"
 	"path/filepath"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -190,6 +190,7 @@ var _ = BeforeSuite(func(done Done) {
 			},
 		},
 	}
+	rmq.Status.SetConditions([]runtime.Object{})
 	Expect(client.Status().Update(ctx, &rmq)).To(Succeed())
 
 	// used in schema-replication-controller test
@@ -233,14 +234,4 @@ func observedEvents() []string {
 		events = append(events, <-fakeRecorder.Events)
 	}
 	return events
-}
-
-func prepareClientError() {
-	fakeRabbitMQClient = nil
-	fakeRabbitMQClientError = errors.New("such a golang error")
-}
-
-func prepareNoSuchClusterError() {
-	fakeRabbitMQClient = nil
-	fakeRabbitMQClientError = internal.NoSuchRabbitmqClusterError
 }

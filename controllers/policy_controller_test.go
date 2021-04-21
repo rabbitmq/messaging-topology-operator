@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/runtime"
 	"net/http"
 	"time"
+
+	"k8s.io/apimachinery/pkg/runtime"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -176,25 +177,6 @@ var _ = Describe("policy-controller", func() {
 					return apierrors.IsNotFound(err)
 				}, 5).Should(BeFalse())
 				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete policy"))
-			})
-		})
-
-		When("the RabbitMQ cluster is nil", func() {
-			BeforeEach(func() {
-				policyName = "delete-client-not-found-error"
-			})
-
-			JustBeforeEach(func() {
-				prepareNoSuchClusterError()
-			})
-
-			It("successfully deletes the policy regardless", func() {
-				Expect(client.Delete(ctx, &policy)).To(Succeed())
-				Eventually(func() bool {
-					err := client.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &topology.Policy{})
-					return apierrors.IsNotFound(err)
-				}, 5).Should(BeTrue())
-				Expect(observedEvents()).To(ContainElement("Normal SuccessfulDelete successfully deleted policy"))
 			})
 		})
 

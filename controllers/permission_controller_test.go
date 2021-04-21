@@ -175,25 +175,6 @@ var _ = Describe("permission-controller", func() {
 			})
 		})
 
-		When("the RabbitMQ cluster is nil", func() {
-			BeforeEach(func() {
-				permissionName = "delete-client-not-found-error"
-			})
-
-			JustBeforeEach(func() {
-				prepareNoSuchClusterError()
-			})
-
-			It("successfully deletes the permission regardless", func() {
-				Expect(client.Delete(ctx, &permission)).To(Succeed())
-				Eventually(func() bool {
-					err := client.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &topology.Permission{})
-					return apierrors.IsNotFound(err)
-				}, 5).Should(BeTrue())
-				Expect(observedEvents()).To(ContainElement("Normal SuccessfulDelete successfully deleted permission"))
-			})
-		})
-
 		When("the RabbitMQ Client successfully deletes a permission", func() {
 			BeforeEach(func() {
 				permissionName = "delete-permission-success"

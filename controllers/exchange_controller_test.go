@@ -175,25 +175,6 @@ var _ = Describe("exchange-controller", func() {
 			})
 		})
 
-		When("the RabbitMQ cluster is nil", func() {
-			BeforeEach(func() {
-				exchangeName = "delete-client-not-found-error"
-			})
-
-			JustBeforeEach(func() {
-				prepareNoSuchClusterError()
-			})
-
-			It("successfully deletes the exchange regardless", func() {
-				Expect(client.Delete(ctx, &exchange)).To(Succeed())
-				Eventually(func() bool {
-					err := client.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &topology.Exchange{})
-					return apierrors.IsNotFound(err)
-				}, 5).Should(BeTrue())
-				Expect(observedEvents()).To(ContainElement("Normal SuccessfulDelete successfully deleted exchange"))
-			})
-		})
-
 		When("the RabbitMQ Client successfully deletes a exchange", func() {
 			BeforeEach(func() {
 				exchangeName = "delete-exchange-success"
