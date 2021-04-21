@@ -1,0 +1,14 @@
+---
+apiVersion: rabbitmq.com/v1alpha2
+kind: Exchange
+metadata:
+  name: direct
+  namespace: rabbitmq-system
+spec:
+  name: direct-exchange # name of the exchange
+  vhost: "/test-vhost" # default to '/' if not provided
+  type: direct
+  autoDelete: false
+  durable: true
+  rabbitmqClusterReference:
+    name: test
