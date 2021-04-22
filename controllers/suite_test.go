@@ -11,14 +11,18 @@ package controllers_test
 
 import (
 	"context"
-	"errors"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"crypto/x509"
+	"go/build"
 	"path/filepath"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
@@ -45,7 +49,7 @@ var (
 	ctx                       = context.Background()
 	fakeRabbitMQClient        *internalfakes.FakeRabbitMQClient
 	fakeRabbitMQClientError   error
-	fakeRabbitMQClientFactory = func(ctx context.Context, c runtimeClient.Client, rmq topology.RabbitmqClusterReference, namespace string) (internal.RabbitMQClient, error) {
+	fakeRabbitMQClientFactory = func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, secret *corev1.Secret, hostname string, certPool *x509.CertPool) (internal.RabbitMQClient, error) {
 		return fakeRabbitMQClient, fakeRabbitMQClientError
 	}
 	fakeRecorder *record.FakeRecorder
@@ -57,6 +61,7 @@ var _ = BeforeSuite(func(done Done) {
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "config", "crd", "bases"),
+			filepath.Join(build.Default.GOPATH, "pkg", "mod", "github.com", "rabbitmq", "cluster-operator@v1.6.0", "config", "crd", "bases"),
 		},
 	}
 
@@ -66,6 +71,7 @@ var _ = BeforeSuite(func(done Done) {
 
 	Expect(scheme.AddToScheme(scheme.Scheme)).To(Succeed())
 	Expect(topology.AddToScheme(scheme.Scheme)).To(Succeed())
+	Expect(rabbitmqv1beta1.AddToScheme(scheme.Scheme)).To(Succeed())
 
 	clientSet, err = kubernetes.NewForConfig(cfg)
 	Expect(err).NotTo(HaveOccurred())
@@ -142,6 +148,51 @@ var _ = BeforeSuite(func(done Done) {
 	client = mgr.GetClient()
 	Expect(client).ToNot(BeNil())
 
+	rmqCreds := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example-rabbit-user-credentials",
+			Namespace: "default",
+		},
+	}
+	Expect(client.Create(ctx, &rmqCreds)).To(Succeed())
+
+	rmqSrv := corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example-rabbit",
+			Namespace: "default",
+		},
+		Spec: corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{
+					Port: 15671,
+				},
+			},
+		},
+	}
+	Expect(client.Create(ctx, &rmqSrv)).To(Succeed())
+
+	rmq := rabbitmqv1beta1.RabbitmqCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "example-rabbit",
+			Namespace: "default",
+		},
+	}
+	Expect(client.Create(ctx, &rmq)).To(Succeed())
+
+	rmq.Status = rabbitmqv1beta1.RabbitmqClusterStatus{
+		Binding: &corev1.LocalObjectReference{
+			Name: "example-rabbit-user-credentials",
+		},
+		DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
+			ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
+				Name:      "example-rabbit",
+				Namespace: "default",
+			},
+		},
+	}
+	rmq.Status.SetConditions([]runtime.Object{})
+	Expect(client.Status().Update(ctx, &rmq)).To(Succeed())
+
 	// used in schema-replication-controller test
 	secret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -183,14 +234,4 @@ func observedEvents() []string {
 		events = append(events, <-fakeRecorder.Events)
 	}
 	return events
-}
-
-func prepareClientError() {
-	fakeRabbitMQClient = nil
-	fakeRabbitMQClientError = errors.New("such a golang error")
-}
-
-func prepareNoSuchClusterError() {
-	fakeRabbitMQClient = nil
-	fakeRabbitMQClientError = internal.NoSuchRabbitmqClusterError
 }

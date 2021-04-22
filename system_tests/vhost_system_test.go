@@ -2,6 +2,7 @@ package system_tests
 
 import (
 	"context"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,7 +45,7 @@ var _ = Describe("vhost", func() {
 			var err error
 			fetched, err = rabbitClient.GetVhost(vhost.Spec.Name)
 			return err
-		}, 5, 2).ShouldNot(HaveOccurred(), "cannot find created vhost")
+		}, 30, 2).ShouldNot(HaveOccurred(), "cannot find created vhost")
 		Expect(fetched.Tracing).To(BeFalse())
 
 		By("updating status condition 'Ready'")
@@ -73,7 +74,7 @@ var _ = Describe("vhost", func() {
 		Eventually(func() error {
 			_, err = rabbitClient.GetVhost(vhost.Spec.Name)
 			return err
-		}, 5).Should(HaveOccurred())
+		}, 30).Should(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("Object Not Found"))
 	})
 })

@@ -175,25 +175,6 @@ var _ = Describe("bindingController", func() {
 			})
 		})
 
-		When("the RabbitMQ cluster is nil", func() {
-			BeforeEach(func() {
-				bindingName = "delete-binding-client-not-found-error"
-			})
-
-			JustBeforeEach(func() {
-				prepareNoSuchClusterError()
-			})
-
-			It("successfully deletes the binding regardless", func() {
-				Expect(client.Delete(ctx, &binding)).To(Succeed())
-				Eventually(func() bool {
-					err := client.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &topology.Binding{})
-					return apierrors.IsNotFound(err)
-				}, 5).Should(BeTrue())
-				Expect(observedEvents()).To(ContainElement("Normal SuccessfulDelete successfully deleted binding"))
-			})
-		})
-
 		When("the RabbitMQ Client successfully deletes a binding", func() {
 			BeforeEach(func() {
 				bindingName = "delete-binding-success"

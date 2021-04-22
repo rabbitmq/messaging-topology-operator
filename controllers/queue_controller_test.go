@@ -175,25 +175,6 @@ var _ = Describe("queue-controller", func() {
 			})
 		})
 
-		When("the RabbitMQ cluster is nil", func() {
-			BeforeEach(func() {
-				qName = "delete-client-not-found-error"
-			})
-
-			JustBeforeEach(func() {
-				prepareNoSuchClusterError()
-			})
-
-			It("successfully deletes the queue regardless", func() {
-				Expect(client.Delete(ctx, &q)).To(Succeed())
-				Eventually(func() bool {
-					err := client.Get(ctx, types.NamespacedName{Name: q.Name, Namespace: q.Namespace}, &topology.Queue{})
-					return apierrors.IsNotFound(err)
-				}, 5).Should(BeTrue())
-				Expect(observedEvents()).To(ContainElement("Normal SuccessfulDelete successfully deleted queue"))
-			})
-		})
-
 		When("the RabbitMQ Client successfully deletes a q", func() {
 			BeforeEach(func() {
 				qName = "delete-q-success"

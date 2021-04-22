@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"reflect"
 	"time"
 
 	"github.com/rabbitmq/messaging-topology-operator/internal"
@@ -44,13 +43,30 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
 
-	rabbitClient, err := r.RabbitmqClientFactory(ctx, r.Client, permission.Spec.RabbitmqClusterReference, permission.Namespace)
-	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
-	// the Cluster is temporarily down. Requeue until it comes back up.
-	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && permission.ObjectMeta.DeletionTimestamp.IsZero() {
+	systemCertPool, err := extractSystemCertPool(ctx, r.Recorder, permission)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	rmq, svc, secret, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, permission.Spec.RabbitmqClusterReference, permission.Namespace)
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !permission.ObjectMeta.DeletionTimestamp.IsZero() {
+		logger.Info(noSuchRabbitDeletion, "permission", permission.Name)
+		r.Recorder.Event(permission, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted permission")
+		return reconcile.Result{}, r.removeFinalizer(ctx, permission)
+	}
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
+		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
+		// the Cluster is temporarily down. Requeue until it comes back up.
 		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
-	} else if err != nil && !errors.Is(err, internal.NoSuchRabbitmqClusterError) {
+	}
+	if err != nil {
+		logger.Error(err, failedParseClusterRef)
+		return reconcile.Result{}, err
+	}
+
+	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, secret, serviceDNSAddress(svc), systemCertPool)
+	if err != nil {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
 	}
@@ -122,12 +138,6 @@ func (r *PermissionReconciler) addFinalizerIfNeeded(ctx context.Context, permiss
 
 func (r *PermissionReconciler) revokePermissions(ctx context.Context, client internal.RabbitMQClient, permission *topology.Permission) error {
 	logger := ctrl.LoggerFrom(ctx)
-
-	if client == nil || reflect.ValueOf(client).IsNil() {
-		logger.Info(noSuchRabbitDeletion, "permission", permission.Name)
-		r.Recorder.Event(permission, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted permission")
-		return r.removeFinalizer(ctx, permission)
-	}
 
 	err := validateResponseForDeletion(client.ClearPermissionsIn(permission.Spec.Vhost, permission.Spec.User))
 	if errors.Is(err, NotFound) {

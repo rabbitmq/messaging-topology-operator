@@ -2,6 +2,7 @@ package system_tests
 
 import (
 	"context"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -92,7 +93,7 @@ var _ = Describe("Queue Controller", func() {
 		Eventually(func() error {
 			_, err = rabbitClient.GetQueue(q.Spec.Vhost, q.Name)
 			return err
-		}, 5).Should(HaveOccurred())
+		}, 30).Should(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("Object Not Found"))
 	})
 })

@@ -10,19 +10,16 @@ This product may include a number of subcomponents with separate copyright notic
 package internal
 
 import (
-	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
 
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
-	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . RabbitMQClient
@@ -47,33 +44,18 @@ type RabbitMQClient interface {
 	DeleteGlobalParameter(name string) (*http.Response, error)
 }
 
-type RabbitMQClientFactory func(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, namespace string) (RabbitMQClient, error)
+type RabbitMQClientFactory func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, secret *corev1.Secret, hostname string, certPool *x509.CertPool) (RabbitMQClient, error)
 
-var RabbitholeClientFactory RabbitMQClientFactory = func(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, namespace string) (RabbitMQClient, error) {
-	return generateRabbitholeClient(ctx, c, rmq, namespace)
+var RabbitholeClientFactory RabbitMQClientFactory = func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, secret *corev1.Secret, hostname string, certPool *x509.CertPool) (RabbitMQClient, error) {
+	return generateRabbitholeClient(rmq, svc, secret, hostname, certPool)
 }
 
-var NoSuchRabbitmqClusterError = errors.New("RabbitmqCluster object does not exist")
-
 // returns a http client for the given RabbitmqCluster
-// assumes the RabbitmqCluster is reachable using its service's ClusterIP
-func generateRabbitholeClient(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, namespace string) (RabbitMQClient, error) {
-	svc, secret, err := serviceSecretFromReference(ctx, c, rmq, namespace)
+func generateRabbitholeClient(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, secret *corev1.Secret, hostname string, certPool *x509.CertPool) (rabbitmqClient RabbitMQClient, err error) {
+	endpoint, err := managementEndpoint(rmq, svc, hostname)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get service or secret object from specified rabbitmqcluster: %w", err)
+		return nil, fmt.Errorf("failed to get endpoint from specified rabbitmqcluster: %w", err)
 	}
-
-	ip := net.ParseIP(svc.Spec.ClusterIP)
-	if ip == nil {
-		return nil, fmt.Errorf("failed to get Cluster IP: invalid ClusterIP %q", svc.Spec.ClusterIP)
-	}
-
-	port, err := managementPort(svc)
-	if err != nil {
-		return nil, err
-	}
-
-	endpoint := fmt.Sprintf("http://%s:%d", ip.String(), port)
 
 	defaultUser, found := secret.Data["username"]
 	if !found {
@@ -85,57 +67,54 @@ func generateRabbitholeClient(ctx context.Context, c client.Client, rmq topology
 		return nil, errors.New("failed to retrieve username: key password missing from secret")
 	}
 
-	rabbitmqClient, err := rabbithole.NewClient(endpoint, string(defaultUser), string(defaultUserPass))
-	if err != nil {
-		return nil, fmt.Errorf("failed to instantiate rabbit rabbitmqClient: %v", err)
+	if rmq.TLSEnabled() {
+		// create TLS config for https request
+		cfg := new(tls.Config)
+		cfg.RootCAs = certPool
+
+		transport := &http.Transport{TLSClientConfig: cfg}
+		rabbitmqClient, err = rabbithole.NewTLSClient(endpoint, string(defaultUser), string(defaultUserPass), transport)
+		if err != nil {
+			return nil, fmt.Errorf("failed to instantiate rabbit rabbitmqClient: %v", err)
+		}
+	} else {
+		rabbitmqClient, err = rabbithole.NewClient(endpoint, string(defaultUser), string(defaultUserPass))
+		if err != nil {
+			return nil, fmt.Errorf("failed to instantiate rabbit rabbitmqClient: %v", err)
+		}
+	}
+	return rabbitmqClient, nil
+}
+
+func managementEndpoint(cluster *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, hostname string) (string, error) {
+	port := managementPort(svc)
+	if port == 0 {
+		return "", fmt.Errorf("failed to find 'management' or 'management-tls' from service %s", svc.Name)
 	}
 
-	return rabbitmqClient, nil
+	return fmt.Sprintf("%s://%s:%d", managementScheme(cluster), hostname, port), nil
+}
+
+// returns RabbitMQ management scheme from given cluster
+func managementScheme(cluster *rabbitmqv1beta1.RabbitmqCluster) string {
+	if cluster.TLSEnabled() {
+		return "https"
+	} else {
+		return "http"
+	}
 }
 
 // returns RabbitMQ management port from given service
 // if both "management-tls" and "management" ports are present, returns the "management-tls" port
-func managementPort(svc *corev1.Service) (int, error) {
+func managementPort(svc *corev1.Service) int {
+	var httpPort int
 	for _, port := range svc.Spec.Ports {
 		if port.Name == "management-tls" {
-			return int(port.Port), nil
+			return int(port.Port)
 		}
 		if port.Name == "management" {
-			return int(port.Port), nil
+			httpPort = int(port.Port)
 		}
 	}
-	return 0, fmt.Errorf("failed to find 'management' or 'management-tls' from service %s", svc.Name)
-}
-
-func rabbitmqClusterFromReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, namespace string) (*rabbitmqv1beta1.RabbitmqCluster, error) {
-	cluster := &rabbitmqv1beta1.RabbitmqCluster{}
-	if err := c.Get(ctx, types.NamespacedName{Name: rmq.Name, Namespace: namespace}, cluster); err != nil {
-		return nil, fmt.Errorf("failed to get cluster from reference: %s Error: %w", err, NoSuchRabbitmqClusterError)
-	}
-	return cluster, nil
-}
-
-func serviceSecretFromReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, namespace string) (*corev1.Service, *corev1.Secret, error) {
-	cluster, err := rabbitmqClusterFromReference(ctx, c, rmq, namespace)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if cluster.Status.Binding == nil {
-		return nil, nil, errors.New("no status.binding set")
-	}
-	if cluster.Status.DefaultUser == nil {
-		return nil, nil, errors.New("no status.defaultUser set")
-	}
-
-	secret := &corev1.Secret{}
-	if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.Binding.Name}, secret); err != nil {
-		return nil, nil, err
-	}
-
-	svc := &corev1.Service{}
-	if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.DefaultUser.ServiceReference.Name}, svc); err != nil {
-		return nil, nil, err
-	}
-	return svc, secret, nil
+	return httpPort
 }

@@ -4,19 +4,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	. "github.com/onsi/gomega"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
+	"github.com/rabbitmq/messaging-topology-operator/internal/testutils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -130,6 +134,14 @@ func managementNodePort(ctx context.Context, clientSet *kubernetes.Clientset, na
 	return ""
 }
 
+func clusterIP(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) string {
+	svc, err := clientSet.CoreV1().Services(namespace).
+		Get(ctx, name, metav1.GetOptions{})
+
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	return svc.Spec.ClusterIP
+}
+
 func kubernetesNodeIp(ctx context.Context, clientSet *kubernetes.Clientset) string {
 	nodes, err := clientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
@@ -147,9 +159,8 @@ func kubernetesNodeIp(ctx context.Context, clientSet *kubernetes.Clientset) stri
 	return nodeIp
 }
 
-func setupTestRabbitmqCluster(k8sClient client.Client, name, namespace string) *rabbitmqv1beta1.RabbitmqCluster {
-	// setup a RabbitmqCluster used for system tests
-	rabbitmqCluster := &rabbitmqv1beta1.RabbitmqCluster{
+func basicTestRabbitmqCluster(name, namespace string) *rabbitmqv1beta1.RabbitmqCluster {
+	return &rabbitmqv1beta1.RabbitmqCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -166,7 +177,10 @@ func setupTestRabbitmqCluster(k8sClient client.Client, name, namespace string) *
 			},
 		},
 	}
+}
 
+func setupTestRabbitmqCluster(k8sClient client.Client, rabbitmqCluster *rabbitmqv1beta1.RabbitmqCluster) {
+	// setup a RabbitmqCluster used for system tests
 	Expect(k8sClient.Create(context.Background(), rabbitmqCluster)).To(Succeed())
 	Eventually(func() string {
 		output, err := kubectl(
@@ -182,5 +196,126 @@ func setupTestRabbitmqCluster(k8sClient client.Client, name, namespace string) *
 		}
 		return string(output)
 	}, 120, 10).Should(Equal("'True'"))
-	return rabbitmqCluster
+	Expect(k8sClient.Get(context.Background(), types.NamespacedName{Name: rabbitmqCluster.Name, Namespace: rabbitmqCluster.Namespace}, rabbitmqCluster)).To(Succeed())
+}
+
+func updateTestRabbitmqCluster(k8sClient client.Client, rabbitmqCluster *rabbitmqv1beta1.RabbitmqCluster) {
+	// update a RabbitmqCluster used for system tests
+	Expect(k8sClient.Update(context.Background(), rabbitmqCluster)).To(Succeed())
+	Eventually(func() string {
+		output, err := kubectl(
+			"-n",
+			rabbitmqCluster.Namespace,
+			"get",
+			"rabbitmqclusters",
+			rabbitmqCluster.Name,
+			"-ojsonpath='{.status.conditions[?(@.type==\"AllReplicasReady\")].status}'",
+		)
+		if err != nil {
+			Expect(string(output)).To(ContainSubstring("not found"))
+		}
+		return string(output)
+	}, 120, 10).Should(Equal("'True'"))
+}
+
+func createTLSSecret(secretName, secretNamespace, hostname string) (string, []byte, []byte) {
+	// create cert files
+	serverCertPath, serverCertFile := testutils.CreateCertFile(2, "server.crt")
+	serverKeyPath, serverKeyFile := testutils.CreateCertFile(2, "server.key")
+	caCertPath, caCertFile := testutils.CreateCertFile(2, "ca.crt")
+
+	// generate and write cert and key to file
+	caCert, caKey := testutils.CreateCertificateChain(2, hostname, caCertFile, serverCertFile, serverKeyFile)
+
+	tmpfile, err := ioutil.TempFile("", "ca.key")
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	defer os.Remove(tmpfile.Name())
+
+	_, err = tmpfile.Write(caKey)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	err = tmpfile.Close()
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	// create CA tls secret
+	ExpectWithOffset(1, k8sCreateTLSSecret(secretName+"-ca", secretNamespace, caCertPath, tmpfile.Name())).To(Succeed())
+	// create k8s tls secret
+	ExpectWithOffset(1, k8sCreateTLSSecret(secretName, secretNamespace, serverCertPath, serverKeyPath)).To(Succeed())
+
+	// remove cert files
+	ExpectWithOffset(1, os.Remove(serverKeyPath)).To(Succeed())
+	ExpectWithOffset(1, os.Remove(serverCertPath)).To(Succeed())
+	return caCertPath, caCert, caKey
+}
+
+func updateTLSSecret(secretName, secretNamespace, hostname string, caCert, caKey []byte) {
+	serverCertPath, serverCertFile := testutils.CreateCertFile(2, "server.crt")
+	serverKeyPath, serverKeyFile := testutils.CreateCertFile(2, "server.key")
+
+	testutils.GenerateCertandKey(2, hostname, caCert, caKey, serverCertFile, serverKeyFile)
+	ExpectWithOffset(1, k8sCreateTLSSecret(secretName, secretNamespace, serverCertPath, serverKeyPath)).To(Succeed())
+
+	ExpectWithOffset(1, os.Remove(serverKeyPath)).To(Succeed())
+	ExpectWithOffset(1, os.Remove(serverCertPath)).To(Succeed())
+}
+
+func k8sSecretExists(secretName, secretNamespace string) (bool, error) {
+	output, err := kubectl(
+		"-n",
+		secretNamespace,
+		"get",
+		"secret",
+		secretName,
+	)
+
+	if err != nil {
+		ExpectWithOffset(1, string(output)).To(ContainSubstring("not found"))
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func k8sCreateTLSSecret(secretName, secretNamespace, certPath, keyPath string) error {
+	// delete secret if it exists
+	secretExists, err := k8sSecretExists(secretName, secretNamespace)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	if secretExists {
+		ExpectWithOffset(1, k8sDeleteSecret(secretName, secretNamespace)).To(Succeed())
+	}
+
+	// create secret
+	output, err := kubectl(
+		"-n",
+		secretNamespace,
+		"create",
+		"secret",
+		"tls",
+		secretName,
+		fmt.Sprintf("--cert=%+v", certPath),
+		fmt.Sprintf("--key=%+v", keyPath),
+	)
+
+	if err != nil {
+		return fmt.Errorf("Failed with error: %v\nOutput: %v\n", err.Error(), string(output))
+	}
+
+	return nil
+}
+
+func k8sDeleteSecret(secretName, secretNamespace string) error {
+	output, err := kubectl(
+		"-n",
+		secretNamespace,
+		"delete",
+		"secret",
+		secretName,
+	)
+
+	if err != nil {
+		return fmt.Errorf("Failed with error: %v\nOutput: %v\n", err.Error(), string(output))
+	}
+
+	return nil
 }

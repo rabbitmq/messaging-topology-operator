@@ -13,7 +13,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"reflect"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -57,14 +56,30 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// create rabbitmq http rabbitClient
-	rabbitClient, err := r.RabbitmqClientFactory(ctx, r.Client, q.Spec.RabbitmqClusterReference, q.Namespace)
-	// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
-	// the Cluster is temporarily down. Requeue until it comes back up.
-	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && q.ObjectMeta.DeletionTimestamp.IsZero() {
+	systemCertPool, err := extractSystemCertPool(ctx, r.Recorder, q)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	rmq, svc, secret, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, q.Spec.RabbitmqClusterReference, q.Namespace)
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !q.ObjectMeta.DeletionTimestamp.IsZero() {
+		logger.Info(noSuchRabbitDeletion, "q", q.Name)
+		r.Recorder.Event(q, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted q")
+		return reconcile.Result{}, r.removeFinalizer(ctx, q)
+	}
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
+		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
+		// the Cluster is temporarily down. Requeue until it comes back up.
 		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
-	} else if err != nil && !errors.Is(err, internal.NoSuchRabbitmqClusterError) {
+	}
+	if err != nil {
+		logger.Error(err, failedParseClusterRef)
+		return reconcile.Result{}, err
+	}
+
+	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, secret, serviceDNSAddress(svc), systemCertPool)
+	if err != nil {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
 	}
@@ -149,12 +164,6 @@ func (r *QueueReconciler) addFinalizerIfNeeded(ctx context.Context, q *topology.
 // queues could be deleted manually or gone because of AutoDelete
 func (r *QueueReconciler) deleteQueue(ctx context.Context, client internal.RabbitMQClient, q *topology.Queue) error {
 	logger := ctrl.LoggerFrom(ctx)
-
-	if client == nil || reflect.ValueOf(client).IsNil() {
-		logger.Info(noSuchRabbitDeletion, "queue", q.Name)
-		r.Recorder.Event(q, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted queue")
-		return r.removeFinalizer(ctx, q)
-	}
 
 	err := validateResponseForDeletion(client.DeleteQueue(q.Spec.Vhost, q.Spec.Name))
 	if errors.Is(err, NotFound) {
