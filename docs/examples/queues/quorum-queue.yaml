@@ -1,16 +1,17 @@
+---
 apiVersion: rabbitmq.com/v1alpha2
 kind: Queue
 metadata:
   name: qq-example
   namespace: rabbitmq-system
 spec:
-  name: test # name of the queue
+  name: qq # name of the queue
   vhost: "/test-vhost" # default to '/' if not provided
-  rabbitmqClusterReference:
-    name: test # rabbitmqCluster must exist in the same namespace as this resource
   type: quorum # without providing a queue type, rabbitmq creates a classic queue
   autoDelete: false
-  durable: true
+  durable: true # seting 'durable' to false means this queue won't survive a server restart
+  rabbitmqClusterReference:
+    name: test # rabbitmqCluster must exist in the same namespace as this resource
 # status:
 #   conditions:
 #   - lastTransitionTime: ""
