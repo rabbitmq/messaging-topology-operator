@@ -1,3 +1,5 @@
+# For more information on lazy queues, see: https://www.rabbitmq.com/lazy-queues.html.
+# We recommmend configuring queues through policies to manage them in groups and be able to update queue configurations later on.
 ---
 apiVersion: rabbitmq.com/v1alpha2
 kind: Policy
