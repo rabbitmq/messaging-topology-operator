@@ -21,7 +21,7 @@ import (
 
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 
-	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	// +kubebuilder:scaffold:imports

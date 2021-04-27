@@ -18,7 +18,7 @@ spec:
     singular: policy
   scope: Namespaced
   versions:
-  - name: v1alpha2
+  - name: v1beta1
     schema:
       openAPIV3Schema:
         description: Policy is the Schema for the policies API

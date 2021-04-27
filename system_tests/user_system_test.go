@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	"k8s.io/apimachinery/pkg/types"
 
-	topology "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
 
 var _ = Describe("Users", func() {

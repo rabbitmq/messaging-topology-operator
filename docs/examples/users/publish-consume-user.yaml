@@ -8,7 +8,7 @@ data:
   username: dGVzdC11c2Vy # base64 encoded "test-user"
   password: dmVyeXNlY3VyZXB3
 ---
-apiVersion: rabbitmq.com/v1alpha2
+apiVersion: rabbitmq.com/v1beta1
 kind: User
 metadata:
   name: test-user
@@ -18,7 +18,7 @@ spec:
   importCredentialsSecret:
     name: test-user-credentials
 ---
-apiVersion: rabbitmq.com/v1alpha2
+apiVersion: rabbitmq.com/v1beta1
 kind: Permission
 metadata:
   name: testuser-permission
