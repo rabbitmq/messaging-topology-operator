@@ -14,7 +14,7 @@ package externalversions
 import (
 	"fmt"
 
-	v1alpha2 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
+	v1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -45,19 +45,23 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=rabbitmq.com, Version=v1alpha2
-	case v1alpha2.SchemeGroupVersion.WithResource("bindings"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1alpha2().Bindings().Informer()}, nil
-	case v1alpha2.SchemeGroupVersion.WithResource("exchanges"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1alpha2().Exchanges().Informer()}, nil
-	case v1alpha2.SchemeGroupVersion.WithResource("policies"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1alpha2().Policies().Informer()}, nil
-	case v1alpha2.SchemeGroupVersion.WithResource("queues"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1alpha2().Queues().Informer()}, nil
-	case v1alpha2.SchemeGroupVersion.WithResource("users"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1alpha2().Users().Informer()}, nil
-	case v1alpha2.SchemeGroupVersion.WithResource("vhosts"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1alpha2().Vhosts().Informer()}, nil
+	// Group=rabbitmq.com, Version=v1beta1
+	case v1beta1.SchemeGroupVersion.WithResource("bindings"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().Bindings().Informer()}, nil
+	case v1beta1.SchemeGroupVersion.WithResource("exchanges"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().Exchanges().Informer()}, nil
+	case v1beta1.SchemeGroupVersion.WithResource("permissions"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().Permissions().Informer()}, nil
+	case v1beta1.SchemeGroupVersion.WithResource("policies"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().Policies().Informer()}, nil
+	case v1beta1.SchemeGroupVersion.WithResource("queues"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().Queues().Informer()}, nil
+	case v1beta1.SchemeGroupVersion.WithResource("schemareplications"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().SchemaReplications().Informer()}, nil
+	case v1beta1.SchemeGroupVersion.WithResource("users"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().Users().Informer()}, nil
+	case v1beta1.SchemeGroupVersion.WithResource("vhosts"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().Vhosts().Informer()}, nil
 
 	}
 

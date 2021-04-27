@@ -14,7 +14,7 @@ package versioned
 import (
 	"fmt"
 
-	rabbitmqv1alpha2 "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned/typed/rabbitmq.com/v1alpha2"
+	rabbitmqv1beta1 "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned/typed/rabbitmq.com/v1beta1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -22,19 +22,19 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	RabbitmqV1alpha2() rabbitmqv1alpha2.RabbitmqV1alpha2Interface
+	RabbitmqV1beta1() rabbitmqv1beta1.RabbitmqV1beta1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	rabbitmqV1alpha2 *rabbitmqv1alpha2.RabbitmqV1alpha2Client
+	rabbitmqV1beta1 *rabbitmqv1beta1.RabbitmqV1beta1Client
 }
 
-// RabbitmqV1alpha2 retrieves the RabbitmqV1alpha2Client
-func (c *Clientset) RabbitmqV1alpha2() rabbitmqv1alpha2.RabbitmqV1alpha2Interface {
-	return c.rabbitmqV1alpha2
+// RabbitmqV1beta1 retrieves the RabbitmqV1beta1Client
+func (c *Clientset) RabbitmqV1beta1() rabbitmqv1beta1.RabbitmqV1beta1Interface {
+	return c.rabbitmqV1beta1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -58,7 +58,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	}
 	var cs Clientset
 	var err error
-	cs.rabbitmqV1alpha2, err = rabbitmqv1alpha2.NewForConfig(&configShallowCopy)
+	cs.rabbitmqV1beta1, err = rabbitmqv1beta1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
-	cs.rabbitmqV1alpha2 = rabbitmqv1alpha2.NewForConfigOrDie(c)
+	cs.rabbitmqV1beta1 = rabbitmqv1beta1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -83,7 +83,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.rabbitmqV1alpha2 = rabbitmqv1alpha2.New(c)
+	cs.rabbitmqV1beta1 = rabbitmqv1beta1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs
