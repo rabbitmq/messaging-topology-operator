@@ -62,7 +62,7 @@ var _ = Describe("RabbitmqCluster with TLS", func() {
 				policy.Name,
 			)
 			return string(output)
-		}, 90, 10).Should(ContainSubstring("not found"))
+		}, 90, 10).Should(ContainSubstring("NotFound"))
 		Expect(k8sClient.Delete(ctx, &rabbitmqv1beta1.RabbitmqCluster{ObjectMeta: metav1.ObjectMeta{Name: targetCluster.Name, Namespace: targetCluster.Namespace}})).To(Succeed())
 		Eventually(func() string {
 			output, _ := kubectl(
@@ -73,7 +73,7 @@ var _ = Describe("RabbitmqCluster with TLS", func() {
 				targetCluster.Name,
 			)
 			return string(output)
-		}, 90, 10).Should(ContainSubstring("not found"))
+		}, 90, 10).Should(ContainSubstring("NotFound"))
 	})
 
 	It("succeeds creating objects on the TLS-enabled instance", func() {

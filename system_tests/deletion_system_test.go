@@ -100,7 +100,7 @@ var _ = Describe("Deletion", func() {
 				targetCluster.Name,
 			)
 			return string(output)
-		}, 90, 10).Should(ContainSubstring("not found"))
+		}, 90, 10).Should(ContainSubstring("NotFound"))
 		By("allowing the topology objects to be deleted")
 		Expect(k8sClient.Delete(ctx, &exchange)).To(Succeed())
 		Eventually(func() string {
@@ -112,7 +112,7 @@ var _ = Describe("Deletion", func() {
 				exchange.Name,
 			)
 			return string(output)
-		}, 30, 10).Should(ContainSubstring("not found"))
+		}, 30, 10).Should(ContainSubstring("NotFound"))
 		Expect(k8sClient.Delete(ctx, &policy)).To(Succeed())
 		Eventually(func() string {
 			output, _ := kubectl(
@@ -123,7 +123,7 @@ var _ = Describe("Deletion", func() {
 				policy.Name,
 			)
 			return string(output)
-		}, 30, 10).Should(ContainSubstring("not found"))
+		}, 30, 10).Should(ContainSubstring("NotFound"))
 		Expect(k8sClient.Delete(ctx, &queue)).To(Succeed())
 		Eventually(func() string {
 			output, _ := kubectl(
@@ -134,7 +134,7 @@ var _ = Describe("Deletion", func() {
 				queue.Name,
 			)
 			return string(output)
-		}, 30, 10).Should(ContainSubstring("not found"))
+		}, 30, 10).Should(ContainSubstring("NotFound"))
 		Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
 		Eventually(func() string {
 			output, _ := kubectl(
@@ -145,7 +145,7 @@ var _ = Describe("Deletion", func() {
 				user.Name,
 			)
 			return string(output)
-		}, 30, 10).Should(ContainSubstring("not found"))
+		}, 30, 10).Should(ContainSubstring("NotFound"))
 		Expect(k8sClient.Delete(ctx, &vhost)).To(Succeed())
 		Eventually(func() string {
 			output, _ := kubectl(
@@ -156,6 +156,6 @@ var _ = Describe("Deletion", func() {
 				vhost.Name,
 			)
 			return string(output)
-		}, 30, 10).Should(ContainSubstring("not found"))
+		}, 30, 10).Should(ContainSubstring("NotFound"))
 	})
 })
