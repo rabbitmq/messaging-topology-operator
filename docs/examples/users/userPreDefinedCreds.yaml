@@ -7,7 +7,7 @@ data:
   username: bXktc2VjcmV0LXVzZXI=
   password: d2h5YXJleW91bG9va2luZ2hlcmU=
 ---
-apiVersion: rabbitmq.com/v1alpha2
+apiVersion: rabbitmq.com/v1beta1
 kind: User
 metadata:
   name: import-user-sample

@@ -13,8 +13,8 @@ package fake
 
 import (
 	clientset "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned"
-	rabbitmqv1alpha2 "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned/typed/rabbitmq.com/v1alpha2"
-	fakerabbitmqv1alpha2 "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned/typed/rabbitmq.com/v1alpha2/fake"
+	rabbitmqv1beta1 "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned/typed/rabbitmq.com/v1beta1"
+	fakerabbitmqv1beta1 "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned/typed/rabbitmq.com/v1beta1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -69,7 +69,7 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 
 var _ clientset.Interface = &Clientset{}
 
-// RabbitmqV1alpha2 retrieves the RabbitmqV1alpha2Client
-func (c *Clientset) RabbitmqV1alpha2() rabbitmqv1alpha2.RabbitmqV1alpha2Interface {
-	return &fakerabbitmqv1alpha2.FakeRabbitmqV1alpha2{Fake: &c.Fake}
+// RabbitmqV1beta1 retrieves the RabbitmqV1beta1Client
+func (c *Clientset) RabbitmqV1beta1() rabbitmqv1beta1.RabbitmqV1beta1Interface {
+	return &fakerabbitmqv1beta1.FakeRabbitmqV1beta1{Fake: &c.Fake}
 }

@@ -18,7 +18,7 @@ spec:
     singular: queue
   scope: Namespaced
   versions:
-  - name: v1alpha2
+  - name: v1beta1
     schema:
       openAPIV3Schema:
         description: Queue is the Schema for the queues API
