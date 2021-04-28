@@ -47,10 +47,10 @@ type BindingStatus struct {
 }
 
 // +genclient
-
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:categories=all
 // +kubebuilder:subresource:status
+
 // Binding is the Schema for the bindings API
 type Binding struct {
 	metav1.TypeMeta   `json:",inline"`

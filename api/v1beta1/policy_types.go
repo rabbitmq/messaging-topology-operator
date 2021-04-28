@@ -47,7 +47,6 @@ type PolicyStatus struct {
 }
 
 // +genclient
-
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:categories=all
 // +kubebuilder:subresource:status
