@@ -192,7 +192,7 @@ func setupTestRabbitmqCluster(k8sClient client.Client, rabbitmqCluster *rabbitmq
 			"-ojsonpath='{.status.conditions[?(@.type==\"AllReplicasReady\")].status}'",
 		)
 		if err != nil {
-			Expect(string(output)).To(ContainSubstring("not found"))
+			Expect(string(output)).To(ContainSubstring("NotFound"))
 		}
 		return string(output)
 	}, 120, 10).Should(Equal("'True'"))
@@ -212,7 +212,7 @@ func updateTestRabbitmqCluster(k8sClient client.Client, rabbitmqCluster *rabbitm
 			"-ojsonpath='{.status.conditions[?(@.type==\"AllReplicasReady\")].status}'",
 		)
 		if err != nil {
-			Expect(string(output)).To(ContainSubstring("not found"))
+			Expect(string(output)).To(ContainSubstring("NotFound"))
 		}
 		return string(output)
 	}, 120, 10).Should(Equal("'True'"))
@@ -270,7 +270,7 @@ func k8sSecretExists(secretName, secretNamespace string) (bool, error) {
 	)
 
 	if err != nil {
-		ExpectWithOffset(1, string(output)).To(ContainSubstring("not found"))
+		ExpectWithOffset(1, string(output)).To(ContainSubstring("NotFound"))
 		return false, nil
 	}
 
