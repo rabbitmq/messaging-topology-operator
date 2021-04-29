@@ -2,7 +2,7 @@
 
 Kubernetes operator to manage [RabbitMQ](https://www.rabbitmq.com/) messaging topologies within a RabbitMQ cluster deployed via the [RabbitMQ Cluster Kubernetes Operator](https://github.com/rabbitmq/cluster-operator/). This repository contains [custom controllers](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/#custom-controllers) and [custom resource definitions (CRDs)](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/#customresourcedefinitions) enabling a declarative API for RabbitMQ messaging topologies.
 
-**Note:** This project is under active development and is provided as **alpha** software. There is no guarantee of API backwards compatibility, release schedule, or providing support.
+**Note:** This project is under active development and is provided as **beta** software. There is no guarantee of API backwards compatibility, release schedule, or providing support.
 
 ## Quickstart
 
