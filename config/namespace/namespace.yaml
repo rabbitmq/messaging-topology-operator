@@ -12,6 +12,6 @@ metadata:
   name: rabbitmq-system
   labels:
     app.kubernetes.io/name: rabbitmq-system
-    app.kubernetes.io/component: messaging-topology-operator
+    app.kubernetes.io/component: rabbitmq-operator
     app.kubernetes.io/part-of: rabbitmq
 
