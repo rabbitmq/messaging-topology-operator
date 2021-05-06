@@ -10,7 +10,7 @@ require (
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.4.1
 	github.com/michaelklishin/rabbit-hole/v2 v2.8.0
 	github.com/onsi/ginkgo v1.16.2
-	github.com/onsi/gomega v1.11.0
+	github.com/onsi/gomega v1.12.0
 	github.com/rabbitmq/cluster-operator v1.6.0
 	k8s.io/api v0.20.5
 	k8s.io/apimachinery v0.20.5
