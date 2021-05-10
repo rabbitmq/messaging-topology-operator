@@ -134,14 +134,6 @@ func managementNodePort(ctx context.Context, clientSet *kubernetes.Clientset, na
 	return ""
 }
 
-func clusterIP(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) string {
-	svc, err := clientSet.CoreV1().Services(namespace).
-		Get(ctx, name, metav1.GetOptions{})
-
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	return svc.Spec.ClusterIP
-}
-
 func kubernetesNodeIp(ctx context.Context, clientSet *kubernetes.Clientset) string {
 	nodes, err := clientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
@@ -247,17 +239,6 @@ func createTLSSecret(secretName, secretNamespace, hostname string) (string, []by
 	ExpectWithOffset(1, os.Remove(serverKeyPath)).To(Succeed())
 	ExpectWithOffset(1, os.Remove(serverCertPath)).To(Succeed())
 	return caCertPath, caCert, caKey
-}
-
-func updateTLSSecret(secretName, secretNamespace, hostname string, caCert, caKey []byte) {
-	serverCertPath, serverCertFile := testutils.CreateCertFile(2, "server.crt")
-	serverKeyPath, serverKeyFile := testutils.CreateCertFile(2, "server.key")
-
-	testutils.GenerateCertandKey(2, hostname, caCert, caKey, serverCertFile, serverKeyFile)
-	ExpectWithOffset(1, k8sCreateTLSSecret(secretName, secretNamespace, serverCertPath, serverKeyPath)).To(Succeed())
-
-	ExpectWithOffset(1, os.Remove(serverKeyPath)).To(Succeed())
-	ExpectWithOffset(1, os.Remove(serverCertPath)).To(Succeed())
 }
 
 func k8sSecretExists(secretName, secretNamespace string) (bool, error) {
