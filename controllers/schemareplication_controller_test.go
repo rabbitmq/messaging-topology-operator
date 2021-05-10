@@ -45,7 +45,7 @@ var _ = Describe("schema-replication-controller", func() {
 				fakeRabbitMQClient.PutGlobalParameterReturns(&http.Response{
 					Status:     "418 I'm a teapot",
 					StatusCode: 418,
-				}, errors.New("Some HTTP error"))
+				}, errors.New("some HTTP error"))
 			})
 
 			It("sets the status condition to indicate a failure to reconcile", func() {
@@ -62,7 +62,7 @@ var _ = Describe("schema-replication-controller", func() {
 					"Type":    Equal(topology.ConditionType("Ready")),
 					"Reason":  Equal("FailedCreateOrUpdate"),
 					"Status":  Equal(corev1.ConditionFalse),
-					"Message": ContainSubstring("Some HTTP error"),
+					"Message": ContainSubstring("some HTTP error"),
 				})))
 			})
 		})

@@ -55,7 +55,7 @@ var (
 	fakeRecorder *record.FakeRecorder
 )
 
-var _ = BeforeSuite(func(done Done) {
+var _ = BeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.UseDevMode(true), zap.WriteTo(GinkgoWriter)))
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
@@ -207,9 +207,7 @@ var _ = BeforeSuite(func(done Done) {
 		},
 	}
 	Expect(client.Create(ctx, &secret)).To(Succeed())
-
-	close(done)
-}, 60)
+})
 
 var _ = BeforeEach(func() {
 	fakeRabbitMQClient = &internalfakes.FakeRabbitMQClient{}

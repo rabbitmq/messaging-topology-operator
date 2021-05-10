@@ -42,7 +42,7 @@ var _ = Describe("UserController", func() {
 				fakeRabbitMQClient.PutUserReturns(&http.Response{
 					Status:     "418 I'm a teapot",
 					StatusCode: 418,
-				}, errors.New("Some HTTP error"))
+				}, errors.New("some HTTP error"))
 			})
 
 			It("sets the status condition to indicate a failure to reconcile", func() {
@@ -59,7 +59,7 @@ var _ = Describe("UserController", func() {
 					"Type":    Equal(topology.ConditionType("Ready")),
 					"Reason":  Equal("FailedCreateOrUpdate"),
 					"Status":  Equal(corev1.ConditionFalse),
-					"Message": ContainSubstring("Some HTTP error"),
+					"Message": ContainSubstring("some HTTP error"),
 				})))
 			})
 		})
@@ -67,7 +67,7 @@ var _ = Describe("UserController", func() {
 		When("the RabbitMQ Client returns a Go error response", func() {
 			BeforeEach(func() {
 				userName = "test-user-go-error"
-				fakeRabbitMQClient.PutUserReturns(nil, errors.New("Hit a exception"))
+				fakeRabbitMQClient.PutUserReturns(nil, errors.New("hit a exception"))
 			})
 
 			It("sets the status condition to indicate a failure to reconcile", func() {
@@ -84,7 +84,7 @@ var _ = Describe("UserController", func() {
 					"Type":    Equal(topology.ConditionType("Ready")),
 					"Reason":  Equal("FailedCreateOrUpdate"),
 					"Status":  Equal(corev1.ConditionFalse),
-					"Message": ContainSubstring("Hit a exception"),
+					"Message": ContainSubstring("hit a exception"),
 				})))
 			})
 		})
