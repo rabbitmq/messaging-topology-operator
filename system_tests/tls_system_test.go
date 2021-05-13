@@ -3,6 +3,7 @@ package system_tests
 import (
 	"context"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/google/uuid"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
@@ -22,13 +23,14 @@ var _ = Describe("RabbitmqCluster with TLS", func() {
 		targetCluster    *rabbitmqv1beta1.RabbitmqCluster
 		targetClusterRef topology.RabbitmqClusterReference
 		policy           topology.Policy
+		secretName string
 	)
 
 	BeforeEach(func() {
 		targetCluster = basicTestRabbitmqCluster("tls-cluster", namespace)
 		setupTestRabbitmqCluster(k8sClient, targetCluster)
 
-		secretName := fmt.Sprintf("rmq-test-cert-%v", uuid.New())
+		secretName = fmt.Sprintf("rmq-test-cert-%v", uuid.New())
 		_, _, _ = createTLSSecret(secretName, namespace, "tls-cluster.rabbitmq-system.svc.cluster.local")
 
 		patchBytes, _ := fixtures.ReadFile("fixtures/patch-test-ca.yaml")
@@ -74,6 +76,8 @@ var _ = Describe("RabbitmqCluster with TLS", func() {
 			)
 			return string(output)
 		}, 90, 10).Should(ContainSubstring("NotFound"))
+		Expect(k8sClient.Delete(ctx, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: secretName, Namespace: targetCluster.Namespace}})).To(Succeed())
+		Expect(k8sClient.Delete(ctx, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: secretName+"-ca", Namespace: targetCluster.Namespace}})).To(Succeed())
 	})
 
 	It("succeeds creating objects on the TLS-enabled instance", func() {
