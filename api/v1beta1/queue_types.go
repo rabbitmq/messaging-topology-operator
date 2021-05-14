@@ -43,6 +43,7 @@ type QueueSpec struct {
 }
 
 type RabbitmqClusterReference struct {
+	// Cannot be updated
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`
 }

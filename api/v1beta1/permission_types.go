@@ -7,10 +7,10 @@ import (
 
 // PermissionSpec defines the desired state of Permission
 type PermissionSpec struct {
-	// Name of an existing user; required property.
+	// Name of an existing user; required property; cannot be updated
 	// +kubebuilder:validation:Required
 	User string `json:"user"`
-	// Name of an existing vhost; required property.
+	// Name of an existing vhost; required property; cannot be updated
 	// +kubebuilder:validation:Required
 	Vhost string `json:"vhost"`
 	// Permissions to grant to the user in the specific vhost; required property.

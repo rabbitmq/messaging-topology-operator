@@ -17,18 +17,23 @@ import (
 
 // BindingSpec defines the desired state of Binding
 type BindingSpec struct {
-	// Default to vhost '/'
+	// Default to vhost '/'; cannot be updated
 	// +kubebuilder:default:=/
 	Vhost string `json:"vhost,omitempty"`
+	// Cannot be updated
 	// +kubebuilder:validation:Optional
 	Source string `json:"source,omitempty"`
+	// Cannot be updated
 	// +kubebuilder:validation:Optional
 	Destination string `json:"destination,omitempty"`
+	// Cannot be updated
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Enum=exchange;queue
 	DestinationType string `json:"destinationType,omitempty"`
+	// Cannot be updated
 	// +kubebuilder:validation:Optional
 	RoutingKey string `json:"routingKey,omitempty"`
+	// Cannot be updated
 	// +kubebuilder:validation:Type=object
 	// +kubebuilder:pruning:PreserveUnknownFields
 	Arguments *runtime.RawExtension `json:"arguments,omitempty"`

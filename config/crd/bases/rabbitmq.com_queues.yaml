@@ -58,6 +58,7 @@ spec:
                   be created in. Required property.
                 properties:
                   name:
+                    description: Cannot be updated
                     type: string
                 required:
                 - name

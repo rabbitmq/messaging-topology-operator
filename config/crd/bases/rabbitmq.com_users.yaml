@@ -57,6 +57,7 @@ spec:
                   created for. This cluster must exist for the User object to be created.
                 properties:
                   name:
+                    description: Cannot be updated
                     type: string
                 required:
                 - name
