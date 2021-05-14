@@ -43,6 +43,7 @@ spec:
                   would be set for. Must be an existing cluster.
                 properties:
                   name:
+                    description: Cannot be updated
                     type: string
                 required:
                 - name

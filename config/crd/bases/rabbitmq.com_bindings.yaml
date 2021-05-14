@@ -39,11 +39,14 @@ spec:
             description: BindingSpec defines the desired state of Binding
             properties:
               arguments:
+                description: Cannot be updated
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
               destination:
+                description: Cannot be updated
                 type: string
               destinationType:
+                description: Cannot be updated
                 enum:
                 - exchange
                 - queue
@@ -53,17 +56,20 @@ spec:
                   be created in. Required property.
                 properties:
                   name:
+                    description: Cannot be updated
                     type: string
                 required:
                 - name
                 type: object
               routingKey:
+                description: Cannot be updated
                 type: string
               source:
+                description: Cannot be updated
                 type: string
               vhost:
                 default: /
-                description: Default to vhost '/'
+                description: Default to vhost '/'; cannot be updated
                 type: string
             required:
             - rabbitmqClusterReference

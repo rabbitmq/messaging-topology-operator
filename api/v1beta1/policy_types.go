@@ -9,9 +9,10 @@ import (
 // PolicySpec defines the desired state of Policy
 // https://www.rabbitmq.com/parameters.html#policies
 type PolicySpec struct {
+	// Required property; cannot be updated
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`
-	// Default to vhost '/'
+	// Default to vhost '/'; cannot be updated
 	// +kubebuilder:default:=/
 	Vhost string `json:"vhost,omitempty"`
 	// Regular expression pattern used to match queues and exchanges, e.g. "^amq.".

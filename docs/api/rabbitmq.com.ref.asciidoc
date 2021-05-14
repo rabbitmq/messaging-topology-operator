@@ -89,12 +89,12 @@ BindingSpec defines the desired state of Binding
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`vhost`* __string__ | Default to vhost '/'
-| *`source`* __string__ | 
-| *`destination`* __string__ | 
-| *`destinationType`* __string__ | 
-| *`routingKey`* __string__ | 
-| *`arguments`* __RawExtension__ | 
+| *`vhost`* __string__ | Default to vhost '/'; cannot be updated
+| *`source`* __string__ | Cannot be updated
+| *`destination`* __string__ | Cannot be updated
+| *`destinationType`* __string__ | Cannot be updated
+| *`routingKey`* __string__ | Cannot be updated
+| *`arguments`* __RawExtension__ | Cannot be updated
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the binding will be created in. Required property.
 |===
 
@@ -212,11 +212,11 @@ ExchangeSpec defines the desired state of Exchange
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`name`* __string__ | 
-| *`vhost`* __string__ | Default to vhost '/'
-| *`type`* __string__ | 
-| *`durable`* __boolean__ | 
-| *`autoDelete`* __boolean__ | 
+| *`name`* __string__ | Required property; cannot be updated
+| *`vhost`* __string__ | Default to vhost '/'; cannot be updated
+| *`type`* __string__ | Cannot be updated
+| *`durable`* __boolean__ | Cannot be updated
+| *`autoDelete`* __boolean__ | Cannot be updated
 | *`arguments`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | 
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the exchange will be created in. Required property.
 |===
@@ -295,8 +295,8 @@ PermissionSpec defines the desired state of Permission
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`user`* __string__ | Name of an existing user; required property.
-| *`vhost`* __string__ | Name of an existing vhost; required property.
+| *`user`* __string__ | Name of an existing user; required property; cannot be updated
+| *`vhost`* __string__ | Name of an existing vhost; required property; cannot be updated
 | *`permissions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhostpermissions[$$VhostPermissions$$]__ | Permissions to grant to the user in the specific vhost; required property. See RabbitMQ doc for more information: https://www.rabbitmq.com/access-control.html#user-management
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that both the provided user and vhost are. Required property.
 |===
@@ -375,8 +375,8 @@ PolicySpec defines the desired state of Policy https://www.rabbitmq.com/paramete
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`name`* __string__ | 
-| *`vhost`* __string__ | Default to vhost '/'
+| *`name`* __string__ | Required property; cannot be updated
+| *`vhost`* __string__ | Default to vhost '/'; cannot be updated
 | *`pattern`* __string__ | Regular expression pattern used to match queues and exchanges, e.g. "^amq.". Required property.
 | *`applyTo`* __string__ | What this policy applies to: 'queues', 'exchanges', or 'all'. Default to 'all'.
 | *`priority`* __integer__ | Default to '0'. In the event that more than one policy can match a given exchange or queue, the policy with the greatest priority applies.
@@ -506,7 +506,7 @@ QueueStatus defines the observed state of Queue
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`name`* __string__ | 
+| *`name`* __string__ | Cannot be updated
 |===
 
 

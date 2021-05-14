@@ -52,6 +52,7 @@ spec:
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
               name:
+                description: Required property; cannot be updated
                 type: string
               pattern:
                 description: Regular expression pattern used to match queues and exchanges,
@@ -68,13 +69,14 @@ spec:
                   be created in. Required property.
                 properties:
                   name:
+                    description: Cannot be updated
                     type: string
                 required:
                 - name
                 type: object
               vhost:
                 default: /
-                description: Default to vhost '/'
+                description: Default to vhost '/'; cannot be updated
                 type: string
             required:
             - definition
