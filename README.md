@@ -18,6 +18,9 @@ If you have [cert-manager](https://cert-manager.io/docs/installation/kubernetes/
 kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/latest/download/messaging-topology-operator-with-certmanager.yaml
 ```
 
+If you do not have cert-manager installed in your k8s cluster, you will need to generate certificates used by admission webhooks yourself and include them in the operator and webhooks manifests.
+You can follow [this doc](https://www.rabbitmq.com/kubernetes/operator/install-topology-operator.html).
+
 You can create RabbitMQ resources:
 
 1. [Queue](./docs/examples/queues)
@@ -28,10 +31,20 @@ You can create RabbitMQ resources:
 6. [Policy](./docs/examples/policies)
 7. [Permissions](./docs/examples/permissions)
 
-## Install without cert-manager
+## Documentation
 
-If you do not have cert-manager installed in your k8s cluster, you will need to generate certificates used by admission webhooks yourself and include them in the operator and webhooks manifests.
-You can follow [this doc](./docs/installation/install-without-certmanager.md).
+Messaging Topology Operator is covered in several guides:
+
+ - [Operator overview](https://www.rabbitmq.com/kubernetes/operator/operator-overview.html#topology-operator)
+ - [Installation](https://www.rabbitmq.com/kubernetes/operator/install-topology-operator.html)
+ - [Using Messaging Topology Operator](https://www.rabbitmq.com/kubernetes/operator/using-topology-operator.html)
+ - [TLS](https://www.rabbitmq.com/kubernetes/operator/tls-topology-operator.html)
+ - [Troubleshooting Messaging Topology Operator](https://www.rabbitmq.com/kubernetes/operator/troubleshooting-topology-operator.html)
+
+In addition, a number of [examples](./docs/examples) can be found in this repository.
+
+The doc guides are open source. The source can be found in the [RabbitMQ website repository](https://github.com/rabbitmq/rabbitmq-website/)
+under `site/kubernetes`.
 
 ## RabbitMQCluster requirements
 
@@ -39,7 +52,7 @@ Messaging Topology Operator is tested with the latest release of RabbitMQ [Clust
 It uses the generated default user secret from RabbitmqCluster (set in `rabbitmqcluster.status.binding`) to authenticate with RabbitMQ server.
 If your RabbitmqCluster is deployed with import definitions or provided default user credentials,
 the default user secret from `rabbitmqcluster.status.binding` may not be correct and Messaging Topology Operator will fail with authentication error.
-If your RabbitmqCluster is configured to serve management traffic over TLS, you may need to configure the Messaging Topology Operator to trust the CA that signed the server's certificates. For more information, see [this doc](./docs/installation/management-over-https.md).
+If your RabbitmqCluster is configured to serve management traffic over TLS, you may need to configure the Messaging Topology Operator to trust the CA that signed the server's certificates. For more information, see [this doc](https://www.rabbitmq.com/kubernetes/operator/tls-topology-operator.html).
 
 ## Contributing
 
