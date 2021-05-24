@@ -24,12 +24,12 @@ type FederationSpec struct {
 	Uri           string `json:"uri"`
 	PrefetchCount int    `json:"prefetch-count,omitempty"`
 	// +kubebuilder:validation:Enum=on-confirm;on-publish;no-ack
-	AckMode        string `json:"ack-mode,omitempty"`
+	AckMode        string `json:"ackMode,omitempty"`
 	Expires        int    `json:"expires,omitempty"`
-	MessageTTL     int    `json:"message-ttl,omitempty"`
-	MaxHops        int    `json:"max-hops,omitempty"`
-	ReconnectDelay int    `json:"reconnect-delay,omitempty"`
-	TrustUserId    bool   `json:"trust-user-id,omitempty"`
+	MessageTTL     int    `json:"messageTTL,omitempty"`
+	MaxHops        int    `json:"maxHops,omitempty"`
+	ReconnectDelay int    `json:"reconnectDelay,omitempty"`
+	TrustUserId    bool   `json:"trustUserId,omitempty"`
 	Exchange       string `json:"exchange,omitempty"`
 	Queue          string `json:"queue,omitempty,omitempty"`
 }

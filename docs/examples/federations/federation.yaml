@@ -1,0 +1,13 @@
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Policy
+metadata:
+  name: federation-example
+  namespace: rabbitmq-system
+spec:
+  name: "my-upstream"
+  vhost: "downstream-vhost" # default to "/" if not set
+  uri: "amqps://federation:federation@federation-nodes.examples.svc.cluster.local/upstream-vhost"
+  trustUserId: false
+  rabbitmqClusterReference:
+    name: example-rabbit

@@ -110,7 +110,7 @@ var _ = Describe("Federation spec", func() {
 				},
 			}
 			Expect(k8sClient.Create(ctx, &federation)).To(HaveOccurred())
-			Expect(k8sClient.Create(ctx, &federation)).To(MatchError(`Federation.rabbitmq.com "invalid-federation" is invalid: spec.ack-mode: Unsupported value: "non-existing-ackmode": supported values: "on-confirm", "on-publish", "no-ack"`))
+			Expect(k8sClient.Create(ctx, &federation)).To(MatchError(`Federation.rabbitmq.com "invalid-federation" is invalid: spec.ackMode: Unsupported value: "non-existing-ackmode": supported values: "on-confirm", "on-publish", "no-ack"`))
 		})
 	})
 })

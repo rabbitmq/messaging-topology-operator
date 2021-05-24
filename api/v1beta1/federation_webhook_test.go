@@ -62,18 +62,6 @@ var _ = Describe("federation webhook", func() {
 		Expect(newFederation.ValidateUpdate(&federation)).To(Succeed())
 	})
 
-	It("allows updates on federation.spec.expires", func() {
-		newFederation := federation.DeepCopy()
-		newFederation.Spec.Expires = 10
-		Expect(newFederation.ValidateUpdate(&federation)).To(Succeed())
-	})
-
-	It("allows updates on federation.spec.expires", func() {
-		newFederation := federation.DeepCopy()
-		newFederation.Spec.Expires = 10
-		Expect(newFederation.ValidateUpdate(&federation)).To(Succeed())
-	})
-
 	It("allows updates on federation.spec.messageTTL", func() {
 		newFederation := federation.DeepCopy()
 		newFederation.Spec.MessageTTL = 10

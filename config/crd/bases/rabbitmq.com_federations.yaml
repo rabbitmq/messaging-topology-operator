@@ -39,7 +39,7 @@ spec:
             description: 'FederationSpec defines the desired state of Federation For
               how to configure federation upstreams, see: https://www.rabbitmq.com/federation-reference.html.'
             properties:
-              ack-mode:
+              ackMode:
                 enum:
                 - on-confirm
                 - on-publish
@@ -49,9 +49,9 @@ spec:
                 type: string
               expires:
                 type: integer
-              max-hops:
+              maxHops:
                 type: integer
-              message-ttl:
+              messageTTL:
                 type: integer
               name:
                 description: Required property; cannot be updated
@@ -70,9 +70,9 @@ spec:
                 required:
                 - name
                 type: object
-              reconnect-delay:
+              reconnectDelay:
                 type: integer
-              trust-user-id:
+              trustUserId:
                 type: boolean
               uri:
                 description: The AMQP URI(s) for the upstream. Required property.
