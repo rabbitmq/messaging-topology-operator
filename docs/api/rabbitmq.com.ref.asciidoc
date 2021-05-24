@@ -18,6 +18,8 @@ Package v1beta1 contains API Schema definitions for the rabbitmq.com v1beta1 API
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-bindinglist[$$BindingList$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-exchange[$$Exchange$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-exchangelist[$$ExchangeList$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federation[$$Federation$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federationlist[$$FederationList$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-permission[$$Permission$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-permissionlist[$$PermissionList$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-policy[$$Policy$$]
@@ -126,6 +128,7 @@ BindingStatus defines the observed state of Binding
 ****
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-bindingstatus[$$BindingStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-exchangestatus[$$ExchangeStatus$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federationstatus[$$FederationStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-permissionstatus[$$PermissionStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-policystatus[$$PolicyStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-queuestatus[$$QueueStatus$$]
@@ -236,6 +239,95 @@ ExchangeStatus defines the observed state of Exchange
 |===
 | Field | Description
 | *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Exchange. It corresponds to the Exchange's generation, which is updated on mutation by the API Server.
+| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federation"]
+==== Federation 
+
+Federation is the Schema for the federations API
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federationlist[$$FederationList$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
+| *`kind`* __string__ | `Federation`
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federationspec[$$FederationSpec$$]__ | 
+| *`status`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federationstatus[$$FederationStatus$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federationlist"]
+==== FederationList 
+
+FederationList contains a list of Federation
+
+
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
+| *`kind`* __string__ | `FederationList`
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federation[$$Federation$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federationspec"]
+==== FederationSpec 
+
+FederationSpec defines the desired state of Federation
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federation[$$Federation$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`name`* __string__ | Required property; cannot be updated
+| *`vhost`* __string__ | Default to vhost '/'; cannot be updated
+| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the exchange will be created in. Required property.
+| *`uri`* __string__ | The AMQP URI(s) for the upstream. Required property.
+| *`prefetch-count`* __integer__ | 
+| *`ack-mode`* __string__ | 
+| *`expires`* __integer__ | 
+| *`message-ttl`* __integer__ | 
+| *`max-hops`* __integer__ | 
+| *`reconnect-delay`* __integer__ | 
+| *`trust-user-id`* __boolean__ | 
+| *`exchange`* __string__ | 
+| *`queue`* __string__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federationstatus"]
+==== FederationStatus 
+
+FederationStatus defines the observed state of Federation
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federation[$$Federation$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Federation. It corresponds to the Federation's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$]__ | 
 |===
 
@@ -495,6 +587,7 @@ QueueStatus defines the observed state of Queue
 ****
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-bindingspec[$$BindingSpec$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-exchangespec[$$ExchangeSpec$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federationspec[$$FederationSpec$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-permissionspec[$$PermissionSpec$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-policyspec[$$PolicySpec$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-queuespec[$$QueueSpec$$]

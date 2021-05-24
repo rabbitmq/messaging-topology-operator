@@ -138,6 +138,16 @@ func main() {
 		log.Error(err, "unable to create controller", "controller", controllers.SchemaReplicationControllerName)
 		os.Exit(1)
 	}
+	if err = (&controllers.FederationReconciler{
+		Client:                mgr.GetClient(),
+		Log:                   ctrl.Log.WithName("controllers").WithName("Federation"),
+		Scheme:                mgr.GetScheme(),
+		Recorder:              mgr.GetEventRecorderFor(controllers.SchemaReplicationControllerName),
+		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", controllers.FederationControllerName)
+		os.Exit(1)
+	}
 
 	if err = (&topology.Binding{}).SetupWebhookWithManager(mgr); err != nil {
 		log.Error(err, "unable to create webhook", "webhook", "Binding")
@@ -169,6 +179,10 @@ func main() {
 	}
 	if err = (&topology.SchemaReplication{}).SetupWebhookWithManager(mgr); err != nil {
 		log.Error(err, "unable to create webhook", "webhook", "SchemaReplication")
+		os.Exit(1)
+	}
+	if err = (&topology.Federation{}).SetupWebhookWithManager(mgr); err != nil {
+		log.Error(err, "unable to create webhook", "webhook", "Federation")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder

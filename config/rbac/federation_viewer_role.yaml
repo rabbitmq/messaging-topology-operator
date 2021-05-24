@@ -1,0 +1,20 @@
+# permissions for end users to view federations.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: federation-viewer-role
+rules:
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - federations
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - federations/status
+  verbs:
+  - get

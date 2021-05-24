@@ -23,10 +23,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
-	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	"github.com/rabbitmq/messaging-topology-operator/controllers"
-	"github.com/rabbitmq/messaging-topology-operator/internal"
-	"github.com/rabbitmq/messaging-topology-operator/internal/internalfakes"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
@@ -35,6 +31,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	"github.com/rabbitmq/messaging-topology-operator/controllers"
+	"github.com/rabbitmq/messaging-topology-operator/internal"
+	"github.com/rabbitmq/messaging-topology-operator/internal/internalfakes"
 )
 
 func TestControllers(t *testing.T) {
@@ -133,6 +134,13 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(mgr)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.SchemaReplicationReconciler{
+		Client:                mgr.GetClient(),
+		Scheme:                mgr.GetScheme(),
+		Recorder:              fakeRecorder,
+		RabbitmqClientFactory: fakeRabbitMQClientFactory,
+	}).SetupWithManager(mgr)
+	Expect(err).ToNot(HaveOccurred())
+	err = (&controllers.FederationReconciler{
 		Client:                mgr.GetClient(),
 		Scheme:                mgr.GetScheme(),
 		Recorder:              fakeRecorder,

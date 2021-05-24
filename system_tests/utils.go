@@ -167,6 +167,9 @@ func basicTestRabbitmqCluster(name, namespace string) *rabbitmqv1beta1.RabbitmqC
 			Service: rabbitmqv1beta1.RabbitmqClusterServiceSpec{
 				Type: corev1.ServiceTypeNodePort,
 			},
+			Rabbitmq: rabbitmqv1beta1.RabbitmqClusterConfigurationSpec{
+				AdditionalPlugins: []rabbitmqv1beta1.Plugin{"rabbitmq_federation", "rabbitmq_federation_management"},
+			},
 		},
 	}
 }
