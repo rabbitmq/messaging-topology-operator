@@ -288,7 +288,7 @@ FederationList contains a list of Federation
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federationspec"]
 ==== FederationSpec 
 
-FederationSpec defines the desired state of Federation
+FederationSpec defines the desired state of Federation For how to configure federation upstreams, see: https://www.rabbitmq.com/federation-reference.html.
 
 .Appears In:
 ****

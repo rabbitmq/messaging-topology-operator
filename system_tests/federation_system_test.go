@@ -2,7 +2,6 @@ package system_tests
 
 import (
 	"context"
-
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,9 +15,9 @@ import (
 
 var _ = Describe("federation", func() {
 	var (
-		namespace       = MustHaveEnv("NAMESPACE")
-		ctx             = context.Background()
-		federation      = &topology.Federation{}
+		namespace  = MustHaveEnv("NAMESPACE")
+		ctx        = context.Background()
+		federation = &topology.Federation{}
 	)
 
 	BeforeEach(func() {
@@ -28,11 +27,11 @@ var _ = Describe("federation", func() {
 				Namespace: namespace,
 			},
 			Spec: topology.FederationSpec{
-				Name: "my-upstream",
-				Uri: "amqp://server-name-my-upstream-test-uri",
+				Name:       "my-upstream",
+				Uri:        "amqp://server-name-my-upstream-test-uri",
 				MessageTTL: 3000,
-				Queue: "a-queue",
-				AckMode: "on-publish",
+				Queue:      "a-queue",
+				AckMode:    "on-publish",
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: rmq.Name,
 				},
@@ -70,6 +69,24 @@ var _ = Describe("federation", func() {
 
 		By("setting status.observedGeneration")
 		Expect(updatedFederation.Status.ObservedGeneration).To(Equal(updatedFederation.GetGeneration()))
+
+		By("not allowing updates on certain fields")
+		updateTest := topology.Federation{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: federation.Name, Namespace: federation.Namespace}, &updateTest)).To(Succeed())
+		updateTest.Spec.Vhost = "/a-new-vhost"
+		Expect(k8sClient.Update(ctx, &updateTest).Error()).To(ContainSubstring("spec.vhost: Forbidden: updates on name, vhost and rabbitmqClusterReference are all forbidden"))
+
+		By("updating federation upstream parameters successfully")
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: federation.Name, Namespace: federation.Namespace}, federation)).To(Succeed())
+		federation.Spec.MessageTTL = 1000
+		Expect(k8sClient.Update(ctx, federation, &client.UpdateOptions{})).To(Succeed())
+
+		Eventually(func() int32 {
+			var err error
+			upstream, err = rabbitClient.GetFederationUpstream("/", federation.Spec.Name)
+			Expect(err).NotTo(HaveOccurred())
+			return upstream.Definition.MessageTTL
+		}, 30, 2).Should(Equal(int32(1000)))
 
 		By("unsetting federation upstream on deletion")
 		Expect(k8sClient.Delete(ctx, federation)).To(Succeed())

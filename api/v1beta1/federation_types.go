@@ -2,9 +2,11 @@ package v1beta1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // FederationSpec defines the desired state of Federation
+// For how to configure federation upstreams, see: https://www.rabbitmq.com/federation-reference.html.
 type FederationSpec struct {
 	// Required property; cannot be updated
 	// +kubebuilder:validation:Required
@@ -61,6 +63,13 @@ type FederationList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Federation `json:"items"`
+}
+
+func (f *Federation) GroupResource() schema.GroupResource {
+	return schema.GroupResource{
+		Group:    f.GroupVersionKind().Group,
+		Resource: f.GroupVersionKind().Kind,
+	}
 }
 
 func init() {
