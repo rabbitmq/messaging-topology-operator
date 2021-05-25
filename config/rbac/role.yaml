@@ -77,6 +77,26 @@ rules:
 - apiGroups:
   - rabbitmq.com
   resources:
+  - federations
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - federations/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - rabbitmq.com
+  resources:
   - permissions
   verbs:
   - create

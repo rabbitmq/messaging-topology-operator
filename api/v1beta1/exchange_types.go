@@ -26,11 +26,11 @@ type ExchangeSpec struct {
 	// Cannot be updated
 	// +kubebuilder:validation:Enum=direct;fanout;headers;topic
 	// +kubebuilder:default:=direct
-	Type       string `json:"type,omitempty"`
+	Type string `json:"type,omitempty"`
 	// Cannot be updated
-	Durable    bool   `json:"durable,omitempty"`
+	Durable bool `json:"durable,omitempty"`
 	// Cannot be updated
-	AutoDelete bool   `json:"autoDelete,omitempty"`
+	AutoDelete bool `json:"autoDelete,omitempty"`
 	// +kubebuilder:validation:Type=object
 	// +kubebuilder:pruning:PreserveUnknownFields
 	Arguments *runtime.RawExtension `json:"arguments,omitempty"`

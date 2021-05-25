@@ -23,7 +23,7 @@ var _ = Describe("RabbitmqCluster with TLS", func() {
 		targetCluster    *rabbitmqv1beta1.RabbitmqCluster
 		targetClusterRef topology.RabbitmqClusterReference
 		policy           topology.Policy
-		secretName string
+		secretName       string
 	)
 
 	BeforeEach(func() {
@@ -77,7 +77,7 @@ var _ = Describe("RabbitmqCluster with TLS", func() {
 			return string(output)
 		}, 90, 10).Should(ContainSubstring("NotFound"))
 		Expect(k8sClient.Delete(ctx, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: secretName, Namespace: targetCluster.Namespace}})).To(Succeed())
-		Expect(k8sClient.Delete(ctx, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: secretName+"-ca", Namespace: targetCluster.Namespace}})).To(Succeed())
+		Expect(k8sClient.Delete(ctx, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: secretName + "-ca", Namespace: targetCluster.Namespace}})).To(Succeed())
 	})
 
 	It("succeeds creating objects on the TLS-enabled instance", func() {

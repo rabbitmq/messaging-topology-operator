@@ -96,6 +96,20 @@ type FakeRabbitMQClient struct {
 		result1 *http.Response
 		result2 error
 	}
+	DeleteFederationUpstreamStub        func(string, string) (*http.Response, error)
+	deleteFederationUpstreamMutex       sync.RWMutex
+	deleteFederationUpstreamArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	deleteFederationUpstreamReturns struct {
+		result1 *http.Response
+		result2 error
+	}
+	deleteFederationUpstreamReturnsOnCall map[int]struct {
+		result1 *http.Response
+		result2 error
+	}
 	DeleteGlobalParameterStub        func(string) (*http.Response, error)
 	deleteGlobalParameterMutex       sync.RWMutex
 	deleteGlobalParameterArgsForCall []struct {
@@ -192,6 +206,21 @@ type FakeRabbitMQClient struct {
 	}
 	listQueueBindingsBetweenReturnsOnCall map[int]struct {
 		result1 []rabbithole.BindingInfo
+		result2 error
+	}
+	PutFederationUpstreamStub        func(string, string, rabbithole.FederationDefinition) (*http.Response, error)
+	putFederationUpstreamMutex       sync.RWMutex
+	putFederationUpstreamArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 rabbithole.FederationDefinition
+	}
+	putFederationUpstreamReturns struct {
+		result1 *http.Response
+		result2 error
+	}
+	putFederationUpstreamReturnsOnCall map[int]struct {
+		result1 *http.Response
 		result2 error
 	}
 	PutGlobalParameterStub        func(string, interface{}) (*http.Response, error)
@@ -662,6 +691,71 @@ func (fake *FakeRabbitMQClient) DeleteExchangeReturnsOnCall(i int, result1 *http
 	}{result1, result2}
 }
 
+func (fake *FakeRabbitMQClient) DeleteFederationUpstream(arg1 string, arg2 string) (*http.Response, error) {
+	fake.deleteFederationUpstreamMutex.Lock()
+	ret, specificReturn := fake.deleteFederationUpstreamReturnsOnCall[len(fake.deleteFederationUpstreamArgsForCall)]
+	fake.deleteFederationUpstreamArgsForCall = append(fake.deleteFederationUpstreamArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.DeleteFederationUpstreamStub
+	fakeReturns := fake.deleteFederationUpstreamReturns
+	fake.recordInvocation("DeleteFederationUpstream", []interface{}{arg1, arg2})
+	fake.deleteFederationUpstreamMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeRabbitMQClient) DeleteFederationUpstreamCallCount() int {
+	fake.deleteFederationUpstreamMutex.RLock()
+	defer fake.deleteFederationUpstreamMutex.RUnlock()
+	return len(fake.deleteFederationUpstreamArgsForCall)
+}
+
+func (fake *FakeRabbitMQClient) DeleteFederationUpstreamCalls(stub func(string, string) (*http.Response, error)) {
+	fake.deleteFederationUpstreamMutex.Lock()
+	defer fake.deleteFederationUpstreamMutex.Unlock()
+	fake.DeleteFederationUpstreamStub = stub
+}
+
+func (fake *FakeRabbitMQClient) DeleteFederationUpstreamArgsForCall(i int) (string, string) {
+	fake.deleteFederationUpstreamMutex.RLock()
+	defer fake.deleteFederationUpstreamMutex.RUnlock()
+	argsForCall := fake.deleteFederationUpstreamArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeRabbitMQClient) DeleteFederationUpstreamReturns(result1 *http.Response, result2 error) {
+	fake.deleteFederationUpstreamMutex.Lock()
+	defer fake.deleteFederationUpstreamMutex.Unlock()
+	fake.DeleteFederationUpstreamStub = nil
+	fake.deleteFederationUpstreamReturns = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRabbitMQClient) DeleteFederationUpstreamReturnsOnCall(i int, result1 *http.Response, result2 error) {
+	fake.deleteFederationUpstreamMutex.Lock()
+	defer fake.deleteFederationUpstreamMutex.Unlock()
+	fake.DeleteFederationUpstreamStub = nil
+	if fake.deleteFederationUpstreamReturnsOnCall == nil {
+		fake.deleteFederationUpstreamReturnsOnCall = make(map[int]struct {
+			result1 *http.Response
+			result2 error
+		})
+	}
+	fake.deleteFederationUpstreamReturnsOnCall[i] = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeRabbitMQClient) DeleteGlobalParameter(arg1 string) (*http.Response, error) {
 	fake.deleteGlobalParameterMutex.Lock()
 	ret, specificReturn := fake.deleteGlobalParameterReturnsOnCall[len(fake.deleteGlobalParameterArgsForCall)]
@@ -1117,6 +1211,72 @@ func (fake *FakeRabbitMQClient) ListQueueBindingsBetweenReturnsOnCall(i int, res
 	}{result1, result2}
 }
 
+func (fake *FakeRabbitMQClient) PutFederationUpstream(arg1 string, arg2 string, arg3 rabbithole.FederationDefinition) (*http.Response, error) {
+	fake.putFederationUpstreamMutex.Lock()
+	ret, specificReturn := fake.putFederationUpstreamReturnsOnCall[len(fake.putFederationUpstreamArgsForCall)]
+	fake.putFederationUpstreamArgsForCall = append(fake.putFederationUpstreamArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 rabbithole.FederationDefinition
+	}{arg1, arg2, arg3})
+	stub := fake.PutFederationUpstreamStub
+	fakeReturns := fake.putFederationUpstreamReturns
+	fake.recordInvocation("PutFederationUpstream", []interface{}{arg1, arg2, arg3})
+	fake.putFederationUpstreamMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeRabbitMQClient) PutFederationUpstreamCallCount() int {
+	fake.putFederationUpstreamMutex.RLock()
+	defer fake.putFederationUpstreamMutex.RUnlock()
+	return len(fake.putFederationUpstreamArgsForCall)
+}
+
+func (fake *FakeRabbitMQClient) PutFederationUpstreamCalls(stub func(string, string, rabbithole.FederationDefinition) (*http.Response, error)) {
+	fake.putFederationUpstreamMutex.Lock()
+	defer fake.putFederationUpstreamMutex.Unlock()
+	fake.PutFederationUpstreamStub = stub
+}
+
+func (fake *FakeRabbitMQClient) PutFederationUpstreamArgsForCall(i int) (string, string, rabbithole.FederationDefinition) {
+	fake.putFederationUpstreamMutex.RLock()
+	defer fake.putFederationUpstreamMutex.RUnlock()
+	argsForCall := fake.putFederationUpstreamArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeRabbitMQClient) PutFederationUpstreamReturns(result1 *http.Response, result2 error) {
+	fake.putFederationUpstreamMutex.Lock()
+	defer fake.putFederationUpstreamMutex.Unlock()
+	fake.PutFederationUpstreamStub = nil
+	fake.putFederationUpstreamReturns = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRabbitMQClient) PutFederationUpstreamReturnsOnCall(i int, result1 *http.Response, result2 error) {
+	fake.putFederationUpstreamMutex.Lock()
+	defer fake.putFederationUpstreamMutex.Unlock()
+	fake.PutFederationUpstreamStub = nil
+	if fake.putFederationUpstreamReturnsOnCall == nil {
+		fake.putFederationUpstreamReturnsOnCall = make(map[int]struct {
+			result1 *http.Response
+			result2 error
+		})
+	}
+	fake.putFederationUpstreamReturnsOnCall[i] = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeRabbitMQClient) PutGlobalParameter(arg1 string, arg2 interface{}) (*http.Response, error) {
 	fake.putGlobalParameterMutex.Lock()
 	ret, specificReturn := fake.putGlobalParameterReturnsOnCall[len(fake.putGlobalParameterArgsForCall)]
@@ -1459,6 +1619,8 @@ func (fake *FakeRabbitMQClient) Invocations() map[string][][]interface{} {
 	defer fake.deleteBindingMutex.RUnlock()
 	fake.deleteExchangeMutex.RLock()
 	defer fake.deleteExchangeMutex.RUnlock()
+	fake.deleteFederationUpstreamMutex.RLock()
+	defer fake.deleteFederationUpstreamMutex.RUnlock()
 	fake.deleteGlobalParameterMutex.RLock()
 	defer fake.deleteGlobalParameterMutex.RUnlock()
 	fake.deletePolicyMutex.RLock()
@@ -1473,6 +1635,8 @@ func (fake *FakeRabbitMQClient) Invocations() map[string][][]interface{} {
 	defer fake.listExchangeBindingsBetweenMutex.RUnlock()
 	fake.listQueueBindingsBetweenMutex.RLock()
 	defer fake.listQueueBindingsBetweenMutex.RUnlock()
+	fake.putFederationUpstreamMutex.RLock()
+	defer fake.putFederationUpstreamMutex.RUnlock()
 	fake.putGlobalParameterMutex.RLock()
 	defer fake.putGlobalParameterMutex.RUnlock()
 	fake.putPolicyMutex.RLock()

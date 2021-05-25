@@ -25,4 +25,7 @@ resources:
 - group: rabbitmq.com
   kind: SchemaReplication
   version: v1beta1
+- group: rabbitmq.com
+  kind: Federation
+  version: v1beta1
 version: "2"

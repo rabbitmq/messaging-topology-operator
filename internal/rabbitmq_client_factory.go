@@ -42,6 +42,8 @@ type RabbitMQClient interface {
 	DeleteVhost(string) (*http.Response, error)
 	PutGlobalParameter(name string, value interface{}) (*http.Response, error)
 	DeleteGlobalParameter(name string) (*http.Response, error)
+	PutFederationUpstream(vhost, name string, def rabbithole.FederationDefinition) (res *http.Response, err error)
+	DeleteFederationUpstream(vhost, name string) (res *http.Response, err error)
 }
 
 type RabbitMQClientFactory func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, secret *corev1.Secret, hostname string, certPool *x509.CertPool) (RabbitMQClient, error)
