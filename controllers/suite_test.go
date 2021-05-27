@@ -215,6 +215,19 @@ var _ = BeforeSuite(func() {
 		},
 	}
 	Expect(client.Create(ctx, &secret)).To(Succeed())
+
+	// used in federation-controller test
+	federationUri := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "federation-uri",
+			Namespace: "default",
+		},
+		Type: corev1.SecretTypeOpaque,
+		Data: map[string][]byte{
+			"uri": []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
+		},
+	}
+	Expect(client.Create(ctx, &federationUri)).To(Succeed())
 })
 
 var _ = BeforeEach(func() {

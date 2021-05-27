@@ -3,6 +3,7 @@ package v1beta1
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -13,9 +14,11 @@ var _ = Describe("federation webhook", func() {
 			Name: "test",
 		},
 		Spec: FederationSpec{
-			Name:           "test-upstream",
-			Vhost:          "/a-vhost",
-			Uri:            "a-rabbit-connection-uri",
+			Name:  "test-upstream",
+			Vhost: "/a-vhost",
+			UriSecret: &corev1.LocalObjectReference{
+				Name: "a-secret",
+			},
 			Expires:        1000,
 			MessageTTL:     1000,
 			MaxHops:        100,
@@ -50,9 +53,9 @@ var _ = Describe("federation webhook", func() {
 		Expect(apierrors.IsForbidden(newFederation.ValidateUpdate(&federation))).To(BeTrue())
 	})
 
-	It("allows updates on federation.spec.uri", func() {
+	It("allows updates on federation.spec.uriSecret", func() {
 		newFederation := federation.DeepCopy()
-		newFederation.Spec.Uri = "amqps://new-uri"
+		newFederation.Spec.UriSecret = &corev1.LocalObjectReference{Name: "a-new-secret"}
 		Expect(newFederation.ValidateUpdate(&federation)).To(Succeed())
 	})
 

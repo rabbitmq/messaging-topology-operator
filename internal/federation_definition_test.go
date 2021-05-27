@@ -23,62 +23,61 @@ var _ = Describe("GenerationFederationDefinition", func() {
 	})
 
 	It("sets 'uri' correctly", func() {
-		f.Spec.Uri = "a-rabbitmq-uri@test.com"
-		definition := GenerateFederationDefinition(f)
+		definition := GenerateFederationDefinition(f, "a-rabbitmq-uri@test.com")
 		Expect(definition.Uri).To(Equal("a-rabbitmq-uri@test.com"))
 	})
 
 	It("sets 'PrefetchCount' correctly", func() {
 		f.Spec.PrefetchCount = 200
-		definition := GenerateFederationDefinition(f)
+		definition := GenerateFederationDefinition(f, "")
 		Expect(definition.PrefetchCount).To(Equal(200))
 	})
 
 	It("sets 'AckMode' correctly", func() {
 		f.Spec.AckMode = "no-ack"
-		definition := GenerateFederationDefinition(f)
+		definition := GenerateFederationDefinition(f, "")
 		Expect(definition.AckMode).To(Equal("no-ack"))
 	})
 
 	It("sets 'Expires' correctly", func() {
 		f.Spec.Expires = 100000
-		definition := GenerateFederationDefinition(f)
+		definition := GenerateFederationDefinition(f, "")
 		Expect(definition.Expires).To(Equal(100000))
 	})
 
 	It("sets 'MessageTTL' correctly", func() {
 		f.Spec.MessageTTL = 300
-		definition := GenerateFederationDefinition(f)
+		definition := GenerateFederationDefinition(f, "")
 		Expect(definition.MessageTTL).To(Equal(int32(300)))
 	})
 
 	It("sets 'MaxHops' correctly", func() {
 		f.Spec.MaxHops = 5
-		definition := GenerateFederationDefinition(f)
+		definition := GenerateFederationDefinition(f, "")
 		Expect(definition.MaxHops).To(Equal(5))
 	})
 
 	It("sets 'ReconnectDelay' correctly", func() {
 		f.Spec.ReconnectDelay = 100
-		definition := GenerateFederationDefinition(f)
+		definition := GenerateFederationDefinition(f, "")
 		Expect(definition.ReconnectDelay).To(Equal(100))
 	})
 
 	It("sets 'TrustUserId' correctly", func() {
 		f.Spec.TrustUserId = false
-		definition := GenerateFederationDefinition(f)
+		definition := GenerateFederationDefinition(f, "")
 		Expect(definition.TrustUserId).To(BeFalse())
 	})
 
 	It("sets 'Exchange' correctly", func() {
 		f.Spec.Exchange = "an-exchange"
-		definition := GenerateFederationDefinition(f)
+		definition := GenerateFederationDefinition(f, "")
 		Expect(definition.Exchange).To(Equal("an-exchange"))
 	})
 
 	It("sets 'Queue' correctly", func() {
 		f.Spec.Queue = "a-great-queue"
-		definition := GenerateFederationDefinition(f)
+		definition := GenerateFederationDefinition(f, "")
 		Expect(definition.Queue).To(Equal("a-great-queue"))
 	})
 })
