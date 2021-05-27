@@ -14,9 +14,9 @@ import (
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
 
-func GenerateFederationDefinition(f *topology.Federation) rabbithole.FederationDefinition {
+func GenerateFederationDefinition(f *topology.Federation, uri string) rabbithole.FederationDefinition {
 	return rabbithole.FederationDefinition{
-		Uri:            f.Spec.Uri,
+		Uri:            uri,
 		Expires:        f.Spec.Expires,
 		MessageTTL:     int32(f.Spec.MessageTTL),
 		MaxHops:        f.Spec.MaxHops,

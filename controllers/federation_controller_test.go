@@ -28,8 +28,9 @@ var _ = Describe("federation-controller", func() {
 				Namespace: "default",
 			},
 			Spec: topology.FederationSpec{
-				Name:  "my-federation-upstream",
-				Vhost: "/test",
+				Name:      "my-federation-upstream",
+				Vhost:     "/test",
+				UriSecret: &corev1.LocalObjectReference{Name: "federation-uri"},
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: "example-rabbit",
 				},

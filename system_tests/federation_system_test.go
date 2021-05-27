@@ -15,12 +15,25 @@ import (
 
 var _ = Describe("federation", func() {
 	var (
-		namespace  = MustHaveEnv("NAMESPACE")
-		ctx        = context.Background()
-		federation = &topology.Federation{}
+		namespace     = MustHaveEnv("NAMESPACE")
+		ctx           = context.Background()
+		federation    = &topology.Federation{}
+		federationUri = "amqp://server-name-my-upstream-test-uri"
 	)
 
 	BeforeEach(func() {
+		federationUriSecret := corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "federation-uri",
+				Namespace: namespace,
+			},
+			Type: corev1.SecretTypeOpaque,
+			Data: map[string][]byte{
+				"uri": []byte(federationUri),
+			},
+		}
+		Expect(k8sClient.Create(ctx, &federationUriSecret)).To(Succeed())
+
 		federation = &topology.Federation{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "federation",
@@ -28,7 +41,7 @@ var _ = Describe("federation", func() {
 			},
 			Spec: topology.FederationSpec{
 				Name:       "my-upstream",
-				Uri:        "amqp://server-name-my-upstream-test-uri",
+				UriSecret:  &corev1.LocalObjectReference{Name: "federation-uri"},
 				MessageTTL: 3000,
 				Queue:      "a-queue",
 				AckMode:    "on-publish",
@@ -51,7 +64,7 @@ var _ = Describe("federation", func() {
 
 		Expect(upstream.Name).To(Equal(federation.Spec.Name))
 		Expect(upstream.Vhost).To(Equal(federation.Spec.Vhost))
-		Expect(upstream.Definition.Uri).To(Equal(federation.Spec.Uri))
+		Expect(upstream.Definition.Uri).To(Equal(federationUri))
 		Expect(upstream.Definition.Queue).To(Equal(federation.Spec.Queue))
 		Expect(upstream.Definition.MessageTTL).To(Equal(int32(federation.Spec.MessageTTL)))
 		Expect(upstream.Definition.AckMode).To(Equal(federation.Spec.AckMode))

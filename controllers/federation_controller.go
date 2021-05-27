@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -113,7 +115,15 @@ func (r *FederationReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 func (r *FederationReconciler) setFederation(ctx context.Context, client internal.RabbitMQClient, federation *topology.Federation) error {
 	logger := ctrl.LoggerFrom(ctx)
 
-	if err := validateResponse(client.PutFederationUpstream(federation.Spec.Vhost, federation.Spec.Name, internal.GenerateFederationDefinition(federation))); err != nil {
+	uri, err := r.getUri(ctx, federation)
+	if err != nil {
+		msg := "failed to parse federation uri secret"
+		r.Recorder.Event(federation, corev1.EventTypeWarning, "FailedUpdate", msg)
+		logger.Error(err, msg, "uri secret", federation.Spec.UriSecret.Name)
+		return err
+	}
+
+	if err := validateResponse(client.PutFederationUpstream(federation.Spec.Vhost, federation.Spec.Name, internal.GenerateFederationDefinition(federation, uri))); err != nil {
 		msg := "failed to set federation upstream parameter"
 		r.Recorder.Event(federation, corev1.EventTypeWarning, "FailedUpdate", msg)
 		logger.Error(err, msg, "federation", federation.Spec.Name)
@@ -123,6 +133,22 @@ func (r *FederationReconciler) setFederation(ctx context.Context, client interna
 	logger.Info("Successfully set federation Upstream parameter", "federation", federation.Spec.Name)
 	r.Recorder.Event(federation, corev1.EventTypeNormal, "SuccessfulUpdate", "Successfully set federation Upstream parameter")
 	return nil
+}
+func (r *FederationReconciler) getUri(ctx context.Context, federation *topology.Federation) (string, error) {
+	if federation.Spec.UriSecret == nil {
+		return "", fmt.Errorf("no uri secret provided")
+	}
+	secret := &corev1.Secret{}
+	if err := r.Get(ctx, types.NamespacedName{Name: federation.Spec.UriSecret.Name, Namespace: federation.Namespace}, secret); err != nil {
+		return "", err
+	}
+
+	uri, ok := secret.Data["uri"]
+	if !ok {
+		return "", fmt.Errorf("could not find key 'uri' in secret %s", secret.Name)
+	}
+
+	return string(uri), nil
 }
 
 // addFinalizerIfNeeded adds a deletion finalizer if the Federation does not have one yet and is not marked for deletion

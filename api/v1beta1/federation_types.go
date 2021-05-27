@@ -1,6 +1,7 @@
 package v1beta1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -18,11 +19,12 @@ type FederationSpec struct {
 	// Required property.
 	// +kubebuilder:validation:Required
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
-	// The AMQP URI(s) for the upstream.
+	// Secret contains the AMQP URI(s) for the upstream.
+	// The Secret must contain the key `uri` or operator will error.
 	// Required property.
 	// +kubebuilder:validation:Required
-	Uri           string `json:"uri"`
-	PrefetchCount int    `json:"prefetch-count,omitempty"`
+	UriSecret     *corev1.LocalObjectReference `json:"uriSecret"`
+	PrefetchCount int                          `json:"prefetch-count,omitempty"`
 	// +kubebuilder:validation:Enum=on-confirm;on-publish;no-ack
 	AckMode        string `json:"ackMode,omitempty"`
 	Expires        int    `json:"expires,omitempty"`

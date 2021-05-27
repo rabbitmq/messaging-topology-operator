@@ -74,9 +74,16 @@ spec:
                 type: integer
               trustUserId:
                 type: boolean
-              uri:
-                description: The AMQP URI(s) for the upstream. Required property.
-                type: string
+              uriSecret:
+                description: Secret contains the AMQP URI(s) for the upstream. The
+                  Secret must contain the key `uri` or operator will error. Required
+                  property.
+                properties:
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                      TODO: Add other useful fields. apiVersion, kind, uid?'
+                    type: string
+                type: object
               vhost:
                 default: /
                 description: Default to vhost '/'; cannot be updated
@@ -84,7 +91,7 @@ spec:
             required:
             - name
             - rabbitmqClusterReference
-            - uri
+            - uriSecret
             type: object
           status:
             description: FederationStatus defines the observed state of Federation
