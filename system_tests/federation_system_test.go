@@ -15,14 +15,15 @@ import (
 
 var _ = Describe("federation", func() {
 	var (
-		namespace     = MustHaveEnv("NAMESPACE")
-		ctx           = context.Background()
-		federation    = &topology.Federation{}
-		federationUri = "amqp://server-name-my-upstream-test-uri"
+		namespace           = MustHaveEnv("NAMESPACE")
+		ctx                 = context.Background()
+		federation          = &topology.Federation{}
+		federationUri       = "amqp://server-name-my-upstream-test-uri"
+		federationUriSecret corev1.Secret
 	)
 
 	BeforeEach(func() {
-		federationUriSecret := corev1.Secret{
+		federationUriSecret = corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "federation-uri",
 				Namespace: namespace,
@@ -41,7 +42,7 @@ var _ = Describe("federation", func() {
 			},
 			Spec: topology.FederationSpec{
 				Name:       "my-upstream",
-				UriSecret:  &corev1.LocalObjectReference{Name: "federation-uri"},
+				UriSecret:  &corev1.LocalObjectReference{Name: federationUriSecret.Name},
 				MessageTTL: 3000,
 				Queue:      "a-queue",
 				AckMode:    "on-publish",
@@ -50,6 +51,10 @@ var _ = Describe("federation", func() {
 				},
 			},
 		}
+	})
+
+	AfterEach(func() {
+		Expect(k8sClient.Delete(ctx, &federationUriSecret, &client.DeleteOptions{})).To(Succeed())
 	})
 
 	It("works", func() {
