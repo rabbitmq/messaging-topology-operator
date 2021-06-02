@@ -12,11 +12,12 @@ package internal
 import (
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	"strings"
 )
 
 func GenerateFederationDefinition(f *topology.Federation, uri string) rabbithole.FederationDefinition {
 	return rabbithole.FederationDefinition{
-		Uri:            uri,
+		Uri:            strings.Split(uri, ","),
 		Expires:        f.Spec.Expires,
 		MessageTTL:     int32(f.Spec.MessageTTL),
 		MaxHops:        f.Spec.MaxHops,

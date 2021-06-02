@@ -22,9 +22,14 @@ var _ = Describe("GenerationFederationDefinition", func() {
 		}
 	})
 
-	It("sets 'uri' correctly", func() {
+	It("sets 'uri' correctly for a single uri", func() {
 		definition := GenerateFederationDefinition(f, "a-rabbitmq-uri@test.com")
-		Expect(definition.Uri).To(Equal("a-rabbitmq-uri@test.com"))
+		Expect(definition.Uri).To(ConsistOf("a-rabbitmq-uri@test.com"))
+	})
+
+	It("sets 'uri' correctly for multiple uris", func() {
+		definition := GenerateFederationDefinition(f, "a-rabbitmq-uri@test.com0,a-rabbitmq-uri@test1.com,a-rabbitmq-uri@test2.com")
+		Expect(definition.Uri).To(ConsistOf("a-rabbitmq-uri@test.com0", "a-rabbitmq-uri@test1.com", "a-rabbitmq-uri@test2.com"))
 	})
 
 	It("sets 'PrefetchCount' correctly", func() {
