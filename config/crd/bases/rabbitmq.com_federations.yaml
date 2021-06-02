@@ -61,8 +61,8 @@ spec:
               queue:
                 type: string
               rabbitmqClusterReference:
-                description: Reference to the RabbitmqCluster that the exchange will
-                  be created in. Required property.
+                description: Reference to the RabbitmqCluster that this federation
+                  upstream will be created in. Required property.
                 properties:
                   name:
                     description: Cannot be updated

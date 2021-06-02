@@ -142,7 +142,7 @@ func main() {
 		Client:                mgr.GetClient(),
 		Log:                   ctrl.Log.WithName("controllers").WithName("Federation"),
 		Scheme:                mgr.GetScheme(),
-		Recorder:              mgr.GetEventRecorderFor(controllers.SchemaReplicationControllerName),
+		Recorder:              mgr.GetEventRecorderFor(controllers.FederationControllerName),
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.FederationControllerName)

@@ -15,7 +15,7 @@ type FederationSpec struct {
 	// Default to vhost '/'; cannot be updated
 	// +kubebuilder:default:=/
 	Vhost string `json:"vhost,omitempty"`
-	// Reference to the RabbitmqCluster that the exchange will be created in.
+	// Reference to the RabbitmqCluster that this federation upstream will be created in.
 	// Required property.
 	// +kubebuilder:validation:Required
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
