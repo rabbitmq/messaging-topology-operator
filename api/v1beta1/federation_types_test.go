@@ -4,6 +4,7 @@ import (
 	"context"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -21,7 +22,9 @@ var _ = Describe("Federation spec", func() {
 			RabbitmqClusterReference: RabbitmqClusterReference{
 				Name: "some-cluster",
 			},
-			Uri: "a-rabbit-connection-uri",
+			UriSecret: &corev1.LocalObjectReference{
+				Name: "a-secret",
+			},
 		}
 
 		federation := Federation{
@@ -31,7 +34,9 @@ var _ = Describe("Federation spec", func() {
 			},
 			Spec: FederationSpec{
 				Name: "test-federation",
-				Uri:  "a-rabbit-connection-uri",
+				UriSecret: &corev1.LocalObjectReference{
+					Name: "a-secret",
+				},
 				RabbitmqClusterReference: RabbitmqClusterReference{
 					Name: "some-cluster",
 				},
@@ -53,9 +58,11 @@ var _ = Describe("Federation spec", func() {
 				Namespace: namespace,
 			},
 			Spec: FederationSpec{
-				Name:           "configured-federation",
-				Vhost:          "/hello",
-				Uri:            "a-rabbit-connection-uri",
+				Name:  "configured-federation",
+				Vhost: "/hello",
+				UriSecret: &corev1.LocalObjectReference{
+					Name: "a-secret",
+				},
 				Expires:        1000,
 				MessageTTL:     1000,
 				MaxHops:        100,
@@ -83,7 +90,7 @@ var _ = Describe("Federation spec", func() {
 				Name: "some-cluster",
 			}))
 
-		Expect(fetched.Spec.Uri).To(Equal("a-rabbit-connection-uri"))
+		Expect(fetched.Spec.UriSecret.Name).To(Equal("a-secret"))
 		Expect(fetched.Spec.AckMode).To(Equal("no-ack"))
 		Expect(fetched.Spec.Exchange).To(Equal("an-exchange"))
 		Expect(fetched.Spec.Expires).To(Equal(1000))
@@ -101,8 +108,10 @@ var _ = Describe("Federation spec", func() {
 					Namespace: namespace,
 				},
 				Spec: FederationSpec{
-					Name:    "test-federation",
-					Uri:     "a-rabbit-connection-uri",
+					Name: "test-federation",
+					UriSecret: &corev1.LocalObjectReference{
+						Name: "a-secret",
+					},
 					AckMode: "non-existing-ackmode",
 					RabbitmqClusterReference: RabbitmqClusterReference{
 						Name: "some-cluster",
