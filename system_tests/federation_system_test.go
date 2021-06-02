@@ -18,7 +18,7 @@ var _ = Describe("federation", func() {
 		namespace           = MustHaveEnv("NAMESPACE")
 		ctx                 = context.Background()
 		federation          = &topology.Federation{}
-		federationUri       = "amqp://server-name-my-upstream-test-uri"
+		federationUri       = "amqp://server-name-my-upstream-test-uri0,amqp://server-name-my-upstream-test-uri1,amqp://server-name-my-upstream-test-uri2"
 		federationUriSecret corev1.Secret
 	)
 
@@ -69,7 +69,9 @@ var _ = Describe("federation", func() {
 
 		Expect(upstream.Name).To(Equal(federation.Spec.Name))
 		Expect(upstream.Vhost).To(Equal(federation.Spec.Vhost))
-		Expect(upstream.Definition.Uri).To(Equal(federationUri))
+		Expect(upstream.Definition.Uri).To(ConsistOf("amqp://server-name-my-upstream-test-uri0",
+			"amqp://server-name-my-upstream-test-uri1",
+			"amqp://server-name-my-upstream-test-uri2"))
 		Expect(upstream.Definition.Queue).To(Equal(federation.Spec.Queue))
 		Expect(upstream.Definition.MessageTTL).To(Equal(int32(federation.Spec.MessageTTL)))
 		Expect(upstream.Definition.AckMode).To(Equal(federation.Spec.AckMode))

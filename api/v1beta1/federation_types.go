@@ -21,6 +21,7 @@ type FederationSpec struct {
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
 	// Secret contains the AMQP URI(s) for the upstream.
 	// The Secret must contain the key `uri` or operator will error.
+	// `uri` should be one or multiple uris separated by ','.
 	// Required property.
 	// +kubebuilder:validation:Required
 	UriSecret     *corev1.LocalObjectReference `json:"uriSecret"`

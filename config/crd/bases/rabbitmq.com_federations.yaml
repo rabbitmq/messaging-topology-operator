@@ -76,8 +76,8 @@ spec:
                 type: boolean
               uriSecret:
                 description: Secret contains the AMQP URI(s) for the upstream. The
-                  Secret must contain the key `uri` or operator will error. Required
-                  property.
+                  Secret must contain the key `uri` or operator will error. `uri`
+                  should be one or multiple uris separated by ','. Required property.
                 properties:
                   name:
                     description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names

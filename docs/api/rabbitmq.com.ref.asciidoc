@@ -301,7 +301,7 @@ FederationSpec defines the desired state of Federation For how to configure fede
 | *`name`* __string__ | Required property; cannot be updated
 | *`vhost`* __string__ | Default to vhost '/'; cannot be updated
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the exchange will be created in. Required property.
-| *`uriSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Secret contains the AMQP URI(s) for the upstream. The Secret must contain the key `uri` or operator will error. Required property.
+| *`uriSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Secret contains the AMQP URI(s) for the upstream. The Secret must contain the key `uri` or operator will error. `uri` should be one or multiple uris separated by ','. Required property.
 | *`prefetch-count`* __integer__ | 
 | *`ackMode`* __string__ | 
 | *`expires`* __integer__ | 
