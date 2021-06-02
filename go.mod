@@ -9,8 +9,8 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.4.1
 	github.com/michaelklishin/rabbit-hole/v2 v2.8.0
-	github.com/onsi/gomega v1.13.0
 	github.com/onsi/ginkgo v1.16.3
+	github.com/onsi/gomega v1.13.0
 	github.com/rabbitmq/cluster-operator v1.7.0
 	k8s.io/api v0.20.5
 	k8s.io/apimachinery v0.20.5
