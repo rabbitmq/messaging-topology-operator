@@ -21,7 +21,6 @@ import (
 
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 
-	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
@@ -38,7 +37,6 @@ func init() {
 	_ = rabbitmqv1beta1.AddToScheme(scheme)
 
 	_ = topology.AddToScheme(scheme)
-	_ = rabbitmqcomv1beta1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -62,7 +60,7 @@ func main() {
 
 	if err = (&controllers.QueueReconciler{
 		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName("controllers").WithName("Queue"),
+		Log:                   ctrl.Log.WithName(controllers.QueueControllerName),
 		Scheme:                mgr.GetScheme(),
 		Recorder:              mgr.GetEventRecorderFor(controllers.QueueControllerName),
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
@@ -72,7 +70,7 @@ func main() {
 	}
 	if err = (&controllers.ExchangeReconciler{
 		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName("controllers").WithName("Exchange"),
+		Log:                   ctrl.Log.WithName(controllers.ExchangeControllerName),
 		Scheme:                mgr.GetScheme(),
 		Recorder:              mgr.GetEventRecorderFor(controllers.ExchangeControllerName),
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
@@ -82,7 +80,7 @@ func main() {
 	}
 	if err = (&controllers.BindingReconciler{
 		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName("controllers").WithName("Binding"),
+		Log:                   ctrl.Log.WithName(controllers.BindingControllerName),
 		Scheme:                mgr.GetScheme(),
 		Recorder:              mgr.GetEventRecorderFor(controllers.BindingControllerName),
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
@@ -92,7 +90,7 @@ func main() {
 	}
 	if err = (&controllers.UserReconciler{
 		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName("controllers").WithName("User"),
+		Log:                   ctrl.Log.WithName(controllers.UserControllerName),
 		Scheme:                mgr.GetScheme(),
 		Recorder:              mgr.GetEventRecorderFor(controllers.UserControllerName),
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
@@ -102,7 +100,7 @@ func main() {
 	}
 	if err = (&controllers.VhostReconciler{
 		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName("controllers").WithName("Vhost"),
+		Log:                   ctrl.Log.WithName(controllers.VhostControllerName),
 		Scheme:                mgr.GetScheme(),
 		Recorder:              mgr.GetEventRecorderFor(controllers.VhostControllerName),
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
@@ -112,7 +110,7 @@ func main() {
 	}
 	if err = (&controllers.PolicyReconciler{
 		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName("controllers").WithName("Policy"),
+		Log:                   ctrl.Log.WithName(controllers.PolicyControllerName),
 		Scheme:                mgr.GetScheme(),
 		Recorder:              mgr.GetEventRecorderFor(controllers.PolicyControllerName),
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
@@ -122,7 +120,7 @@ func main() {
 	}
 	if err = (&controllers.PermissionReconciler{
 		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName("controllers").WithName("Permission"),
+		Log:                   ctrl.Log.WithName(controllers.PermissionControllerName),
 		Scheme:                mgr.GetScheme(),
 		Recorder:              mgr.GetEventRecorderFor(controllers.PermissionControllerName),
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
@@ -132,7 +130,7 @@ func main() {
 	}
 	if err = (&controllers.SchemaReplicationReconciler{
 		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName("controllers").WithName("SchemaReplication"),
+		Log:                   ctrl.Log.WithName(controllers.SchemaReplicationControllerName),
 		Scheme:                mgr.GetScheme(),
 		Recorder:              mgr.GetEventRecorderFor(controllers.SchemaReplicationControllerName),
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
@@ -142,7 +140,7 @@ func main() {
 	}
 	if err = (&controllers.FederationReconciler{
 		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName("controllers").WithName("Federation"),
+		Log:                   ctrl.Log.WithName(controllers.FederationControllerName),
 		Scheme:                mgr.GetScheme(),
 		Recorder:              mgr.GetEventRecorderFor(controllers.FederationControllerName),
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
@@ -152,7 +150,7 @@ func main() {
 	}
 	if err = (&controllers.ShovelReconciler{
 		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName("controllers").WithName("Shovel"),
+		Log:                   ctrl.Log.WithName(controllers.ShovelControllerName),
 		Scheme:                mgr.GetScheme(),
 		Recorder:              mgr.GetEventRecorderFor(controllers.ShovelControllerName),
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
@@ -197,7 +195,10 @@ func main() {
 		log.Error(err, "unable to create webhook", "webhook", "Federation")
 		os.Exit(1)
 	}
-
+	if err = (&topology.Shovel{}).SetupWebhookWithManager(mgr); err != nil {
+		log.Error(err, "unable to create webhook", "webhook", "Shovel")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	log.Info("starting manager")

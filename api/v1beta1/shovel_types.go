@@ -3,6 +3,7 @@ package v1beta1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // ShovelSpec defines the desired state of Shovel
@@ -78,6 +79,13 @@ type ShovelList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Shovel `json:"items"`
+}
+
+func (s *Shovel) GroupResource() schema.GroupResource {
+	return schema.GroupResource{
+		Group:    s.GroupVersionKind().Group,
+		Resource: s.GroupVersionKind().Kind,
+	}
 }
 
 func init() {
