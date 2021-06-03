@@ -97,6 +97,23 @@ var _ = Describe("Shovel", func() {
 		By("setting status.observedGeneration")
 		Expect(updatedShovel.Status.ObservedGeneration).To(Equal(updatedShovel.GetGeneration()))
 
+		By("not allowing updates on certain fields")
+		updateTest := topology.Shovel{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: shovel.Name, Namespace: shovel.Namespace}, &updateTest)).To(Succeed())
+		updateTest.Spec.Name = "a-new-shovel"
+		Expect(k8sClient.Update(ctx, &updateTest).Error()).To(ContainSubstring("spec.name: Forbidden: updates on name, vhost and rabbitmqClusterReference are all forbidden"))
+
+		By("updating shovel upstream parameters successfully")
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: shovel.Name, Namespace: shovel.Namespace}, shovel)).To(Succeed())
+		shovel.Spec.PrefetchCount = 200
+		Expect(k8sClient.Update(ctx, shovel, &client.UpdateOptions{})).To(Succeed())
+
+		Eventually(func() int {
+			info, err := rabbitClient.GetShovel("/", shovel.Spec.Name)
+			Expect(err).NotTo(HaveOccurred())
+			return info.Definition.PrefetchCount
+		}, 30, 2).Should(Equal(200))
+
 		By("deleting shovel configuration on deletion")
 		Expect(k8sClient.Delete(ctx, shovel)).To(Succeed())
 		var err error
