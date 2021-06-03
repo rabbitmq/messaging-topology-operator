@@ -44,6 +44,8 @@ type RabbitMQClient interface {
 	DeleteGlobalParameter(name string) (*http.Response, error)
 	PutFederationUpstream(vhost, name string, def rabbithole.FederationDefinition) (res *http.Response, err error)
 	DeleteFederationUpstream(vhost, name string) (res *http.Response, err error)
+	DeclareShovel(vhost, shovel string, info rabbithole.ShovelDefinition) (res *http.Response, err error)
+	DeleteShovel(vhost, shovel string) (res *http.Response, err error)
 }
 
 type RabbitMQClientFactory func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, secret *corev1.Secret, hostname string, certPool *x509.CertPool) (RabbitMQClient, error)

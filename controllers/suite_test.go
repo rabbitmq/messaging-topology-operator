@@ -147,6 +147,13 @@ var _ = BeforeSuite(func() {
 		RabbitmqClientFactory: fakeRabbitMQClientFactory,
 	}).SetupWithManager(mgr)
 	Expect(err).ToNot(HaveOccurred())
+	err = (&controllers.ShovelReconciler{
+		Client:                mgr.GetClient(),
+		Scheme:                mgr.GetScheme(),
+		Recorder:              fakeRecorder,
+		RabbitmqClientFactory: fakeRabbitMQClientFactory,
+	}).SetupWithManager(mgr)
+	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
 		err = mgr.Start(ctrl.SetupSignalHandler())
@@ -228,6 +235,20 @@ var _ = BeforeSuite(func() {
 		},
 	}
 	Expect(client.Create(ctx, &federationUri)).To(Succeed())
+
+	// used in shovel-controller test
+	shovelUri := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "shovel-uri-secret",
+			Namespace: "default",
+		},
+		Type: corev1.SecretTypeOpaque,
+		Data: map[string][]byte{
+			"srcUri":  []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
+			"destUri": []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
+		},
+	}
+	Expect(client.Create(ctx, &shovelUri)).To(Succeed())
 })
 
 var _ = BeforeEach(func() {

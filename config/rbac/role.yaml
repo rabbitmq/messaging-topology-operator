@@ -194,6 +194,26 @@ rules:
 - apiGroups:
   - rabbitmq.com
   resources:
+  - shovels
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - shovels/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - rabbitmq.com
+  resources:
   - users
   verbs:
   - create
