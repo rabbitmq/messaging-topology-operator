@@ -13,11 +13,11 @@ var _ = Describe("GenerateShovelDefinition", func() {
 	BeforeEach(func() {
 		shovel = &topology.Shovel{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "new-federation",
+				Name: "new-shovel",
 			},
 			Spec: topology.ShovelSpec{
 				Vhost: "/new-vhost",
-				Name:  "new-federation",
+				Name:  "new-shovel",
 			},
 		}
 	})

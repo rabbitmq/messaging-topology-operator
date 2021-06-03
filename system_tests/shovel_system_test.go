@@ -74,10 +74,10 @@ var _ = Describe("Shovel", func() {
 		Expect(shovelInfo.Vhost).To(Equal(shovel.Spec.Vhost))
 		Expect(shovelInfo.Definition.SourceURI).To(
 			ConsistOf("amqp://server-test-src0",
-			"amqp://server-test-src1"))
+				"amqp://server-test-src1"))
 		Expect(shovelInfo.Definition.DestinationURI).To(
 			ConsistOf("amqp://server-test-dest0",
-			"amqp://server-test-dest1"))
+				"amqp://server-test-dest1"))
 		Expect(shovelInfo.Definition.DestinationQueue).To(Equal(shovel.Spec.DestinationQueue))
 		Expect(shovelInfo.Definition.SourceQueue).To(Equal(shovel.Spec.SourceQueue))
 		Expect(shovelInfo.Definition.AckMode).To(Equal(shovel.Spec.AckMode))
