@@ -782,7 +782,7 @@ ShovelStatus defines the observed state of Shovel
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Shovel. It corresponds to the Federation's generation, which is updated on mutation by the API Server.
+| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Shovel. It corresponds to the Shovel's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$]__ | 
 |===
 

@@ -17,7 +17,7 @@ install-tools:
 	go get -d k8s.io/code-generator
 
 unit-tests: install-tools generate fmt vet manifests ## Run unit tests
-	ginkgo -r --randomizeAllSpecs api/ internal/
+	ginkgo -r --randomizeAllSpecs -p api/ internal/
 
 integration-tests: install-tools generate fmt vet manifests ## Run integration tests
 	ginkgo -r --randomizeAllSpecs controllers/

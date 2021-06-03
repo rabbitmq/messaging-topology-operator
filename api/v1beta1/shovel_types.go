@@ -52,7 +52,7 @@ type ShovelSpec struct {
 // ShovelStatus defines the observed state of Shovel
 type ShovelStatus struct {
 	// observedGeneration is the most recent successful generation observed for this Shovel. It corresponds to the
-	// Federation's generation, which is updated on mutation by the API Server.
+	// Shovel's generation, which is updated on mutation by the API Server.
 	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
 	Conditions         []Condition `json:"conditions,omitempty"`
 }

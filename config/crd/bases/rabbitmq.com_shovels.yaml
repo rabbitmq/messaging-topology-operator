@@ -151,7 +151,7 @@ spec:
                 type: array
               observedGeneration:
                 description: observedGeneration is the most recent successful generation
-                  observed for this Shovel. It corresponds to the Federation's generation,
+                  observed for this Shovel. It corresponds to the Shovel's generation,
                   which is updated on mutation by the API Server.
                 format: int64
                 type: integer
