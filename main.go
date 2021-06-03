@@ -21,6 +21,7 @@ import (
 
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 
+	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
@@ -37,6 +38,7 @@ func init() {
 	_ = rabbitmqv1beta1.AddToScheme(scheme)
 
 	_ = topology.AddToScheme(scheme)
+	_ = rabbitmqcomv1beta1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -148,6 +150,16 @@ func main() {
 		log.Error(err, "unable to create controller", "controller", controllers.FederationControllerName)
 		os.Exit(1)
 	}
+	if err = (&controllers.ShovelReconciler{
+		Client:                mgr.GetClient(),
+		Log:                   ctrl.Log.WithName("controllers").WithName("Shovel"),
+		Scheme:                mgr.GetScheme(),
+		Recorder:              mgr.GetEventRecorderFor(controllers.ShovelControllerName),
+		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", controllers.ShovelControllerName)
+		os.Exit(1)
+	}
 
 	if err = (&topology.Binding{}).SetupWebhookWithManager(mgr); err != nil {
 		log.Error(err, "unable to create webhook", "webhook", "Binding")
@@ -185,6 +197,7 @@ func main() {
 		log.Error(err, "unable to create webhook", "webhook", "Federation")
 		os.Exit(1)
 	}
+
 	// +kubebuilder:scaffold:builder
 
 	log.Info("starting manager")

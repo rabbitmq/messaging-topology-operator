@@ -31,6 +31,7 @@ const (
 	PermissionControllerName        = "permission-controller"
 	SchemaReplicationControllerName = "schema-replication-controller"
 	FederationControllerName        = "federation-controller"
+	ShovelControllerName            = "shovel-controller"
 )
 
 func extractSystemCertPool(ctx context.Context, recorder record.EventRecorder, object runtime.Object) (*x509.CertPool, error) {

@@ -68,6 +68,21 @@ type FakeRabbitMQClient struct {
 		result1 *http.Response
 		result2 error
 	}
+	DeclareShovelStub        func(string, string, rabbithole.ShovelDefinition) (*http.Response, error)
+	declareShovelMutex       sync.RWMutex
+	declareShovelArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 rabbithole.ShovelDefinition
+	}
+	declareShovelReturns struct {
+		result1 *http.Response
+		result2 error
+	}
+	declareShovelReturnsOnCall map[int]struct {
+		result1 *http.Response
+		result2 error
+	}
 	DeleteBindingStub        func(string, rabbithole.BindingInfo) (*http.Response, error)
 	deleteBindingMutex       sync.RWMutex
 	deleteBindingArgsForCall []struct {
@@ -149,6 +164,20 @@ type FakeRabbitMQClient struct {
 		result2 error
 	}
 	deleteQueueReturnsOnCall map[int]struct {
+		result1 *http.Response
+		result2 error
+	}
+	DeleteShovelStub        func(string, string) (*http.Response, error)
+	deleteShovelMutex       sync.RWMutex
+	deleteShovelArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	deleteShovelReturns struct {
+		result1 *http.Response
+		result2 error
+	}
+	deleteShovelReturnsOnCall map[int]struct {
 		result1 *http.Response
 		result2 error
 	}
@@ -561,6 +590,72 @@ func (fake *FakeRabbitMQClient) DeclareQueueReturnsOnCall(i int, result1 *http.R
 	}{result1, result2}
 }
 
+func (fake *FakeRabbitMQClient) DeclareShovel(arg1 string, arg2 string, arg3 rabbithole.ShovelDefinition) (*http.Response, error) {
+	fake.declareShovelMutex.Lock()
+	ret, specificReturn := fake.declareShovelReturnsOnCall[len(fake.declareShovelArgsForCall)]
+	fake.declareShovelArgsForCall = append(fake.declareShovelArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 rabbithole.ShovelDefinition
+	}{arg1, arg2, arg3})
+	stub := fake.DeclareShovelStub
+	fakeReturns := fake.declareShovelReturns
+	fake.recordInvocation("DeclareShovel", []interface{}{arg1, arg2, arg3})
+	fake.declareShovelMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeRabbitMQClient) DeclareShovelCallCount() int {
+	fake.declareShovelMutex.RLock()
+	defer fake.declareShovelMutex.RUnlock()
+	return len(fake.declareShovelArgsForCall)
+}
+
+func (fake *FakeRabbitMQClient) DeclareShovelCalls(stub func(string, string, rabbithole.ShovelDefinition) (*http.Response, error)) {
+	fake.declareShovelMutex.Lock()
+	defer fake.declareShovelMutex.Unlock()
+	fake.DeclareShovelStub = stub
+}
+
+func (fake *FakeRabbitMQClient) DeclareShovelArgsForCall(i int) (string, string, rabbithole.ShovelDefinition) {
+	fake.declareShovelMutex.RLock()
+	defer fake.declareShovelMutex.RUnlock()
+	argsForCall := fake.declareShovelArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeRabbitMQClient) DeclareShovelReturns(result1 *http.Response, result2 error) {
+	fake.declareShovelMutex.Lock()
+	defer fake.declareShovelMutex.Unlock()
+	fake.DeclareShovelStub = nil
+	fake.declareShovelReturns = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRabbitMQClient) DeclareShovelReturnsOnCall(i int, result1 *http.Response, result2 error) {
+	fake.declareShovelMutex.Lock()
+	defer fake.declareShovelMutex.Unlock()
+	fake.DeclareShovelStub = nil
+	if fake.declareShovelReturnsOnCall == nil {
+		fake.declareShovelReturnsOnCall = make(map[int]struct {
+			result1 *http.Response
+			result2 error
+		})
+	}
+	fake.declareShovelReturnsOnCall[i] = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeRabbitMQClient) DeleteBinding(arg1 string, arg2 rabbithole.BindingInfo) (*http.Response, error) {
 	fake.deleteBindingMutex.Lock()
 	ret, specificReturn := fake.deleteBindingReturnsOnCall[len(fake.deleteBindingArgsForCall)]
@@ -946,6 +1041,71 @@ func (fake *FakeRabbitMQClient) DeleteQueueReturnsOnCall(i int, result1 *http.Re
 		})
 	}
 	fake.deleteQueueReturnsOnCall[i] = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRabbitMQClient) DeleteShovel(arg1 string, arg2 string) (*http.Response, error) {
+	fake.deleteShovelMutex.Lock()
+	ret, specificReturn := fake.deleteShovelReturnsOnCall[len(fake.deleteShovelArgsForCall)]
+	fake.deleteShovelArgsForCall = append(fake.deleteShovelArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.DeleteShovelStub
+	fakeReturns := fake.deleteShovelReturns
+	fake.recordInvocation("DeleteShovel", []interface{}{arg1, arg2})
+	fake.deleteShovelMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeRabbitMQClient) DeleteShovelCallCount() int {
+	fake.deleteShovelMutex.RLock()
+	defer fake.deleteShovelMutex.RUnlock()
+	return len(fake.deleteShovelArgsForCall)
+}
+
+func (fake *FakeRabbitMQClient) DeleteShovelCalls(stub func(string, string) (*http.Response, error)) {
+	fake.deleteShovelMutex.Lock()
+	defer fake.deleteShovelMutex.Unlock()
+	fake.DeleteShovelStub = stub
+}
+
+func (fake *FakeRabbitMQClient) DeleteShovelArgsForCall(i int) (string, string) {
+	fake.deleteShovelMutex.RLock()
+	defer fake.deleteShovelMutex.RUnlock()
+	argsForCall := fake.deleteShovelArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeRabbitMQClient) DeleteShovelReturns(result1 *http.Response, result2 error) {
+	fake.deleteShovelMutex.Lock()
+	defer fake.deleteShovelMutex.Unlock()
+	fake.DeleteShovelStub = nil
+	fake.deleteShovelReturns = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRabbitMQClient) DeleteShovelReturnsOnCall(i int, result1 *http.Response, result2 error) {
+	fake.deleteShovelMutex.Lock()
+	defer fake.deleteShovelMutex.Unlock()
+	fake.DeleteShovelStub = nil
+	if fake.deleteShovelReturnsOnCall == nil {
+		fake.deleteShovelReturnsOnCall = make(map[int]struct {
+			result1 *http.Response
+			result2 error
+		})
+	}
+	fake.deleteShovelReturnsOnCall[i] = struct {
 		result1 *http.Response
 		result2 error
 	}{result1, result2}
@@ -1615,6 +1775,8 @@ func (fake *FakeRabbitMQClient) Invocations() map[string][][]interface{} {
 	defer fake.declareExchangeMutex.RUnlock()
 	fake.declareQueueMutex.RLock()
 	defer fake.declareQueueMutex.RUnlock()
+	fake.declareShovelMutex.RLock()
+	defer fake.declareShovelMutex.RUnlock()
 	fake.deleteBindingMutex.RLock()
 	defer fake.deleteBindingMutex.RUnlock()
 	fake.deleteExchangeMutex.RLock()
@@ -1627,6 +1789,8 @@ func (fake *FakeRabbitMQClient) Invocations() map[string][][]interface{} {
 	defer fake.deletePolicyMutex.RUnlock()
 	fake.deleteQueueMutex.RLock()
 	defer fake.deleteQueueMutex.RUnlock()
+	fake.deleteShovelMutex.RLock()
+	defer fake.deleteShovelMutex.RUnlock()
 	fake.deleteUserMutex.RLock()
 	defer fake.deleteUserMutex.RUnlock()
 	fake.deleteVhostMutex.RLock()
