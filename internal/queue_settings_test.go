@@ -25,6 +25,12 @@ var _ = Describe("GenerateQueueSettings", func() {
 		}
 	})
 
+	It("sets QueueSettings.Type according to queue.spec", func() {
+		settings, err := internal.GenerateQueueSettings(q)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(settings.Type).To(Equal("quorum"))
+	})
+
 	It("sets QueueSettings.AutoDelete according to queue.spec", func() {
 		settings, err := internal.GenerateQueueSettings(q)
 		Expect(err).NotTo(HaveOccurred())
@@ -35,12 +41,6 @@ var _ = Describe("GenerateQueueSettings", func() {
 		settings, err := internal.GenerateQueueSettings(q)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(settings.Durable).To(BeTrue())
-	})
-
-	It("sets QueueSettings.Arguments according to queue.spec", func() {
-		settings, err := internal.GenerateQueueSettings(q)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(settings.Arguments["x-queue-type"].(string)).To(Equal("quorum"))
 	})
 
 	When("queue arguments are provided", func() {
@@ -57,7 +57,7 @@ var _ = Describe("GenerateQueueSettings", func() {
 			settings, err := internal.GenerateQueueSettings(q)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(settings.Arguments).Should(SatisfyAll(
-				HaveLen(8),
+				HaveLen(7),
 				// GenerateQueueSettings Unmarshal queue.Spec.Arguments
 				// Unmarshall stores float64 for JSON numbers
 				HaveKeyWithValue("x-delivery-limit", float64(10000)),
@@ -67,7 +67,6 @@ var _ = Describe("GenerateQueueSettings", func() {
 				HaveKeyWithValue("x-max-length-bytes", float64(60000)),
 				HaveKeyWithValue("x-dead-letter-exchange", "test"),
 				HaveKeyWithValue("x-single-active-consumer", true),
-				HaveKeyWithValue("x-queue-type", "quorum"),
 			))
 		})
 	})
