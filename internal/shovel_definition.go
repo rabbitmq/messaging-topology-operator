@@ -26,7 +26,7 @@ func GenerateShovelDefinition(s *topology.Shovel, srcUri, destUri string) rabbit
 		PrefetchCount:                    s.Spec.PrefetchCount,
 		ReconnectDelay:                   s.Spec.ReconnectDelay,
 		SourceAddress:                    s.Spec.SourceAddress,
-		SourceDeleteAfter:                s.Spec.SourceDeleteAfter,
+		SourceDeleteAfter:                rabbithole.DeleteAfter(s.Spec.SourceDeleteAfter),
 		SourceExchange:                   s.Spec.SourceExchange,
 		SourceExchangeKey:                s.Spec.SourceExchangeKey,
 		SourcePrefetchCount:              s.Spec.SourcePrefetchCount,
