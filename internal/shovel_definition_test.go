@@ -133,7 +133,7 @@ var _ = Describe("GenerateShovelDefinition", func() {
 	It("sets 'SourceDeleteAfter' correctly", func() {
 		shovel.Spec.SourceDeleteAfter = "10000000"
 		definition := GenerateShovelDefinition(shovel, "", "")
-		Expect(definition.SourceDeleteAfter).To(Equal("10000000"))
+		Expect(string(definition.SourceDeleteAfter)).To(Equal("10000000"))
 	})
 
 	It("sets 'SourceExchange' correctly", func() {

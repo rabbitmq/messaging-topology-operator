@@ -14,6 +14,7 @@ func (s *Shovel) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		For(s).
 		Complete()
 }
+
 // +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1beta1-shovel,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=shovels,versions=v1beta1,name=vshovel.kb.io,sideEffects=none,admissionReviewVersions=v1
 
 var _ webhook.Validator = &Shovel{}
