@@ -28,13 +28,8 @@ func GenerateQueueSettings(q *topology.Queue) (*rabbithole.QueueSettings, error)
 		}
 	}
 
-	// bug in rabbithole.QueueSettings; setting queue type in QueueSettings.Type not working
-	// needs to set queue type in QueueSettings.Arguments
-	if q.Spec.Type != "" {
-		arguments["x-queue-type"] = q.Spec.Type
-	}
-
 	return &rabbithole.QueueSettings{
+		Type:       q.Spec.Type,
 		Durable:    q.Spec.Durable,
 		AutoDelete: q.Spec.AutoDelete,
 		Arguments:  arguments,
