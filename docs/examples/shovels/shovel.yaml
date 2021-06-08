@@ -1,0 +1,26 @@
+# for more information, see: https://www.rabbitmq.com/shovel-dynamic.html
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: shovel-secret
+type: Opaque
+data:
+  destUri: YW1xcHM6Ly9mZWRlcmF0aW9uOmZlZGVyYXRpb25AZmVkZXJhdGlvbi1ub2Rlcy5leGFtcGxlcy5zdmMuY2x1c3Rlci5sb2NhbAo= # encoded value
+  srcUri: YW1xcHM6Ly9mZWRlcmF0aW9uOmZlZGVyYXRpb25AZmVkZXJhdGlvbi1ub2Rlcy5leGFtcGxlcy5zdmMuY2x1c3Rlci5sb2NhbAo= # encoded value
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Shovel
+metadata:
+  name: shovel-example
+  namespace: rabbitmq-system
+spec:
+  name: "my-shovel"
+  uriSecret:
+    name: shovel-secret
+  srcQueue: "a-source-queue"
+  destQueue: "a-destination-queue"
+  srcProtocol: amqp091
+  destProtocol: amqp091
+  rabbitmqClusterReference:
+    name: example-rabbit
