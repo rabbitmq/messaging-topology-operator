@@ -2,18 +2,18 @@
 
 In this example, we will create federation between exchanges from two different vhosts in the same RabbitmqCluster.
 
-Before creating any topology objects with Messaging Topology Operator, please deploy a RabbitmqCluster named `federated-rabbit`, or any name you see fit.
+Before creating any topology objects with Messaging Topology Operator, please deploy a RabbitmqCluster named `example-rabbit`, or any name you see fit.
 You can pick any RabbitmqCluster example from the [cluster operator repo](https://github.com/rabbitmq/cluster-operator/blob/main/docs/examples).
 
 After the RabbitMQ cluster is successfully created, you need to get username and password of the default user for this RabbitMQ cluster:
 
 ```bash
-kubectl get secret federated-rabbit-default-user -o jsonpath='{.data.username}' | base64 --decode
-kubectl get secret federated-rabbit-user -o jsonpath='{.data.password}' | base64 --decode
+kubectl get secret example-rabbit-default-user -o jsonpath='{.data.username}' | base64 --decode
+kubectl get secret example-rabbit-user -o jsonpath='{.data.password}' | base64 --decode
 ```
 Save the username and password, because we need both later to construct federation upstream uri.
 
-This example includes (please create in order): 
+This example includes (please create in order):
 
 1. two vhosts: 'upstream' and 'downstream'
 1. a kubernetes secret 'federation-uri' contains the federation upstream uri
