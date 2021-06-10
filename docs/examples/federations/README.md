@@ -11,12 +11,12 @@ After the RabbitMQ cluster is successfully created, you need to get username and
 kubectl get secret example-rabbit-default-user -o jsonpath='{.data.username}' | base64 --decode
 kubectl get secret example-rabbit-user -o jsonpath='{.data.password}' | base64 --decode
 ```
-Save the username and password, because we need both later to construct federation upstream uri.
+Save the username and password, because we need both later to construct federation upstream URI.
 
 This example includes (please create in order):
 
 1. two vhosts: 'upstream' and 'downstream'
-1. a kubernetes secret 'federation-uri' contains the federation upstream uri
+1. a Kubernetes secret 'federation-uri' containing the federation upstream URI
 1. queue 'upstream-queue' in 'upstream' vhost
 1. queue 'downstream-queue' in 'downstream-vhost'
 1. fanout exchanges in both 'upstream' and 'downstream' vhost
