@@ -30,7 +30,7 @@ You can create RabbitMQ resources:
 5. [Vhost](./docs/examples/vhosts)
 6. [Policy](./docs/examples/policies)
 7. [Permissions](./docs/examples/permissions)
-7. [Federations](./docs/examples/federations)
+8. [Federations](./docs/examples/federations)
 
 ## Documentation
 
