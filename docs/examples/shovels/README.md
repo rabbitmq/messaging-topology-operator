@@ -1,6 +1,8 @@
 # Shovel Example
 
-In this example, we will declare a dynamic Shovel that moves messages from a clasic queue to a quorum queue in the same RabbitmqCluster.
+Shovel can move messages between move messages reliably and continually (typically between queues).
+In this example, we will declare a dynamic Shovel that moves messages from a classic queue to a quorum queue in the same RabbitmqCluster.
+The example can be used when you want to migrate from classic or mirrored queues to quorum queues.
 
 Before creating any topology objects with Messaging Topology Operator, please deploy a RabbitmqCluster named `example-rabbit`, or any name you see fit. You will need to enable the `rabbitmq_shovel` plugin and here is an example from the [cluster operator repo](https://github.com/rabbitmq/cluster-operator/blob/main/docs/examples/plugins/rabbitmq.yaml) about enabling additional plugins.
 
