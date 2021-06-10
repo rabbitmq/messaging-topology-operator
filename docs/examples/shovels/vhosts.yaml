@@ -1,0 +1,20 @@
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Vhost
+metadata:
+  name: source-vhost
+  namespace: rabbitmq-system
+spec:
+  name: source
+  rabbitmqClusterReference:
+    name: example-rabbit
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Vhost
+metadata:
+  name: destination-vhost
+  namespace: rabbitmq-system
+spec:
+  name: destination
+  rabbitmqClusterReference:
+    name: example-rabbit
