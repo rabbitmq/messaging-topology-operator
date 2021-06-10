@@ -2,8 +2,7 @@
 
 In this example, we will declare a dynamic Shovel that moves messages from a clasic queue to a quorum queue in the same RabbitmqCluster.
 
-Before creating any topology objects with Messaging Topology Operator, please deploy a RabbitmqCluster named `example-rabbit`, or any name you see fit.
-You can pick any RabbitmqCluster example from the [cluster operator repo](https://github.com/rabbitmq/cluster-operator/blob/main/docs/examples).
+Before creating any topology objects with Messaging Topology Operator, please deploy a RabbitmqCluster named `example-rabbit`, or any name you see fit. You will need to enable the `rabbitmq_shovel` plugin and here is an example from the [cluster operator repo](https://github.com/rabbitmq/cluster-operator/blob/main/docs/examples/plugins/rabbitmq.yaml) about enabling additional plugins.
 
 After the RabbitMQ cluster is successfully created, you need to get username and password of the default user for this RabbitMQ cluster:
 
