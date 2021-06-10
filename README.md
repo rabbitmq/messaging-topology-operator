@@ -31,6 +31,7 @@ You can create RabbitMQ resources:
 6. [Policy](./docs/examples/policies)
 7. [Permissions](./docs/examples/permissions)
 8. [Federations](./docs/examples/federations)
+9. [Shovels](./docs/examples/shovels)
 
 ## Documentation
 
