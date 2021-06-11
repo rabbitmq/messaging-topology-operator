@@ -43,7 +43,7 @@ Messaging Topology Operator is covered in several guides:
  - [TLS](https://www.rabbitmq.com/kubernetes/operator/tls-topology-operator.html)
  - [Troubleshooting Messaging Topology Operator](https://www.rabbitmq.com/kubernetes/operator/troubleshooting-topology-operator.html)
 
-In addition, a number of [examples](./docs/examples) can be found in this repository.
+In addition, a number of [examples](./docs/examples) and [Operator API reference](https://github.com/rabbitmq/messaging-topology-operator/blob/main/docs/api/rabbitmq.com.ref.asciidoc) can be found in this repository.
 
 The doc guides are open source. The source can be found in the [RabbitMQ website repository](https://github.com/rabbitmq/rabbitmq-website/)
 under `site/kubernetes`.
