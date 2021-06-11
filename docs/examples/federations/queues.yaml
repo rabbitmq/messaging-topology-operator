@@ -3,7 +3,6 @@ apiVersion: rabbitmq.com/v1beta1
 kind: Queue
 metadata:
   name: downstream-queue
-  namespace: rabbitmq-system
 spec:
   name: downstream-queue
   vhost: "downstream"
@@ -17,7 +16,6 @@ apiVersion: rabbitmq.com/v1beta1
 kind: Queue
 metadata:
   name: upstream-queue
-  namespace: rabbitmq-system
 spec:
   name: upstream-queue
   vhost: "upstream"

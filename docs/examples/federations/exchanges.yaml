@@ -3,7 +3,6 @@ apiVersion: rabbitmq.com/v1beta1
 kind: Exchange
 metadata:
   name: fanout-upstream
-  namespace: rabbitmq-system
 spec:
   name: fanout
   vhost: "upstream" # default to '/' if not provided
@@ -17,7 +16,6 @@ apiVersion: rabbitmq.com/v1beta1
 kind: Exchange
 metadata:
   name: fanout-downstream
-  namespace: rabbitmq-system
 spec:
   name: fanout
   vhost: "downstream"

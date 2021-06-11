@@ -4,7 +4,6 @@ apiVersion: rabbitmq.com/v1beta1
 kind: Exchange
 metadata:
   name: fanout
-  namespace: rabbitmq-system
 spec:
   name: fanout-exchange # name of the exchange
   vhost: "/test-vhost" # default to '/' if not provided

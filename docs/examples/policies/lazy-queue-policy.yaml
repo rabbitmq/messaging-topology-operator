@@ -3,7 +3,6 @@ apiVersion: rabbitmq.com/v1beta1
 kind: Policy
 metadata:
   name: lazy-queue-policy
-  namespace: rabbitmq-system
 spec:
   name: lazy-queue-policy
   vhost: "test-vhost"

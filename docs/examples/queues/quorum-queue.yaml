@@ -5,7 +5,6 @@ apiVersion: rabbitmq.com/v1beta1
 kind: Queue
 metadata:
   name: qq-example
-  namespace: rabbitmq-system
 spec:
   name: qq # name of the queue
   vhost: "/test-vhost" # default to '/' if not provided

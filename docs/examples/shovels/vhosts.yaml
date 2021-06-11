@@ -3,7 +3,6 @@ apiVersion: rabbitmq.com/v1beta1
 kind: Vhost
 metadata:
   name: source-vhost
-  namespace: rabbitmq-system
 spec:
   name: source
   rabbitmqClusterReference:
@@ -13,7 +12,6 @@ apiVersion: rabbitmq.com/v1beta1
 kind: Vhost
 metadata:
   name: destination-vhost
-  namespace: rabbitmq-system
 spec:
   name: destination
   rabbitmqClusterReference:

@@ -3,7 +3,6 @@ apiVersion: rabbitmq.com/v1beta1
 kind: Binding
 metadata:
   name: upstream-binding
-  namespace: rabbitmq-system
 spec:
   vhost: "upstream"
   source: fanout
@@ -16,7 +15,6 @@ apiVersion: rabbitmq.com/v1beta1
 kind: Binding
 metadata:
   name: downstream-binding
-  namespace: rabbitmq-system
 spec:
   vhost: "downstream"
   source: fanout

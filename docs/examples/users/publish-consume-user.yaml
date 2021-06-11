@@ -22,7 +22,6 @@ apiVersion: rabbitmq.com/v1beta1
 kind: Permission
 metadata:
   name: testuser-permission
-  namespace: rabbitmq-system
 spec:
   vhost: "test-vhost"
   user: "test-user" # name corresponds to the username we provided in "test-user-credentials" secret
