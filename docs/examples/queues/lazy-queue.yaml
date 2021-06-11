@@ -5,7 +5,6 @@ apiVersion: rabbitmq.com/v1beta1
 kind: Policy
 metadata:
   name: lazy-queue-policy
-  namespace: rabbitmq-system
 spec:
   name: lazy-queue-policy
   vhost: "test-vhost"
@@ -20,7 +19,6 @@ apiVersion: rabbitmq.com/v1beta1
 kind: Queue
 metadata:
   name: lazy-queue-example
-  namespace: rabbitmq-system
 spec:
   name: lazy-queue-example # matches the pattern "^lazy-queue$" set in lazy-queue-policy
   vhost: "test-vhost"

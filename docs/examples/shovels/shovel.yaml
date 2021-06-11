@@ -4,7 +4,6 @@ apiVersion: rabbitmq.com/v1beta1
 kind: Shovel
 metadata:
   name: shovel-example
-  namespace: rabbitmq-system
 spec:
   name: "shovel-example"
   uriSecret:

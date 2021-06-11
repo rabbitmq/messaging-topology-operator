@@ -2,7 +2,6 @@ apiVersion: rabbitmq.com/v1beta1
 kind: Vhost
 metadata:
   name: test-vhost
-  namespace: rabbitmq-system
 spec:
   name: test-vhost # vhost name
   rabbitmqClusterReference:
