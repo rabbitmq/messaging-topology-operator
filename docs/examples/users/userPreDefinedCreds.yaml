@@ -3,9 +3,9 @@ kind: Secret
 metadata:
   name: credentials-secret
 type: Opaque
-data:
-  username: bXktc2VjcmV0LXVzZXI=
-  password: d2h5YXJleW91bG9va2luZ2hlcmU=
+stringData:
+  username: import-user-sample
+  password: whyareyoulookinghere
 ---
 apiVersion: rabbitmq.com/v1beta1
 kind: User

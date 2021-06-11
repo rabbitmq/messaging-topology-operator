@@ -4,9 +4,9 @@ kind: Secret
 metadata:
   name: test-user-credentials
 type: Opaque
-data:
-  username: dGVzdC11c2Vy # base64 encoded "test-user"
-  password: dmVyeXNlY3VyZXB3
+stringData:
+  username: test-user
+  password: verysecurepw
 ---
 apiVersion: rabbitmq.com/v1beta1
 kind: User
