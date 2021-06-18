@@ -13,7 +13,7 @@ require (
 	github.com/onsi/gomega v1.13.0
 	github.com/rabbitmq/cluster-operator v1.7.0
 	k8s.io/api v0.21.1
-	k8s.io/apimachinery v0.21.1
+	k8s.io/apimachinery v0.21.2
 	k8s.io/client-go v0.21.1
 	k8s.io/code-generator v0.21.1
 	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
