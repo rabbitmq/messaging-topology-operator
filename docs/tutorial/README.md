@@ -46,7 +46,6 @@ stringData:
 
 Then, lets create a RabbitMQ user by creating a custom resource `users.rabbitmq.com`:
 ```yaml
----
 apiVersion: rabbitmq.com/v1beta1
 kind: User
 metadata:
@@ -54,7 +53,7 @@ metadata:
   namespace: REPLACEME #same namespace as the deployed RabbitmqCluster
 spec:
   importCredentialsSecret:
-    name: user-secret # name of the Kubernetes secret created above
+    name: user-secret
   rabbitmqClusterReference:
     name: # name of the RabbitmqCluster
 ```
@@ -87,8 +86,8 @@ This is the equivalent of running `rabbitmqctl set_permissions -p "/" "test" ".*
 ### Publish and consume messages
 
 We now have everything we need to be able to publish and consume messages. The following Golang example
-uses the created user 'test' to publish and consume messages from queue 'tutorial'. The example uses the RabbitMQ
-Golang client `https://github.com/rabbitmq/amqp091-go`:
+uses the created user 'test' to publish and consume messages from queue 'tutorial'. The example uses the [RabbitMQ
+Golang client](https://github.com/rabbitmq/amqp091-go):
 
 ```golang
 
