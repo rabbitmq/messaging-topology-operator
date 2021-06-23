@@ -26,7 +26,18 @@ spec:
     name: # name of the RabbitmqCluster
 ```
 
-This will create a classic queue named 'tutorial' in default '/' vhost.
+This will create a classic queue named 'tutorial' in default '/' vhost. To check the queue is created
+successfully, you can ssh onto your RabbitmqCluster pod
+
+```bash
+kubectl exec -it NAME-OF-THE-RMQ-POD  -- /bin/bash
+```
+
+and run the following command to see if queue 'tutorial' is listed:
+
+```bash
+rabbitmqctl list_queues
+```
 
 ### Create a User
 
@@ -82,6 +93,14 @@ spec:
 ```
 
 This is the equivalent of running `rabbitmqctl set_permissions -p "/" "test" ".*" ".*" ".*"`.
+
+To check user 'test' is created and configured with the right permissions, you can ssh onto your
+RabbitmqCluster pod, and run:
+```bash
+rabbitmqctl list_permissions
+```
+This command will list all users that has access to the default vhost '/'. You should see user 'test' listed
+here with read, write, and configure permissions all set to '.*'.
 
 ### Publish and consume messages
 
