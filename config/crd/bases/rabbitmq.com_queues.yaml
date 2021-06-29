@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.6.0
+    controller-gen.kubebuilder.io/version: v0.6.1
   creationTimestamp: null
   name: queues.rabbitmq.com
 spec:
@@ -40,18 +40,20 @@ spec:
             properties:
               arguments:
                 description: 'Queue arguments in the format of KEY: VALUE. e.g. x-delivery-limit:
-                  10000'
+                  10000. Configuring queues through arguments is not recommended because
+                  they cannot be updated once set; we recommend configuring queues
+                  through policies instead.'
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
               autoDelete:
-                description: when set to true, queues that has at least one consumer
-                  before, are deleted after last consumer unsubscribes
+                description: when set to true, queues that have had at least one consumer
+                  before are deleted after the last consumer unsubscribes.
                 type: boolean
               durable:
-                description: When set to false queues does not survive server restart
+                description: When set to false queues does not survive server restart.
                 type: boolean
               name:
-                description: Name of the queue; required property
+                description: Name of the queue; required property.
                 type: string
               rabbitmqClusterReference:
                 description: Reference to the RabbitmqCluster that the queue will
