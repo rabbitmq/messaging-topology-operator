@@ -30,10 +30,10 @@ type QueueSpec struct {
 	Type  string `json:"type,omitempty"`
 	// When set to false queues does not survive server restart.
 	Durable bool `json:"durable,omitempty"`
-	// when set to true, queues that has at least one consumer before, are deleted after last consumer unsubscribes.
+	// when set to true, queues that have had at least one consumer before are deleted after the last consumer unsubscribes.
 	AutoDelete bool `json:"autoDelete,omitempty"`
 	// Queue arguments in the format of KEY: VALUE. e.g. x-delivery-limit: 10000.
-	// It is not recommended configuring queues through arguments because they cannot be updated once set; we recommend configuring queues through policies instead.
+	// Configuring queues through arguments is not recommended because they cannot be updated once set; we recommend configuring queues through policies instead.
 	// +kubebuilder:validation:Type=object
 	// +kubebuilder:pruning:PreserveUnknownFields
 	Arguments *runtime.RawExtension `json:"arguments,omitempty"`
