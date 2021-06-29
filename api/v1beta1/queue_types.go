@@ -21,18 +21,19 @@ import (
 
 // QueueSpec defines the desired state of Queue
 type QueueSpec struct {
-	// Name of the queue; required property
+	// Name of the queue; required property.
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`
 	// Default to vhost '/'
 	// +kubebuilder:default:=/
 	Vhost string `json:"vhost,omitempty"`
 	Type  string `json:"type,omitempty"`
-	// When set to false queues does not survive server restart
+	// When set to false queues does not survive server restart.
 	Durable bool `json:"durable,omitempty"`
-	// when set to true, queues that has at least one consumer before, are deleted after last consumer unsubscribes
+	// when set to true, queues that has at least one consumer before, are deleted after last consumer unsubscribes.
 	AutoDelete bool `json:"autoDelete,omitempty"`
-	// Queue arguments in the format of KEY: VALUE. e.g. x-delivery-limit: 10000
+	// Queue arguments in the format of KEY: VALUE. e.g. x-delivery-limit: 10000.
+	// It is not recommended configuring queues through arguments because they cannot be updated once set; we recommend configuring queues through policies instead.
 	// +kubebuilder:validation:Type=object
 	// +kubebuilder:pruning:PreserveUnknownFields
 	Arguments *runtime.RawExtension `json:"arguments,omitempty"`

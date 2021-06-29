@@ -553,12 +553,12 @@ QueueSpec defines the desired state of Queue
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`name`* __string__ | Name of the queue; required property
+| *`name`* __string__ | Name of the queue; required property.
 | *`vhost`* __string__ | Default to vhost '/'
 | *`type`* __string__ | 
-| *`durable`* __boolean__ | When set to false queues does not survive server restart
-| *`autoDelete`* __boolean__ | when set to true, queues that has at least one consumer before, are deleted after last consumer unsubscribes
-| *`arguments`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | Queue arguments in the format of KEY: VALUE. e.g. x-delivery-limit: 10000
+| *`durable`* __boolean__ | When set to false queues does not survive server restart.
+| *`autoDelete`* __boolean__ | when set to true, queues that has at least one consumer before, are deleted after last consumer unsubscribes.
+| *`arguments`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | Queue arguments in the format of KEY: VALUE. e.g. x-delivery-limit: 10000. It is not recommended configuring queues through arguments because they cannot be updated once set; we recommend configuring queues through policies instead.
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the queue will be created in. Required property.
 |===
 
