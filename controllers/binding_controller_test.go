@@ -190,9 +190,10 @@ var _ = Describe("bindingController", func() {
 					err := client.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &topology.Binding{})
 					return apierrors.IsNotFound(err)
 				}, 5).Should(BeTrue())
-				observedEvents := observedEvents()
-				Expect(observedEvents).NotTo(ContainElement("Warning FailedDelete failed to delete binding"))
-				Expect(observedEvents).To(ContainElement("Normal SuccessfulDelete successfully deleted binding"))
+				Expect(observedEvents()).To(SatisfyAll(
+					Not(ContainElement("Warning FailedDelete failed to delete binding")),
+					ContainElement("Normal SuccessfulDelete successfully deleted binding"),
+				))
 			})
 		})
 	})

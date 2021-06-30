@@ -193,9 +193,10 @@ var _ = Describe("shovel-controller", func() {
 					err := client.Get(ctx, types.NamespacedName{Name: shovel.Name, Namespace: shovel.Namespace}, &topology.Shovel{})
 					return apierrors.IsNotFound(err)
 				}, 5).Should(BeTrue())
-				observedEvents := observedEvents()
-				Expect(observedEvents).NotTo(ContainElement("Warning FailedDelete failed to delete shovel parameter"))
-				Expect(observedEvents).To(ContainElement("Normal SuccessfulDelete successfully deleted shovel parameter"))
+				Expect(observedEvents()).To(SatisfyAll(
+					Not(ContainElement("Warning FailedDelete failed to delete shovel parameter")),
+					ContainElement("Normal SuccessfulDelete successfully deleted shovel parameter"),
+				))
 			})
 		})
 	})
