@@ -9,6 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 
@@ -71,9 +72,19 @@ var _ = Describe("Permission", func() {
 
 	AfterEach(func() {
 		Expect(k8sClient.Delete(ctx, user)).To(Succeed())
+		Eventually(func() string {
+			if err := k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{}); err != nil {
+				return err.Error()
+			}
+			return ""
+		}, 10).Should(ContainSubstring("not found"))
 	})
 
-	It("grants and revokes permissions successfully", func() {
+	DescribeTable("Server configurations updates", func(testcase string) {
+		if testcase == "UserReference" {
+			permission.Spec.User = ""
+			permission.Spec.UserReference = &corev1.LocalObjectReference{Name: user.Name}
+		}
 		Expect(k8sClient.Create(ctx, permission, &client.CreateOptions{})).To(Succeed())
 		var fetchedPermissionInfo rabbithole.PermissionInfo
 		Eventually(func() error {
@@ -83,7 +94,7 @@ var _ = Describe("Permission", func() {
 		}, 20, 2).Should(Not(HaveOccurred()))
 		Expect(fetchedPermissionInfo).To(MatchFields(IgnoreExtras, Fields{
 			"Vhost":     Equal(permission.Spec.Vhost),
-			"User":      Equal(permission.Spec.User),
+			"User":      Equal(username),
 			"Configure": Equal(permission.Spec.Permissions.Configure),
 			"Read":      Equal(permission.Spec.Permissions.Read),
 			"Write":     Equal(permission.Spec.Permissions.Write),
@@ -123,7 +134,7 @@ var _ = Describe("Permission", func() {
 		}, 20, 2).Should(Equal(".*"))
 		Expect(fetchedPermissionInfo).To(MatchFields(IgnoreExtras, Fields{
 			"Vhost":     Equal(permission.Spec.Vhost),
-			"User":      Equal(permission.Spec.User),
+			"User":      Equal(username),
 			"Configure": Equal(permission.Spec.Permissions.Configure),
 			"Read":      Equal("^$"),
 			"Write":     Equal(".*"),
@@ -136,5 +147,9 @@ var _ = Describe("Permission", func() {
 			Expect(err).NotTo(HaveOccurred())
 			return len(permissionInfos)
 		}, 10, 2).Should(Equal(0))
-	})
+	},
+
+		Entry("grants and revokes permissions successfully when spec.user is set", "User"),
+		Entry("grants and revokes permissions successfully when spec.userReference is set", "UserReference"),
+	)
 })

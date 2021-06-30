@@ -60,9 +60,19 @@ spec:
                 - name
                 type: object
               user:
-                description: Name of an existing user; required property; cannot be
-                  updated
+                description: Name of an existing user; must provide user or userReference,
+                  else create/update will fail; cannot be updated
                 type: string
+              userReference:
+                description: Reference to an existing user.rabbitmq.com object; must
+                  provide user or userReference, else create/update will fail; cannot
+                  be updated
+                properties:
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                      TODO: Add other useful fields. apiVersion, kind, uid?'
+                    type: string
+                type: object
               vhost:
                 description: Name of an existing vhost; required property; cannot
                   be updated
