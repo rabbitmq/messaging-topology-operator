@@ -118,7 +118,7 @@ var _ = Describe("Permission", func() {
 		updateTest := topology.Permission{}
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &updateTest)).To(Succeed())
 		updateTest.Spec.Vhost = "/a-new-vhost"
-		Expect(k8sClient.Update(ctx, &updateTest).Error()).To(ContainSubstring("spec.vhost: Forbidden: updates on user, vhost and rabbitmqClusterReference are all forbidden"))
+		Expect(k8sClient.Update(ctx, &updateTest).Error()).To(ContainSubstring("spec.vhost: Forbidden: updates on user, userReference, vhost and rabbitmqClusterReference are all forbidden"))
 
 		By("updating permissions successfully")
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, permission)).To(Succeed())
