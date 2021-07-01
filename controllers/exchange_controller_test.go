@@ -190,9 +190,10 @@ var _ = Describe("exchange-controller", func() {
 					err := client.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &topology.Exchange{})
 					return apierrors.IsNotFound(err)
 				}, 5).Should(BeTrue())
-				observedEvents := observedEvents()
-				Expect(observedEvents).NotTo(ContainElement("Warning FailedDelete failed to delete exchange"))
-				Expect(observedEvents).To(ContainElement("Normal SuccessfulDelete successfully deleted exchange"))
+				Expect(observedEvents()).To(SatisfyAll(
+					Not(ContainElement("Warning FailedDelete failed to delete exchange")),
+					ContainElement("Normal SuccessfulDelete successfully deleted exchange"),
+				))
 			})
 		})
 	})

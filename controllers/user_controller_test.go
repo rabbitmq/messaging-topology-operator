@@ -190,9 +190,11 @@ var _ = Describe("UserController", func() {
 					err := client.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{})
 					return apierrors.IsNotFound(err)
 				}, 5).Should(BeTrue())
-				observedEvents := observedEvents()
-				Expect(observedEvents).NotTo(ContainElement("Warning FailedDelete failed to delete user"))
-				Expect(observedEvents).To(ContainElement("Normal SuccessfulDelete successfully deleted user"))
+
+				Expect(observedEvents()).To(SatisfyAll(
+					Not(ContainElement("Warning FailedDelete failed to delete user")),
+					ContainElement("Normal SuccessfulDelete successfully deleted user"),
+				))
 			})
 		})
 	})

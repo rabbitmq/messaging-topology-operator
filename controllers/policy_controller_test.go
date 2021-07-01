@@ -195,9 +195,10 @@ var _ = Describe("policy-controller", func() {
 					err := client.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &topology.Policy{})
 					return apierrors.IsNotFound(err)
 				}, 5).Should(BeTrue())
-				observedEvents := observedEvents()
-				Expect(observedEvents).NotTo(ContainElement("Warning FailedDelete failed to delete policy"))
-				Expect(observedEvents).To(ContainElement("Normal SuccessfulDelete successfully deleted policy"))
+				Expect(observedEvents()).To(SatisfyAll(
+					Not(ContainElement("Warning FailedDelete failed to delete policy")),
+					ContainElement("Normal SuccessfulDelete successfully deleted policy"),
+				))
 			})
 		})
 	})

@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"k8s.io/apimachinery/pkg/types"
 	"time"
 
 	"github.com/rabbitmq/messaging-topology-operator/internal"
@@ -34,6 +36,7 @@ type PermissionReconciler struct {
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=permissions,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=permissions/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list
 
 func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
@@ -71,9 +74,16 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return reconcile.Result{}, err
 	}
 
+	user := permission.Spec.User
+	if permission.Spec.UserReference != nil {
+		if user, err = r.getUserFromReference(ctx, permission); err != nil {
+			return reconcile.Result{}, err
+		}
+	}
+
 	if !permission.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info("Deleting")
-		return ctrl.Result{}, r.revokePermissions(ctx, rabbitClient, permission)
+		return ctrl.Result{}, r.revokePermissions(ctx, rabbitClient, permission, user)
 	}
 
 	if err := r.addFinalizerIfNeeded(ctx, permission); err != nil {
@@ -88,7 +98,7 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	logger.Info("Start reconciling",
 		"spec", string(spec))
 
-	if err := r.updatePermissions(ctx, rabbitClient, permission); err != nil {
+	if err := r.updatePermissions(ctx, rabbitClient, permission, user); err != nil {
 		// Set Condition 'Ready' to false with message
 		permission.Status.Conditions = []topology.Condition{topology.NotReady(err.Error())}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
@@ -111,17 +121,55 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	return ctrl.Result{}, nil
 }
 
-func (r *PermissionReconciler) updatePermissions(ctx context.Context, client internal.RabbitMQClient, permission *topology.Permission) error {
+func (r *PermissionReconciler) getUserFromReference(ctx context.Context, permission *topology.Permission) (string, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
-	if err := validateResponse(client.UpdatePermissionsIn(permission.Spec.Vhost, permission.Spec.User, internal.GeneratePermissions(permission))); err != nil {
+	// get User from provided user reference
+	failureMsg := "failed to get User"
+	user := &topology.User{}
+	if err := r.Get(ctx, types.NamespacedName{Name: permission.Spec.UserReference.Name, Namespace: permission.Namespace}, user); err != nil {
+		r.Recorder.Event(permission, corev1.EventTypeWarning, "FailedUpdate", failureMsg)
+		logger.Error(err, failureMsg, "userReference", permission.Spec.UserReference.Name)
+		return "", err
+	}
+
+	// get username from the credential secret from User status
+	if user.Status.Credentials == nil {
+		err := fmt.Errorf("this User does not have a credential secret set in its status")
+		r.Recorder.Event(permission, corev1.EventTypeWarning, "FailedUpdate", failureMsg)
+		logger.Error(err, failureMsg, "userReference", permission.Spec.UserReference.Name)
+		return "", err
+	}
+
+	secret := &corev1.Secret{}
+	if err := r.Get(ctx, types.NamespacedName{Name: user.Status.Credentials.Name, Namespace: user.Namespace}, secret); err != nil {
+		r.Recorder.Event(permission, corev1.EventTypeWarning, "FailedUpdate", failureMsg)
+		logger.Error(err, failureMsg, "userReference", permission.Spec.UserReference.Name)
+		return "", err
+	}
+
+	username, ok := secret.Data["username"]
+	if !ok {
+		err := fmt.Errorf("could not find username key")
+		r.Recorder.Event(permission, corev1.EventTypeWarning, "FailedUpdate", failureMsg)
+		logger.Error(err, failureMsg, "userReference", permission.Spec.UserReference.Name)
+		return "", nil
+	}
+
+	return string(username), nil
+}
+
+func (r *PermissionReconciler) updatePermissions(ctx context.Context, client internal.RabbitMQClient, permission *topology.Permission, user string) error {
+	logger := ctrl.LoggerFrom(ctx)
+
+	if err := validateResponse(client.UpdatePermissionsIn(permission.Spec.Vhost, user, internal.GeneratePermissions(permission))); err != nil {
 		msg := "failed to set permission"
 		r.Recorder.Event(permission, corev1.EventTypeWarning, "FailedUpdate", msg)
-		logger.Error(err, msg, "user", permission.Spec.User, "vhost", permission.Spec.Vhost)
+		logger.Error(err, msg, "user", user, "vhost", permission.Spec.Vhost)
 		return err
 	}
 
-	logger.Info("Successfully set permission", "user", permission.Spec.User, "vhost", permission.Spec.Vhost)
+	logger.Info("Successfully set permission", "user", user, "vhost", permission.Spec.Vhost)
 	r.Recorder.Event(permission, corev1.EventTypeNormal, "SuccessfulUpdate", "successfully set permission")
 	return nil
 }
@@ -136,16 +184,16 @@ func (r *PermissionReconciler) addFinalizerIfNeeded(ctx context.Context, permiss
 	return nil
 }
 
-func (r *PermissionReconciler) revokePermissions(ctx context.Context, client internal.RabbitMQClient, permission *topology.Permission) error {
+func (r *PermissionReconciler) revokePermissions(ctx context.Context, client internal.RabbitMQClient, permission *topology.Permission, user string) error {
 	logger := ctrl.LoggerFrom(ctx)
 
-	err := validateResponseForDeletion(client.ClearPermissionsIn(permission.Spec.Vhost, permission.Spec.User))
+	err := validateResponseForDeletion(client.ClearPermissionsIn(permission.Spec.Vhost, user))
 	if errors.Is(err, NotFound) {
-		logger.Info("cannot find user or vhost in rabbitmq server; no need to delete permission", "user", permission.Spec.User, "vhost", permission.Spec.Vhost)
+		logger.Info("cannot find user or vhost in rabbitmq server; no need to delete permission", "user", user, "vhost", permission.Spec.Vhost)
 	} else if err != nil {
 		msg := "failed to delete permission"
 		r.Recorder.Event(permission, corev1.EventTypeWarning, "FailedDelete", msg)
-		logger.Error(err, msg, "user", permission.Spec.User, "vhost", permission.Spec.Vhost)
+		logger.Error(err, msg, "user", user, "vhost", permission.Spec.Vhost)
 		return err
 	}
 	r.Recorder.Event(permission, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted permission")

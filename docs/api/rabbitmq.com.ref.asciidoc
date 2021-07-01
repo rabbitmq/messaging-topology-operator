@@ -390,7 +390,8 @@ PermissionSpec defines the desired state of Permission
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`user`* __string__ | Name of an existing user; required property; cannot be updated
+| *`user`* __string__ | Name of an existing user; must provide user or userReference, else create/update will fail; cannot be updated
+| *`userReference`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Reference to an existing user.rabbitmq.com object; must provide user or userReference, else create/update will fail; cannot be updated
 | *`vhost`* __string__ | Name of an existing vhost; required property; cannot be updated
 | *`permissions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhostpermissions[$$VhostPermissions$$]__ | Permissions to grant to the user in the specific vhost; required property. See RabbitMQ doc for more information: https://www.rabbitmq.com/access-control.html#user-management
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that both the provided user and vhost are. Required property.
