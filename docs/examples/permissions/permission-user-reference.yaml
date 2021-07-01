@@ -1,0 +1,14 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: Permission
+metadata:
+  name: example-permission
+spec:
+  vhost: "/" # name of a vhost
+  userReference:
+    name: "example-user" # name of a user.rabbitmq.com in the same namespace; must specify either spec.userReference or spec.user
+  permissions:
+    write: ".*"
+    configure: ".*"
+    read: ".*"
+  rabbitmqClusterReference:
+    name: sample
