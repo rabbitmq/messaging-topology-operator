@@ -1,34 +1,97 @@
 domain: rabbitmq.com
+layout:
+- go.kubebuilder.io/v3
+projectName: test
 repo: github.com/rabbitmq/messaging-topology-operator
 resources:
-- group: rabbitmq.com
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: rabbitmq.com
+  group: rabbitmq.com
   kind: Queue
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
   version: v1beta1
-- group: rabbitmq.com
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: rabbitmq.com
+  group: rabbitmq.com
   kind: Exchange
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
   version: v1beta1
-- group: rabbitmq.com
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: rabbitmq.com
+  group: rabbitmq.com
   kind: Binding
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
   version: v1beta1
-- group: rabbitmq.com
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: rabbitmq.com
+  group: rabbitmq.com
   kind: User
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
   version: v1beta1
-- group: rabbitmq.com
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: rabbitmq.com
+  group: rabbitmq.com
   kind: Vhost
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
   version: v1beta1
-- group: rabbitmq.com
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: rabbitmq.com
+  group: rabbitmq.com
   kind: Policy
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
   version: v1beta1
-- group: rabbitmq.com
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: rabbitmq.com
+  group: rabbitmq.com
   kind: Permission
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
   version: v1beta1
-- group: rabbitmq.com
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: rabbitmq.com
+  group: rabbitmq.com
   kind: SchemaReplication
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
   version: v1beta1
-- group: rabbitmq.com
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: rabbitmq.com
+  group: rabbitmq.com
   kind: Federation
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
   version: v1beta1
-- group: rabbitmq.com
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: rabbitmq.com
+  group: rabbitmq.com
   kind: Shovel
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
   version: v1beta1
-version: "2"
+version: "3"
