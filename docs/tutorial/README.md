@@ -106,7 +106,9 @@ here with read, write, and configure permissions all set to '.*'.
 
 We now have everything we need to be able to publish and consume messages. The following Golang example
 uses the created user 'test' to publish and consume messages from queue 'tutorial'. The example uses the [RabbitMQ
-Golang client](https://github.com/rabbitmq/amqp091-go):
+Golang client](https://github.com/rabbitmq/amqp091-go).
+
+Before you can run the example below, you need to have Golang installed in your development environment. To install Golang, you can follow [this guide](https://golang.org/doc/install).
 
 ```golang
 
@@ -166,6 +168,13 @@ func main() {
 		m.Ack(false)
 	}
 }
+```
+
+The code snippet can be run by creating a file with an extension `.go` (for example `main.go`), then from command line,
+you can run the just created program by referring its filename:
+
+```bash
+go run main.go
 ```
 
 ### Useful Links
