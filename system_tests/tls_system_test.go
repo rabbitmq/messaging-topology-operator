@@ -31,7 +31,7 @@ var _ = Describe("RabbitmqCluster with TLS", func() {
 		setupTestRabbitmqCluster(k8sClient, targetCluster)
 
 		secretName = fmt.Sprintf("rmq-test-cert-%v", uuid.New())
-		_, _, _ = createTLSSecret(secretName, namespace, "tls-cluster.rabbitmq-system.svc.cluster.local")
+		_, _, _ = createTLSSecret(secretName, namespace, "tls-cluster.rabbitmq-system.svc")
 
 		patchBytes, _ := fixtures.ReadFile("fixtures/patch-test-ca.yaml")
 		_, err := kubectl(
