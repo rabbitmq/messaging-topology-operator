@@ -63,11 +63,6 @@ spec:
               type:
                 default: direct
                 description: Cannot be updated
-                enum:
-                - direct
-                - fanout
-                - headers
-                - topic
                 type: string
               vhost:
                 default: /
