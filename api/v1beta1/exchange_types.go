@@ -24,7 +24,6 @@ type ExchangeSpec struct {
 	// +kubebuilder:default:=/
 	Vhost string `json:"vhost,omitempty"`
 	// Cannot be updated
-	// +kubebuilder:validation:Enum=direct;fanout;headers;topic
 	// +kubebuilder:default:=direct
 	Type string `json:"type,omitempty"`
 	// Cannot be updated
