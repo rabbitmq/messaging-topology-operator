@@ -114,6 +114,39 @@ var _ = Describe("UserController", func() {
 					"Status": Equal(corev1.ConditionTrue),
 				})))
 			})
+
+			It("sets an owner reference and does not block owner deletion", func() {
+				user.Name = "test-owner-reference"
+				Expect(client.Create(ctx, &user)).To(Succeed())
+				EventuallyWithOffset(1, func() []topology.Condition {
+					_ = client.Get(
+						ctx,
+						types.NamespacedName{Name: user.Name, Namespace: user.Namespace},
+						&user,
+					)
+
+					return user.Status.Conditions
+				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(topology.ConditionType("Ready")),
+					"Reason": Equal("SuccessfulCreateOrUpdate"),
+					"Status": Equal(corev1.ConditionTrue),
+				})), "User should have been created and have a True Ready condition")
+
+				generatedSecret := &corev1.Secret{}
+				EventuallyWithOffset(1, func() error {
+					return client.Get(ctx,
+						types.NamespacedName{
+							Namespace: user.Namespace,
+							Name:      user.Name + "-user-credentials",
+						}, generatedSecret)
+				}, 10*time.Second).ShouldNot(HaveOccurred())
+
+				for _, ref := range generatedSecret.ObjectMeta.OwnerReferences {
+					Expect(ref).To(MatchFields(IgnoreExtras, Fields{
+						"BlockOwnerDeletion": PointTo(BeFalse()),
+					}))
+				}
+			})
 		})
 	})
 
