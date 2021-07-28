@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"k8s.io/utils/pointer"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -173,6 +174,12 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.
 		operationResult, apiError = controllerutil.CreateOrUpdate(ctx, r.Client, &credentialSecret, func() error {
 			if err := controllerutil.SetControllerReference(user, &credentialSecret, r.Scheme); err != nil {
 				return fmt.Errorf("failed setting controller reference: %v", err)
+			}
+			// required for OpenShift compatibility. See:
+			// https://github.com/rabbitmq/cluster-operator/blob/057b61eb50102a66f504b31464e5956526cbdc90/internal/resource/statefulset.go#L220-L226
+			// https://github.com/rabbitmq/messaging-topology-operator/issues/194
+			for i := range credentialSecret.ObjectMeta.OwnerReferences {
+				credentialSecret.ObjectMeta.OwnerReferences[i].BlockOwnerDeletion = pointer.BoolPtr(false)
 			}
 			return nil
 		})
