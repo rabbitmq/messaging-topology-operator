@@ -12,12 +12,34 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var NoSuchRabbitmqClusterError = errors.New("RabbitmqCluster object does not exist")
+var (
+	NoSuchRabbitmqClusterError = errors.New("RabbitmqCluster object does not exist")
+	ResourceNotAllowedError    = errors.New("Resource is not allowed to reference defined cluster reference. Check the namespace of the resource is allowed as part of the cluster's .spec.messagingTopologyNamespaces field")
+)
 
-func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, namespace string) (*rabbitmqv1beta1.RabbitmqCluster, *corev1.Service, *corev1.Secret, error) {
+func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string) (*rabbitmqv1beta1.RabbitmqCluster, *corev1.Service, *corev1.Secret, error) {
+	var namespace string
+	if rmq.Namespace == "" {
+		namespace = requestNamespace
+	} else {
+		namespace = rmq.Namespace
+	}
 	cluster := &rabbitmqv1beta1.RabbitmqCluster{}
 	if err := c.Get(ctx, types.NamespacedName{Name: rmq.Name, Namespace: namespace}, cluster); err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to get cluster from reference: %s Error: %w", err, NoSuchRabbitmqClusterError)
+	}
+
+	if rmq.Namespace != "" && rmq.Namespace != requestNamespace {
+		var isAllowed bool
+		for _, allowedNamespace := range cluster.Spec.MessagingTopologyNamespaces {
+			if requestNamespace == allowedNamespace {
+				isAllowed = true
+				break
+			}
+		}
+		if isAllowed == false {
+			return nil, nil, nil, ResourceNotAllowedError
+		}
 	}
 
 	if cluster.Status.Binding == nil {
