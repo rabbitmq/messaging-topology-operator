@@ -191,6 +191,11 @@ var _ = BeforeSuite(func() {
 			Name:      "example-rabbit",
 			Namespace: "default",
 		},
+		Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
+			MessagingTopologyNamespaces: []string{
+				"allowed",
+			},
+		},
 	}
 	Expect(client.Create(ctx, &rmq)).To(Succeed())
 
@@ -207,6 +212,20 @@ var _ = BeforeSuite(func() {
 	}
 	rmq.Status.SetConditions([]runtime.Object{})
 	Expect(client.Status().Update(ctx, &rmq)).To(Succeed())
+
+	allowedNamespace := corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "allowed",
+		},
+	}
+	Expect(client.Create(ctx, &allowedNamespace)).To(Succeed())
+
+	prohibitedNamespace := corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "prohibited",
+		},
+	}
+	Expect(client.Create(ctx, &prohibitedNamespace)).To(Succeed())
 
 	// used in schema-replication-controller test
 	secret := corev1.Secret{
