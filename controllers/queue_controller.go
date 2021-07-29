@@ -47,28 +47,38 @@ type QueueReconciler struct {
 func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
-	// fetched the q and return if q no longer exists
-	q := &topology.Queue{}
-	if err := r.Get(ctx, req.NamespacedName, q); err != nil {
+	// fetched the queue and return if queue no longer exists
+	queue := &topology.Queue{}
+	if err := r.Get(ctx, req.NamespacedName, queue); err != nil {
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
 
-	systemCertPool, err := extractSystemCertPool(ctx, r.Recorder, q)
+	systemCertPool, err := extractSystemCertPool(ctx, r.Recorder, queue)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	rmq, svc, secret, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, q.Spec.RabbitmqClusterReference, q.Namespace)
-	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !q.ObjectMeta.DeletionTimestamp.IsZero() {
-		logger.Info(noSuchRabbitDeletion, "q", q.Name)
-		r.Recorder.Event(q, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted q")
-		return reconcile.Result{}, removeFinalizer(ctx, r.Client, q)
+	rmq, svc, secret, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, queue.Spec.RabbitmqClusterReference, queue.Namespace)
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !queue.ObjectMeta.DeletionTimestamp.IsZero() {
+		logger.Info(noSuchRabbitDeletion, "queue", queue.Name)
+		r.Recorder.Event(queue, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted queue")
+		return reconcile.Result{}, removeFinalizer(ctx, r.Client, queue)
 	}
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
 		// the Cluster is temporarily down. Requeue until it comes back up.
 		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
+	}
+	if errors.Is(err, internal.ResourceNotAllowedError) {
+		logger.Info("Could not create queue resource: " + err.Error())
+		queue.Status.Conditions = []topology.Condition{topology.NotReady(internal.ResourceNotAllowedError.Error())}
+		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
+			return r.Status().Update(ctx, queue)
+		}); writerErr != nil {
+			logger.Error(writerErr, failedStatusUpdate)
+		}
+		return reconcile.Result{}, err
 	}
 	if err != nil {
 		logger.Error(err, failedParseClusterRef)
@@ -81,17 +91,17 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return reconcile.Result{}, err
 	}
 
-	// Check if the q has been marked for deletion
-	if !q.ObjectMeta.DeletionTimestamp.IsZero() {
+	// Check if the queue has been marked for deletion
+	if !queue.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info("Deleting")
-		return ctrl.Result{}, r.deleteQueue(ctx, rabbitClient, q)
+		return ctrl.Result{}, r.deleteQueue(ctx, rabbitClient, queue)
 	}
 
 	if err := addFinalizerIfNeeded(ctx, r.Client, q); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	queueSpec, err := json.Marshal(q.Spec)
+	queueSpec, err := json.Marshal(queue.Spec)
 	if err != nil {
 		logger.Error(err, failedMarshalSpec)
 	}
@@ -99,21 +109,21 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	logger.Info("Start reconciling",
 		"spec", string(queueSpec))
 
-	if err := r.declareQueue(ctx, rabbitClient, q); err != nil {
+	if err := r.declareQueue(ctx, rabbitClient, queue); err != nil {
 		// Set Condition 'Ready' to false with message
-		q.Status.Conditions = []topology.Condition{topology.NotReady(err.Error())}
+		queue.Status.Conditions = []topology.Condition{topology.NotReady(err.Error())}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
-			return r.Status().Update(ctx, q)
+			return r.Status().Update(ctx, queue)
 		}); writerErr != nil {
 			logger.Error(writerErr, failedStatusUpdate)
 		}
 		return ctrl.Result{}, err
 	}
 
-	q.Status.Conditions = []topology.Condition{topology.Ready()}
-	q.Status.ObservedGeneration = q.GetGeneration()
+	queue.Status.Conditions = []topology.Condition{topology.Ready()}
+	queue.Status.ObservedGeneration = queue.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
-		return r.Status().Update(ctx, q)
+		return r.Status().Update(ctx, queue)
 	}); writerErr != nil {
 		logger.Error(writerErr, failedStatusUpdate)
 	}
@@ -122,42 +132,42 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	return ctrl.Result{}, nil
 }
 
-func (r *QueueReconciler) declareQueue(ctx context.Context, client internal.RabbitMQClient, q *topology.Queue) error {
+func (r *QueueReconciler) declareQueue(ctx context.Context, client internal.RabbitMQClient, queue *topology.Queue) error {
 	logger := ctrl.LoggerFrom(ctx)
 
-	queueSettings, err := internal.GenerateQueueSettings(q)
+	queueSettings, err := internal.GenerateQueueSettings(queue)
 	if err != nil {
 		msg := "failed to generate queue settings"
-		r.Recorder.Event(q, corev1.EventTypeWarning, "FailedDeclare", msg)
+		r.Recorder.Event(queue, corev1.EventTypeWarning, "FailedDeclare", msg)
 		logger.Error(err, msg)
 		return err
 	}
 
-	if err := validateResponse(client.DeclareQueue(q.Spec.Vhost, q.Spec.Name, *queueSettings)); err != nil {
+	if err := validateResponse(client.DeclareQueue(queue.Spec.Vhost, queue.Spec.Name, *queueSettings)); err != nil {
 		msg := "failed to declare queue"
-		r.Recorder.Event(q, corev1.EventTypeWarning, "FailedDeclare", msg)
-		logger.Error(err, msg, "queue", q.Spec.Name)
+		r.Recorder.Event(queue, corev1.EventTypeWarning, "FailedDeclare", msg)
+		logger.Error(err, msg, "queue", queue.Spec.Name)
 		return err
 	}
 
-	logger.Info("Successfully declared queue", "queue", q.Spec.Name)
-	r.Recorder.Event(q, corev1.EventTypeNormal, "SuccessfulDeclare", "Successfully declared queue")
+	logger.Info("Successfully declared queue", "queue", queue.Spec.Name)
+	r.Recorder.Event(queue, corev1.EventTypeNormal, "SuccessfulDeclare", "Successfully declared queue")
 	return nil
 }
 
 // deletes queue from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
 // queues could be deleted manually or gone because of AutoDelete
-func (r *QueueReconciler) deleteQueue(ctx context.Context, client internal.RabbitMQClient, q *topology.Queue) error {
+func (r *QueueReconciler) deleteQueue(ctx context.Context, client internal.RabbitMQClient, queue *topology.Queue) error {
 	logger := ctrl.LoggerFrom(ctx)
 
-	err := validateResponseForDeletion(client.DeleteQueue(q.Spec.Vhost, q.Spec.Name))
+	err := validateResponseForDeletion(client.DeleteQueue(queue.Spec.Vhost, queue.Spec.Name))
 	if errors.Is(err, NotFound) {
-		logger.Info("cannot find queue in rabbitmq server; already deleted", "queue", q.Spec.Name)
+		logger.Info("cannot find queue in rabbitmq server; already deleted", "queue", queue.Spec.Name)
 	} else if err != nil {
 		msg := "failed to delete queue"
-		r.Recorder.Event(q, corev1.EventTypeWarning, "FailedDelete", msg)
-		logger.Error(err, msg, "queue", q.Spec.Name)
+		r.Recorder.Event(queue, corev1.EventTypeWarning, "FailedDelete", msg)
+		logger.Error(err, msg, "queue", queue.Spec.Name)
 		return err
 	}
 	r.Recorder.Event(q, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted queue")

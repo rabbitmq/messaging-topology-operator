@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"time"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -57,6 +58,16 @@ func (r *ShovelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		// the Cluster is temporarily down. Requeue until it comes back up.
 		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
+	}
+	if errors.Is(err, internal.ResourceNotAllowedError) {
+		logger.Info("Could not create shovel resource: " + err.Error())
+		shovel.Status.Conditions = []topology.Condition{topology.NotReady(internal.ResourceNotAllowedError.Error())}
+		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
+			return r.Status().Update(ctx, shovel)
+		}); writerErr != nil {
+			logger.Error(writerErr, failedStatusUpdate)
+		}
+		return reconcile.Result{}, err
 	}
 	if err != nil {
 		logger.Error(err, failedParseClusterRef)
