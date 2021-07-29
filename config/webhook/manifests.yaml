@@ -12,14 +12,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-rabbitmq-com-v1beta1-binding
+      path: /validate-rabbitmq-com-v1beta2-binding
   failurePolicy: Fail
   name: vbinding.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -32,14 +32,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-rabbitmq-com-v1beta1-exchange
+      path: /validate-rabbitmq-com-v1beta2-exchange
   failurePolicy: Fail
   name: vexchange.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -52,14 +52,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-rabbitmq-com-v1beta1-federation
+      path: /validate-rabbitmq-com-v1beta2-federation
   failurePolicy: Fail
   name: vfederation.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -72,14 +72,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-rabbitmq-com-v1beta1-permission
+      path: /validate-rabbitmq-com-v1beta2-permission
   failurePolicy: Fail
   name: vpermission.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -92,14 +92,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-rabbitmq-com-v1beta1-policy
+      path: /validate-rabbitmq-com-v1beta2-policy
   failurePolicy: Fail
   name: vpolicy.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -112,14 +112,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-rabbitmq-com-v1beta1-queue
+      path: /validate-rabbitmq-com-v1beta2-queue
   failurePolicy: Fail
   name: vqueue.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -132,14 +132,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-rabbitmq-com-v1beta1-schemareplication
+      path: /validate-rabbitmq-com-v1beta2-schemareplication
   failurePolicy: Fail
   name: vschemareplication.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -152,14 +152,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-rabbitmq-com-v1beta1-shovel
+      path: /validate-rabbitmq-com-v1beta2-shovel
   failurePolicy: Fail
   name: vshovel.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -172,14 +172,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-rabbitmq-com-v1beta1-user
+      path: /validate-rabbitmq-com-v1beta2-user
   failurePolicy: Fail
   name: vuser.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE
@@ -192,14 +192,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-rabbitmq-com-v1beta1-vhost
+      path: /validate-rabbitmq-com-v1beta2-vhost
   failurePolicy: Fail
   name: vvhost.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
     apiVersions:
-    - v1beta1
+    - v1beta2
     operations:
     - CREATE
     - UPDATE

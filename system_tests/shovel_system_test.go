@@ -10,7 +10,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta2"
 )
 
 var _ = Describe("Shovel", func() {

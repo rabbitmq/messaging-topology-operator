@@ -3,7 +3,7 @@ package internal_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta2"
 	. "github.com/rabbitmq/messaging-topology-operator/internal"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

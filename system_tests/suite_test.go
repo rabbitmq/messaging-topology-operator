@@ -17,12 +17,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
-	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta2"
 	"k8s.io/client-go/kubernetes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
+	rabbitmqv1beta2 "github.com/rabbitmq/cluster-operator/api/v1beta2"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	defaultscheme "k8s.io/client-go/kubernetes/scheme"
@@ -39,7 +39,7 @@ var (
 	k8sClient    client.Client
 	rabbitClient *rabbithole.Client
 	clientSet    *kubernetes.Clientset
-	rmq          *rabbitmqv1beta1.RabbitmqCluster
+	rmq          *rabbitmqv1beta2.RabbitmqCluster
 	//go:embed fixtures
 	fixtures embed.FS
 )
@@ -48,7 +48,7 @@ var _ = BeforeSuite(func() {
 	namespace := MustHaveEnv("NAMESPACE")
 	scheme := runtime.NewScheme()
 	Expect(topology.AddToScheme(scheme)).To(Succeed())
-	Expect(rabbitmqv1beta1.AddToScheme(scheme)).To(Succeed())
+	Expect(rabbitmqv1beta2.AddToScheme(scheme)).To(Succeed())
 	Expect(defaultscheme.AddToScheme(scheme)).To(Succeed())
 	restConfig, err := createRestConfig()
 	Expect(err).NotTo(HaveOccurred())
@@ -98,5 +98,5 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	By("deleting RabbitmqCluster created in system tests")
-	Expect(k8sClient.Delete(context.Background(), &rabbitmqv1beta1.RabbitmqCluster{ObjectMeta: metav1.ObjectMeta{Name: rmq.Name, Namespace: rmq.Namespace}})).ToNot(HaveOccurred())
+	Expect(k8sClient.Delete(context.Background(), &rabbitmqv1beta2.RabbitmqCluster{ObjectMeta: metav1.ObjectMeta{Name: rmq.Name, Namespace: rmq.Namespace}})).ToNot(HaveOccurred())
 })

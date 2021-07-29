@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 
-	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta2"
 )
 
 var _ = Describe("Permission", func() {

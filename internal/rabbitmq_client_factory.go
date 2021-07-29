@@ -16,7 +16,7 @@ import (
 	"fmt"
 	"net/http"
 
-	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
+	rabbitmqv1beta2 "github.com/rabbitmq/cluster-operator/api/v1beta2"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	corev1 "k8s.io/api/core/v1"
@@ -48,14 +48,14 @@ type RabbitMQClient interface {
 	DeleteShovel(vhost, shovel string) (res *http.Response, err error)
 }
 
-type RabbitMQClientFactory func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, secret *corev1.Secret, hostname string, certPool *x509.CertPool) (RabbitMQClient, error)
+type RabbitMQClientFactory func(rmq *rabbitmqv1beta2.RabbitmqCluster, svc *corev1.Service, secret *corev1.Secret, hostname string, certPool *x509.CertPool) (RabbitMQClient, error)
 
-var RabbitholeClientFactory RabbitMQClientFactory = func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, secret *corev1.Secret, hostname string, certPool *x509.CertPool) (RabbitMQClient, error) {
+var RabbitholeClientFactory RabbitMQClientFactory = func(rmq *rabbitmqv1beta2.RabbitmqCluster, svc *corev1.Service, secret *corev1.Secret, hostname string, certPool *x509.CertPool) (RabbitMQClient, error) {
 	return generateRabbitholeClient(rmq, svc, secret, hostname, certPool)
 }
 
 // returns a http client for the given RabbitmqCluster
-func generateRabbitholeClient(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, secret *corev1.Secret, hostname string, certPool *x509.CertPool) (rabbitmqClient RabbitMQClient, err error) {
+func generateRabbitholeClient(rmq *rabbitmqv1beta2.RabbitmqCluster, svc *corev1.Service, secret *corev1.Secret, hostname string, certPool *x509.CertPool) (rabbitmqClient RabbitMQClient, err error) {
 	endpoint, err := managementEndpoint(rmq, svc, hostname)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get endpoint from specified rabbitmqcluster: %w", err)
@@ -90,7 +90,7 @@ func generateRabbitholeClient(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.
 	return rabbitmqClient, nil
 }
 
-func managementEndpoint(cluster *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, hostname string) (string, error) {
+func managementEndpoint(cluster *rabbitmqv1beta2.RabbitmqCluster, svc *corev1.Service, hostname string) (string, error) {
 	port := managementPort(svc)
 	if port == 0 {
 		return "", fmt.Errorf("failed to find 'management' or 'management-tls' from service %s", svc.Name)
@@ -100,7 +100,7 @@ func managementEndpoint(cluster *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Se
 }
 
 // returns RabbitMQ management scheme from given cluster
-func managementScheme(cluster *rabbitmqv1beta1.RabbitmqCluster) string {
+func managementScheme(cluster *rabbitmqv1beta2.RabbitmqCluster) string {
 	if cluster.TLSEnabled() {
 		return "https"
 	} else {

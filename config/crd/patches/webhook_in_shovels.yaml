@@ -7,7 +7,7 @@ spec:
   conversion:
     strategy: Webhook
     webhook:
-      conversionReviewVersions: ["v1", "v1beta1"]
+      conversionReviewVersions: ["v1", "v1beta2"]
       clientConfig:
         caBundle: Cg==
         service:

@@ -16,7 +16,7 @@ spec:
     singular: schemareplication
   scope: Namespaced
   versions:
-  - name: v1beta1
+  - name: v1beta2
     schema:
       openAPIV3Schema:
         description: 'SchemaReplication is the Schema for the schemareplications API

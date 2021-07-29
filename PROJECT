@@ -11,8 +11,8 @@ resources:
   domain: rabbitmq.com
   group: rabbitmq.com
   kind: Queue
-  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
-  version: v1beta1
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta2
+  version: v1beta2
 - api:
     crdVersion: v1
     namespaced: true
@@ -20,8 +20,8 @@ resources:
   domain: rabbitmq.com
   group: rabbitmq.com
   kind: Exchange
-  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
-  version: v1beta1
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta2
+  version: v1beta2
 - api:
     crdVersion: v1
     namespaced: true
@@ -29,8 +29,8 @@ resources:
   domain: rabbitmq.com
   group: rabbitmq.com
   kind: Binding
-  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
-  version: v1beta1
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta2
+  version: v1beta2
 - api:
     crdVersion: v1
     namespaced: true
@@ -38,8 +38,8 @@ resources:
   domain: rabbitmq.com
   group: rabbitmq.com
   kind: User
-  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
-  version: v1beta1
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta2
+  version: v1beta2
 - api:
     crdVersion: v1
     namespaced: true
@@ -47,8 +47,8 @@ resources:
   domain: rabbitmq.com
   group: rabbitmq.com
   kind: Vhost
-  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
-  version: v1beta1
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta2
+  version: v1beta2
 - api:
     crdVersion: v1
     namespaced: true
@@ -56,8 +56,8 @@ resources:
   domain: rabbitmq.com
   group: rabbitmq.com
   kind: Policy
-  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
-  version: v1beta1
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta2
+  version: v1beta2
 - api:
     crdVersion: v1
     namespaced: true
@@ -65,8 +65,8 @@ resources:
   domain: rabbitmq.com
   group: rabbitmq.com
   kind: Permission
-  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
-  version: v1beta1
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta2
+  version: v1beta2
 - api:
     crdVersion: v1
     namespaced: true
@@ -74,8 +74,8 @@ resources:
   domain: rabbitmq.com
   group: rabbitmq.com
   kind: SchemaReplication
-  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
-  version: v1beta1
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta2
+  version: v1beta2
 - api:
     crdVersion: v1
     namespaced: true
@@ -83,8 +83,8 @@ resources:
   domain: rabbitmq.com
   group: rabbitmq.com
   kind: Federation
-  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
-  version: v1beta1
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta2
+  version: v1beta2
 - api:
     crdVersion: v1
     namespaced: true
@@ -92,6 +92,6 @@ resources:
   domain: rabbitmq.com
   group: rabbitmq.com
   kind: Shovel
-  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
-  version: v1beta1
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta2
+  version: v1beta2
 version: "3"

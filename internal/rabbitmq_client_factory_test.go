@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
-	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
+	rabbitmqv1beta2 "github.com/rabbitmq/cluster-operator/api/v1beta2"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,7 +21,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 	var (
 		existingRabbitMQUsername = "abc123"
 		existingRabbitMQPassword = "foo1234"
-		existingRabbitMQCluster  *rabbitmqv1beta1.RabbitmqCluster
+		existingRabbitMQCluster  *rabbitmqv1beta2.RabbitmqCluster
 		existingCredentialSecret *corev1.Secret
 		existingService          *corev1.Service
 		fakeRabbitMQServer       *ghttp.Server
@@ -57,17 +57,17 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			fakeRabbitMQURL, fakeRabbitMQPort, err = mockRabbitMQURLPort(fakeRabbitMQServer)
 			Expect(err).NotTo(HaveOccurred())
 
-			existingRabbitMQCluster = &rabbitmqv1beta1.RabbitmqCluster{
+			existingRabbitMQCluster = &rabbitmqv1beta2.RabbitmqCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rmq",
 					Namespace: "rabbitmq-system",
 				},
-				Status: rabbitmqv1beta1.RabbitmqClusterStatus{
+				Status: rabbitmqv1beta2.RabbitmqClusterStatus{
 					Binding: &corev1.LocalObjectReference{
 						Name: "rmq-default-user-credentials",
 					},
-					DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
-						ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
+					DefaultUser: &rabbitmqv1beta2.RabbitmqClusterDefaultUser{
+						ServiceReference: &rabbitmqv1beta2.RabbitmqClusterServiceReference{
 							Name:      "rmq-service",
 							Namespace: "rabbitmq-system",
 						},
@@ -126,17 +126,17 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			Expect(err).NotTo(HaveOccurred())
 			caCertBytes, err = ioutil.ReadFile(caCertPath)
 			Expect(err).NotTo(HaveOccurred())
-			existingRabbitMQCluster = &rabbitmqv1beta1.RabbitmqCluster{
+			existingRabbitMQCluster = &rabbitmqv1beta2.RabbitmqCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rmq",
 					Namespace: "rabbitmq-system",
 				},
-				Status: rabbitmqv1beta1.RabbitmqClusterStatus{
+				Status: rabbitmqv1beta2.RabbitmqClusterStatus{
 					Binding: &corev1.LocalObjectReference{
 						Name: "rmq-default-user-credentials",
 					},
-					DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
-						ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
+					DefaultUser: &rabbitmqv1beta2.RabbitmqClusterDefaultUser{
+						ServiceReference: &rabbitmqv1beta2.RabbitmqClusterServiceReference{
 							Name:      "rmq-service",
 							Namespace: "rabbitmq-system",
 						},
@@ -183,7 +183,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 				Name: "management-tls",
 				Port: int32(fakeRabbitMQPort),
 			})
-			existingRabbitMQCluster.Spec.TLS = rabbitmqv1beta1.TLSSpec{
+			existingRabbitMQCluster.Spec.TLS = rabbitmqv1beta2.TLSSpec{
 				SecretName:             existingCertSecret.Name,
 				DisableNonTLSListeners: true,
 			}
