@@ -1,6 +1,6 @@
 # for more information, see: https://www.rabbitmq.com/shovel-dynamic.html
 ---
-apiVersion: rabbitmq.com/v1beta1
+apiVersion: rabbitmq.com/v1beta2
 kind: Shovel
 metadata:
   name: shovel-example

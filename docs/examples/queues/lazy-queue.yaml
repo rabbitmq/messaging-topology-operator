@@ -1,7 +1,7 @@
 # For more information on lazy queues, see: https://www.rabbitmq.com/lazy-queues.html.
 # We recommmend configuring queues through policies to manage them in groups and be able to update queue configurations later on.
 ---
-apiVersion: rabbitmq.com/v1beta1
+apiVersion: rabbitmq.com/v1beta2
 kind: Policy
 metadata:
   name: lazy-queue-policy
@@ -15,7 +15,7 @@ spec:
   rabbitmqClusterReference:
     name: test
 ---
-apiVersion: rabbitmq.com/v1beta1
+apiVersion: rabbitmq.com/v1beta2
 kind: Queue
 metadata:
   name: lazy-queue-example

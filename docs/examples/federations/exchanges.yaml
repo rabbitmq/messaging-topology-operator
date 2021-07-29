@@ -1,5 +1,5 @@
 ---
-apiVersion: rabbitmq.com/v1beta1
+apiVersion: rabbitmq.com/v1beta2
 kind: Exchange
 metadata:
   name: fanout-upstream
@@ -12,7 +12,7 @@ spec:
   rabbitmqClusterReference:
     name: example-rabbit
 ---
-apiVersion: rabbitmq.com/v1beta1
+apiVersion: rabbitmq.com/v1beta2
 kind: Exchange
 metadata:
   name: fanout-downstream

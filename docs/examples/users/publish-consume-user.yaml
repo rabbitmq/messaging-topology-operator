@@ -8,7 +8,7 @@ stringData:
   username: test-user
   password: verysecurepw
 ---
-apiVersion: rabbitmq.com/v1beta1
+apiVersion: rabbitmq.com/v1beta2
 kind: User
 metadata:
   name: test-user
@@ -18,7 +18,7 @@ spec:
   importCredentialsSecret:
     name: test-user-credentials
 ---
-apiVersion: rabbitmq.com/v1beta1
+apiVersion: rabbitmq.com/v1beta2
 kind: Permission
 metadata:
   name: testuser-permission

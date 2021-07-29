@@ -7,7 +7,7 @@ stringData:
   username: import-user-sample
   password: whyareyoulookinghere
 ---
-apiVersion: rabbitmq.com/v1beta1
+apiVersion: rabbitmq.com/v1beta2
 kind: User
 metadata:
   name: import-user-sample

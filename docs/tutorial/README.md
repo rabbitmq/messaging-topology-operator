@@ -15,7 +15,7 @@ Your Kubernetes cluster needs to have:
 
 You can create a queue by creating a custom resource `queues.rabbitmq.com`. For example:
 ```yaml
-apiVersion: rabbitmq.com/v1beta1
+apiVersion: rabbitmq.com/v1beta2
 kind: Queue
 metadata:
   name: tutorial
@@ -57,7 +57,7 @@ stringData:
 
 Then, lets create a RabbitMQ user by creating a custom resource `users.rabbitmq.com`:
 ```yaml
-apiVersion: rabbitmq.com/v1beta1
+apiVersion: rabbitmq.com/v1beta2
 kind: User
 metadata:
   name: tutorial-user
@@ -76,7 +76,7 @@ This will create a RabbitMQ user with username 'test' and password 'test' (as sp
 Before we can use the user 'test' to publish and consume messages, we need to grant it permissions.
 This can be achieved by create a custom resource `permissions.rabbitmq.com`:
 ```yaml
-apiVersion: rabbitmq.com/v1beta1
+apiVersion: rabbitmq.com/v1beta2
 kind: Permission
 metadata:
   name: tutorial-user-permission

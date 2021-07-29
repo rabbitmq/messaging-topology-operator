@@ -1,5 +1,5 @@
 ---
-apiVersion: rabbitmq.com/v1beta1
+apiVersion: rabbitmq.com/v1beta2
 kind: Federation
 metadata:
   name: federation-example

@@ -1,6 +1,6 @@
 # More on direct exchange and other exchange types, see: https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchanges.
 ---
-apiVersion: rabbitmq.com/v1beta1
+apiVersion: rabbitmq.com/v1beta2
 kind: Exchange
 metadata:
   name: direct
