@@ -44,9 +44,13 @@ type QueueSpec struct {
 }
 
 type RabbitmqClusterReference struct {
-	// Cannot be updated
+	// The name of the RabbitMQ cluster to reference.
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`
+	// The namespace of the RabbitMQ cluster to reference.
+	// Defaults to the namespace of the requested resource if omitted.
+	// +kubebuilder:validation:Optional
+	Namespace string `json:"namespace"`
 }
 
 // QueueStatus defines the observed state of Queue
