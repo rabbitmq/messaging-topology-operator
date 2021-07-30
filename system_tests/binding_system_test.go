@@ -38,6 +38,7 @@ var _ = Describe("Binding", func() {
 				},
 			},
 		}
+
 		Expect(k8sClient.Create(ctx, exchange, &client.CreateOptions{})).To(Succeed())
 		queue = &topology.Queue{
 			ObjectMeta: metav1.ObjectMeta{

@@ -35,9 +35,8 @@ import (
 var apiGVStr = topology.GroupVersion.String()
 
 const (
-	userFinalizer = "deletion.finalizers.users.rabbitmq.com"
-	ownerKey      = ".metadata.controller"
-	ownerKind     = "User"
+	ownerKey  = ".metadata.controller"
+	ownerKind = "User"
 )
 
 // UserReconciler reconciles a User object
@@ -70,7 +69,7 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !user.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info(noSuchRabbitDeletion, "user", user.Name)
 		r.Recorder.Event(user, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted user")
-		return reconcile.Result{}, r.removeFinalizer(ctx, user)
+		return reconcile.Result{}, removeFinalizer(ctx, r.Client, user)
 	}
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
@@ -95,7 +94,7 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, r.deleteUser(ctx, rabbitClient, user)
 	}
 
-	if err := r.addFinalizerIfNeeded(ctx, user); err != nil {
+	if err := addFinalizerIfNeeded(ctx, r.Client, user); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -300,17 +299,6 @@ func (r *UserReconciler) declareUser(ctx context.Context, client internal.Rabbit
 	return nil
 }
 
-// addFinalizerIfNeeded adds a deletion finalizer if the User does not have one yet and is not marked for deletion
-func (r *UserReconciler) addFinalizerIfNeeded(ctx context.Context, user *topology.User) error {
-	if user.ObjectMeta.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(user, userFinalizer) {
-		controllerutil.AddFinalizer(user, userFinalizer)
-		if err := r.Client.Update(ctx, user); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (r *UserReconciler) getUserCredentials(ctx context.Context, user *topology.User) (*corev1.Secret, error) {
 	if user.Status.Credentials == nil {
 		return nil, fmt.Errorf("this User does not yet have a Credentials Secret created")
@@ -343,15 +331,7 @@ func (r *UserReconciler) deleteUser(ctx context.Context, client internal.RabbitM
 		return err
 	}
 	r.Recorder.Event(user, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted user")
-	return r.removeFinalizer(ctx, user)
-}
-
-func (r *UserReconciler) removeFinalizer(ctx context.Context, user *topology.User) error {
-	controllerutil.RemoveFinalizer(user, userFinalizer)
-	if err := r.Client.Update(ctx, user); err != nil {
-		return err
-	}
-	return nil
+	return removeFinalizer(ctx, r.Client, user)
 }
 
 func (r *UserReconciler) SetupWithManager(mgr ctrl.Manager) error {

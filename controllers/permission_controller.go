@@ -12,7 +12,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/go-logr/logr"
@@ -22,8 +21,6 @@ import (
 
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
-
-const permissionFinalizer = "deletion.finalizers.permissions.rabbitmq.com"
 
 // PermissionReconciler reconciles a Permission object
 type PermissionReconciler struct {
@@ -55,7 +52,7 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !permission.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info(noSuchRabbitDeletion, "permission", permission.Name)
 		r.Recorder.Event(permission, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted permission")
-		return reconcile.Result{}, r.removeFinalizer(ctx, permission)
+		return reconcile.Result{}, removeFinalizer(ctx, r.Client, permission)
 	}
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
@@ -86,7 +83,7 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, r.revokePermissions(ctx, rabbitClient, permission, user)
 	}
 
-	if err := r.addFinalizerIfNeeded(ctx, permission); err != nil {
+	if err := addFinalizerIfNeeded(ctx, r.Client, permission); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -174,16 +171,6 @@ func (r *PermissionReconciler) updatePermissions(ctx context.Context, client int
 	return nil
 }
 
-func (r *PermissionReconciler) addFinalizerIfNeeded(ctx context.Context, permission *topology.Permission) error {
-	if permission.ObjectMeta.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(permission, permissionFinalizer) {
-		controllerutil.AddFinalizer(permission, permissionFinalizer)
-		if err := r.Client.Update(ctx, permission); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (r *PermissionReconciler) revokePermissions(ctx context.Context, client internal.RabbitMQClient, permission *topology.Permission, user string) error {
 	logger := ctrl.LoggerFrom(ctx)
 
@@ -197,15 +184,7 @@ func (r *PermissionReconciler) revokePermissions(ctx context.Context, client int
 		return err
 	}
 	r.Recorder.Event(permission, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted permission")
-	return r.removeFinalizer(ctx, permission)
-}
-
-func (r *PermissionReconciler) removeFinalizer(ctx context.Context, permission *topology.Permission) error {
-	controllerutil.RemoveFinalizer(permission, permissionFinalizer)
-	if err := r.Client.Update(ctx, permission); err != nil {
-		return err
-	}
-	return nil
+	return removeFinalizer(ctx, r.Client, permission)
 }
 
 func (r *PermissionReconciler) SetupWithManager(mgr ctrl.Manager) error {

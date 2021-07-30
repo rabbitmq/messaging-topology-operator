@@ -10,7 +10,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/go-logr/logr"
@@ -20,8 +19,6 @@ import (
 
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
-
-const vhostFinalizer = "deletion.finalizers.vhosts.rabbitmq.com"
 
 // VhostReconciler reconciles a Vhost object
 type VhostReconciler struct {
@@ -52,7 +49,7 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !vhost.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info(noSuchRabbitDeletion, "vhost", vhost.Name)
 		r.Recorder.Event(vhost, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted vhost")
-		return reconcile.Result{}, r.removeFinalizer(ctx, vhost)
+		return reconcile.Result{}, removeFinalizer(ctx, r.Client, vhost)
 	}
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
@@ -77,7 +74,7 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, r.deleteVhost(ctx, rabbitClient, vhost)
 	}
 
-	if err := r.addFinalizerIfNeeded(ctx, vhost); err != nil {
+	if err := addFinalizerIfNeeded(ctx, r.Client, vhost); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -129,16 +126,6 @@ func (r *VhostReconciler) putVhost(ctx context.Context, client internal.RabbitMQ
 	return nil
 }
 
-func (r *VhostReconciler) addFinalizerIfNeeded(ctx context.Context, vhost *topology.Vhost) error {
-	if vhost.ObjectMeta.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(vhost, vhostFinalizer) {
-		controllerutil.AddFinalizer(vhost, vhostFinalizer)
-		if err := r.Client.Update(ctx, vhost); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // deletes vhost from server
 // if server responds with '404' Not Found, it logs and does not requeue on error
 func (r *VhostReconciler) deleteVhost(ctx context.Context, client internal.RabbitMQClient, vhost *topology.Vhost) error {
@@ -155,15 +142,7 @@ func (r *VhostReconciler) deleteVhost(ctx context.Context, client internal.Rabbi
 	}
 
 	r.Recorder.Event(vhost, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted vhost")
-	return r.removeFinalizer(ctx, vhost)
-}
-
-func (r *VhostReconciler) removeFinalizer(ctx context.Context, vhost *topology.Vhost) error {
-	controllerutil.RemoveFinalizer(vhost, vhostFinalizer)
-	if err := r.Client.Update(ctx, vhost); err != nil {
-		return err
-	}
-	return nil
+	return removeFinalizer(ctx, r.Client, vhost)
 }
 
 func (r *VhostReconciler) SetupWithManager(mgr ctrl.Manager) error {

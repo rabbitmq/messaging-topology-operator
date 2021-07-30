@@ -21,7 +21,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/go-logr/logr"
@@ -31,8 +30,6 @@ import (
 
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
-
-const bindingFinalizer = "deletion.finalizers.bindings.rabbitmq.com"
 
 // BindingReconciler reconciles a Binding object
 type BindingReconciler struct {
@@ -63,7 +60,7 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !binding.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info(noSuchRabbitDeletion, "binding", binding.Name)
 		r.Recorder.Event(binding, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted binding")
-		return reconcile.Result{}, r.removeFinalizer(ctx, binding)
+		return reconcile.Result{}, removeFinalizer(ctx, r.Client, binding)
 	}
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
@@ -87,7 +84,7 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, r.deleteBinding(ctx, rabbitClient, binding)
 	}
 
-	if err := r.addFinalizerIfNeeded(ctx, binding); err != nil {
+	if err := addFinalizerIfNeeded(ctx, r.Client, binding); err != nil {
 		return ctrl.Result{}, err
 	}
 	spec, err := json.Marshal(binding.Spec)
@@ -160,7 +157,7 @@ func (r *BindingReconciler) deleteBinding(ctx context.Context, client internal.R
 		}
 		if info == nil {
 			logger.Info("cannot find the corresponding binding info in rabbitmq server; binding already deleted")
-			return r.removeFinalizer(ctx, binding)
+			return removeFinalizer(ctx, r.Client, binding)
 		}
 	} else {
 		info, err = internal.GenerateBindingInfo(binding)
@@ -185,7 +182,7 @@ func (r *BindingReconciler) deleteBinding(ctx context.Context, client internal.R
 
 	logger.Info("Successfully deleted binding")
 	r.Recorder.Event(binding, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted binding")
-	return r.removeFinalizer(ctx, binding)
+	return removeFinalizer(ctx, r.Client, binding)
 }
 
 func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topology.Binding, client internal.RabbitMQClient) (*rabbithole.BindingInfo, error) {
@@ -219,24 +216,6 @@ func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topolog
 		}
 	}
 	return info, nil
-}
-
-func (r *BindingReconciler) removeFinalizer(ctx context.Context, binding *topology.Binding) error {
-	controllerutil.RemoveFinalizer(binding, bindingFinalizer)
-	if err := r.Client.Update(ctx, binding); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *BindingReconciler) addFinalizerIfNeeded(ctx context.Context, binding *topology.Binding) error {
-	if binding.ObjectMeta.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(binding, bindingFinalizer) {
-		controllerutil.AddFinalizer(binding, bindingFinalizer)
-		if err := r.Client.Update(ctx, binding); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (r *BindingReconciler) SetupWithManager(mgr ctrl.Manager) error {

@@ -10,7 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"time"
 
@@ -21,8 +20,6 @@ import (
 
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
-
-const shovelFinalizer = "deletion.finalizers.shovels.rabbitmq.com"
 
 // ShovelReconciler reconciles a Shovel object
 type ShovelReconciler struct {
@@ -53,7 +50,7 @@ func (r *ShovelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !shovel.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info(noSuchRabbitDeletion, "shovel", shovel.Name)
 		r.Recorder.Event(shovel, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted shovel")
-		return reconcile.Result{}, r.removeFinalizer(ctx, shovel)
+		return reconcile.Result{}, removeFinalizer(ctx, r.Client, shovel)
 	}
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
@@ -77,7 +74,7 @@ func (r *ShovelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, r.deleteShovel(ctx, rabbitClient, shovel)
 	}
 
-	if err := r.addFinalizerIfNeeded(ctx, shovel); err != nil {
+	if err := addFinalizerIfNeeded(ctx, r.Client, shovel); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -155,17 +152,6 @@ func (r *ShovelReconciler) getUris(ctx context.Context, shovel *topology.Shovel)
 	return string(srcUri), string(destUri), nil
 }
 
-// addFinalizerIfNeeded adds a deletion finalizer if the Shovel does not have one yet and is not marked for deletion
-func (r *ShovelReconciler) addFinalizerIfNeeded(ctx context.Context, shovel *topology.Shovel) error {
-	if shovel.ObjectMeta.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(shovel, shovelFinalizer) {
-		controllerutil.AddFinalizer(shovel, shovelFinalizer)
-		if err := r.Client.Update(ctx, shovel); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // deletes shovel configuration from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
 func (r *ShovelReconciler) deleteShovel(ctx context.Context, client internal.RabbitMQClient, shovel *topology.Shovel) error {
@@ -181,15 +167,7 @@ func (r *ShovelReconciler) deleteShovel(ctx context.Context, client internal.Rab
 		return err
 	}
 	r.Recorder.Event(shovel, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted shovel parameter")
-	return r.removeFinalizer(ctx, shovel)
-}
-
-func (r *ShovelReconciler) removeFinalizer(ctx context.Context, shovel *topology.Shovel) error {
-	controllerutil.RemoveFinalizer(shovel, shovelFinalizer)
-	if err := r.Client.Update(ctx, shovel); err != nil {
-		return err
-	}
-	return nil
+	return removeFinalizer(ctx, r.Client, shovel)
 }
 
 func (r *ShovelReconciler) SetupWithManager(mgr ctrl.Manager) error {
