@@ -24,11 +24,8 @@ import (
 	clientretry "k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
-
-const deletionFinalizer = "deletion.finalizers.queues.rabbitmq.com"
 
 // QueueReconciler reconciles a RabbitMQ Queue
 type QueueReconciler struct {
@@ -65,7 +62,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !q.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info(noSuchRabbitDeletion, "q", q.Name)
 		r.Recorder.Event(q, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted q")
-		return reconcile.Result{}, r.removeFinalizer(ctx, q)
+		return reconcile.Result{}, removeFinalizer(ctx, r.Client, q)
 	}
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
@@ -90,7 +87,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, r.deleteQueue(ctx, rabbitClient, q)
 	}
 
-	if err := r.addFinalizerIfNeeded(ctx, q); err != nil {
+	if err := addFinalizerIfNeeded(ctx, r.Client, q); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -148,17 +145,6 @@ func (r *QueueReconciler) declareQueue(ctx context.Context, client internal.Rabb
 	return nil
 }
 
-// addFinalizerIfNeeded adds a deletion finalizer if the Queue does not have one yet and is not marked for deletion
-func (r *QueueReconciler) addFinalizerIfNeeded(ctx context.Context, q *topology.Queue) error {
-	if q.ObjectMeta.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(q, deletionFinalizer) {
-		controllerutil.AddFinalizer(q, deletionFinalizer)
-		if err := r.Client.Update(ctx, q); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // deletes queue from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
 // queues could be deleted manually or gone because of AutoDelete
@@ -175,15 +161,7 @@ func (r *QueueReconciler) deleteQueue(ctx context.Context, client internal.Rabbi
 		return err
 	}
 	r.Recorder.Event(q, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted queue")
-	return r.removeFinalizer(ctx, q)
-}
-
-func (r *QueueReconciler) removeFinalizer(ctx context.Context, q *topology.Queue) error {
-	controllerutil.RemoveFinalizer(q, deletionFinalizer)
-	if err := r.Client.Update(ctx, q); err != nil {
-		return err
-	}
-	return nil
+	return removeFinalizer(ctx, r.Client, q)
 }
 
 func (r *QueueReconciler) SetupWithManager(mgr ctrl.Manager) error {

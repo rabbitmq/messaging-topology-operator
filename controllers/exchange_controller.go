@@ -19,7 +19,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/go-logr/logr"
@@ -29,8 +28,6 @@ import (
 
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
-
-const exchangeFinalizer = "deletion.finalizers.exchanges.rabbitmq.com"
 
 // ExchangeReconciler reconciles a Exchange object
 type ExchangeReconciler struct {
@@ -61,7 +58,7 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !exchange.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info(noSuchRabbitDeletion, "exchange", exchange.Name)
 		r.Recorder.Event(exchange, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted exchange")
-		return reconcile.Result{}, r.removeFinalizer(ctx, exchange)
+		return reconcile.Result{}, removeFinalizer(ctx, r.Client, exchange)
 	}
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
@@ -85,7 +82,7 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, r.deleteExchange(ctx, rabbitClient, exchange)
 	}
 
-	if err := r.addFinalizerIfNeeded(ctx, exchange); err != nil {
+	if err := addFinalizerIfNeeded(ctx, r.Client, exchange); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -143,17 +140,6 @@ func (r *ExchangeReconciler) declareExchange(ctx context.Context, client interna
 	return nil
 }
 
-// addFinalizerIfNeeded adds a deletion finalizer if the Exchange does not have one yet and is not marked for deletion
-func (r *ExchangeReconciler) addFinalizerIfNeeded(ctx context.Context, e *topology.Exchange) error {
-	if e.ObjectMeta.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(e, exchangeFinalizer) {
-		controllerutil.AddFinalizer(e, exchangeFinalizer)
-		if err := r.Client.Update(ctx, e); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // deletes exchange from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
 func (r *ExchangeReconciler) deleteExchange(ctx context.Context, client internal.RabbitMQClient, exchange *topology.Exchange) error {
@@ -169,15 +155,7 @@ func (r *ExchangeReconciler) deleteExchange(ctx context.Context, client internal
 		return err
 	}
 	r.Recorder.Event(exchange, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted exchange")
-	return r.removeFinalizer(ctx, exchange)
-}
-
-func (r *ExchangeReconciler) removeFinalizer(ctx context.Context, e *topology.Exchange) error {
-	controllerutil.RemoveFinalizer(e, exchangeFinalizer)
-	if err := r.Client.Update(ctx, e); err != nil {
-		return err
-	}
-	return nil
+	return removeFinalizer(ctx, r.Client, exchange)
 }
 
 func (r *ExchangeReconciler) SetupWithManager(mgr ctrl.Manager) error {

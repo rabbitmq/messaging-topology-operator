@@ -10,10 +10,14 @@ This product may include a number of subcomponents with separate copyright notic
 package controllers
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -54,4 +58,37 @@ func serviceDNSAddress(svc *corev1.Service) string {
 	// uniform across clusters. See the `clusterDomain` KubeletConfiguration
 	// value for how this can be changed for a cluster.
 	return fmt.Sprintf("%s.%s.svc", svc.Name, svc.Namespace)
+}
+
+func addFinalizerIfNeeded(ctx context.Context, client client.Client, obj client.Object) error {
+	finalizer := deletionFinalizer(obj.GetObjectKind().GroupVersionKind().Kind)
+	if obj.GetDeletionTimestamp().IsZero() && !controllerutil.ContainsFinalizer(obj, finalizer) {
+		controllerutil.AddFinalizer(obj, finalizer)
+		if err := client.Update(ctx, obj); err != nil {
+			return fmt.Errorf("failed to add deletionFinalizer: %w", err)
+		}
+	}
+	return nil
+}
+
+func removeFinalizer(ctx context.Context, client client.Client, obj client.Object) error {
+	finalizer := deletionFinalizer(obj.GetObjectKind().GroupVersionKind().Kind)
+	controllerutil.RemoveFinalizer(obj, finalizer)
+	if err := client.Update(ctx, obj); err != nil {
+		return fmt.Errorf("failed to delete finalizer: %w", err)
+	}
+	return nil
+}
+
+// deletionFinalizer returns generated deletion finalizer
+// finalizers follow the format of deletion.finalizers.kind-plural-form.rabbitmq.com
+// for example: deletion.finalizers.bindings.rabbitmq.com and deletion.finalizers.policies.rabbitmq.com
+func deletionFinalizer(kind string) string {
+	var plural string
+	if kind == "Policy" {
+		plural = "policies"
+	} else {
+		plural = strings.ToLower(kind) + "s"
+	}
+	return fmt.Sprintf("deletion.finalizers.%s.%s", plural, "rabbitmq.com")
 }

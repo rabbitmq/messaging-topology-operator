@@ -197,4 +197,19 @@ var _ = Describe("exchange-controller", func() {
 			})
 		})
 	})
+
+	Context("finalizer", func() {
+		BeforeEach(func() {
+			exchangeName = "finalizer-test"
+		})
+
+		It("sets the correct deletion finalizer to the object", func() {
+			Expect(client.Create(ctx, &exchange)).To(Succeed())
+			Eventually(func() []string {
+				var fetched topology.Exchange
+				Expect(client.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &fetched)).To(Succeed())
+				return fetched.ObjectMeta.Finalizers
+			}, 5).Should(ConsistOf("deletion.finalizers.exchanges.rabbitmq.com"))
+		})
+	})
 })

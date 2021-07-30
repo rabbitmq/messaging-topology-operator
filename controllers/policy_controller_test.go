@@ -202,4 +202,19 @@ var _ = Describe("policy-controller", func() {
 			})
 		})
 	})
+
+	Context("finalizer", func() {
+		BeforeEach(func() {
+			policyName = "finalizer-test"
+		})
+
+		It("sets the correct deletion finalizer to the object", func() {
+			Expect(client.Create(ctx, &policy)).To(Succeed())
+			Eventually(func() []string {
+				var fetched topology.Policy
+				Expect(client.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &fetched)).To(Succeed())
+				return fetched.ObjectMeta.Finalizers
+			}, 5).Should(ConsistOf("deletion.finalizers.policies.rabbitmq.com"))
+		})
+	})
 })

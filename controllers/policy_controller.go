@@ -19,7 +19,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/go-logr/logr"
@@ -29,8 +28,6 @@ import (
 
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
-
-const policyFinalizer = "deletion.finalizers.policies.rabbitmq.com"
 
 // PolicyReconciler reconciles a Policy object
 type PolicyReconciler struct {
@@ -62,7 +59,7 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !policy.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info(noSuchRabbitDeletion, "policy", policy.Name)
 		r.Recorder.Event(policy, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted policy")
-		return reconcile.Result{}, r.removeFinalizer(ctx, policy)
+		return reconcile.Result{}, removeFinalizer(ctx, r.Client, policy)
 	}
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
@@ -86,7 +83,7 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, r.deletePolicy(ctx, rabbitClient, policy)
 	}
 
-	if err := r.addFinalizerIfNeeded(ctx, policy); err != nil {
+	if err := addFinalizerIfNeeded(ctx, r.Client, policy); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -144,16 +141,6 @@ func (r *PolicyReconciler) putPolicy(ctx context.Context, client internal.Rabbit
 	return nil
 }
 
-func (r *PolicyReconciler) addFinalizerIfNeeded(ctx context.Context, policy *topology.Policy) error {
-	if policy.ObjectMeta.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(policy, policyFinalizer) {
-		controllerutil.AddFinalizer(policy, policyFinalizer)
-		if err := r.Client.Update(ctx, policy); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // deletes policy from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
 func (r *PolicyReconciler) deletePolicy(ctx context.Context, client internal.RabbitMQClient, policy *topology.Policy) error {
@@ -169,15 +156,7 @@ func (r *PolicyReconciler) deletePolicy(ctx context.Context, client internal.Rab
 		return err
 	}
 	r.Recorder.Event(policy, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted policy")
-	return r.removeFinalizer(ctx, policy)
-}
-
-func (r *PolicyReconciler) removeFinalizer(ctx context.Context, policy *topology.Policy) error {
-	controllerutil.RemoveFinalizer(policy, policyFinalizer)
-	if err := r.Client.Update(ctx, policy); err != nil {
-		return err
-	}
-	return nil
+	return removeFinalizer(ctx, r.Client, policy)
 }
 
 func (r *PolicyReconciler) SetupWithManager(mgr ctrl.Manager) error {

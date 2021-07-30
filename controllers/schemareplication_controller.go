@@ -12,7 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/go-logr/logr"
@@ -23,7 +22,6 @@ import (
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
 
-const replicationFinalizer = "deletion.finalizers.schemareplications.rabbitmq.com"
 const schemaReplicationParameterName = "schema_definition_sync_upstream"
 
 // SchemaReplicationReconciler reconciles a SchemaReplication object
@@ -55,7 +53,7 @@ func (r *SchemaReplicationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !replication.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info(noSuchRabbitDeletion, "replication", replication.Name)
 		r.Recorder.Event(replication, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted replication")
-		return reconcile.Result{}, r.removeFinalizer(ctx, replication)
+		return reconcile.Result{}, removeFinalizer(ctx, r.Client, replication)
 	}
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
@@ -79,7 +77,7 @@ func (r *SchemaReplicationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, r.deleteSchemaReplicationParameters(ctx, rabbitClient, replication)
 	}
 
-	if err := r.addFinalizerIfNeeded(ctx, replication); err != nil {
+	if err := addFinalizerIfNeeded(ctx, r.Client, replication); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -138,16 +136,6 @@ func (r *SchemaReplicationReconciler) setSchemaReplicationUpstream(ctx context.C
 	return nil
 }
 
-func (r *SchemaReplicationReconciler) addFinalizerIfNeeded(ctx context.Context, replication *topology.SchemaReplication) error {
-	if replication.ObjectMeta.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(replication, replicationFinalizer) {
-		controllerutil.AddFinalizer(replication, replicationFinalizer)
-		if err := r.Client.Update(ctx, replication); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (r *SchemaReplicationReconciler) deleteSchemaReplicationParameters(ctx context.Context, client internal.RabbitMQClient, replication *topology.SchemaReplication) error {
 	logger := ctrl.LoggerFrom(ctx)
 
@@ -164,7 +152,7 @@ func (r *SchemaReplicationReconciler) deleteSchemaReplicationParameters(ctx cont
 	msg := fmt.Sprintf("successfully delete '%s' global parameter", schemaReplicationParameterName)
 	logger.Info(msg)
 	r.Recorder.Event(replication, corev1.EventTypeNormal, "SuccessfulDelete", msg)
-	return r.removeFinalizer(ctx, replication)
+	return removeFinalizer(ctx, r.Client, replication)
 }
 
 func (r *SchemaReplicationReconciler) getUpstreamEndpoints(ctx context.Context, replication *topology.SchemaReplication) (internal.UpstreamEndpoints, error) {
@@ -182,14 +170,6 @@ func (r *SchemaReplicationReconciler) getUpstreamEndpoints(ctx context.Context, 
 	}
 
 	return endpoints, nil
-}
-
-func (r *SchemaReplicationReconciler) removeFinalizer(ctx context.Context, replication *topology.SchemaReplication) error {
-	controllerutil.RemoveFinalizer(replication, replicationFinalizer)
-	if err := r.Client.Update(ctx, replication); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (r *SchemaReplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {

@@ -197,4 +197,19 @@ var _ = Describe("bindingController", func() {
 			})
 		})
 	})
+
+	Context("finalizer", func() {
+		BeforeEach(func() {
+			bindingName = "finalizer-test"
+		})
+
+		It("sets the correct deletion finalizer to the object", func() {
+			Expect(client.Create(ctx, &binding)).To(Succeed())
+			Eventually(func() []string {
+				var fetched topology.Binding
+				Expect(client.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &fetched)).To(Succeed())
+				return fetched.ObjectMeta.Finalizers
+			}, 5).Should(ConsistOf("deletion.finalizers.bindings.rabbitmq.com"))
+		})
+	})
 })

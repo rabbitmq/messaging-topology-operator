@@ -10,7 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"time"
 
@@ -21,8 +20,6 @@ import (
 
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
-
-const federationFinalizer = "deletion.finalizers.federations.rabbitmq.com"
 
 // FederationReconciler reconciles a Federation object
 type FederationReconciler struct {
@@ -53,7 +50,7 @@ func (r *FederationReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !federation.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info(noSuchRabbitDeletion, "federation", federation.Name)
 		r.Recorder.Event(federation, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted federation")
-		return reconcile.Result{}, r.removeFinalizer(ctx, federation)
+		return reconcile.Result{}, removeFinalizer(ctx, r.Client, federation)
 	}
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
@@ -77,7 +74,7 @@ func (r *FederationReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, r.deleteFederation(ctx, rabbitClient, federation)
 	}
 
-	if err := r.addFinalizerIfNeeded(ctx, federation); err != nil {
+	if err := addFinalizerIfNeeded(ctx, r.Client, federation); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -151,17 +148,6 @@ func (r *FederationReconciler) getUri(ctx context.Context, federation *topology.
 	return string(uri), nil
 }
 
-// addFinalizerIfNeeded adds a deletion finalizer if the Federation does not have one yet and is not marked for deletion
-func (r *FederationReconciler) addFinalizerIfNeeded(ctx context.Context, e *topology.Federation) error {
-	if e.ObjectMeta.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(e, federationFinalizer) {
-		controllerutil.AddFinalizer(e, federationFinalizer)
-		if err := r.Client.Update(ctx, e); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // deletes federation from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
 func (r *FederationReconciler) deleteFederation(ctx context.Context, client internal.RabbitMQClient, federation *topology.Federation) error {
@@ -177,15 +163,7 @@ func (r *FederationReconciler) deleteFederation(ctx context.Context, client inte
 		return err
 	}
 	r.Recorder.Event(federation, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted federation upstream parameter")
-	return r.removeFinalizer(ctx, federation)
-}
-
-func (r *FederationReconciler) removeFinalizer(ctx context.Context, e *topology.Federation) error {
-	controllerutil.RemoveFinalizer(e, federationFinalizer)
-	if err := r.Client.Update(ctx, e); err != nil {
-		return err
-	}
-	return nil
+	return removeFinalizer(ctx, r.Client, federation)
 }
 
 func (r *FederationReconciler) SetupWithManager(mgr ctrl.Manager) error {
