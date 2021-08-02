@@ -1,5 +1,5 @@
 ---
-apiVersion: rabbitmq.com/v1beta2
+apiVersion: rabbitmq.com/v1beta1
 kind: Policy
 metadata:
   name: federation-policy

@@ -1,4 +1,4 @@
-apiVersion: rabbitmq.com/v1beta2
+apiVersion: rabbitmq.com/v1beta1
 kind: Permission
 metadata:
   name: example-permission
