@@ -95,7 +95,7 @@ manifests: install-tools
 # Generate API reference documentation
 api-reference:
 	crd-ref-docs \
-		--source-path ./api/v1beta2 \
+		--source-path ./api/v1beta1 \
 		--config ./docs/api/autogen/config.yaml \
 		--templates-dir ./docs/api/autogen/templates \
 		--output-path ./docs/api/rabbitmq.com.ref.asciidoc \

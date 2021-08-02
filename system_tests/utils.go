@@ -15,7 +15,7 @@ import (
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	. "github.com/onsi/gomega"
-	rabbitmqv1beta2 "github.com/rabbitmq/cluster-operator/api/v1beta2"
+	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal/testutils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -151,30 +151,30 @@ func kubernetesNodeIp(ctx context.Context, clientSet *kubernetes.Clientset) stri
 	return nodeIp
 }
 
-func basicTestRabbitmqCluster(name, namespace string) *rabbitmqv1beta2.RabbitmqCluster {
-	return &rabbitmqv1beta2.RabbitmqCluster{
+func basicTestRabbitmqCluster(name, namespace string) *rabbitmqv1beta1.RabbitmqCluster {
+	return &rabbitmqv1beta1.RabbitmqCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
-		Spec: rabbitmqv1beta2.RabbitmqClusterSpec{
+		Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
 			Replicas: pointer.Int32Ptr(1),
 			Resources: &corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceMemory: resource.MustParse("100Mi"),
 				},
 			},
-			Service: rabbitmqv1beta2.RabbitmqClusterServiceSpec{
+			Service: rabbitmqv1beta1.RabbitmqClusterServiceSpec{
 				Type: corev1.ServiceTypeNodePort,
 			},
-			Rabbitmq: rabbitmqv1beta2.RabbitmqClusterConfigurationSpec{
-				AdditionalPlugins: []rabbitmqv1beta2.Plugin{"rabbitmq_federation", "rabbitmq_shovel"},
+			Rabbitmq: rabbitmqv1beta1.RabbitmqClusterConfigurationSpec{
+				AdditionalPlugins: []rabbitmqv1beta1.Plugin{"rabbitmq_federation", "rabbitmq_shovel"},
 			},
 		},
 	}
 }
 
-func setupTestRabbitmqCluster(k8sClient client.Client, rabbitmqCluster *rabbitmqv1beta2.RabbitmqCluster) {
+func setupTestRabbitmqCluster(k8sClient client.Client, rabbitmqCluster *rabbitmqv1beta1.RabbitmqCluster) {
 	// setup a RabbitmqCluster used for system tests
 	Expect(k8sClient.Create(context.Background(), rabbitmqCluster)).To(Succeed())
 	Eventually(func() string {
@@ -194,7 +194,7 @@ func setupTestRabbitmqCluster(k8sClient client.Client, rabbitmqCluster *rabbitmq
 	Expect(k8sClient.Get(context.Background(), types.NamespacedName{Name: rabbitmqCluster.Name, Namespace: rabbitmqCluster.Namespace}, rabbitmqCluster)).To(Succeed())
 }
 
-func updateTestRabbitmqCluster(k8sClient client.Client, rabbitmqCluster *rabbitmqv1beta2.RabbitmqCluster) {
+func updateTestRabbitmqCluster(k8sClient client.Client, rabbitmqCluster *rabbitmqv1beta1.RabbitmqCluster) {
 	// update a RabbitmqCluster used for system tests
 	Expect(k8sClient.Update(context.Background(), rabbitmqCluster)).To(Succeed())
 	Eventually(func() string {

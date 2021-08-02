@@ -13,7 +13,7 @@ import (
 	"encoding/json"
 	"fmt"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
-	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta2"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
 
 func GenerateExchangeSettings(e *topology.Exchange) (*rabbithole.ExchangeSettings, error) {

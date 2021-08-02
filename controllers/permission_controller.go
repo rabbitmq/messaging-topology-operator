@@ -20,7 +20,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta2"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
 
 // PermissionReconciler reconciles a Permission object

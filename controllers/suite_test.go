@@ -22,7 +22,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	rabbitmqv1beta2 "github.com/rabbitmq/cluster-operator/api/v1beta2"
+	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
@@ -32,7 +32,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta2"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"github.com/rabbitmq/messaging-topology-operator/internal/internalfakes"
@@ -50,7 +50,7 @@ var (
 	ctx                       = context.Background()
 	fakeRabbitMQClient        *internalfakes.FakeRabbitMQClient
 	fakeRabbitMQClientError   error
-	fakeRabbitMQClientFactory = func(rmq *rabbitmqv1beta2.RabbitmqCluster, svc *corev1.Service, secret *corev1.Secret, hostname string, certPool *x509.CertPool) (internal.RabbitMQClient, error) {
+	fakeRabbitMQClientFactory = func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, secret *corev1.Secret, hostname string, certPool *x509.CertPool) (internal.RabbitMQClient, error) {
 		return fakeRabbitMQClient, fakeRabbitMQClientError
 	}
 	fakeRecorder *record.FakeRecorder
@@ -72,7 +72,7 @@ var _ = BeforeSuite(func() {
 
 	Expect(scheme.AddToScheme(scheme.Scheme)).To(Succeed())
 	Expect(topology.AddToScheme(scheme.Scheme)).To(Succeed())
-	Expect(rabbitmqv1beta2.AddToScheme(scheme.Scheme)).To(Succeed())
+	Expect(rabbitmqv1beta1.AddToScheme(scheme.Scheme)).To(Succeed())
 
 	clientSet, err = kubernetes.NewForConfig(cfg)
 	Expect(err).NotTo(HaveOccurred())
@@ -186,12 +186,12 @@ var _ = BeforeSuite(func() {
 	}
 	Expect(client.Create(ctx, &rmqSrv)).To(Succeed())
 
-	rmq := rabbitmqv1beta2.RabbitmqCluster{
+	rmq := rabbitmqv1beta1.RabbitmqCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "example-rabbit",
 			Namespace: "default",
 		},
-		Spec: rabbitmqv1beta2.RabbitmqClusterSpec{
+		Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
 			MessagingTopologyNamespaces: []string{
 				"allowed",
 			},
@@ -199,12 +199,12 @@ var _ = BeforeSuite(func() {
 	}
 	Expect(client.Create(ctx, &rmq)).To(Succeed())
 
-	rmq.Status = rabbitmqv1beta2.RabbitmqClusterStatus{
+	rmq.Status = rabbitmqv1beta1.RabbitmqClusterStatus{
 		Binding: &corev1.LocalObjectReference{
 			Name: "example-rabbit-user-credentials",
 		},
-		DefaultUser: &rabbitmqv1beta2.RabbitmqClusterDefaultUser{
-			ServiceReference: &rabbitmqv1beta2.RabbitmqClusterServiceReference{
+		DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
+			ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
 				Name:      "example-rabbit",
 				Namespace: "default",
 			},

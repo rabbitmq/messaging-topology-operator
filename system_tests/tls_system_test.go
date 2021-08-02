@@ -6,8 +6,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/google/uuid"
-	rabbitmqv1beta2 "github.com/rabbitmq/cluster-operator/api/v1beta2"
-	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta2"
+	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -20,7 +20,7 @@ var _ = Describe("RabbitmqCluster with TLS", func() {
 	var (
 		namespace        = MustHaveEnv("NAMESPACE")
 		ctx              = context.Background()
-		targetCluster    *rabbitmqv1beta2.RabbitmqCluster
+		targetCluster    *rabbitmqv1beta1.RabbitmqCluster
 		targetClusterRef topology.RabbitmqClusterReference
 		policy           topology.Policy
 		secretName       string
@@ -65,7 +65,7 @@ var _ = Describe("RabbitmqCluster with TLS", func() {
 			)
 			return string(output)
 		}, 90, 10).Should(ContainSubstring("NotFound"))
-		Expect(k8sClient.Delete(ctx, &rabbitmqv1beta2.RabbitmqCluster{ObjectMeta: metav1.ObjectMeta{Name: targetCluster.Name, Namespace: targetCluster.Namespace}})).To(Succeed())
+		Expect(k8sClient.Delete(ctx, &rabbitmqv1beta1.RabbitmqCluster{ObjectMeta: metav1.ObjectMeta{Name: targetCluster.Name, Namespace: targetCluster.Namespace}})).To(Succeed())
 		Eventually(func() string {
 			output, _ := kubectl(
 				"-n",

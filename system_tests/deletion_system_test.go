@@ -3,8 +3,8 @@ package system_tests
 import (
 	"context"
 
-	rabbitmqv1beta2 "github.com/rabbitmq/cluster-operator/api/v1beta2"
-	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta2"
+	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -16,7 +16,7 @@ var _ = Describe("Deletion", func() {
 	var (
 		namespace     = MustHaveEnv("NAMESPACE")
 		ctx           = context.Background()
-		targetCluster *rabbitmqv1beta2.RabbitmqCluster
+		targetCluster *rabbitmqv1beta1.RabbitmqCluster
 		exchange      topology.Exchange
 		policy        topology.Policy
 		queue         topology.Queue
@@ -90,7 +90,7 @@ var _ = Describe("Deletion", func() {
 	})
 
 	It("handles the referenced RabbitmqCluster being deleted", func() {
-		Expect(k8sClient.Delete(ctx, &rabbitmqv1beta2.RabbitmqCluster{ObjectMeta: metav1.ObjectMeta{Name: targetCluster.Name, Namespace: targetCluster.Namespace}})).To(Succeed())
+		Expect(k8sClient.Delete(ctx, &rabbitmqv1beta1.RabbitmqCluster{ObjectMeta: metav1.ObjectMeta{Name: targetCluster.Name, Namespace: targetCluster.Namespace}})).To(Succeed())
 		Eventually(func() string {
 			output, _ := kubectl(
 				"-n",
