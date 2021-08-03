@@ -200,6 +200,21 @@ var _ = Describe("vhost-controller", func() {
 		})
 	})
 
+	Context("finalizer", func() {
+		BeforeEach(func() {
+			vhostName = "finalizer-test"
+		})
+
+		It("sets the correct deletion finalizer to the object", func() {
+			Expect(client.Create(ctx, &vhost)).To(Succeed())
+			Eventually(func() []string {
+				var fetched topology.Vhost
+				Expect(client.Get(ctx, types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace}, &fetched)).To(Succeed())
+				return fetched.ObjectMeta.Finalizers
+			}, 5).Should(ConsistOf("deletion.finalizers.vhosts.rabbitmq.com"))
+		})
+	})
+
 	When("a vhost references a cluster from a prohibited namespace", func() {
 		JustBeforeEach(func() {
 			vhostName = "test-vhost-prohibited"
@@ -270,18 +285,38 @@ var _ = Describe("vhost-controller", func() {
 		})
 	})
 
-	Context("finalizer", func() {
-		BeforeEach(func() {
-			vhostName = "finalizer-test"
+	When("a vhost references a cluster that allows all namespaces", func() {
+		JustBeforeEach(func() {
+			vhostName = "test-vhost-allowed-when-allow-all"
+			vhost = topology.Vhost{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      vhostName,
+					Namespace: "prohibited",
+				},
+				Spec: topology.VhostSpec{
+					RabbitmqClusterReference: topology.RabbitmqClusterReference{
+						Name:      "allow-all-rabbit",
+						Namespace: "default",
+					},
+				},
+			}
 		})
-
-		It("sets the correct deletion finalizer to the object", func() {
+		It("should be created", func() {
 			Expect(client.Create(ctx, &vhost)).To(Succeed())
-			Eventually(func() []string {
-				var fetched topology.Vhost
-				Expect(client.Get(ctx, types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace}, &fetched)).To(Succeed())
-				return fetched.ObjectMeta.Finalizers
-			}, 5).Should(ConsistOf("deletion.finalizers.vhosts.rabbitmq.com"))
+			EventuallyWithOffset(1, func() []topology.Condition {
+				_ = client.Get(
+					ctx,
+					types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace},
+					&vhost,
+				)
+
+				return vhost.Status.Conditions
+			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":    Equal(topology.ConditionType("Ready")),
+				"Reason":  Equal("FailedCreateOrUpdate"),
+				"Status":  Equal(corev1.ConditionFalse),
+				"Message": Not(ContainSubstring("not allowed to reference")),
+			})))
 		})
 	})
 })

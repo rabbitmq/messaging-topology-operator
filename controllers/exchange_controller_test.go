@@ -200,7 +200,22 @@ var _ = Describe("exchange-controller", func() {
 		})
 	})
 
-	When("a exchange references a cluster from a prohibited namespace", func() {
+	Context("finalizer", func() {
+		BeforeEach(func() {
+			exchangeName = "finalizer-test"
+		})
+
+		It("sets the correct deletion finalizer to the object", func() {
+			Expect(client.Create(ctx, &exchange)).To(Succeed())
+			Eventually(func() []string {
+				var fetched topology.Exchange
+				Expect(client.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &fetched)).To(Succeed())
+				return fetched.ObjectMeta.Finalizers
+			}, 5).Should(ConsistOf("deletion.finalizers.exchanges.rabbitmq.com"))
+		})
+	})
+
+	When("an exchange references a cluster from a prohibited namespace", func() {
 		JustBeforeEach(func() {
 			exchangeName = "test-exchange-prohibited"
 			exchange = topology.Exchange{
@@ -235,7 +250,7 @@ var _ = Describe("exchange-controller", func() {
 		})
 	})
 
-	When("a exchange references a cluster from an allowed namespace", func() {
+	When("an exchange references a cluster from an allowed namespace", func() {
 		JustBeforeEach(func() {
 			exchangeName = "test-exchange-allowed"
 			exchange = topology.Exchange{
@@ -270,18 +285,38 @@ var _ = Describe("exchange-controller", func() {
 		})
 	})
 
-	Context("finalizer", func() {
-		BeforeEach(func() {
-			exchangeName = "finalizer-test"
+	When("an exchange references a cluster that allows all namespaces", func() {
+		JustBeforeEach(func() {
+			exchangeName = "test-exchange-allowed-when-allow-all"
+			exchange = topology.Exchange{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      exchangeName,
+					Namespace: "prohibited",
+				},
+				Spec: topology.ExchangeSpec{
+					RabbitmqClusterReference: topology.RabbitmqClusterReference{
+						Name:      "allow-all-rabbit",
+						Namespace: "default",
+					},
+				},
+			}
 		})
-
-		It("sets the correct deletion finalizer to the object", func() {
+		It("should be created", func() {
 			Expect(client.Create(ctx, &exchange)).To(Succeed())
-			Eventually(func() []string {
-				var fetched topology.Exchange
-				Expect(client.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &fetched)).To(Succeed())
-				return fetched.ObjectMeta.Finalizers
-			}, 5).Should(ConsistOf("deletion.finalizers.exchanges.rabbitmq.com"))
+			EventuallyWithOffset(1, func() []topology.Condition {
+				_ = client.Get(
+					ctx,
+					types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace},
+					&exchange,
+				)
+
+				return exchange.Status.Conditions
+			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":    Equal(topology.ConditionType("Ready")),
+				"Reason":  Equal("FailedCreateOrUpdate"),
+				"Status":  Equal(corev1.ConditionFalse),
+				"Message": Not(ContainSubstring("not allowed to reference")),
+			})))
 		})
 	})
 })

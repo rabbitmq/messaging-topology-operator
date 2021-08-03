@@ -203,6 +203,21 @@ var _ = Describe("federation-controller", func() {
 		})
 	})
 
+	Context("finalizer", func() {
+		BeforeEach(func() {
+			name = "finalizer-test"
+		})
+
+		It("sets the correct deletion finalizer to the object", func() {
+			Expect(client.Create(ctx, &federation)).To(Succeed())
+			Eventually(func() []string {
+				var fetched topology.Federation
+				Expect(client.Get(ctx, types.NamespacedName{Name: federation.Name, Namespace: federation.Namespace}, &fetched)).To(Succeed())
+				return fetched.ObjectMeta.Finalizers
+			}, 5).Should(ConsistOf("deletion.finalizers.federations.rabbitmq.com"))
+		})
+	})
+
 	When("a federation references a cluster from a prohibited namespace", func() {
 		JustBeforeEach(func() {
 			federationName = "test-federation-prohibited"
@@ -279,18 +294,41 @@ var _ = Describe("federation-controller", func() {
 		})
 	})
 
-	Context("finalizer", func() {
-		BeforeEach(func() {
-			name = "finalizer-test"
+	When("a federation references a cluster that allows all namespaces", func() {
+		JustBeforeEach(func() {
+			federationName = "test-federation-allowed-when-allow-all"
+			federation = topology.Federation{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      federationName,
+					Namespace: "prohibited",
+				},
+				Spec: topology.FederationSpec{
+					Name:      "my-federation-upstream",
+					Vhost:     "/test",
+					UriSecret: &corev1.LocalObjectReference{Name: "federation-uri"},
+					RabbitmqClusterReference: topology.RabbitmqClusterReference{
+						Name:      "allow-all-rabbit",
+						Namespace: "default",
+					},
+				},
+			}
 		})
-
-		It("sets the correct deletion finalizer to the object", func() {
+		It("should be created", func() {
 			Expect(client.Create(ctx, &federation)).To(Succeed())
-			Eventually(func() []string {
-				var fetched topology.Federation
-				Expect(client.Get(ctx, types.NamespacedName{Name: federation.Name, Namespace: federation.Namespace}, &fetched)).To(Succeed())
-				return fetched.ObjectMeta.Finalizers
-			}, 5).Should(ConsistOf("deletion.finalizers.federations.rabbitmq.com"))
+			EventuallyWithOffset(1, func() []topology.Condition {
+				_ = client.Get(
+					ctx,
+					types.NamespacedName{Name: federation.Name, Namespace: federation.Namespace},
+					&federation,
+				)
+
+				return federation.Status.Conditions
+			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":    Equal(topology.ConditionType("Ready")),
+				"Reason":  Equal("FailedCreateOrUpdate"),
+				"Status":  Equal(corev1.ConditionFalse),
+				"Message": Not(ContainSubstring("not allowed to reference")),
+			})))
 		})
 	})
 })

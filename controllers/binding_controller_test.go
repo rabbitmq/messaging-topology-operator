@@ -235,6 +235,21 @@ var _ = Describe("bindingController", func() {
 		})
 	})
 
+	Context("finalizer", func() {
+		BeforeEach(func() {
+			bindingName = "finalizer-test"
+		})
+
+		It("sets the correct deletion finalizer to the object", func() {
+			Expect(client.Create(ctx, &binding)).To(Succeed())
+			Eventually(func() []string {
+				var fetched topology.Binding
+				Expect(client.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &fetched)).To(Succeed())
+				return fetched.ObjectMeta.Finalizers
+			}, 5).Should(ConsistOf("deletion.finalizers.bindings.rabbitmq.com"))
+		})
+	})
+
 	When("a binding references a cluster from an allowed namespace", func() {
 		JustBeforeEach(func() {
 			bindingName = "test-binding-allowed"
@@ -270,18 +285,38 @@ var _ = Describe("bindingController", func() {
 		})
 	})
 
-	Context("finalizer", func() {
-		BeforeEach(func() {
-			bindingName = "finalizer-test"
+	When("a binding references a cluster that allows all namespaces", func() {
+		JustBeforeEach(func() {
+			bindingName = "test-binding-allowed-when-allow-all"
+			binding = topology.Binding{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      bindingName,
+					Namespace: "prohibited",
+				},
+				Spec: topology.BindingSpec{
+					RabbitmqClusterReference: topology.RabbitmqClusterReference{
+						Name:      "allow-all-rabbit",
+						Namespace: "default",
+					},
+				},
+			}
 		})
-
-		It("sets the correct deletion finalizer to the object", func() {
+		It("should be created", func() {
 			Expect(client.Create(ctx, &binding)).To(Succeed())
-			Eventually(func() []string {
-				var fetched topology.Binding
-				Expect(client.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &fetched)).To(Succeed())
-				return fetched.ObjectMeta.Finalizers
-			}, 5).Should(ConsistOf("deletion.finalizers.bindings.rabbitmq.com"))
+			EventuallyWithOffset(1, func() []topology.Condition {
+				_ = client.Get(
+					ctx,
+					types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace},
+					&binding,
+				)
+
+				return binding.Status.Conditions
+			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":    Equal(topology.ConditionType("Ready")),
+				"Reason":  Equal("FailedCreateOrUpdate"),
+				"Status":  Equal(corev1.ConditionFalse),
+				"Message": Not(ContainSubstring("not allowed to reference")),
+			})))
 		})
 	})
 })

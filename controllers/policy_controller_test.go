@@ -205,6 +205,21 @@ var _ = Describe("policy-controller", func() {
 		})
 	})
 
+	Context("finalizer", func() {
+		BeforeEach(func() {
+			policyName = "finalizer-test"
+		})
+
+		It("sets the correct deletion finalizer to the object", func() {
+			Expect(client.Create(ctx, &policy)).To(Succeed())
+			Eventually(func() []string {
+				var fetched topology.Policy
+				Expect(client.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &fetched)).To(Succeed())
+				return fetched.ObjectMeta.Finalizers
+			}, 5).Should(ConsistOf("deletion.finalizers.policies.rabbitmq.com"))
+		})
+	})
+
 	When("a policy references a cluster from a prohibited namespace", func() {
 		JustBeforeEach(func() {
 			policyName = "test-policy-prohibited"
@@ -281,18 +296,41 @@ var _ = Describe("policy-controller", func() {
 		})
 	})
 
-	Context("finalizer", func() {
-		BeforeEach(func() {
-			policyName = "finalizer-test"
+	When("a policy references a cluster that allows all namespaces", func() {
+		JustBeforeEach(func() {
+			policyName = "test-policy-allowed-when-allow-all"
+			policy = topology.Policy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      policyName,
+					Namespace: "prohibited",
+				},
+				Spec: topology.PolicySpec{
+					Definition: &runtime.RawExtension{
+						Raw: []byte(`{"key":"value"}`),
+					},
+					RabbitmqClusterReference: topology.RabbitmqClusterReference{
+						Name:      "allow-all-rabbit",
+						Namespace: "default",
+					},
+				},
+			}
 		})
-
-		It("sets the correct deletion finalizer to the object", func() {
+		It("should be created", func() {
 			Expect(client.Create(ctx, &policy)).To(Succeed())
-			Eventually(func() []string {
-				var fetched topology.Policy
-				Expect(client.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &fetched)).To(Succeed())
-				return fetched.ObjectMeta.Finalizers
-			}, 5).Should(ConsistOf("deletion.finalizers.policies.rabbitmq.com"))
+			EventuallyWithOffset(1, func() []topology.Condition {
+				_ = client.Get(
+					ctx,
+					types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace},
+					&policy,
+				)
+
+				return policy.Status.Conditions
+			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":    Equal(topology.ConditionType("Ready")),
+				"Reason":  Equal("FailedCreateOrUpdate"),
+				"Status":  Equal(corev1.ConditionFalse),
+				"Message": Not(ContainSubstring("not allowed to reference")),
+			})))
 		})
 	})
 })

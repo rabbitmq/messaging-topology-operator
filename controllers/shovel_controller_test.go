@@ -203,6 +203,21 @@ var _ = Describe("shovel-controller", func() {
 		})
 	})
 
+	Context("finalizer", func() {
+		BeforeEach(func() {
+			name = "finalizer-test"
+		})
+
+		It("sets the correct deletion finalizer to the object", func() {
+			Expect(client.Create(ctx, &shovel)).To(Succeed())
+			Eventually(func() []string {
+				var fetched topology.Shovel
+				Expect(client.Get(ctx, types.NamespacedName{Name: shovel.Name, Namespace: shovel.Namespace}, &fetched)).To(Succeed())
+				return fetched.ObjectMeta.Finalizers
+			}, 5).Should(ConsistOf("deletion.finalizers.shovels.rabbitmq.com"))
+		})
+	})
+
 	When("a shovel references a cluster from a prohibited namespace", func() {
 		JustBeforeEach(func() {
 			shovelName = "test-shovel-prohibited"
@@ -279,18 +294,41 @@ var _ = Describe("shovel-controller", func() {
 		})
 	})
 
-	Context("finalizer", func() {
-		BeforeEach(func() {
-			name = "finalizer-test"
+	When("a shovel references a cluster that allows all namespaces", func() {
+		JustBeforeEach(func() {
+			shovelName = "test-shovel-allowed-when-allow-all"
+			shovel = topology.Shovel{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      shovelName,
+					Namespace: "prohibited",
+				},
+				Spec: topology.ShovelSpec{
+					Name:      "my-shovel-configuration",
+					Vhost:     "/test",
+					UriSecret: &corev1.LocalObjectReference{Name: "shovel-uri-secret"},
+					RabbitmqClusterReference: topology.RabbitmqClusterReference{
+						Name:      "allow-all-rabbit",
+						Namespace: "default",
+					},
+				},
+			}
 		})
-
-		It("sets the correct deletion finalizer to the object", func() {
+		It("should be created", func() {
 			Expect(client.Create(ctx, &shovel)).To(Succeed())
-			Eventually(func() []string {
-				var fetched topology.Shovel
-				Expect(client.Get(ctx, types.NamespacedName{Name: shovel.Name, Namespace: shovel.Namespace}, &fetched)).To(Succeed())
-				return fetched.ObjectMeta.Finalizers
-			}, 5).Should(ConsistOf("deletion.finalizers.shovels.rabbitmq.com"))
+			EventuallyWithOffset(1, func() []topology.Condition {
+				_ = client.Get(
+					ctx,
+					types.NamespacedName{Name: shovel.Name, Namespace: shovel.Namespace},
+					&shovel,
+				)
+
+				return shovel.Status.Conditions
+			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":    Equal(topology.ConditionType("Ready")),
+				"Reason":  Equal("FailedCreateOrUpdate"),
+				"Status":  Equal(corev1.ConditionFalse),
+				"Message": Not(ContainSubstring("not allowed to reference")),
+			})))
 		})
 	})
 })

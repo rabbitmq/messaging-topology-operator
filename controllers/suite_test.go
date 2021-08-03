@@ -213,6 +213,56 @@ var _ = BeforeSuite(func() {
 	rmq.Status.SetConditions([]runtime.Object{})
 	Expect(client.Status().Update(ctx, &rmq)).To(Succeed())
 
+	rmqCreds = corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "allow-all-rabbit-user-credentials",
+			Namespace: "default",
+		},
+	}
+	Expect(client.Create(ctx, &rmqCreds)).To(Succeed())
+
+	rmqSrv = corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "allow-all-rabbit",
+			Namespace: "default",
+		},
+		Spec: corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{
+					Port: 15671,
+				},
+			},
+		},
+	}
+	Expect(client.Create(ctx, &rmqSrv)).To(Succeed())
+
+	rmq = rabbitmqv1beta1.RabbitmqCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "allow-all-rabbit",
+			Namespace: "default",
+		},
+		Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
+			MessagingTopologyNamespaces: []string{
+				"*",
+			},
+		},
+	}
+	Expect(client.Create(ctx, &rmq)).To(Succeed())
+
+	rmq.Status = rabbitmqv1beta1.RabbitmqClusterStatus{
+		Binding: &corev1.LocalObjectReference{
+			Name: "allow-all-rabbit-user-credentials",
+		},
+		DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
+			ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
+				Name:      "allow-all-rabbit",
+				Namespace: "default",
+			},
+		},
+	}
+	rmq.Status.SetConditions([]runtime.Object{})
+	Expect(client.Status().Update(ctx, &rmq)).To(Succeed())
+
 	allowedNamespace := corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "allowed",

@@ -203,6 +203,21 @@ var _ = Describe("schema-replication-controller", func() {
 		})
 	})
 
+	Context("finalizer", func() {
+		BeforeEach(func() {
+			name = "finalizer-test"
+		})
+
+		It("sets the correct deletion finalizer to the object", func() {
+			Expect(client.Create(ctx, &replication)).To(Succeed())
+			Eventually(func() []string {
+				var fetched topology.SchemaReplication
+				Expect(client.Get(ctx, types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace}, &fetched)).To(Succeed())
+				return fetched.ObjectMeta.Finalizers
+			}, 5).Should(ConsistOf("deletion.finalizers.schemareplications.rabbitmq.com"))
+		})
+	})
+
 	When("a schema replication references a cluster from a prohibited namespace", func() {
 		JustBeforeEach(func() {
 			replicationName = "test-replication-prohibited"
@@ -279,18 +294,41 @@ var _ = Describe("schema-replication-controller", func() {
 		})
 	})
 
-	Context("finalizer", func() {
-		BeforeEach(func() {
-			name = "finalizer-test"
+	When("a schema replication references a cluster that allows all namespaces", func() {
+		JustBeforeEach(func() {
+			replicationName = "test-replication-allowed-when-allow-all"
+			replication = topology.SchemaReplication{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      replicationName,
+					Namespace: "prohibited",
+				},
+				Spec: topology.SchemaReplicationSpec{
+					UpstreamSecret: &corev1.LocalObjectReference{
+						Name: "endpoints-secret",
+					},
+					RabbitmqClusterReference: topology.RabbitmqClusterReference{
+						Name:      "allow-all-rabbit",
+						Namespace: "default",
+					},
+				},
+			}
 		})
-
-		It("sets the correct deletion finalizer to the object", func() {
+		It("should be created", func() {
 			Expect(client.Create(ctx, &replication)).To(Succeed())
-			Eventually(func() []string {
-				var fetched topology.SchemaReplication
-				Expect(client.Get(ctx, types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace}, &fetched)).To(Succeed())
-				return fetched.ObjectMeta.Finalizers
-			}, 5).Should(ConsistOf("deletion.finalizers.schemareplications.rabbitmq.com"))
+			EventuallyWithOffset(1, func() []topology.Condition {
+				_ = client.Get(
+					ctx,
+					types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace},
+					&replication,
+				)
+
+				return replication.Status.Conditions
+			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":    Equal(topology.ConditionType("Ready")),
+				"Reason":  Equal("FailedCreateOrUpdate"),
+				"Status":  Equal(corev1.ConditionFalse),
+				"Message": Not(ContainSubstring("not allowed to reference")),
+			})))
 		})
 	})
 })

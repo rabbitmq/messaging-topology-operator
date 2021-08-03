@@ -32,7 +32,7 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 	if rmq.Namespace != "" && rmq.Namespace != requestNamespace {
 		var isAllowed bool
 		for _, allowedNamespace := range cluster.Spec.MessagingTopologyNamespaces {
-			if requestNamespace == allowedNamespace {
+			if requestNamespace == allowedNamespace || allowedNamespace == "*" {
 				isAllowed = true
 				break
 			}
