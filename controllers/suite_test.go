@@ -12,7 +12,6 @@ package controllers_test
 import (
 	"context"
 	"crypto/x509"
-	"go/build"
 	"path/filepath"
 	"testing"
 
@@ -62,7 +61,12 @@ var _ = BeforeSuite(func() {
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "config", "crd", "bases"),
+<<<<<<< HEAD
 			filepath.Join(build.Default.GOPATH, "pkg", "mod", "github.com", "rabbitmq", "cluster-operator@v1.8.1", "config", "crd", "bases"),
+=======
+			// filepath.Join(build.Default.GOPATH, "pkg", "mod", "github.com", "rabbitmq", "cluster-operator@v1.8.0", "config", "crd", "bases"),
+			filepath.Join("..", "..", "cluster-operator", "config", "crd", "bases"),
+>>>>>>> Check status of created resource when it's allowed to be created
 		},
 	}
 
@@ -277,47 +281,113 @@ var _ = BeforeSuite(func() {
 	}
 	Expect(client.Create(ctx, &prohibitedNamespace)).To(Succeed())
 
+	endpointsSecretBody := map[string][]byte{
+		"username":  []byte("a-random-user"),
+		"password":  []byte("a-random-password"),
+		"endpoints": []byte("a.endpoints.local:5672,b.endpoints.local:5672,c.endpoints.local:5672"),
+	}
+
 	// used in schema-replication-controller test
-	secret := corev1.Secret{
+	endpointsSecret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "endpoints-secret",
 			Namespace: "default",
 		},
 		Type: corev1.SecretTypeOpaque,
-		Data: map[string][]byte{
-			"username":  []byte("a-random-user"),
-			"password":  []byte("a-random-password"),
-			"endpoints": []byte("a.endpoints.local:5672,b.endpoints.local:5672,c.endpoints.local:5672"),
-		},
+		Data: endpointsSecretBody,
 	}
-	Expect(client.Create(ctx, &secret)).To(Succeed())
+	Expect(client.Create(ctx, &endpointsSecret)).To(Succeed())
+
+	allowedEndpointsSecret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "endpoints-secret",
+			Namespace: "allowed",
+		},
+		Type: corev1.SecretTypeOpaque,
+		Data: endpointsSecretBody,
+	}
+	Expect(client.Create(ctx, &allowedEndpointsSecret)).To(Succeed())
+
+	prohibitedEndpointsSecret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "endpoints-secret",
+			Namespace: "prohibited",
+		},
+		Type: corev1.SecretTypeOpaque,
+		Data: endpointsSecretBody,
+	}
+	Expect(client.Create(ctx, &prohibitedEndpointsSecret)).To(Succeed())
+
+	federationUriSecretBody := map[string][]byte{
+		"uri": []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
+	}
 
 	// used in federation-controller test
-	federationUri := corev1.Secret{
+	federationUriSecret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "federation-uri",
 			Namespace: "default",
 		},
 		Type: corev1.SecretTypeOpaque,
-		Data: map[string][]byte{
-			"uri": []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
-		},
+		Data: federationUriSecretBody,
 	}
-	Expect(client.Create(ctx, &federationUri)).To(Succeed())
+	Expect(client.Create(ctx, &federationUriSecret)).To(Succeed())
+
+	allowedFederationUriSecret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "federation-uri",
+			Namespace: "allowed",
+		},
+		Type: corev1.SecretTypeOpaque,
+		Data: federationUriSecretBody,
+	}
+	Expect(client.Create(ctx, &allowedFederationUriSecret)).To(Succeed())
+
+	prohibitedFederationUriSecret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "federation-uri",
+			Namespace: "prohibited",
+		},
+		Type: corev1.SecretTypeOpaque,
+		Data: federationUriSecretBody,
+	}
+	Expect(client.Create(ctx, &prohibitedFederationUriSecret)).To(Succeed())
+
+	shovelUriSecretBody := map[string][]byte{
+		"srcUri":  []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
+		"destUri": []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
+	}
 
 	// used in shovel-controller test
-	shovelUri := corev1.Secret{
+	shovelUriSecret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "shovel-uri-secret",
 			Namespace: "default",
 		},
 		Type: corev1.SecretTypeOpaque,
-		Data: map[string][]byte{
-			"srcUri":  []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
-			"destUri": []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
-		},
+		Data: shovelUriSecretBody,
 	}
-	Expect(client.Create(ctx, &shovelUri)).To(Succeed())
+	Expect(client.Create(ctx, &shovelUriSecret)).To(Succeed())
+
+	allowedShovelUriSecret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "shovel-uri-secret",
+			Namespace: "allowed",
+		},
+		Type: corev1.SecretTypeOpaque,
+		Data: shovelUriSecretBody,
+	}
+	Expect(client.Create(ctx, &allowedShovelUriSecret)).To(Succeed())
+
+	prohibitedShovelUriSecret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "shovel-uri-secret",
+			Namespace: "prohibited",
+		},
+		Type: corev1.SecretTypeOpaque,
+		Data: shovelUriSecretBody,
+	}
+	Expect(client.Create(ctx, &prohibitedShovelUriSecret)).To(Succeed())
 })
 
 var _ = BeforeEach(func() {

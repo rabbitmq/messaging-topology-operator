@@ -297,6 +297,10 @@ var _ = Describe("UserController", func() {
 					},
 				},
 			}
+			fakeRabbitMQClient.PutUserReturns(&http.Response{
+				Status:     "201 Created",
+				StatusCode: http.StatusCreated,
+			}, nil)
 		})
 		It("should be created", func() {
 			Expect(client.Create(ctx, &user)).To(Succeed())
@@ -309,10 +313,9 @@ var _ = Describe("UserController", func() {
 
 				return user.Status.Conditions
 			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Type":    Equal(topology.ConditionType("Ready")),
-				"Reason":  Equal("FailedCreateOrUpdate"),
-				"Status":  Equal(corev1.ConditionFalse),
-				"Message": Not(ContainSubstring("not allowed to reference")),
+				"Type":   Equal(topology.ConditionType("Ready")),
+				"Reason": Equal("SuccessfulCreateOrUpdate"),
+				"Status": Equal(corev1.ConditionTrue),
 			})))
 		})
 	})
@@ -332,6 +335,10 @@ var _ = Describe("UserController", func() {
 					},
 				},
 			}
+			fakeRabbitMQClient.PutUserReturns(&http.Response{
+				Status:     "201 Created",
+				StatusCode: http.StatusCreated,
+			}, nil)
 		})
 		It("should be created", func() {
 			Expect(client.Create(ctx, &user)).To(Succeed())
@@ -344,10 +351,9 @@ var _ = Describe("UserController", func() {
 
 				return user.Status.Conditions
 			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Type":    Equal(topology.ConditionType("Ready")),
-				"Reason":  Equal("FailedCreateOrUpdate"),
-				"Status":  Equal(corev1.ConditionFalse),
-				"Message": Not(ContainSubstring("not allowed to reference")),
+				"Type":   Equal(topology.ConditionType("Ready")),
+				"Reason": Equal("SuccessfulCreateOrUpdate"),
+				"Status": Equal(corev1.ConditionTrue),
 			})))
 		})
 	})
