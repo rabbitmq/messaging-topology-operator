@@ -12,6 +12,7 @@ package controllers_test
 import (
 	"context"
 	"crypto/x509"
+	"go/build"
 	"path/filepath"
 	"testing"
 
@@ -61,12 +62,7 @@ var _ = BeforeSuite(func() {
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "config", "crd", "bases"),
-<<<<<<< HEAD
 			filepath.Join(build.Default.GOPATH, "pkg", "mod", "github.com", "rabbitmq", "cluster-operator@v1.8.1", "config", "crd", "bases"),
-=======
-			// filepath.Join(build.Default.GOPATH, "pkg", "mod", "github.com", "rabbitmq", "cluster-operator@v1.8.0", "config", "crd", "bases"),
-			filepath.Join("..", "..", "cluster-operator", "config", "crd", "bases"),
->>>>>>> Check status of created resource when it's allowed to be created
 		},
 	}
 
