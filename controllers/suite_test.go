@@ -190,10 +190,8 @@ var _ = BeforeSuite(func() {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "example-rabbit",
 			Namespace: "default",
-		},
-		Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
-			MessagingTopologyNamespaces: []string{
-				"allowed",
+			Annotations: map[string]string{
+				"rabbitmq.topology.allowed-namespaces": "allowed",
 			},
 		},
 	}
@@ -240,10 +238,8 @@ var _ = BeforeSuite(func() {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "allow-all-rabbit",
 			Namespace: "default",
-		},
-		Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
-			MessagingTopologyNamespaces: []string{
-				"*",
+			Annotations: map[string]string{
+				"rabbitmq.topology.allowed-namespaces": "*",
 			},
 		},
 	}
