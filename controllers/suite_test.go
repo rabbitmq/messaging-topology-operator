@@ -191,7 +191,7 @@ var _ = BeforeSuite(func() {
 			Name:      "example-rabbit",
 			Namespace: "default",
 			Annotations: map[string]string{
-				"rabbitmq.topology.allowed-namespaces": "allowed",
+				"rabbitmq.com/topology-allowed-namespaces": "allowed",
 			},
 		},
 	}
@@ -239,7 +239,7 @@ var _ = BeforeSuite(func() {
 			Name:      "allow-all-rabbit",
 			Namespace: "default",
 			Annotations: map[string]string{
-				"rabbitmq.topology.allowed-namespaces": "*",
+				"rabbitmq.com/topology-allowed-namespaces": "*",
 			},
 		},
 	}

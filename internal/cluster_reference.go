@@ -15,7 +15,7 @@ import (
 
 var (
 	NoSuchRabbitmqClusterError = errors.New("RabbitmqCluster object does not exist")
-	ResourceNotAllowedError    = errors.New("Resource is not allowed to reference defined cluster reference. Check the namespace of the resource is allowed as part of the cluster's `rabbitmq.topology.allowed-namespaces` annotation")
+	ResourceNotAllowedError    = errors.New("Resource is not allowed to reference defined cluster reference. Check the namespace of the resource is allowed as part of the cluster's `rabbitmq.com/topology-allowed-namespaces` annotation")
 )
 
 func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string) (*rabbitmqv1beta1.RabbitmqCluster, *corev1.Service, *corev1.Secret, error) {
@@ -32,7 +32,7 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 
 	if rmq.Namespace != "" && rmq.Namespace != requestNamespace {
 		var isAllowed bool
-		if allowedNamespaces, ok := cluster.Annotations["rabbitmq.topology.allowed-namespaces"]; ok {
+		if allowedNamespaces, ok := cluster.Annotations["rabbitmq.com/topology-allowed-namespaces"]; ok {
 			for _, allowedNamespace := range strings.Split(allowedNamespaces, ",") {
 				if requestNamespace == allowedNamespace || allowedNamespace == "*" {
 					isAllowed = true
