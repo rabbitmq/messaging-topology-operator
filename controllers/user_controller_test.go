@@ -230,20 +230,20 @@ var _ = Describe("UserController", func() {
 				})
 			})
 		})
-	})
 
-	Context("finalizer", func() {
-		BeforeEach(func() {
-			userName = "finalizer-test"
-		})
+		Context("finalizer", func() {
+			BeforeEach(func() {
+				userName = "finalizer-test"
+			})
 
-		It("sets the correct deletion finalizer to the object", func() {
-			Expect(client.Create(ctx, &user)).To(Succeed())
-			Eventually(func() []string {
-				var fetched topology.User
-				Expect(client.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &fetched)).To(Succeed())
-				return fetched.ObjectMeta.Finalizers
-			}, 5).Should(ConsistOf("deletion.finalizers.users.rabbitmq.com"))
+			It("sets the correct deletion finalizer to the object", func() {
+				Expect(client.Create(ctx, &user)).To(Succeed())
+				Eventually(func() []string {
+					var fetched topology.User
+					Expect(client.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &fetched)).To(Succeed())
+					return fetched.ObjectMeta.Finalizers
+				}, 5).Should(ConsistOf("deletion.finalizers.users.rabbitmq.com"))
+			})
 		})
 	})
 

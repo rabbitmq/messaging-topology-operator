@@ -201,20 +201,20 @@ var _ = Describe("shovel-controller", func() {
 				})
 			})
 		})
-	})
 
-	Context("finalizer", func() {
-		BeforeEach(func() {
-			name = "finalizer-test"
-		})
+		Context("finalizer", func() {
+			BeforeEach(func() {
+				shovelName = "finalizer-test"
+			})
 
-		It("sets the correct deletion finalizer to the object", func() {
-			Expect(client.Create(ctx, &shovel)).To(Succeed())
-			Eventually(func() []string {
-				var fetched topology.Shovel
-				Expect(client.Get(ctx, types.NamespacedName{Name: shovel.Name, Namespace: shovel.Namespace}, &fetched)).To(Succeed())
-				return fetched.ObjectMeta.Finalizers
-			}, 5).Should(ConsistOf("deletion.finalizers.shovels.rabbitmq.com"))
+			It("sets the correct deletion finalizer to the object", func() {
+				Expect(client.Create(ctx, &shovel)).To(Succeed())
+				Eventually(func() []string {
+					var fetched topology.Shovel
+					Expect(client.Get(ctx, types.NamespacedName{Name: shovel.Name, Namespace: shovel.Namespace}, &fetched)).To(Succeed())
+					return fetched.ObjectMeta.Finalizers
+				}, 5).Should(ConsistOf("deletion.finalizers.shovels.rabbitmq.com"))
+			})
 		})
 	})
 

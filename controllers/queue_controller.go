@@ -97,7 +97,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, r.deleteQueue(ctx, rabbitClient, queue)
 	}
 
-	if err := addFinalizerIfNeeded(ctx, r.Client, q); err != nil {
+	if err := addFinalizerIfNeeded(ctx, r.Client, queue); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -170,8 +170,8 @@ func (r *QueueReconciler) deleteQueue(ctx context.Context, client internal.Rabbi
 		logger.Error(err, msg, "queue", queue.Spec.Name)
 		return err
 	}
-	r.Recorder.Event(q, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted queue")
-	return removeFinalizer(ctx, r.Client, q)
+	r.Recorder.Event(queue, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted queue")
+	return removeFinalizer(ctx, r.Client, queue)
 }
 
 func (r *QueueReconciler) SetupWithManager(mgr ctrl.Manager) error {

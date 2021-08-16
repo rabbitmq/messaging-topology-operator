@@ -201,20 +201,20 @@ var _ = Describe("federation-controller", func() {
 				})
 			})
 		})
-	})
 
-	Context("finalizer", func() {
-		BeforeEach(func() {
-			name = "finalizer-test"
-		})
+		Context("finalizer", func() {
+			BeforeEach(func() {
+				federationName = "finalizer-test"
+			})
 
-		It("sets the correct deletion finalizer to the object", func() {
-			Expect(client.Create(ctx, &federation)).To(Succeed())
-			Eventually(func() []string {
-				var fetched topology.Federation
-				Expect(client.Get(ctx, types.NamespacedName{Name: federation.Name, Namespace: federation.Namespace}, &fetched)).To(Succeed())
-				return fetched.ObjectMeta.Finalizers
-			}, 5).Should(ConsistOf("deletion.finalizers.federations.rabbitmq.com"))
+			It("sets the correct deletion finalizer to the object", func() {
+				Expect(client.Create(ctx, &federation)).To(Succeed())
+				Eventually(func() []string {
+					var fetched topology.Federation
+					Expect(client.Get(ctx, types.NamespacedName{Name: federation.Name, Namespace: federation.Namespace}, &fetched)).To(Succeed())
+					return fetched.ObjectMeta.Finalizers
+				}, 5).Should(ConsistOf("deletion.finalizers.federations.rabbitmq.com"))
+			})
 		})
 	})
 

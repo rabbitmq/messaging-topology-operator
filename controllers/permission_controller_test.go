@@ -197,20 +197,20 @@ var _ = Describe("permission-controller", func() {
 				})
 			})
 		})
-	})
 
-	Context("finalizer", func() {
-		BeforeEach(func() {
-			permissionName = "finalizer-test"
-		})
+		Context("finalizer", func() {
+			BeforeEach(func() {
+				permissionName = "finalizer-test"
+			})
 
-		It("sets the correct deletion finalizer to the object", func() {
-			Expect(client.Create(ctx, &permission)).To(Succeed())
-			Eventually(func() []string {
-				var fetched topology.Permission
-				Expect(client.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &fetched)).To(Succeed())
-				return fetched.ObjectMeta.Finalizers
-			}, 5).Should(ConsistOf("deletion.finalizers.permissions.rabbitmq.com"))
+			It("sets the correct deletion finalizer to the object", func() {
+				Expect(client.Create(ctx, &permission)).To(Succeed())
+				Eventually(func() []string {
+					var fetched topology.Permission
+					Expect(client.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &fetched)).To(Succeed())
+					return fetched.ObjectMeta.Finalizers
+				}, 5).Should(ConsistOf("deletion.finalizers.permissions.rabbitmq.com"))
+			})
 		})
 	})
 

@@ -198,20 +198,20 @@ var _ = Describe("queue-controller", func() {
 				})
 			})
 		})
-	})
 
-	Context("finalizer", func() {
-		BeforeEach(func() {
-			qName = "finalizer-test"
-		})
+		Context("finalizer", func() {
+			BeforeEach(func() {
+				queueName = "finalizer-test"
+			})
 
-		It("sets the correct deletion finalizer to the object", func() {
-			Expect(client.Create(ctx, &q)).To(Succeed())
-			Eventually(func() []string {
-				var fetched topology.Queue
-				Expect(client.Get(ctx, types.NamespacedName{Name: q.Name, Namespace: q.Namespace}, &fetched)).To(Succeed())
-				return fetched.ObjectMeta.Finalizers
-			}, 5).Should(ConsistOf("deletion.finalizers.queues.rabbitmq.com"))
+			It("sets the correct deletion finalizer to the object", func() {
+				Expect(client.Create(ctx, &queue)).To(Succeed())
+				Eventually(func() []string {
+					var fetched topology.Queue
+					Expect(client.Get(ctx, types.NamespacedName{Name: queue.Name, Namespace: queue.Namespace}, &fetched)).To(Succeed())
+					return fetched.ObjectMeta.Finalizers
+				}, 5).Should(ConsistOf("deletion.finalizers.queues.rabbitmq.com"))
+			})
 		})
 	})
 
