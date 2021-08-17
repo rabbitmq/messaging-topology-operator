@@ -74,7 +74,7 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		}); writerErr != nil {
 			logger.Error(writerErr, failedStatusUpdate)
 		}
-		return reconcile.Result{}, err
+		return reconcile.Result{}, nil
 	}
 	if err != nil {
 		logger.Error(err, failedParseClusterRef)

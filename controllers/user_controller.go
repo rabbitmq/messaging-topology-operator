@@ -14,7 +14,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"k8s.io/utils/pointer"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -26,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
+	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -85,7 +85,7 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}); writerErr != nil {
 			logger.Error(writerErr, failedStatusUpdate)
 		}
-		return reconcile.Result{}, err
+		return reconcile.Result{}, nil
 	}
 	if err != nil {
 		logger.Error(err, failedParseClusterRef)

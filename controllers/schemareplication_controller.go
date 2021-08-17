@@ -69,7 +69,7 @@ func (r *SchemaReplicationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}); writerErr != nil {
 			logger.Error(writerErr, failedStatusUpdate)
 		}
-		return reconcile.Result{}, err
+		return reconcile.Result{}, nil
 	}
 	if err != nil {
 		logger.Error(err, failedParseClusterRef)
