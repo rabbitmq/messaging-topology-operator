@@ -47,11 +47,18 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
+	operatorNamespace := os.Getenv("OPERATOR_NAMESPACE")
+	if operatorNamespace == "" {
+		log.Info("unable to find operator namespace")
+		os.Exit(1)
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
-		LeaderElection:     true,
-		LeaderElectionID:   "messaging-topology-operator-leader-election",
+		Scheme:                  scheme,
+		MetricsBindAddress:      metricsAddr,
+		LeaderElection:          true,
+		LeaderElectionNamespace: operatorNamespace,
+		LeaderElectionID:        "messaging-topology-operator-leader-election",
 	})
 	if err != nil {
 		log.Error(err, "unable to start manager")
@@ -158,46 +165,47 @@ func main() {
 		log.Error(err, "unable to create controller", "controller", controllers.ShovelControllerName)
 		os.Exit(1)
 	}
-
-	if err = (&topology.Binding{}).SetupWebhookWithManager(mgr); err != nil {
-		log.Error(err, "unable to create webhook", "webhook", "Binding")
-		os.Exit(1)
-	}
-	if err = (&topology.Queue{}).SetupWebhookWithManager(mgr); err != nil {
-		log.Error(err, "unable to create webhook", "webhook", "Queue")
-		os.Exit(1)
-	}
-	if err = (&topology.Exchange{}).SetupWebhookWithManager(mgr); err != nil {
-		log.Error(err, "unable to create webhook", "webhook", "Exchange")
-		os.Exit(1)
-	}
-	if err = (&topology.Vhost{}).SetupWebhookWithManager(mgr); err != nil {
-		log.Error(err, "unable to create webhook", "webhook", "Vhost")
-		os.Exit(1)
-	}
-	if err = (&topology.Policy{}).SetupWebhookWithManager(mgr); err != nil {
-		log.Error(err, "unable to create webhook", "webhook", "Policy")
-		os.Exit(1)
-	}
-	if err = (&topology.User{}).SetupWebhookWithManager(mgr); err != nil {
-		log.Error(err, "unable to create webhook", "webhook", "User")
-		os.Exit(1)
-	}
-	if err = (&topology.Permission{}).SetupWebhookWithManager(mgr); err != nil {
-		log.Error(err, "unable to create webhook", "webhook", "Permission")
-		os.Exit(1)
-	}
-	if err = (&topology.SchemaReplication{}).SetupWebhookWithManager(mgr); err != nil {
-		log.Error(err, "unable to create webhook", "webhook", "SchemaReplication")
-		os.Exit(1)
-	}
-	if err = (&topology.Federation{}).SetupWebhookWithManager(mgr); err != nil {
-		log.Error(err, "unable to create webhook", "webhook", "Federation")
-		os.Exit(1)
-	}
-	if err = (&topology.Shovel{}).SetupWebhookWithManager(mgr); err != nil {
-		log.Error(err, "unable to create webhook", "webhook", "Shovel")
-		os.Exit(1)
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err = (&topology.Binding{}).SetupWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "Binding")
+			os.Exit(1)
+		}
+		if err = (&topology.Queue{}).SetupWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "Queue")
+			os.Exit(1)
+		}
+		if err = (&topology.Exchange{}).SetupWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "Exchange")
+			os.Exit(1)
+		}
+		if err = (&topology.Vhost{}).SetupWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "Vhost")
+			os.Exit(1)
+		}
+		if err = (&topology.Policy{}).SetupWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "Policy")
+			os.Exit(1)
+		}
+		if err = (&topology.User{}).SetupWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "User")
+			os.Exit(1)
+		}
+		if err = (&topology.Permission{}).SetupWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "Permission")
+			os.Exit(1)
+		}
+		if err = (&topology.SchemaReplication{}).SetupWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "SchemaReplication")
+			os.Exit(1)
+		}
+		if err = (&topology.Federation{}).SetupWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "Federation")
+			os.Exit(1)
+		}
+		if err = (&topology.Shovel{}).SetupWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "Shovel")
+			os.Exit(1)
+		}
 	}
 	// +kubebuilder:scaffold:builder
 

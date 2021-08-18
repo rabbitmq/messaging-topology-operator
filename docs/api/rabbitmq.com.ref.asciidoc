@@ -604,7 +604,8 @@ QueueStatus defines the observed state of Queue
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`name`* __string__ | Cannot be updated
+| *`name`* __string__ | The name of the RabbitMQ cluster to reference.
+| *`namespace`* __string__ | The namespace of the RabbitMQ cluster to reference. Defaults to the namespace of the requested resource if omitted.
 |===
 
 

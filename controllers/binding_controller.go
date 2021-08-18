@@ -68,6 +68,16 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
 	}
+	if errors.Is(err, internal.ResourceNotAllowedError) {
+		logger.Info("Could not create binding resource: " + err.Error())
+		binding.Status.Conditions = []topology.Condition{topology.NotReady(internal.ResourceNotAllowedError.Error())}
+		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
+			return r.Status().Update(ctx, binding)
+		}); writerErr != nil {
+			logger.Error(writerErr, failedStatusUpdate)
+		}
+		return reconcile.Result{}, nil
+	}
 	if err != nil {
 		logger.Error(err, failedParseClusterRef)
 		return reconcile.Result{}, err

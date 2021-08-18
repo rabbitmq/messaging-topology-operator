@@ -43,7 +43,11 @@ spec:
                   would be set for. Must be an existing cluster.
                 properties:
                   name:
-                    description: Cannot be updated
+                    description: The name of the RabbitMQ cluster to reference.
+                    type: string
+                  namespace:
+                    description: The namespace of the RabbitMQ cluster to reference.
+                      Defaults to the namespace of the requested resource if omitted.
                     type: string
                 required:
                 - name

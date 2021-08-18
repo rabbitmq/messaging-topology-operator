@@ -57,7 +57,11 @@ spec:
                   created for. This cluster must exist for the User object to be created.
                 properties:
                   name:
-                    description: Cannot be updated
+                    description: The name of the RabbitMQ cluster to reference.
+                    type: string
+                  namespace:
+                    description: The namespace of the RabbitMQ cluster to reference.
+                      Defaults to the namespace of the requested resource if omitted.
                     type: string
                 required:
                 - name

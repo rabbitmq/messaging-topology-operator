@@ -47,8 +47,16 @@ manager: generate fmt vet
 	go build -o bin/manager main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
-run: generate fmt vet manifests
-	go run ./main.go
+#
+# Since this runs outside a cluster and there's a requirement on cluster-level service
+# communincation, the connection between them needs to be accounted for.
+# https://github.com/telepresenceio/telepresence is one way to do this (just run
+# `telepresence connect` and services like `test-service.test-namespace.svc.cluster.local`
+# will resolve properly).
+run: generate fmt vet manifests just-run
+
+just-run: ## Just runs 'go run main.go' without regenerating any manifests or deploying RBACs
+	KUBE_CONFIG=${HOME}/.kube/config OPERATOR_NAMESPACE=rabbitmq-system ENABLE_WEBHOOKS=false go run ./main.go
 
 # Install CRDs into a cluster
 install: manifests

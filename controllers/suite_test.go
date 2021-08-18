@@ -190,6 +190,9 @@ var _ = BeforeSuite(func() {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "example-rabbit",
 			Namespace: "default",
+			Annotations: map[string]string{
+				"rabbitmq.com/topology-allowed-namespaces": "allowed",
+			},
 		},
 	}
 	Expect(client.Create(ctx, &rmq)).To(Succeed())
@@ -208,47 +211,175 @@ var _ = BeforeSuite(func() {
 	rmq.Status.SetConditions([]runtime.Object{})
 	Expect(client.Status().Update(ctx, &rmq)).To(Succeed())
 
+	rmqCreds = corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "allow-all-rabbit-user-credentials",
+			Namespace: "default",
+		},
+	}
+	Expect(client.Create(ctx, &rmqCreds)).To(Succeed())
+
+	rmqSrv = corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "allow-all-rabbit",
+			Namespace: "default",
+		},
+		Spec: corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{
+					Port: 15671,
+				},
+			},
+		},
+	}
+	Expect(client.Create(ctx, &rmqSrv)).To(Succeed())
+
+	rmq = rabbitmqv1beta1.RabbitmqCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "allow-all-rabbit",
+			Namespace: "default",
+			Annotations: map[string]string{
+				"rabbitmq.com/topology-allowed-namespaces": "*",
+			},
+		},
+	}
+	Expect(client.Create(ctx, &rmq)).To(Succeed())
+
+	rmq.Status = rabbitmqv1beta1.RabbitmqClusterStatus{
+		Binding: &corev1.LocalObjectReference{
+			Name: "allow-all-rabbit-user-credentials",
+		},
+		DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
+			ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
+				Name:      "allow-all-rabbit",
+				Namespace: "default",
+			},
+		},
+	}
+	rmq.Status.SetConditions([]runtime.Object{})
+	Expect(client.Status().Update(ctx, &rmq)).To(Succeed())
+
+	allowedNamespace := corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "allowed",
+		},
+	}
+	Expect(client.Create(ctx, &allowedNamespace)).To(Succeed())
+
+	prohibitedNamespace := corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "prohibited",
+		},
+	}
+	Expect(client.Create(ctx, &prohibitedNamespace)).To(Succeed())
+
+	endpointsSecretBody := map[string][]byte{
+		"username":  []byte("a-random-user"),
+		"password":  []byte("a-random-password"),
+		"endpoints": []byte("a.endpoints.local:5672,b.endpoints.local:5672,c.endpoints.local:5672"),
+	}
+
 	// used in schema-replication-controller test
-	secret := corev1.Secret{
+	endpointsSecret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "endpoints-secret",
 			Namespace: "default",
 		},
 		Type: corev1.SecretTypeOpaque,
-		Data: map[string][]byte{
-			"username":  []byte("a-random-user"),
-			"password":  []byte("a-random-password"),
-			"endpoints": []byte("a.endpoints.local:5672,b.endpoints.local:5672,c.endpoints.local:5672"),
-		},
+		Data: endpointsSecretBody,
 	}
-	Expect(client.Create(ctx, &secret)).To(Succeed())
+	Expect(client.Create(ctx, &endpointsSecret)).To(Succeed())
+
+	allowedEndpointsSecret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "endpoints-secret",
+			Namespace: "allowed",
+		},
+		Type: corev1.SecretTypeOpaque,
+		Data: endpointsSecretBody,
+	}
+	Expect(client.Create(ctx, &allowedEndpointsSecret)).To(Succeed())
+
+	prohibitedEndpointsSecret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "endpoints-secret",
+			Namespace: "prohibited",
+		},
+		Type: corev1.SecretTypeOpaque,
+		Data: endpointsSecretBody,
+	}
+	Expect(client.Create(ctx, &prohibitedEndpointsSecret)).To(Succeed())
+
+	federationUriSecretBody := map[string][]byte{
+		"uri": []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
+	}
 
 	// used in federation-controller test
-	federationUri := corev1.Secret{
+	federationUriSecret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "federation-uri",
 			Namespace: "default",
 		},
 		Type: corev1.SecretTypeOpaque,
-		Data: map[string][]byte{
-			"uri": []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
-		},
+		Data: federationUriSecretBody,
 	}
-	Expect(client.Create(ctx, &federationUri)).To(Succeed())
+	Expect(client.Create(ctx, &federationUriSecret)).To(Succeed())
+
+	allowedFederationUriSecret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "federation-uri",
+			Namespace: "allowed",
+		},
+		Type: corev1.SecretTypeOpaque,
+		Data: federationUriSecretBody,
+	}
+	Expect(client.Create(ctx, &allowedFederationUriSecret)).To(Succeed())
+
+	prohibitedFederationUriSecret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "federation-uri",
+			Namespace: "prohibited",
+		},
+		Type: corev1.SecretTypeOpaque,
+		Data: federationUriSecretBody,
+	}
+	Expect(client.Create(ctx, &prohibitedFederationUriSecret)).To(Succeed())
+
+	shovelUriSecretBody := map[string][]byte{
+		"srcUri":  []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
+		"destUri": []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
+	}
 
 	// used in shovel-controller test
-	shovelUri := corev1.Secret{
+	shovelUriSecret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "shovel-uri-secret",
 			Namespace: "default",
 		},
 		Type: corev1.SecretTypeOpaque,
-		Data: map[string][]byte{
-			"srcUri":  []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
-			"destUri": []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
-		},
+		Data: shovelUriSecretBody,
 	}
-	Expect(client.Create(ctx, &shovelUri)).To(Succeed())
+	Expect(client.Create(ctx, &shovelUriSecret)).To(Succeed())
+
+	allowedShovelUriSecret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "shovel-uri-secret",
+			Namespace: "allowed",
+		},
+		Type: corev1.SecretTypeOpaque,
+		Data: shovelUriSecretBody,
+	}
+	Expect(client.Create(ctx, &allowedShovelUriSecret)).To(Succeed())
+
+	prohibitedShovelUriSecret := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "shovel-uri-secret",
+			Namespace: "prohibited",
+		},
+		Type: corev1.SecretTypeOpaque,
+		Data: shovelUriSecretBody,
+	}
+	Expect(client.Create(ctx, &prohibitedShovelUriSecret)).To(Succeed())
 })
 
 var _ = BeforeEach(func() {
