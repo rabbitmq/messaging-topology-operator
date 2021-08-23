@@ -5,6 +5,14 @@ platform := $(shell uname | tr A-Z a-z)
 .DEFAULT_GOAL = list
 
 CRD_OPTIONS ?= "crd:trivialVersions=true, preserveUnknownFields=false"
+GOVERSION ?= 1.17
+GO := $(shell go env GOPATH)/bin/go${GOVERSION}
+$(GO): ## Installs a specific Go version. Use 'make go GOVERSION=1.17' or any available Go version.
+	go install golang.org/dl/go${GOVERSION}@latest
+	go${GOVERSION} download
+
+.PHONY: go
+go: $(GO)
 
 # Insert a comment starting with '##' after a target, and it will be printed by 'make' and 'make list'
 list:    ## list Makefile targets
@@ -12,11 +20,11 @@ list:    ## list Makefile targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 install-tools:
-	go mod download
-	grep _ tools/tools.go | awk -F '"' '{print $$2}' | grep -v k8s.io/code-generator | xargs -t go install
+	$(GO) mod download
+	grep _ tools/tools.go | awk -F '"' '{print $$2}' | grep -v k8s.io/code-generator | xargs -t $(GO) install
 	# This one just needs to be fetched and not installed, get & mod so it ends up in the right place.
 	# Note we grep it out above, and just do a go get & go mod for it.
-	go get -d k8s.io/code-generator
+	$(GO) get -d k8s.io/code-generator
 
 ENVTEST_K8S_VERSION = 1.20.2
 ARCHITECTURE = amd64
@@ -44,7 +52,7 @@ system-tests: ## run end-to-end tests against Kubernetes cluster defined in ~/.k
 
 # Build manager binary
 manager: generate fmt vet
-	go build -o bin/manager main.go
+	$(GO) build -o bin/manager main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 #
@@ -56,7 +64,7 @@ manager: generate fmt vet
 run: generate fmt vet manifests just-run
 
 just-run: ## Just runs 'go run main.go' without regenerating any manifests or deploying RBACs
-	KUBE_CONFIG=${HOME}/.kube/config OPERATOR_NAMESPACE=rabbitmq-system ENABLE_WEBHOOKS=false go run ./main.go
+	KUBE_CONFIG=${HOME}/.kube/config OPERATOR_NAMESPACE=rabbitmq-system ENABLE_WEBHOOKS=false $(GO) run ./main.go
 
 # Install CRDs into a cluster
 install: manifests
@@ -103,11 +111,11 @@ api-reference:
 
 # Run go fmt against code
 fmt:
-	go fmt ./...
+	$(GO) fmt ./...
 
 # Run go vet against code
 vet:
-	go vet ./...
+	$(GO) vet ./...
 
 # Generate code & docs
 generate: install-tools api-reference
@@ -116,8 +124,8 @@ generate: install-tools api-reference
 generate-client-set:
 	# This one just needs to be fetched and not installed, get & mod so it ends up in the right place.
 	# Note we grep it out above, and just do a go get & go mod for it.
-	go get -d k8s.io/code-generator
-	go mod vendor
+	$(GO) get -d k8s.io/code-generator
+	$(GO) mod vendor
 	./hack/update-codegen.sh
 
 check-env-docker-credentials: check-env-registry-server
