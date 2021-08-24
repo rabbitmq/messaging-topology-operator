@@ -213,7 +213,10 @@ var _ = Describe("policy-controller", func() {
 				Expect(client.Create(ctx, &policy)).To(Succeed())
 				Eventually(func() []string {
 					var fetched topology.Policy
-					Expect(client.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &fetched)).To(Succeed())
+					err := client.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &fetched)
+					if err != nil {
+						return []string{}
+					}
 					return fetched.ObjectMeta.Finalizers
 				}, 5).Should(ConsistOf("deletion.finalizers.policies.rabbitmq.com"))
 			})

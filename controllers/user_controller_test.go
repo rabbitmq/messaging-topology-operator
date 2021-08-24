@@ -240,7 +240,10 @@ var _ = Describe("UserController", func() {
 				Expect(client.Create(ctx, &user)).To(Succeed())
 				Eventually(func() []string {
 					var fetched topology.User
-					Expect(client.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &fetched)).To(Succeed())
+					err := client.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &fetched)
+					if err != nil {
+						return []string{}
+					}
 					return fetched.ObjectMeta.Finalizers
 				}, 5).Should(ConsistOf("deletion.finalizers.users.rabbitmq.com"))
 			})

@@ -208,7 +208,10 @@ var _ = Describe("vhost-controller", func() {
 				Expect(client.Create(ctx, &vhost)).To(Succeed())
 				Eventually(func() []string {
 					var fetched topology.Vhost
-					Expect(client.Get(ctx, types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace}, &fetched)).To(Succeed())
+					err := client.Get(ctx, types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace}, &fetched)
+					if err != nil {
+						return []string{}
+					}
 					return fetched.ObjectMeta.Finalizers
 				}, 5).Should(ConsistOf("deletion.finalizers.vhosts.rabbitmq.com"))
 			})
