@@ -208,7 +208,10 @@ var _ = Describe("bindingController", func() {
 				Expect(client.Create(ctx, &binding)).To(Succeed())
 				Eventually(func() []string {
 					var fetched topology.Binding
-					Expect(client.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &fetched)).To(Succeed())
+					err := client.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &fetched)
+					if err != nil {
+						return []string{}
+					}
 					return fetched.ObjectMeta.Finalizers
 				}, 5).Should(ConsistOf("deletion.finalizers.bindings.rabbitmq.com"))
 			})

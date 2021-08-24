@@ -208,7 +208,10 @@ var _ = Describe("exchange-controller", func() {
 				Expect(client.Create(ctx, &exchange)).To(Succeed())
 				Eventually(func() []string {
 					var fetched topology.Exchange
-					Expect(client.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &fetched)).To(Succeed())
+					err := client.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &fetched)
+					if err != nil {
+						return []string{}
+					}
 					return fetched.ObjectMeta.Finalizers
 				}, 5).Should(ConsistOf("deletion.finalizers.exchanges.rabbitmq.com"))
 			})

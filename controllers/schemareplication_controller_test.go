@@ -211,7 +211,10 @@ var _ = Describe("schema-replication-controller", func() {
 				Expect(client.Create(ctx, &replication)).To(Succeed())
 				Eventually(func() []string {
 					var fetched topology.SchemaReplication
-					Expect(client.Get(ctx, types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace}, &fetched)).To(Succeed())
+					err := client.Get(ctx, types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace}, &fetched)
+					if err != nil {
+						return []string{}
+					}
 					return fetched.ObjectMeta.Finalizers
 				}, 5).Should(ConsistOf("deletion.finalizers.schemareplications.rabbitmq.com"))
 			})

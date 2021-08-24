@@ -207,7 +207,10 @@ var _ = Describe("permission-controller", func() {
 				Expect(client.Create(ctx, &permission)).To(Succeed())
 				Eventually(func() []string {
 					var fetched topology.Permission
-					Expect(client.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &fetched)).To(Succeed())
+					err := client.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &fetched)
+					if err != nil {
+						return []string{}
+					}
 					return fetched.ObjectMeta.Finalizers
 				}, 5).Should(ConsistOf("deletion.finalizers.permissions.rabbitmq.com"))
 			})

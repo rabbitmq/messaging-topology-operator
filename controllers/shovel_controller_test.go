@@ -211,7 +211,10 @@ var _ = Describe("shovel-controller", func() {
 				Expect(client.Create(ctx, &shovel)).To(Succeed())
 				Eventually(func() []string {
 					var fetched topology.Shovel
-					Expect(client.Get(ctx, types.NamespacedName{Name: shovel.Name, Namespace: shovel.Namespace}, &fetched)).To(Succeed())
+					err := client.Get(ctx, types.NamespacedName{Name: shovel.Name, Namespace: shovel.Namespace}, &fetched)
+					if err != nil {
+						return []string{}
+					}
 					return fetched.ObjectMeta.Finalizers
 				}, 5).Should(ConsistOf("deletion.finalizers.shovels.rabbitmq.com"))
 			})

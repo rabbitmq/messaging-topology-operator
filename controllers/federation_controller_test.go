@@ -211,7 +211,10 @@ var _ = Describe("federation-controller", func() {
 				Expect(client.Create(ctx, &federation)).To(Succeed())
 				Eventually(func() []string {
 					var fetched topology.Federation
-					Expect(client.Get(ctx, types.NamespacedName{Name: federation.Name, Namespace: federation.Namespace}, &fetched)).To(Succeed())
+					err := client.Get(ctx, types.NamespacedName{Name: federation.Name, Namespace: federation.Namespace}, &fetched)
+					if err != nil {
+						return []string{}
+					}
 					return fetched.ObjectMeta.Finalizers
 				}, 5).Should(ConsistOf("deletion.finalizers.federations.rabbitmq.com"))
 			})
