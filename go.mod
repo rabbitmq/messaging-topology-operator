@@ -11,7 +11,7 @@ require (
 	github.com/michaelklishin/rabbit-hole/v2 v2.10.0
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.16.0
-	github.com/rabbitmq/cluster-operator v1.8.1
+	github.com/rabbitmq/cluster-operator v1.8.2
 	k8s.io/api v0.21.3
 	k8s.io/apimachinery v0.21.3
 	k8s.io/client-go v0.21.3
