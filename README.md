@@ -1,6 +1,7 @@
 # RabbitMQ Messaging Topology Kubernetes Operator
 
 Kubernetes operator to allow developers to create and manage [RabbitMQ](https://www.rabbitmq.com/) messaging topologies within a RabbitMQ cluster using a declarative Kubernetes API.
+A Messaging topology is the collection of objects such as exchages, queues, bindings and policies that provides specific messaging or streaming scenario. 
 This operator is used with RabbitMQ clusters deployed via the [RabbitMQ Cluster Kubernetes Operator](https://github.com/rabbitmq/cluster-operator/). This repository contains [custom controllers](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/#custom-controllers) and [custom resource definitions (CRDs)](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/#customresourcedefinitions) enabling a declarative API for RabbitMQ messaging topologies.
 
 ## Quickstart
