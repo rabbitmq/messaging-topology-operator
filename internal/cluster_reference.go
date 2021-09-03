@@ -40,7 +40,7 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 				}
 			}
 		}
-		if isAllowed == false {
+		if !isAllowed {
 			return nil, nil, nil, ResourceNotAllowedError
 		}
 	}
