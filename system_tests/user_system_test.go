@@ -50,10 +50,8 @@ var _ = Describe("Users", func() {
 			}
 			var generatedSecret = &corev1.Secret{}
 			Eventually(func() error {
-				var err error
-				err = k8sClient.Get(ctx, generatedSecretKey, generatedSecret)
-				return err
-			}, 30, 2).Should(BeNil())
+				return k8sClient.Get(ctx, generatedSecretKey, generatedSecret)
+			}, 30, 2).Should(Succeed())
 			Expect(generatedSecret.Data).To(HaveKey("username"))
 			Expect(generatedSecret.Data).To(HaveKey("password"))
 
@@ -184,10 +182,8 @@ var _ = Describe("Users", func() {
 			}
 			var generatedSecret = &corev1.Secret{}
 			Eventually(func() error {
-				var err error
-				err = k8sClient.Get(ctx, generatedSecretKey, generatedSecret)
-				return err
-			}, 30, 2).Should(BeNil())
+				return k8sClient.Get(ctx, generatedSecretKey, generatedSecret)
+			}, 30, 2).Should(Succeed())
 			Expect(generatedSecret.Data).To(HaveKeyWithValue("username", []uint8("`got*special_ch$racter5")))
 			Expect(generatedSecret.Data).To(HaveKeyWithValue("password", []uint8("-grace.hopper_9453$")))
 		})

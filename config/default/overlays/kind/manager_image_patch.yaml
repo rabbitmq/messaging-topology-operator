@@ -17,3 +17,4 @@ spec:
       - image: ((operator_docker_image))
         name: manager
         imagePullPolicy: IfNotPresent
+        args: ["--zap-devel"]

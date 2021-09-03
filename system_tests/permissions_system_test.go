@@ -2,6 +2,7 @@ package system_tests
 
 import (
 	"context"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,10 +46,8 @@ var _ = Describe("Permission", func() {
 		}
 		var generatedSecret = &corev1.Secret{}
 		Eventually(func() error {
-			var err error
-			err = k8sClient.Get(ctx, generatedSecretKey, generatedSecret)
-			return err
-		}, 30, 2).Should(BeNil())
+			return k8sClient.Get(ctx, generatedSecretKey, generatedSecret)
+		}, 30, 2).Should(Succeed())
 		username = string(generatedSecret.Data["username"])
 
 		permission = &topology.Permission{
