@@ -155,7 +155,7 @@ endif
 check-env-docker-repo: check-env-registry-server set-operator-image-repo
 
 set-operator-image-repo:
-OPERATOR_IMAGE=p-rabbitmq-for-kubernetes/messaging-topology-operator
+OPERATOR_IMAGE?=p-rabbitmq-for-kubernetes/messaging-topology-operator
 
 operator-namespace:
 ifeq (, $(K8S_OPERATOR_NAMESPACE))
