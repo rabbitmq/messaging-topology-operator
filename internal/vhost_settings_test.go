@@ -18,6 +18,7 @@ var _ = Describe("GenerateVhostSettings", func() {
 			},
 			Spec: topology.VhostSpec{
 				Tracing: true,
+				Tags:    []string{"tag1", "tag2", "multi_dc_replication"},
 			},
 		}
 	})
@@ -25,5 +26,10 @@ var _ = Describe("GenerateVhostSettings", func() {
 	It("sets 'tracing' according to vhost.spec", func() {
 		settings := internal.GenerateVhostSettings(v)
 		Expect(settings.Tracing).To(BeTrue())
+	})
+
+	It("sets 'tags' according to vhost.spec.tags", func() {
+		settings := internal.GenerateVhostSettings(v)
+		Expect(settings.Tags).To(ConsistOf("tag1", "tag2", "multi_dc_replication"))
 	})
 })

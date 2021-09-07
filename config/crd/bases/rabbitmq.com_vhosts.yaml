@@ -55,6 +55,10 @@ spec:
                 required:
                 - name
                 type: object
+              tags:
+                items:
+                  type: string
+                type: array
               tracing:
                 type: boolean
             required:

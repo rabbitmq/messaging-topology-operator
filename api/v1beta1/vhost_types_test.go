@@ -71,4 +71,32 @@ var _ = Describe("Vhost", func() {
 			Name: "random-cluster",
 		}))
 	})
+
+	It("creates a vhost with list of vhost tags configured", func() {
+		vhost := Vhost{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "vhost-with-tags",
+				Namespace: namespace,
+			},
+			Spec: VhostSpec{
+				Name: "vhost-with-tags",
+				Tags: []string{"tag1", "tag2", "multi_dc_replication"},
+				RabbitmqClusterReference: RabbitmqClusterReference{
+					Name: "random-cluster",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, &vhost)).To(Succeed())
+		fetched := &Vhost{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{
+			Name:      vhost.Name,
+			Namespace: vhost.Namespace,
+		}, fetched)).To(Succeed())
+
+		Expect(fetched.Spec.Tags).To(ConsistOf("tag1", "tag2", "multi_dc_replication"))
+		Expect(fetched.Spec.Name).To(Equal("vhost-with-tags"))
+		Expect(fetched.Spec.RabbitmqClusterReference).To(Equal(RabbitmqClusterReference{
+			Name: "random-cluster",
+		}))
+	})
 })

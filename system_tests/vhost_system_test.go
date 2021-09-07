@@ -30,6 +30,7 @@ var _ = Describe("vhost", func() {
 			},
 			Spec: topology.VhostSpec{
 				Name: "test",
+				Tags: []string{"multi_dc_replication"},
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: rmq.Name,
 				},
@@ -47,6 +48,8 @@ var _ = Describe("vhost", func() {
 			return err
 		}, 30, 2).ShouldNot(HaveOccurred(), "cannot find created vhost")
 		Expect(fetched.Tracing).To(BeFalse())
+		Expect(fetched.Tags).To(HaveLen(1))
+		Expect(string(fetched.Tags[0])).To(Equal("multi_dc_replication"))
 
 		By("updating status condition 'Ready'")
 		updatedVhost := topology.Vhost{}

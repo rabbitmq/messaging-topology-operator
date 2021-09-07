@@ -41,4 +41,10 @@ var _ = Describe("vhost webhook", func() {
 		newVhost.Spec.Tracing = true
 		Expect(newVhost.ValidateUpdate(&vhost)).To(Succeed())
 	})
+
+	It("allows updates on vhost.spec.tags", func() {
+		newVhost := vhost.DeepCopy()
+		newVhost.Spec.Tags = []string{"new-tag"}
+		Expect(newVhost.ValidateUpdate(&vhost)).To(Succeed())
+	})
 })
