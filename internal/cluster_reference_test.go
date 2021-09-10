@@ -111,6 +111,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 
 			It("errors", func() {
 				_, _, _, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
+				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("no status.binding set"))
 			})
 		})
@@ -132,6 +133,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 
 			It("errors", func() {
 				_, _, _, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
+				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("no status.defaultUser set"))
 			})
 		})
