@@ -10,7 +10,7 @@ const ready ConditionType = "Ready"
 type ConditionType string
 
 type Condition struct {
-	// Type indicates the scope of RabbitmqCluster status addressed by the condition.
+	// Type indicates the scope of the custom resource status addressed by the condition.
 	Type ConditionType `json:"type"`
 	// True, False, or Unknown
 	Status corev1.ConditionStatus `json:"status"`

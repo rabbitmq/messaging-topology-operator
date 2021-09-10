@@ -118,8 +118,8 @@ spec:
                       description: True, False, or Unknown
                       type: string
                     type:
-                      description: Type indicates the scope of RabbitmqCluster status
-                        addressed by the condition.
+                      description: Type indicates the scope of the custom resource
+                        status addressed by the condition.
                       type: string
                   required:
                   - status
