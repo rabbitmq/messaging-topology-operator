@@ -8,7 +8,7 @@ require (
 	github.com/go-logr/logr v0.4.0
 	github.com/google/uuid v1.3.0
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.4.1
-	github.com/michaelklishin/rabbit-hole/v2 v2.10.0
+	github.com/michaelklishin/rabbit-hole/v2 v2.11.0
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.16.0
 	github.com/rabbitmq/cluster-operator v1.8.3
