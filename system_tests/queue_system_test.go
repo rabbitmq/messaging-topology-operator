@@ -58,7 +58,7 @@ var _ = Describe("Queue Controller", func() {
 		Expect(*qInfo).To(MatchFields(IgnoreExtras, Fields{
 			"Name":       Equal(q.Spec.Name),
 			"Vhost":      Equal(q.Spec.Vhost),
-			"AutoDelete": BeFalse(),
+			"AutoDelete": Equal(rabbithole.AutoDelete(false)),
 			"Durable":    BeTrue(),
 		}))
 		Expect(qInfo.Arguments).To(HaveKeyWithValue("x-quorum-initial-group-size", float64(3)))
