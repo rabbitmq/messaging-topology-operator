@@ -17,6 +17,7 @@ var _ = Describe("schema-replication webhook", func() {
 			UpstreamSecret: &corev1.LocalObjectReference{
 				Name: "a-secret",
 			},
+			Endpoints: "abc.rmq.com:1234",
 			RabbitmqClusterReference: RabbitmqClusterReference{
 				Name: "a-cluster",
 			},
@@ -36,6 +37,12 @@ var _ = Describe("schema-replication webhook", func() {
 		updated.Spec.UpstreamSecret = &corev1.LocalObjectReference{
 			Name: "a-different-secret",
 		}
+		Expect(updated.ValidateUpdate(&replication)).To(Succeed())
+	})
+
+	It("allows updates on spec.endpoints", func() {
+		updated := replication.DeepCopy()
+		updated.Spec.Endpoints = "abc.new-rmq:1111"
 		Expect(updated.ValidateUpdate(&replication)).To(Succeed())
 	})
 })

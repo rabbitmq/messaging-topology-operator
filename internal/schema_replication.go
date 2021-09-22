@@ -21,7 +21,7 @@ type UpstreamEndpoints struct {
 	Endpoints []string `json:"endpoints"`
 }
 
-func GenerateSchemaReplicationParameters(secret *corev1.Secret) (UpstreamEndpoints, error) {
+func GenerateSchemaReplicationParameters(secret *corev1.Secret, endpoints string) (UpstreamEndpoints, error) {
 	username, ok := secret.Data["username"]
 	if !ok {
 		return UpstreamEndpoints{}, fmt.Errorf("could not find username in secret %s", secret.Name)
@@ -31,12 +31,15 @@ func GenerateSchemaReplicationParameters(secret *corev1.Secret) (UpstreamEndpoin
 		return UpstreamEndpoints{}, fmt.Errorf("could not find password in secret %s", secret.Name)
 	}
 
-	endpoints, ok := secret.Data["endpoints"]
-	if !ok {
-		return UpstreamEndpoints{}, fmt.Errorf("could not find endpoints in secret %s", secret.Name)
+	if endpoints == "" {
+		endpointsFromSecret, ok := secret.Data["endpoints"]
+		if !ok {
+			return UpstreamEndpoints{}, fmt.Errorf("could not find endpoints in secret %s or from spec.endpoints", secret.Name)
+		}
+		endpoints = string(endpointsFromSecret)
 	}
 
-	endpointsList := strings.Split(string(endpoints), ",")
+	endpointsList := strings.Split(endpoints, ",")
 
 	return UpstreamEndpoints{
 		Username:  string(username),

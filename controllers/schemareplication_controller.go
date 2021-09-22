@@ -174,7 +174,7 @@ func (r *SchemaReplicationReconciler) getUpstreamEndpoints(ctx context.Context, 
 		return internal.UpstreamEndpoints{}, err
 	}
 
-	endpoints, err := internal.GenerateSchemaReplicationParameters(secret)
+	endpoints, err := internal.GenerateSchemaReplicationParameters(secret, replication.Spec.Endpoints)
 	if err != nil {
 		return internal.UpstreamEndpoints{}, err
 	}

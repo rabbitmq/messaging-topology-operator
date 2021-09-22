@@ -21,10 +21,14 @@ type SchemaReplicationSpec struct {
 	// +kubebuilder:validation:Required
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
 	// Defines a Secret which contains credentials to be used for schema replication.
-	// The Secret must contain the keys `endpoints`, `username` and `password` in its Data field, or operator will error.
-	// `endpoints` should be one or multiple endpoints separated by ','.
+	// The Secret must contain the keys `username` and `password` in its Data field, or operator will error.
 	// +kubebuilder:validation:Required
 	UpstreamSecret *corev1.LocalObjectReference `json:"upstreamSecret,omitempty"`
+	// endpoints should be one or multiple endpoints separated by ','.
+	// Must provide either spec.endpoints or endpoints in spec.upstreamSecret.
+	// When endpoints are provided in both spec.endpoints and spec.upstreamSecret, spec.endpoints takes
+	// precedence.
+	Endpoints string `json:"endpoints,omitempty"`
 }
 
 // SchemaReplicationStatus defines the observed state of SchemaReplication
