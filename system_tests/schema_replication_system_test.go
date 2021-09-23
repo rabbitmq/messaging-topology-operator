@@ -35,7 +35,6 @@ var _ = Describe("schema replication", func() {
 			},
 			Type: corev1.SecretTypeOpaque,
 			Data: map[string][]byte{
-				"endpoints": []byte("abc.endpoints.local:5672,efg.endpoints.local:1234"),
 				"username":  []byte("some-username"),
 				"password":  []byte("some-password"),
 			},
@@ -47,6 +46,7 @@ var _ = Describe("schema replication", func() {
 				Namespace: namespace,
 			},
 			Spec: topology.SchemaReplicationSpec{
+				Endpoints: "abc.endpoints.local:5672,efg.endpoints.local:1234",
 				UpstreamSecret: &corev1.LocalObjectReference{
 					Name: "endpoints-secret",
 				},

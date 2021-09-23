@@ -38,6 +38,12 @@ spec:
           spec:
             description: SchemaReplicationSpec defines the desired state of SchemaReplication
             properties:
+              endpoints:
+                description: endpoints should be one or multiple endpoints separated
+                  by ','. Must provide either spec.endpoints or endpoints in spec.upstreamSecret.
+                  When endpoints are provided in both spec.endpoints and spec.upstreamSecret,
+                  spec.endpoints takes precedence.
+                type: string
               rabbitmqClusterReference:
                 description: Reference to the RabbitmqCluster that schema replication
                   would be set for. Must be an existing cluster.
@@ -54,9 +60,8 @@ spec:
                 type: object
               upstreamSecret:
                 description: Defines a Secret which contains credentials to be used
-                  for schema replication. The Secret must contain the keys `endpoints`,
-                  `username` and `password` in its Data field, or operator will error.
-                  `endpoints` should be one or multiple endpoints separated by ','.
+                  for schema replication. The Secret must contain the keys `username`
+                  and `password` in its Data field, or operator will error.
                 properties:
                   name:
                     description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names

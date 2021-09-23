@@ -23,6 +23,7 @@ var _ = Describe("schemaReplication spec", func() {
 				UpstreamSecret: &corev1.LocalObjectReference{
 					Name: "a-secret",
 				},
+				Endpoints: "abc.rmq.com:1234",
 			}}
 		Expect(k8sClient.Create(context.Background(), &replication)).To(Succeed())
 
@@ -35,5 +36,6 @@ var _ = Describe("schemaReplication spec", func() {
 			Name: "some-cluster",
 		}))
 		Expect(fetched.Spec.UpstreamSecret.Name).To(Equal("a-secret"))
+		Expect(fetched.Spec.Endpoints).To(Equal("abc.rmq.com:1234"))
 	})
 })
