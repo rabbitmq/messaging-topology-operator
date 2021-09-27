@@ -49,7 +49,7 @@ manager: generate fmt vet
 # Run against the configured Kubernetes cluster in ~/.kube/config
 #
 # Since this runs outside a cluster and there's a requirement on cluster-level service
-# communincation, the connection between them needs to be accounted for.
+# communication, the connection between them needs to be accounted for.
 # https://github.com/telepresenceio/telepresence is one way to do this (just run
 # `telepresence connect` and services like `test-service.test-namespace.svc.cluster.local`
 # will resolve properly).
