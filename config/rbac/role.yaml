@@ -19,20 +19,16 @@ rules:
   resources:
   - secrets
   verbs:
-  - create
   - get
   - list
-  - update
   - watch
 - apiGroups:
   - ""
   resources:
   - services
   verbs:
-  - create
   - get
   - list
-  - update
   - watch
 - apiGroups:
   - rabbitmq.com
@@ -159,10 +155,8 @@ rules:
   resources:
   - rabbitmqclusters
   verbs:
-  - create
   - get
   - list
-  - update
   - watch
 - apiGroups:
   - rabbitmq.com
@@ -170,7 +164,6 @@ rules:
   - rabbitmqclusters/status
   verbs:
   - get
-  - update
 - apiGroups:
   - rabbitmq.com
   resources:
