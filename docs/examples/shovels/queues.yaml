@@ -18,7 +18,7 @@ metadata:
 spec:
   name: destination-queue
   vhost: "destination"
-  type: quoum
+  type: quorum
   autoDelete: false
   durable: true
   rabbitmqClusterReference:

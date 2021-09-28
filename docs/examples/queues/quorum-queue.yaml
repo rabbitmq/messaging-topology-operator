@@ -1,5 +1,5 @@
 # For more information about what/how to configure for quorum queues, see: https://www.rabbitmq.com/quorum-queues.html.
-# We recommmend configuring queues through policies to manage them in groups and be able to update queue configurations later on.
+# We recommend configuring queues through policies to manage them in groups and be able to update queue configurations later on.
 ---
 apiVersion: rabbitmq.com/v1beta1
 kind: Queue
