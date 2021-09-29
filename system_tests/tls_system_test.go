@@ -3,17 +3,15 @@ package system_tests
 import (
 	"context"
 	"fmt"
-	corev1 "k8s.io/api/core/v1"
-
 	"github.com/google/uuid"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("RabbitmqCluster with TLS", func() {
@@ -27,9 +25,6 @@ var _ = Describe("RabbitmqCluster with TLS", func() {
 	)
 
 	BeforeEach(func() {
-		targetCluster = basicTestRabbitmqCluster("tls-cluster", namespace)
-		setupTestRabbitmqCluster(k8sClient, targetCluster)
-
 		secretName = fmt.Sprintf("rmq-test-cert-%v", uuid.New())
 		_, _, _ = createTLSSecret(secretName, namespace, "tls-cluster.rabbitmq-system.svc")
 
@@ -45,11 +40,10 @@ var _ = Describe("RabbitmqCluster with TLS", func() {
 		)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(k8sClient.Get(context.Background(), types.NamespacedName{Name: targetCluster.Name, Namespace: targetCluster.Namespace}, targetCluster)).To(Succeed())
+		targetCluster = basicTestRabbitmqCluster("tls-cluster", namespace)
 		targetCluster.Spec.TLS.SecretName = secretName
 		targetCluster.Spec.TLS.DisableNonTLSListeners = true
-		updateTestRabbitmqCluster(k8sClient, targetCluster)
-
+		setupTestRabbitmqCluster(k8sClient, targetCluster)
 		targetClusterRef = topology.RabbitmqClusterReference{Name: targetCluster.Name}
 	})
 
@@ -97,5 +91,16 @@ var _ = Describe("RabbitmqCluster with TLS", func() {
 			},
 		}
 		Expect(k8sClient.Create(ctx, &policy)).To(Succeed())
+
+		var fetchedPolicy topology.Policy
+		Eventually(func() []topology.Condition {
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &fetchedPolicy)).To(Succeed())
+			return fetchedPolicy.Status.Conditions
+		}, 10, 2).Should(HaveLen(1))
+
+		readyCondition := fetchedPolicy.Status.Conditions[0]
+		Expect(string(readyCondition.Type)).To(Equal("Ready"))
+		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))
+		Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
 	})
 })
