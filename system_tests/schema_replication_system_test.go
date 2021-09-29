@@ -35,8 +35,8 @@ var _ = Describe("schema replication", func() {
 			},
 			Type: corev1.SecretTypeOpaque,
 			Data: map[string][]byte{
-				"username":  []byte("some-username"),
-				"password":  []byte("some-password"),
+				"username": []byte("some-username"),
+				"password": []byte("some-password"),
 			},
 		}
 		Expect(k8sClient.Create(ctx, &endpointsSecret, &client.CreateOptions{})).To(Succeed())
