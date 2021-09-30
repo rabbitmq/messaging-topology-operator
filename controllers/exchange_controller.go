@@ -68,7 +68,9 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 	if errors.Is(err, internal.ResourceNotAllowedError) {
 		logger.Info("Could not create exchange resource: " + err.Error())
-		exchange.Status.Conditions = []topology.Condition{topology.NotReady(internal.ResourceNotAllowedError.Error())}
+		exchange.Status.Conditions = []topology.Condition{
+			topology.NotReady(internal.ResourceNotAllowedError.Error(), exchange.Status.Conditions),
+		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, exchange)
 		}); writerErr != nil {
@@ -106,7 +108,9 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	if err := r.declareExchange(ctx, rabbitClient, exchange); err != nil {
 		// Set Condition 'Ready' to false with message
-		exchange.Status.Conditions = []topology.Condition{topology.NotReady(err.Error())}
+		exchange.Status.Conditions = []topology.Condition{
+			topology.NotReady(err.Error(), exchange.Status.Conditions),
+		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, exchange)
 		}); writerErr != nil {
@@ -115,7 +119,7 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, err
 	}
 
-	exchange.Status.Conditions = []topology.Condition{topology.Ready()}
+	exchange.Status.Conditions = []topology.Condition{topology.Ready(exchange.Status.Conditions)}
 	exchange.Status.ObservedGeneration = exchange.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, exchange)

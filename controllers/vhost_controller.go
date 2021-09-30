@@ -59,7 +59,9 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 	if errors.Is(err, internal.ResourceNotAllowedError) {
 		logger.Info("Could not create vhost resource: " + err.Error())
-		vhost.Status.Conditions = []topology.Condition{topology.NotReady(internal.ResourceNotAllowedError.Error())}
+		vhost.Status.Conditions = []topology.Condition{
+			topology.NotReady(internal.ResourceNotAllowedError.Error(), vhost.Status.Conditions),
+		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, vhost)
 		}); writerErr != nil {
@@ -98,7 +100,9 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	if err := r.putVhost(ctx, rabbitClient, vhost); err != nil {
 		// Set Condition 'Ready' to false with message
-		vhost.Status.Conditions = []topology.Condition{topology.NotReady(err.Error())}
+		vhost.Status.Conditions = []topology.Condition{
+			topology.NotReady(err.Error(), vhost.Status.Conditions),
+		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, vhost)
 		}); writerErr != nil {
@@ -107,7 +111,7 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, err
 	}
 
-	vhost.Status.Conditions = []topology.Condition{topology.Ready()}
+	vhost.Status.Conditions = []topology.Condition{topology.Ready(vhost.Status.Conditions)}
 	vhost.Status.ObservedGeneration = vhost.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, vhost)

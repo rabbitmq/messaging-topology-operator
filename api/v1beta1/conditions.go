@@ -14,7 +14,7 @@ type Condition struct {
 	Type ConditionType `json:"type"`
 	// True, False, or Unknown
 	Status corev1.ConditionStatus `json:"status"`
-	// The last time this Condition type changed.
+	// The last time this Condition status changed.
 	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
 	// One word, camel-case reason for current status of the condition.
 	Reason string `json:"reason,omitempty"`
@@ -23,22 +23,33 @@ type Condition struct {
 }
 
 // Ready indicates that the last Create/Update operator on the CR was successful.
-func Ready() Condition {
+func Ready(lastConditions []Condition) Condition {
+	time := lastTransitionTime(corev1.ConditionTrue, lastConditions)
 	return Condition{
 		Type:               ready,
 		Status:             corev1.ConditionTrue,
-		LastTransitionTime: metav1.Now(),
+		LastTransitionTime: time,
 		Reason:             "SuccessfulCreateOrUpdate",
 	}
 }
 
 // NotReady indicates that the last Create/Update operator on the CR failed.
-func NotReady(msg string) Condition {
+func NotReady(msg string, lastConditions []Condition) Condition {
+	time := lastTransitionTime(corev1.ConditionFalse, lastConditions)
 	return Condition{
 		Type:               ready,
 		Status:             corev1.ConditionFalse,
-		LastTransitionTime: metav1.Now(),
+		LastTransitionTime: time,
 		Reason:             "FailedCreateOrUpdate",
 		Message:            msg,
 	}
+}
+
+func lastTransitionTime(newStatus corev1.ConditionStatus, lastConditions []Condition) metav1.Time {
+	for _, lastCondition := range lastConditions {
+		if lastCondition.Type == ready && lastCondition.Status == newStatus {
+			return lastCondition.LastTransitionTime
+		}
+	}
+	return metav1.Now()
 }

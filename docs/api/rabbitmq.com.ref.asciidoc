@@ -145,7 +145,7 @@ BindingStatus defines the observed state of Binding
 | Field | Description
 | *`type`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-conditiontype[$$ConditionType$$]__ | Type indicates the scope of the custom resource status addressed by the condition.
 | *`status`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#conditionstatus-v1-core[$$ConditionStatus$$]__ | True, False, or Unknown
-| *`lastTransitionTime`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#time-v1-meta[$$Time$$]__ | The last time this Condition type changed.
+| *`lastTransitionTime`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#time-v1-meta[$$Time$$]__ | The last time this Condition status changed.
 | *`reason`* __string__ | One word, camel-case reason for current status of the condition.
 | *`message`* __string__ | Full text reason for current status of the condition.
 |===

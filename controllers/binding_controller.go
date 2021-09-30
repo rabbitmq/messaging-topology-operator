@@ -70,7 +70,9 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 	if errors.Is(err, internal.ResourceNotAllowedError) {
 		logger.Info("Could not create binding resource: " + err.Error())
-		binding.Status.Conditions = []topology.Condition{topology.NotReady(internal.ResourceNotAllowedError.Error())}
+		binding.Status.Conditions = []topology.Condition{
+			topology.NotReady(internal.ResourceNotAllowedError.Error(), binding.Status.Conditions),
+		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, binding)
 		}); writerErr != nil {
@@ -107,7 +109,9 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	if err := r.declareBinding(ctx, rabbitClient, binding); err != nil {
 		// Set Condition 'Ready' to false with message
-		binding.Status.Conditions = []topology.Condition{topology.NotReady(err.Error())}
+		binding.Status.Conditions = []topology.Condition{
+			topology.NotReady(err.Error(), binding.Status.Conditions),
+		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, binding)
 		}); writerErr != nil {
@@ -116,7 +120,7 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	binding.Status.Conditions = []topology.Condition{topology.Ready()}
+	binding.Status.Conditions = []topology.Condition{topology.Ready(binding.Status.Conditions)}
 	binding.Status.ObservedGeneration = binding.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, binding)

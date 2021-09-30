@@ -62,7 +62,9 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 	if errors.Is(err, internal.ResourceNotAllowedError) {
 		logger.Info("Could not create permission resource: " + err.Error())
-		permission.Status.Conditions = []topology.Condition{topology.NotReady(internal.ResourceNotAllowedError.Error())}
+		permission.Status.Conditions = []topology.Condition{
+			topology.NotReady(internal.ResourceNotAllowedError.Error(), permission.Status.Conditions),
+		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, permission)
 		}); writerErr != nil {
@@ -107,7 +109,9 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	if err := r.updatePermissions(ctx, rabbitClient, permission, user); err != nil {
 		// Set Condition 'Ready' to false with message
-		permission.Status.Conditions = []topology.Condition{topology.NotReady(err.Error())}
+		permission.Status.Conditions = []topology.Condition{
+			topology.NotReady(err.Error(), permission.Status.Conditions),
+		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, permission)
 		}); writerErr != nil {
@@ -116,7 +120,7 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
-	permission.Status.Conditions = []topology.Condition{topology.Ready()}
+	permission.Status.Conditions = []topology.Condition{topology.Ready(permission.Status.Conditions)}
 	permission.Status.ObservedGeneration = permission.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, permission)

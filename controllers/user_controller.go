@@ -79,7 +79,9 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 	if errors.Is(err, internal.ResourceNotAllowedError) {
 		logger.Info("Could not create user resource: " + err.Error())
-		user.Status.Conditions = []topology.Condition{topology.NotReady(internal.ResourceNotAllowedError.Error())}
+		user.Status.Conditions = []topology.Condition{
+			topology.NotReady(internal.ResourceNotAllowedError.Error(), user.Status.Conditions),
+		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, user)
 		}); writerErr != nil {
@@ -129,7 +131,9 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	if err := r.declareUser(ctx, rabbitClient, user); err != nil {
 		// Set Condition 'Ready' to false with message
-		user.Status.Conditions = []topology.Condition{topology.NotReady(err.Error())}
+		user.Status.Conditions = []topology.Condition{
+			topology.NotReady(err.Error(), user.Status.Conditions),
+		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, user)
 		}); writerErr != nil {
@@ -138,7 +142,7 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, err
 	}
 
-	user.Status.Conditions = []topology.Condition{topology.Ready()}
+	user.Status.Conditions = []topology.Condition{topology.Ready(user.Status.Conditions)}
 	user.Status.ObservedGeneration = user.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, user)

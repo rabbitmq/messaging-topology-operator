@@ -71,7 +71,9 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 	if errors.Is(err, internal.ResourceNotAllowedError) {
 		logger.Info("Could not create queue resource: " + err.Error())
-		queue.Status.Conditions = []topology.Condition{topology.NotReady(internal.ResourceNotAllowedError.Error())}
+		queue.Status.Conditions = []topology.Condition{
+			topology.NotReady(internal.ResourceNotAllowedError.Error(), queue.Status.Conditions),
+		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, queue)
 		}); writerErr != nil {
@@ -110,7 +112,9 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	if err := r.declareQueue(ctx, rabbitClient, queue); err != nil {
 		// Set Condition 'Ready' to false with message
-		queue.Status.Conditions = []topology.Condition{topology.NotReady(err.Error())}
+		queue.Status.Conditions = []topology.Condition{
+			topology.NotReady(err.Error(), queue.Status.Conditions),
+		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, queue)
 		}); writerErr != nil {
@@ -119,7 +123,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, err
 	}
 
-	queue.Status.Conditions = []topology.Condition{topology.Ready()}
+	queue.Status.Conditions = []topology.Condition{topology.Ready(queue.Status.Conditions)}
 	queue.Status.ObservedGeneration = queue.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, queue)
