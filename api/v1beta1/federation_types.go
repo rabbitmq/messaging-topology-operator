@@ -34,7 +34,7 @@ type FederationSpec struct {
 	ReconnectDelay int    `json:"reconnectDelay,omitempty"`
 	TrustUserId    bool   `json:"trustUserId,omitempty"`
 	Exchange       string `json:"exchange,omitempty"`
-	Queue          string `json:"queue,omitempty,omitempty"`
+	Queue          string `json:"queue,omitempty"`
 }
 
 // FederationStatus defines the observed state of Federation
