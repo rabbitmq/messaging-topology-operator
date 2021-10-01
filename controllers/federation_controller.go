@@ -61,7 +61,9 @@ func (r *FederationReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 	if errors.Is(err, internal.ResourceNotAllowedError) {
 		logger.Info("Could not create federation resource: " + err.Error())
-		federation.Status.Conditions = []topology.Condition{topology.NotReady(internal.ResourceNotAllowedError.Error())}
+		federation.Status.Conditions = []topology.Condition{
+			topology.NotReady(internal.ResourceNotAllowedError.Error(), federation.Status.Conditions),
+		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, federation)
 		}); writerErr != nil {
@@ -99,7 +101,9 @@ func (r *FederationReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	if err := r.setFederation(ctx, rabbitClient, federation); err != nil {
 		// Set Condition 'Ready' to false with message
-		federation.Status.Conditions = []topology.Condition{topology.NotReady(err.Error())}
+		federation.Status.Conditions = []topology.Condition{
+			topology.NotReady(err.Error(), federation.Status.Conditions),
+		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, federation)
 		}); writerErr != nil {
@@ -108,7 +112,7 @@ func (r *FederationReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
-	federation.Status.Conditions = []topology.Condition{topology.Ready()}
+	federation.Status.Conditions = []topology.Condition{topology.Ready(federation.Status.Conditions)}
 	federation.Status.ObservedGeneration = federation.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, federation)

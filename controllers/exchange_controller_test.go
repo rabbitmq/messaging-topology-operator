@@ -117,6 +117,74 @@ var _ = Describe("exchange-controller", func() {
 				})
 			})
 		})
+		Context("LastTransitionTime", func() {
+			BeforeEach(func() {
+				exchangeName = "test-last-transition-time"
+				fakeRabbitMQClient.DeclareExchangeReturns(&http.Response{
+					Status:     "201 Created",
+					StatusCode: http.StatusCreated,
+				}, nil)
+			})
+			It("changes only if status changes", func() {
+				By("setting LastTransitionTime when transitioning to status Ready=true")
+				Expect(client.Create(ctx, &exchange)).To(Succeed())
+				EventuallyWithOffset(1, func() []topology.Condition {
+					_ = client.Get(
+						ctx,
+						types.NamespacedName{Namespace: exchange.Namespace, Name: exchange.Name},
+						&exchange,
+					)
+					return exchange.Status.Conditions
+				}, 10*time.Second, 1*time.Second).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(topology.ConditionType("Ready")),
+					"Status": Equal(corev1.ConditionTrue),
+				})))
+				lastTransitionTime := exchange.Status.Conditions[0].LastTransitionTime
+				Expect(lastTransitionTime.IsZero()).To(BeFalse())
+
+				By("not touching LastTransitionTime when staying in status Ready=true")
+				fakeRabbitMQClient.DeclareExchangeReturns(&http.Response{
+					Status:     "204 No Content",
+					StatusCode: http.StatusNoContent,
+				}, nil)
+				exchange.Labels = map[string]string{"k1": "v1"}
+				Expect(client.Update(ctx, &exchange)).To(Succeed())
+				ConsistentlyWithOffset(1, func() []topology.Condition {
+					_ = client.Get(
+						ctx,
+						types.NamespacedName{Namespace: exchange.Namespace, Name: exchange.Name},
+						&exchange,
+					)
+					return exchange.Status.Conditions
+				}, "3s").Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(topology.ConditionType("Ready")),
+					"Status": Equal(corev1.ConditionTrue),
+				})))
+				Expect(exchange.Status.Conditions[0].LastTransitionTime.Time).To(BeTemporally("==", lastTransitionTime.Time))
+
+				By("updating LastTransitionTime when transitioning to status Ready=false")
+				fakeRabbitMQClient.DeclareExchangeReturns(&http.Response{
+					Status:     "500 Internal Server Error",
+					StatusCode: http.StatusInternalServerError,
+				}, errors.New("something went wrong"))
+				exchange.Labels = map[string]string{"k1": "v2"}
+				Expect(client.Update(ctx, &exchange)).To(Succeed())
+				EventuallyWithOffset(1, func() []topology.Condition {
+					_ = client.Get(
+						ctx,
+						types.NamespacedName{Namespace: exchange.Namespace, Name: exchange.Name},
+						&exchange,
+					)
+					return exchange.Status.Conditions
+				}, 10*time.Second, 1*time.Second).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
+					"Type":    Equal(topology.ConditionType("Ready")),
+					"Status":  Equal(corev1.ConditionFalse),
+					"Reason":  Equal("FailedCreateOrUpdate"),
+					"Message": Equal("something went wrong"),
+				})))
+				Expect(exchange.Status.Conditions[0].LastTransitionTime.Time).To(BeTemporally(">", lastTransitionTime.Time))
+			})
+		})
 
 		Context("deletion", func() {
 			JustBeforeEach(func() {

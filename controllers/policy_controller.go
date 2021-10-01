@@ -69,7 +69,9 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 	if errors.Is(err, internal.ResourceNotAllowedError) {
 		logger.Info("Could not create policy resource: " + err.Error())
-		policy.Status.Conditions = []topology.Condition{topology.NotReady(internal.ResourceNotAllowedError.Error())}
+		policy.Status.Conditions = []topology.Condition{
+			topology.NotReady(internal.ResourceNotAllowedError.Error(), policy.Status.Conditions),
+		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, policy)
 		}); writerErr != nil {
@@ -107,7 +109,9 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	if err := r.putPolicy(ctx, rabbitClient, policy); err != nil {
 		// Set Condition 'Ready' to false with message
-		policy.Status.Conditions = []topology.Condition{topology.NotReady(err.Error())}
+		policy.Status.Conditions = []topology.Condition{
+			topology.NotReady(err.Error(), policy.Status.Conditions),
+		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, policy)
 		}); writerErr != nil {
@@ -116,7 +120,7 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	policy.Status.Conditions = []topology.Condition{topology.Ready()}
+	policy.Status.Conditions = []topology.Condition{topology.Ready(policy.Status.Conditions)}
 	policy.Status.ObservedGeneration = policy.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, policy)

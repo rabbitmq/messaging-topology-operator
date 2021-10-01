@@ -63,7 +63,9 @@ func (r *SchemaReplicationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 	if errors.Is(err, internal.ResourceNotAllowedError) {
 		logger.Info("Could not create schema replication resource: " + err.Error())
-		replication.Status.Conditions = []topology.Condition{topology.NotReady(internal.ResourceNotAllowedError.Error())}
+		replication.Status.Conditions = []topology.Condition{
+			topology.NotReady(internal.ResourceNotAllowedError.Error(), replication.Status.Conditions),
+		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, replication)
 		}); writerErr != nil {
@@ -101,7 +103,9 @@ func (r *SchemaReplicationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	if err := r.setSchemaReplicationUpstream(ctx, rabbitClient, replication); err != nil {
 		// Set Condition 'Ready' to false with message
-		replication.Status.Conditions = []topology.Condition{topology.NotReady(err.Error())}
+		replication.Status.Conditions = []topology.Condition{
+			topology.NotReady(err.Error(), replication.Status.Conditions),
+		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, replication)
 		}); writerErr != nil {
@@ -110,7 +114,7 @@ func (r *SchemaReplicationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, err
 	}
 
-	replication.Status.Conditions = []topology.Condition{topology.Ready()}
+	replication.Status.Conditions = []topology.Condition{topology.Ready(replication.Status.Conditions)}
 	replication.Status.ObservedGeneration = replication.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, replication)

@@ -61,7 +61,9 @@ func (r *ShovelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 	if errors.Is(err, internal.ResourceNotAllowedError) {
 		logger.Info("Could not create shovel resource: " + err.Error())
-		shovel.Status.Conditions = []topology.Condition{topology.NotReady(internal.ResourceNotAllowedError.Error())}
+		shovel.Status.Conditions = []topology.Condition{
+			topology.NotReady(internal.ResourceNotAllowedError.Error(), shovel.Status.Conditions),
+		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, shovel)
 		}); writerErr != nil {
@@ -98,7 +100,9 @@ func (r *ShovelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	if err := r.declareShovel(ctx, rabbitClient, shovel); err != nil {
 		// Set Condition 'Ready' to false with message
-		shovel.Status.Conditions = []topology.Condition{topology.NotReady(err.Error())}
+		shovel.Status.Conditions = []topology.Condition{
+			topology.NotReady(err.Error(), shovel.Status.Conditions),
+		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, shovel)
 		}); writerErr != nil {
@@ -107,7 +111,7 @@ func (r *ShovelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	shovel.Status.Conditions = []topology.Condition{topology.Ready()}
+	shovel.Status.Conditions = []topology.Condition{topology.Ready(shovel.Status.Conditions)}
 	shovel.Status.ObservedGeneration = shovel.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, shovel)
