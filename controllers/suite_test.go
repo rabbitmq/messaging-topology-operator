@@ -50,10 +50,14 @@ var (
 	ctx                       = context.Background()
 	fakeRabbitMQClient        *internalfakes.FakeRabbitMQClient
 	fakeRabbitMQClientError   error
-	fakeRabbitMQClientFactory = func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, secret *corev1.Secret, hostname string, certPool *x509.CertPool) (internal.RabbitMQClient, error) {
+	fakeRabbitMQClientFactory = func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, username string, password string, hostname string, certPool *x509.CertPool) (internal.RabbitMQClient, error) {
 		return fakeRabbitMQClient, fakeRabbitMQClientError
 	}
-	fakeRecorder *record.FakeRecorder
+	existingRabbitMQUsername = "abc123"
+	existingRabbitMQPassword = "foo1234"
+	fakeCredentialsProvider  *internalfakes.FakeCredentialsProvider
+	fakeCredentialsLocator   *internalfakes.FakeCredentialsLocator
+	fakeRecorder             *record.FakeRecorder
 )
 
 var _ = BeforeSuite(func() {
@@ -82,6 +86,12 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
+	fakeCredentialsProvider = &internalfakes.FakeCredentialsProvider{}
+	fakeCredentialsLocator = &internalfakes.FakeCredentialsLocator{}
+	fakeCredentialsProvider.GetUserReturns(existingRabbitMQUsername)
+	fakeCredentialsProvider.GetPasswordReturns(existingRabbitMQPassword)
+	fakeCredentialsLocator.ReadCredentialsReturns(fakeCredentialsProvider, nil)
+
 	fakeRecorder = record.NewFakeRecorder(128)
 
 	err = (&controllers.BindingReconciler{
@@ -89,6 +99,7 @@ var _ = BeforeSuite(func() {
 		Scheme:                mgr.GetScheme(),
 		Recorder:              fakeRecorder,
 		RabbitmqClientFactory: fakeRabbitMQClientFactory,
+		CredentialsLocator:    fakeCredentialsLocator,
 	}).SetupWithManager(mgr)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.ExchangeReconciler{
@@ -103,6 +114,7 @@ var _ = BeforeSuite(func() {
 		Scheme:                mgr.GetScheme(),
 		Recorder:              fakeRecorder,
 		RabbitmqClientFactory: fakeRabbitMQClientFactory,
+		CredentialsLocator:    fakeCredentialsLocator,
 	}).SetupWithManager(mgr)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.PolicyReconciler{
@@ -110,6 +122,7 @@ var _ = BeforeSuite(func() {
 		Scheme:                mgr.GetScheme(),
 		Recorder:              fakeRecorder,
 		RabbitmqClientFactory: fakeRabbitMQClientFactory,
+		CredentialsLocator:    fakeCredentialsLocator,
 	}).SetupWithManager(mgr)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.QueueReconciler{
@@ -117,6 +130,7 @@ var _ = BeforeSuite(func() {
 		Scheme:                mgr.GetScheme(),
 		Recorder:              fakeRecorder,
 		RabbitmqClientFactory: fakeRabbitMQClientFactory,
+		CredentialsLocator:    fakeCredentialsLocator,
 	}).SetupWithManager(mgr)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.UserReconciler{
@@ -124,6 +138,7 @@ var _ = BeforeSuite(func() {
 		Scheme:                mgr.GetScheme(),
 		Recorder:              fakeRecorder,
 		RabbitmqClientFactory: fakeRabbitMQClientFactory,
+		CredentialsLocator:    fakeCredentialsLocator,
 	}).SetupWithManager(mgr)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.VhostReconciler{
@@ -131,6 +146,7 @@ var _ = BeforeSuite(func() {
 		Scheme:                mgr.GetScheme(),
 		Recorder:              fakeRecorder,
 		RabbitmqClientFactory: fakeRabbitMQClientFactory,
+		CredentialsLocator:    fakeCredentialsLocator,
 	}).SetupWithManager(mgr)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.SchemaReplicationReconciler{
@@ -138,6 +154,7 @@ var _ = BeforeSuite(func() {
 		Scheme:                mgr.GetScheme(),
 		Recorder:              fakeRecorder,
 		RabbitmqClientFactory: fakeRabbitMQClientFactory,
+		CredentialsLocator:    fakeCredentialsLocator,
 	}).SetupWithManager(mgr)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.FederationReconciler{
@@ -145,6 +162,7 @@ var _ = BeforeSuite(func() {
 		Scheme:                mgr.GetScheme(),
 		Recorder:              fakeRecorder,
 		RabbitmqClientFactory: fakeRabbitMQClientFactory,
+		CredentialsLocator:    fakeCredentialsLocator,
 	}).SetupWithManager(mgr)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.ShovelReconciler{
@@ -152,6 +170,7 @@ var _ = BeforeSuite(func() {
 		Scheme:                mgr.GetScheme(),
 		Recorder:              fakeRecorder,
 		RabbitmqClientFactory: fakeRabbitMQClientFactory,
+		CredentialsLocator:    fakeCredentialsLocator,
 	}).SetupWithManager(mgr)
 	Expect(err).ToNot(HaveOccurred())
 

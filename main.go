@@ -69,12 +69,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	credentialsLocator, err := internal.InitializeCredentialsLocator()
+	if err != nil {
+		log.Error(err, "unable to log into Vault")
+		os.Exit(1)
+	}
+
 	if err = (&controllers.QueueReconciler{
 		Client:                mgr.GetClient(),
 		Log:                   ctrl.Log.WithName(controllers.QueueControllerName),
 		Scheme:                mgr.GetScheme(),
 		Recorder:              mgr.GetEventRecorderFor(controllers.QueueControllerName),
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+		CredentialsLocator:    credentialsLocator,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.QueueControllerName)
 		os.Exit(1)
@@ -85,6 +92,7 @@ func main() {
 		Scheme:                mgr.GetScheme(),
 		Recorder:              mgr.GetEventRecorderFor(controllers.ExchangeControllerName),
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+		CredentialsLocator:    credentialsLocator,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.ExchangeControllerName)
 		os.Exit(1)
@@ -95,6 +103,7 @@ func main() {
 		Scheme:                mgr.GetScheme(),
 		Recorder:              mgr.GetEventRecorderFor(controllers.BindingControllerName),
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+		CredentialsLocator:    credentialsLocator,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.BindingControllerName)
 		os.Exit(1)
@@ -105,6 +114,7 @@ func main() {
 		Scheme:                mgr.GetScheme(),
 		Recorder:              mgr.GetEventRecorderFor(controllers.UserControllerName),
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+		CredentialsLocator:    credentialsLocator,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.UserControllerName)
 		os.Exit(1)
@@ -115,6 +125,7 @@ func main() {
 		Scheme:                mgr.GetScheme(),
 		Recorder:              mgr.GetEventRecorderFor(controllers.VhostControllerName),
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+		CredentialsLocator:    credentialsLocator,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.VhostControllerName)
 		os.Exit(1)
@@ -125,6 +136,7 @@ func main() {
 		Scheme:                mgr.GetScheme(),
 		Recorder:              mgr.GetEventRecorderFor(controllers.PolicyControllerName),
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+		CredentialsLocator:    credentialsLocator,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.PolicyControllerName)
 		os.Exit(1)
@@ -135,6 +147,7 @@ func main() {
 		Scheme:                mgr.GetScheme(),
 		Recorder:              mgr.GetEventRecorderFor(controllers.PermissionControllerName),
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+		CredentialsLocator:    credentialsLocator,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.PermissionControllerName)
 		os.Exit(1)
@@ -145,6 +158,7 @@ func main() {
 		Scheme:                mgr.GetScheme(),
 		Recorder:              mgr.GetEventRecorderFor(controllers.SchemaReplicationControllerName),
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+		CredentialsLocator:    credentialsLocator,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.SchemaReplicationControllerName)
 		os.Exit(1)
@@ -155,6 +169,7 @@ func main() {
 		Scheme:                mgr.GetScheme(),
 		Recorder:              mgr.GetEventRecorderFor(controllers.FederationControllerName),
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+		CredentialsLocator:    credentialsLocator,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.FederationControllerName)
 		os.Exit(1)
@@ -165,6 +180,7 @@ func main() {
 		Scheme:                mgr.GetScheme(),
 		Recorder:              mgr.GetEventRecorderFor(controllers.ShovelControllerName),
 		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+		CredentialsLocator:    credentialsLocator,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.ShovelControllerName)
 		os.Exit(1)

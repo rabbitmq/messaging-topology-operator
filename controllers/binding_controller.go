@@ -38,6 +38,7 @@ type BindingReconciler struct {
 	Scheme                *runtime.Scheme
 	Recorder              record.EventRecorder
 	RabbitmqClientFactory internal.RabbitMQClientFactory
+	CredentialsLocator    internal.CredentialsLocator
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=bindings,verbs=get;list;watch;create;update;patch;delete
@@ -56,7 +57,7 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	rmq, svc, secret, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, binding.Spec.RabbitmqClusterReference, binding.Namespace)
+	rmq, svc, credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, binding.Spec.RabbitmqClusterReference, binding.Namespace, r.CredentialsLocator)
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !binding.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info(noSuchRabbitDeletion, "binding", binding.Name)
 		r.Recorder.Event(binding, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted binding")
@@ -85,7 +86,7 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return reconcile.Result{}, err
 	}
 
-	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, secret, serviceDNSAddress(svc), systemCertPool)
+	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, credsProvider.GetUser(), credsProvider.GetPassword(), serviceDNSAddress(svc), systemCertPool)
 	if err != nil {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err

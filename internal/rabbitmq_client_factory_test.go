@@ -22,7 +22,6 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 		existingRabbitMQUsername = "abc123"
 		existingRabbitMQPassword = "foo1234"
 		existingRabbitMQCluster  *rabbitmqv1beta1.RabbitmqCluster
-		existingCredentialSecret *corev1.Secret
 		existingService          *corev1.Service
 		fakeRabbitMQServer       *ghttp.Server
 		fakeRabbitMQURL          *url.URL
@@ -74,16 +73,6 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 					},
 				},
 			}
-			existingCredentialSecret = &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq-default-user-credentials",
-					Namespace: "rabbitmq-system",
-				},
-				Data: map[string][]byte{
-					"username": []byte(existingRabbitMQUsername),
-					"password": []byte(existingRabbitMQPassword),
-				},
-			}
 			existingService = &corev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rmq-service",
@@ -102,7 +91,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 		})
 
 		It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
-			generatedClient, err := internal.RabbitholeClientFactory(existingRabbitMQCluster, existingService, existingCredentialSecret, fakeRabbitMQURL.Hostname(), certPool)
+			generatedClient, err := internal.RabbitholeClientFactory(existingRabbitMQCluster, existingService, existingRabbitMQUsername, existingRabbitMQPassword, fakeRabbitMQURL.Hostname(), certPool)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(generatedClient).NotTo(BeNil())
 
@@ -143,16 +132,6 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 					},
 				},
 			}
-			existingCredentialSecret = &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq-default-user-credentials",
-					Namespace: "rabbitmq-system",
-				},
-				Data: map[string][]byte{
-					"username": []byte(existingRabbitMQUsername),
-					"password": []byte(existingRabbitMQPassword),
-				},
-			}
 			existingService = &corev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rmq-service",
@@ -191,7 +170,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 
 		When("the CA that signed the certs is not trusted", func() {
 			It("generates a rabbithole client which fails to authenticate with the cluster", func() {
-				generatedClient, err := internal.RabbitholeClientFactory(existingRabbitMQCluster, existingService, existingCredentialSecret, fakeRabbitMQURL.Hostname(), certPool)
+				generatedClient, err := internal.RabbitholeClientFactory(existingRabbitMQCluster, existingService, existingRabbitMQUsername, existingRabbitMQPassword, fakeRabbitMQURL.Hostname(), certPool)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(generatedClient).NotTo(BeNil())
 
@@ -206,7 +185,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 				Expect(ok).To(BeTrue())
 			})
 			It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
-				generatedClient, err := internal.RabbitholeClientFactory(existingRabbitMQCluster, existingService, existingCredentialSecret, fakeRabbitMQURL.Hostname(), certPool)
+				generatedClient, err := internal.RabbitholeClientFactory(existingRabbitMQCluster, existingService, existingRabbitMQUsername, existingRabbitMQPassword, fakeRabbitMQURL.Hostname(), certPool)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(generatedClient).NotTo(BeNil())
 

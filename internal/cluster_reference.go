@@ -13,12 +13,31 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . CredentialsProvider
+type CredentialsProvider interface {
+	GetUser() string
+	GetPassword() string
+}
+
+type ClusterCredentials struct {
+	username string
+	password string
+}
+
+func (c ClusterCredentials) GetUser() string {
+	return c.username
+}
+
+func (c ClusterCredentials) GetPassword() string {
+	return c.password
+}
+
 var (
 	NoSuchRabbitmqClusterError = errors.New("RabbitmqCluster object does not exist")
 	ResourceNotAllowedError    = errors.New("Resource is not allowed to reference defined cluster reference. Check the namespace of the resource is allowed as part of the cluster's `rabbitmq.com/topology-allowed-namespaces` annotation")
 )
 
-func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string) (*rabbitmqv1beta1.RabbitmqCluster, *corev1.Service, *corev1.Secret, error) {
+func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string, credentialsLocator CredentialsLocator) (*rabbitmqv1beta1.RabbitmqCluster, *corev1.Service, CredentialsProvider, error) {
 	var namespace string
 	if rmq.Namespace == "" {
 		namespace = requestNamespace
@@ -48,12 +67,16 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 	if cluster.Status.Binding == nil {
 		return nil, nil, nil, errors.New("no status.binding set")
 	}
-	if cluster.Status.DefaultUser == nil {
-		return nil, nil, nil, errors.New("no status.defaultUser set")
-	}
 
-	secret := &corev1.Secret{}
-	if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.Binding.Name}, secret); err != nil {
+	if cluster.Spec.SecretBackend.Vault.DefaultUserPath == "" {
+		return nil, nil, nil, errors.New("no spec.secretBackend.vault.defaultUserPath")
+	}
+	vaultPath := cluster.Spec.SecretBackend.Vault.DefaultUserPath
+
+	// ask the configured Vault server for the credentials stored at
+	// the default user path
+	credentialsProvider, err := credentialsLocator.ReadCredentials(vaultPath)
+	if err != nil {
 		return nil, nil, nil, err
 	}
 
@@ -61,5 +84,5 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 	if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.DefaultUser.ServiceReference.Name}, svc); err != nil {
 		return nil, nil, nil, err
 	}
-	return cluster, svc, secret, nil
+	return cluster, svc, credentialsProvider, nil
 }
