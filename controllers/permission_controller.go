@@ -30,6 +30,7 @@ type PermissionReconciler struct {
 	Scheme                *runtime.Scheme
 	Recorder              record.EventRecorder
 	RabbitmqClientFactory internal.RabbitMQClientFactory
+	CredentialsLocator    internal.CredentialsLocator
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=permissions,verbs=get;list;watch;create;update;patch;delete
@@ -48,7 +49,7 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
-	rmq, svc, secret, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, permission.Spec.RabbitmqClusterReference, permission.Namespace)
+	rmq, svc, credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, permission.Spec.RabbitmqClusterReference, permission.Namespace, r.CredentialsLocator)
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !permission.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info(noSuchRabbitDeletion, "permission", permission.Name)
 		r.Recorder.Event(permission, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted permission")
@@ -77,7 +78,7 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return reconcile.Result{}, err
 	}
 
-	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, secret, serviceDNSAddress(svc), systemCertPool)
+	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, credsProvider.GetUser(), credsProvider.GetPassword(), serviceDNSAddress(svc), systemCertPool)
 	if err != nil {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
