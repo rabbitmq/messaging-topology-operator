@@ -92,5 +92,5 @@ func InitializeCredentialsLocator() (CredentialsLocator, error) {
 	// use the Vault token for making all future calls to Vault
 	client.SetToken(resp.Auth.ClientToken)
 
-	return VaultClient{vaultClient: client}, nil
+	return &VaultClient{vaultClient: client}, nil
 }
