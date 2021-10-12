@@ -1,11 +1,16 @@
 package internal
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
+	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
+
 	vault "github.com/hashicorp/vault/api"
 )
+
+const defaultAuthPath string = "auth/kubernetes"
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . SecretReader
 type SecretReader interface {
@@ -66,13 +71,23 @@ func getValue(key string, data map[string]interface{}) (string, error) {
 	return result, nil
 }
 
-func InitializeSecretStoreClient(role string) (SecretStoreClient, error) {
+func InitializeSecretStoreClient(vaultSpec *rabbitmqv1beta1.VaultSpec) (SecretStoreClient, error) {
+	role := vaultSpec.Role
+	if role == "" {
+		return nil, errors.New("no role value set in Vault secret backend")
+	}
+
 	// For now, the VAULT_ADDR environment variable will be the address that your pod uses to communicate with Vault.
 	config := vault.DefaultConfig() // modify for more granular configuration
 
 	vaultClient, err := vault.NewClient(config)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize Vault client: %w", err)
+	}
+
+	var annotations map[string]string = vaultSpec.Annotations
+	if annotations["vault.hashicorp.com/namespace"] != "" {
+		vaultClient.SetNamespace(annotations["vault.hashicorp.com/namespace"])
 	}
 
 	// Read the service-account token from the path where the token's Kubernetes Secret is mounted.
@@ -83,7 +98,12 @@ func InitializeSecretStoreClient(role string) (SecretStoreClient, error) {
 		return nil, fmt.Errorf("unable to read file containing service account token: %w", err)
 	}
 
-	vaultToken, err := readVaultClientToken(vaultClient, string(jwt), role)
+	loginAuthPath := defaultAuthPath
+	if annotations["vault.hashicorp.com/auth-path"] != "" {
+		loginAuthPath = annotations["vault.hashicorp.com/auth-path"]
+	}
+
+	vaultToken, err := readVaultClientToken(vaultClient, string(jwt), role, loginAuthPath)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read Vault client token: %w", err)
 	}
@@ -102,14 +122,14 @@ func readServiceAccountToken(path string) ([]byte, error) {
 	return token, nil
 }
 
-func readVaultClientToken(vaultClient *vault.Client, jwtToken string, vaultRole string) (string, error) {
+func readVaultClientToken(vaultClient *vault.Client, jwtToken string, vaultRole string, authPath string) (string, error) {
 	params := map[string]interface{}{
 		"jwt":  jwtToken,
 		"role": vaultRole, // the name of the role in Vault that was created with this app's Kubernetes service account bound to it
 	}
 
 	// log in to Vault's Kubernetes auth method
-	resp, err := vaultClient.Logical().Write("auth/kubernetes/login", params)
+	resp, err := vaultClient.Logical().Write(authPath+"/login", params)
 	if err != nil {
 		return "", fmt.Errorf("unable to log in with Kubernetes auth: %w", err)
 	}
