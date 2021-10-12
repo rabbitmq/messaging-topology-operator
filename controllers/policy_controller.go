@@ -36,7 +36,6 @@ type PolicyReconciler struct {
 	Scheme                *runtime.Scheme
 	Recorder              record.EventRecorder
 	RabbitmqClientFactory internal.RabbitMQClientFactory
-	CredentialsLocator    internal.CredentialsLocator
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=policies,verbs=get;list;watch;create;update;patch;delete
@@ -56,7 +55,7 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	rmq, svc, credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, policy.Spec.RabbitmqClusterReference, policy.Namespace, r.CredentialsLocator)
+	rmq, svc, credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, policy.Spec.RabbitmqClusterReference, policy.Namespace)
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !policy.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info(noSuchRabbitDeletion, "policy", policy.Name)
 		r.Recorder.Event(policy, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted policy")

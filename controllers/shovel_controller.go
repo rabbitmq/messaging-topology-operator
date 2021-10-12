@@ -29,7 +29,6 @@ type ShovelReconciler struct {
 	Scheme                *runtime.Scheme
 	Recorder              record.EventRecorder
 	RabbitmqClientFactory internal.RabbitMQClientFactory
-	CredentialsLocator    internal.CredentialsLocator
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=shovels,verbs=get;list;watch;create;update;patch;delete
@@ -48,7 +47,7 @@ func (r *ShovelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	rmq, svc, credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, shovel.Spec.RabbitmqClusterReference, shovel.Namespace, r.CredentialsLocator)
+	rmq, svc, credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, shovel.Spec.RabbitmqClusterReference, shovel.Namespace)
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !shovel.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info(noSuchRabbitDeletion, "shovel", shovel.Name)
 		r.Recorder.Event(shovel, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted shovel")

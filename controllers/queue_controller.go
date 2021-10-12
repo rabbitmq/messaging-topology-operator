@@ -34,7 +34,6 @@ type QueueReconciler struct {
 	Scheme                *runtime.Scheme
 	Recorder              record.EventRecorder
 	RabbitmqClientFactory internal.RabbitMQClientFactory
-	CredentialsLocator    internal.CredentialsLocator
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=queues,verbs=get;list;watch;create;update;patch;delete
@@ -58,7 +57,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, err
 	}
 
-	rmq, svc, credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, queue.Spec.RabbitmqClusterReference, queue.Namespace, r.CredentialsLocator)
+	rmq, svc, credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, queue.Spec.RabbitmqClusterReference, queue.Namespace)
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !queue.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info(noSuchRabbitDeletion, "queue", queue.Name)
 		r.Recorder.Event(queue, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted queue")
