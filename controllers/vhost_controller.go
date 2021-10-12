@@ -27,7 +27,6 @@ type VhostReconciler struct {
 	Scheme                *runtime.Scheme
 	Recorder              record.EventRecorder
 	RabbitmqClientFactory internal.RabbitMQClientFactory
-	CredentialsLocator    internal.CredentialsLocator
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=vhosts,verbs=get;list;watch;create;update;patch;delete
@@ -46,7 +45,7 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, err
 	}
 
-	rmq, svc, credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, vhost.Spec.RabbitmqClusterReference, vhost.Namespace, r.CredentialsLocator)
+	rmq, svc, credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, vhost.Spec.RabbitmqClusterReference, vhost.Namespace)
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !vhost.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info(noSuchRabbitDeletion, "vhost", vhost.Name)
 		r.Recorder.Event(vhost, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted vhost")

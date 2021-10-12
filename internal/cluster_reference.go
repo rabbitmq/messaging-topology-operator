@@ -37,7 +37,7 @@ var (
 	ResourceNotAllowedError    = errors.New("Resource is not allowed to reference defined cluster reference. Check the namespace of the resource is allowed as part of the cluster's `rabbitmq.com/topology-allowed-namespaces` annotation")
 )
 
-func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string, credentialsLocator CredentialsLocator) (*rabbitmqv1beta1.RabbitmqCluster, *corev1.Service, CredentialsProvider, error) {
+func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string) (*rabbitmqv1beta1.RabbitmqCluster, *corev1.Service, CredentialsProvider, error) {
 	var namespace string
 	if rmq.Namespace == "" {
 		namespace = requestNamespace
@@ -68,16 +68,34 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 		return nil, nil, nil, errors.New("no status.binding set")
 	}
 
-	if cluster.Spec.SecretBackend.Vault.DefaultUserPath == "" {
-		return nil, nil, nil, errors.New("no spec.secretBackend.vault.defaultUserPath")
-	}
-	vaultPath := cluster.Spec.SecretBackend.Vault.DefaultUserPath
+	var credentialsProvider CredentialsProvider
+	if cluster.Spec.SecretBackend.Vault != nil && cluster.Spec.SecretBackend.Vault.DefaultUserPath != "" {
+		// ask the configured secure store for the credentials available at the path retrived from the cluster resource
+		secretStoreClient, err := InitializeSecretStoreClient(cluster.Spec.SecretBackend.Vault.Role)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("unable to create a client connection to secret store: %w", err)
+		}
 
-	// ask the configured Vault server for the credentials stored at
-	// the default user path
-	credentialsProvider, err := credentialsLocator.ReadCredentials(vaultPath)
-	if err != nil {
-		return nil, nil, nil, err
+		credsProv, err := secretStoreClient.ReadCredentials(cluster.Spec.SecretBackend.Vault.DefaultUserPath)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("unable to retrieve credentials from secret store: %w", err)
+		}
+		credentialsProvider = credsProv
+	} else {
+		// use credentials in namespace Kiubernetes Secret
+		if cluster.Status.DefaultUser == nil {
+			return nil, nil, nil, errors.New("no status.defaultUser set")
+		}
+
+		secret := &corev1.Secret{}
+		if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.Binding.Name}, secret); err != nil {
+			return nil, nil, nil, err
+		}
+		credsProv, err := readCredentialsFromKubernetesSecret(secret)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("unable to retrieve credentials from Kubernetes secret %s: %w", secret.Name, err)
+		}
+		credentialsProvider = credsProv
 	}
 
 	svc := &corev1.Service{}
@@ -85,4 +103,20 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 		return nil, nil, nil, err
 	}
 	return cluster, svc, credentialsProvider, nil
+}
+
+func readCredentialsFromKubernetesSecret(secret *corev1.Secret) (CredentialsProvider, error) {
+	if secret == nil {
+		return nil, errors.New("unable to extract data from nil secret")
+	}
+
+	if secret.Data["username"] == nil {
+		return nil, errors.New("secret data contains no username value")
+	}
+
+	if secret.Data["password"] == nil {
+		return nil, errors.New("secret data contains no password value")
+	}
+
+	return ClusterCredentials{username: string(secret.Data["username"]), password: string(secret.Data["password"])}, nil
 }

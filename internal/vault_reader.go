@@ -1,31 +1,47 @@
 package internal
 
 import (
-	"errors"
 	"fmt"
 	"os"
 
 	vault "github.com/hashicorp/vault/api"
 )
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . CredentialsLocator
-type CredentialsLocator interface {
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . SecretReader
+type SecretReader interface {
+	ReadSecret(path string) (*vault.Secret, error)
+}
+
+type VaultSecretReader struct {
+	client *vault.Client
+}
+
+func (s VaultSecretReader) ReadSecret(path string) (*vault.Secret, error) {
+	secret, err := s.client.Logical().Read(path)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read Vault secret: %w", err)
+	}
+	return secret, nil
+}
+
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . SecretStoreClient
+type SecretStoreClient interface {
 	ReadCredentials(path string) (CredentialsProvider, error)
 }
 
 type VaultClient struct {
-	vaultClient *vault.Client
+	Reader SecretReader
 }
 
 func (vc VaultClient) ReadCredentials(path string) (CredentialsProvider, error) {
-	secret, err := vc.vaultClient.Logical().Read(path)
+	secret, err := vc.Reader.ReadSecret(path)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read Vault secret: %w", err)
 	}
 
 	data, ok := secret.Data["data"].(map[string]interface{})
 	if !ok {
-		return nil, fmt.Errorf("data type assertion failed: %T %#v", secret.Data["data"], secret.Data["data"])
+		return nil, fmt.Errorf("data type assertion failed for Vault secret: %T %#v", secret.Data["data"], secret.Data["data"])
 	}
 
 	username, err := getValue("username", data)
@@ -50,11 +66,11 @@ func getValue(key string, data map[string]interface{}) (string, error) {
 	return result, nil
 }
 
-func InitializeCredentialsLocator() (CredentialsLocator, error) {
-	// If set, the VAULT_ADDR environment variable will be the address that your pod uses to communicate with Vault.
+func InitializeSecretStoreClient(role string) (SecretStoreClient, error) {
+	// For now, the VAULT_ADDR environment variable will be the address that your pod uses to communicate with Vault.
 	config := vault.DefaultConfig() // modify for more granular configuration
 
-	client, err := vault.NewClient(config)
+	vaultClient, err := vault.NewClient(config)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize Vault client: %w", err)
 	}
@@ -62,35 +78,45 @@ func InitializeCredentialsLocator() (CredentialsLocator, error) {
 	// Read the service-account token from the path where the token's Kubernetes Secret is mounted.
 	// By default, Kubernetes will mount this to /var/run/secrets/kubernetes.io/serviceaccount/token
 	// but an administrator may have configured it to be mounted elsewhere.
-	jwt, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/token")
+	jwt, err := readServiceAccountToken("/var/run/secrets/kubernetes.io/serviceaccount/token")
 	if err != nil {
 		return nil, fmt.Errorf("unable to read file containing service account token: %w", err)
 	}
 
-	// GCH TODO Is there a sensible default value for the Vault role?
-	var vaultRole string
-	if len(os.Getenv("VAULT_ROLE")) > 0 {
-		vaultRole = os.Getenv("VAULT_ROLE")
-	} else {
-		return nil, errors.New("unable to log into Vault as VAULT_ROLE is not set in the environment")
+	vaultToken, err := readVaultClientToken(vaultClient, string(jwt), role)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read Vault client token: %w", err)
 	}
 
+	// use the Vault token for making all future calls to Vault
+	vaultClient.SetToken(vaultToken)
+
+	return VaultClient{Reader: &VaultSecretReader{client: vaultClient}}, nil
+}
+
+func readServiceAccountToken(path string) ([]byte, error) {
+	token, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read file %s: %w", path, err)
+	}
+	return token, nil
+}
+
+func readVaultClientToken(vaultClient *vault.Client, jwtToken string, vaultRole string) (string, error) {
 	params := map[string]interface{}{
-		"jwt":  string(jwt),
+		"jwt":  jwtToken,
 		"role": vaultRole, // the name of the role in Vault that was created with this app's Kubernetes service account bound to it
 	}
 
 	// log in to Vault's Kubernetes auth method
-	resp, err := client.Logical().Write("auth/kubernetes/login", params)
+	resp, err := vaultClient.Logical().Write("auth/kubernetes/login", params)
 	if err != nil {
-		return nil, fmt.Errorf("unable to log in with Kubernetes auth: %w", err)
+		return "", fmt.Errorf("unable to log in with Kubernetes auth: %w", err)
 	}
+
+	// return the Vault client token provided in the login response
 	if resp == nil || resp.Auth == nil || resp.Auth.ClientToken == "" {
-		return nil, fmt.Errorf("login response did not return client token")
+		return "", fmt.Errorf("no client token found in Vault login response")
 	}
-
-	// use the Vault token for making all future calls to Vault
-	client.SetToken(resp.Auth.ClientToken)
-
-	return &VaultClient{vaultClient: client}, nil
+	return resp.Auth.ClientToken, nil
 }

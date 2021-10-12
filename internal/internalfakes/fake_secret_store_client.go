@@ -7,7 +7,7 @@ import (
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 )
 
-type FakeCredentialsLocator struct {
+type FakeSecretStoreClient struct {
 	ReadCredentialsStub        func(string) (internal.CredentialsProvider, error)
 	readCredentialsMutex       sync.RWMutex
 	readCredentialsArgsForCall []struct {
@@ -25,7 +25,7 @@ type FakeCredentialsLocator struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeCredentialsLocator) ReadCredentials(arg1 string) (internal.CredentialsProvider, error) {
+func (fake *FakeSecretStoreClient) ReadCredentials(arg1 string) (internal.CredentialsProvider, error) {
 	fake.readCredentialsMutex.Lock()
 	ret, specificReturn := fake.readCredentialsReturnsOnCall[len(fake.readCredentialsArgsForCall)]
 	fake.readCredentialsArgsForCall = append(fake.readCredentialsArgsForCall, struct {
@@ -44,26 +44,26 @@ func (fake *FakeCredentialsLocator) ReadCredentials(arg1 string) (internal.Crede
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeCredentialsLocator) ReadCredentialsCallCount() int {
+func (fake *FakeSecretStoreClient) ReadCredentialsCallCount() int {
 	fake.readCredentialsMutex.RLock()
 	defer fake.readCredentialsMutex.RUnlock()
 	return len(fake.readCredentialsArgsForCall)
 }
 
-func (fake *FakeCredentialsLocator) ReadCredentialsCalls(stub func(string) (internal.CredentialsProvider, error)) {
+func (fake *FakeSecretStoreClient) ReadCredentialsCalls(stub func(string) (internal.CredentialsProvider, error)) {
 	fake.readCredentialsMutex.Lock()
 	defer fake.readCredentialsMutex.Unlock()
 	fake.ReadCredentialsStub = stub
 }
 
-func (fake *FakeCredentialsLocator) ReadCredentialsArgsForCall(i int) string {
+func (fake *FakeSecretStoreClient) ReadCredentialsArgsForCall(i int) string {
 	fake.readCredentialsMutex.RLock()
 	defer fake.readCredentialsMutex.RUnlock()
 	argsForCall := fake.readCredentialsArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeCredentialsLocator) ReadCredentialsReturns(result1 internal.CredentialsProvider, result2 error) {
+func (fake *FakeSecretStoreClient) ReadCredentialsReturns(result1 internal.CredentialsProvider, result2 error) {
 	fake.readCredentialsMutex.Lock()
 	defer fake.readCredentialsMutex.Unlock()
 	fake.ReadCredentialsStub = nil
@@ -73,7 +73,7 @@ func (fake *FakeCredentialsLocator) ReadCredentialsReturns(result1 internal.Cred
 	}{result1, result2}
 }
 
-func (fake *FakeCredentialsLocator) ReadCredentialsReturnsOnCall(i int, result1 internal.CredentialsProvider, result2 error) {
+func (fake *FakeSecretStoreClient) ReadCredentialsReturnsOnCall(i int, result1 internal.CredentialsProvider, result2 error) {
 	fake.readCredentialsMutex.Lock()
 	defer fake.readCredentialsMutex.Unlock()
 	fake.ReadCredentialsStub = nil
@@ -89,7 +89,7 @@ func (fake *FakeCredentialsLocator) ReadCredentialsReturnsOnCall(i int, result1 
 	}{result1, result2}
 }
 
-func (fake *FakeCredentialsLocator) Invocations() map[string][][]interface{} {
+func (fake *FakeSecretStoreClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.readCredentialsMutex.RLock()
@@ -101,7 +101,7 @@ func (fake *FakeCredentialsLocator) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeCredentialsLocator) recordInvocation(key string, args []interface{}) {
+func (fake *FakeSecretStoreClient) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -113,4 +113,4 @@ func (fake *FakeCredentialsLocator) recordInvocation(key string, args []interfac
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ internal.CredentialsLocator = new(FakeCredentialsLocator)
+var _ internal.SecretStoreClient = new(FakeSecretStoreClient)

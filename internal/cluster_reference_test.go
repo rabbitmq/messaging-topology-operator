@@ -24,20 +24,18 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 		existingRabbitMQUsername = "abc123"
 		existingRabbitMQPassword = "foo1234"
 		existingRabbitMQCluster  *rabbitmqv1beta1.RabbitmqCluster
+		existingCredentialSecret *corev1.Secret
 		existingService          *corev1.Service
 		ctx                      = context.Background()
 		fakeCredentialsProvider  *internalfakes.FakeCredentialsProvider
-		fakeCredentialsLocator   *internalfakes.FakeCredentialsLocator
 	)
 	JustBeforeEach(func() {
 		s := scheme.Scheme
 		s.AddKnownTypes(rabbitmqv1beta1.SchemeBuilder.GroupVersion, &rabbitmqv1beta1.RabbitmqCluster{})
 		fakeClient = fake.NewClientBuilder().WithScheme(s).WithRuntimeObjects(objs...).Build()
 		fakeCredentialsProvider = &internalfakes.FakeCredentialsProvider{}
-		fakeCredentialsLocator = &internalfakes.FakeCredentialsLocator{}
 		fakeCredentialsProvider.GetUserReturns(existingRabbitMQUsername)
 		fakeCredentialsProvider.GetPasswordReturns(existingRabbitMQPassword)
-		fakeCredentialsLocator.ReadCredentialsReturns(fakeCredentialsProvider, nil)
 	})
 
 	When("the RabbitmqCluster is configured without TLS", func() {
@@ -58,12 +56,15 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 						},
 					},
 				},
-				Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
-					SecretBackend: rabbitmqv1beta1.SecretBackend{
-						Vault: &rabbitmqv1beta1.VaultSpec{
-							DefaultUserPath: "some/secret/path",
-						},
-					},
+			}
+			existingCredentialSecret = &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rmq-default-user-credentials",
+					Namespace: "rabbitmq-system",
+				},
+				Data: map[string][]byte{
+					"username": []byte(existingRabbitMQUsername),
+					"password": []byte(existingRabbitMQPassword),
 				},
 			}
 			existingService = &corev1.Service{
@@ -81,11 +82,11 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 					},
 				},
 			}
-			objs = []runtime.Object{existingRabbitMQCluster, existingService}
+			objs = []runtime.Object{existingRabbitMQCluster, existingCredentialSecret, existingService}
 		})
 
 		It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
-			rmq, svc, credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, fakeCredentialsLocator)
+			rmq, svc, credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(rmq.ObjectMeta).To(Equal(existingRabbitMQCluster.ObjectMeta))
 			Expect(rmq.Status).To(Equal(existingRabbitMQCluster.Status))
@@ -95,38 +96,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			Expect(credsProvider.GetPassword()).To(Equal(existingRabbitMQPassword))
 		})
 
-		When("RabbitmqCluster does not have status.binding set", func() {
-			BeforeEach(func() {
-				*existingRabbitMQCluster = rabbitmqv1beta1.RabbitmqCluster{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "rmq-incomplete",
-						Namespace: "rabbitmq-system",
-					},
-					Status: rabbitmqv1beta1.RabbitmqClusterStatus{
-						DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
-							ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
-								Name:      "rmq-service",
-								Namespace: "rabbitmq-system",
-							},
-						},
-					},
-					Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
-						SecretBackend: rabbitmqv1beta1.SecretBackend{
-							Vault: &rabbitmqv1beta1.VaultSpec{
-								DefaultUserPath: "some/secret/path",
-							},
-						},
-					},
-				}
-			})
-
-			It("errors", func() {
-				_, _, _, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, fakeCredentialsLocator)
-				Expect(err).To(MatchError("no status.binding set"))
-			})
-		})
-
-		When("RabbitmqCluster does not have spec.secretBackend.vault.defaultUserPath set", func() {
+		When("RabbitmqCluster does not have status.defaultUser set", func() {
 			BeforeEach(func() {
 				*existingRabbitMQCluster = rabbitmqv1beta1.RabbitmqCluster{
 					ObjectMeta: metav1.ObjectMeta{
@@ -137,26 +107,13 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 						Binding: &corev1.LocalObjectReference{
 							Name: "rmq-default-user-credentials",
 						},
-						DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
-							ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
-								Name:      "rmq-service",
-								Namespace: "rabbitmq-system",
-							},
-						},
-					},
-					Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
-						SecretBackend: rabbitmqv1beta1.SecretBackend{
-							Vault: &rabbitmqv1beta1.VaultSpec{
-								DefaultUserPath: "",
-							},
-						},
 					},
 				}
 			})
 
 			It("errors", func() {
-				_, _, _, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, fakeCredentialsLocator)
-				Expect(err).To(MatchError("no spec.secretBackend.vault.defaultUserPath"))
+				_, _, _, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
+				Expect(err).To(MatchError("no status.defaultUser set"))
 			})
 		})
 	})
