@@ -38,6 +38,10 @@ type VaultClient struct {
 	Reader SecretReader
 }
 
+var ServiceAccountTokenReader = ReadServiceAccountToken
+var VaultClientTokenReader = ReadVaultClientToken
+var VaultAuthenticator = LoginToVault
+
 func (vc VaultClient) ReadCredentials(path string) (CredentialsProvider, error) {
 	secret, err := vc.Reader.ReadSecret(path)
 	if err != nil {
@@ -90,10 +94,7 @@ func InitializeSecretStoreClient(vaultSpec *rabbitmqv1beta1.VaultSpec) (SecretSt
 		vaultClient.SetNamespace(annotations["vault.hashicorp.com/namespace"])
 	}
 
-	// Read the service-account token from the path where the token's Kubernetes Secret is mounted.
-	// By default, Kubernetes will mount this to /var/run/secrets/kubernetes.io/serviceaccount/token
-	// but an administrator may have configured it to be mounted elsewhere.
-	jwt, err := readServiceAccountToken("/var/run/secrets/kubernetes.io/serviceaccount/token")
+	jwt, err := ServiceAccountTokenReader()
 	if err != nil {
 		return nil, fmt.Errorf("unable to read file containing service account token: %w", err)
 	}
@@ -103,7 +104,7 @@ func InitializeSecretStoreClient(vaultSpec *rabbitmqv1beta1.VaultSpec) (SecretSt
 		loginAuthPath = annotations["vault.hashicorp.com/auth-path"]
 	}
 
-	vaultToken, err := readVaultClientToken(vaultClient, string(jwt), role, loginAuthPath)
+	vaultToken, err := VaultClientTokenReader(vaultClient, string(jwt), role, loginAuthPath)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read Vault client token: %w", err)
 	}
@@ -114,7 +115,11 @@ func InitializeSecretStoreClient(vaultSpec *rabbitmqv1beta1.VaultSpec) (SecretSt
 	return VaultClient{Reader: &VaultSecretReader{client: vaultClient}}, nil
 }
 
-func readServiceAccountToken(path string) ([]byte, error) {
+func ReadServiceAccountToken() ([]byte, error) {
+	// Read the service-account token from the path where the token's Kubernetes Secret is mounted.
+	// By default, Kubernetes will mount this to /var/run/secrets/kubernetes.io/serviceaccount/token
+	// but an administrator may have configured it to be mounted elsewhere.
+	path := "/var/run/secrets/kubernetes.io/serviceaccount/token"
 	token, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read file %s: %w", path, err)
@@ -122,14 +127,14 @@ func readServiceAccountToken(path string) ([]byte, error) {
 	return token, nil
 }
 
-func readVaultClientToken(vaultClient *vault.Client, jwtToken string, vaultRole string, authPath string) (string, error) {
+func ReadVaultClientToken(vaultClient *vault.Client, jwtToken string, vaultRole string, authPath string) (string, error) {
 	params := map[string]interface{}{
 		"jwt":  jwtToken,
 		"role": vaultRole, // the name of the role in Vault that was created with this app's Kubernetes service account bound to it
 	}
 
 	// log in to Vault's Kubernetes auth method
-	resp, err := vaultClient.Logical().Write(authPath+"/login", params)
+	resp, err := VaultAuthenticator(vaultClient, authPath, params)
 	if err != nil {
 		return "", fmt.Errorf("unable to log in with Kubernetes auth: %w", err)
 	}
@@ -139,4 +144,8 @@ func readVaultClientToken(vaultClient *vault.Client, jwtToken string, vaultRole 
 		return "", fmt.Errorf("no client token found in Vault login response")
 	}
 	return resp.Auth.ClientToken, nil
+}
+
+func LoginToVault(vaultClient *vault.Client, authPath string, params map[string]interface{}) (*vault.Secret, error) {
+	return vaultClient.Logical().Write(authPath+"/login", params)
 }
