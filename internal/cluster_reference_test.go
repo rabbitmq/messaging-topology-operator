@@ -116,5 +116,64 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 				Expect(err).To(MatchError("no status.defaultUser set"))
 			})
 		})
+
+		When("vault secret backend is declared on cluster spec", func() {
+			var (
+				err                   error
+				fakeSecretStoreClient *internalfakes.FakeSecretStoreClient
+				credsProv             internal.CredentialsProvider
+			)
+
+			BeforeEach(func() {
+				*existingRabbitMQCluster = rabbitmqv1beta1.RabbitmqCluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rmq",
+						Namespace: "rabbitmq-system",
+					},
+					Status: rabbitmqv1beta1.RabbitmqClusterStatus{
+						Binding: &corev1.LocalObjectReference{
+							Name: "rmq-default-user-credentials",
+						},
+						DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
+							ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
+								Name:      "rmq-service",
+								Namespace: "rabbitmq-system",
+							},
+						},
+					},
+					Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
+						SecretBackend: rabbitmqv1beta1.SecretBackend{
+							Vault: &rabbitmqv1beta1.VaultSpec{
+								Role:            "sausage",
+								DefaultUserPath: "/some/path",
+							},
+						},
+					},
+				}
+
+				fakeSecretStoreClient = &internalfakes.FakeSecretStoreClient{}
+				fakeSecretStoreClient.ReadCredentialsReturns(fakeCredentialsProvider, nil)
+				internal.SecretStoreClientInitializer = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (internal.SecretStoreClient, error) {
+					return fakeSecretStoreClient, nil
+				}
+			})
+
+			AfterEach(func() {
+				internal.SecretStoreClientInitializer = internal.InitializeSecretStoreClient
+			})
+
+			JustBeforeEach(func() {
+				_, _, credsProv, err = internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
+			})
+
+			It("should not return an error", func() {
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should return the expected credentials", func() {
+				Expect(credsProv.GetUser()).To(Equal(existingRabbitMQUsername))
+				Expect(credsProv.GetPassword()).To(Equal(existingRabbitMQPassword))
+			})
+		})
 	})
 })
