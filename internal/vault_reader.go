@@ -48,9 +48,21 @@ func (vc VaultClient) ReadCredentials(path string) (CredentialsProvider, error) 
 		return nil, fmt.Errorf("unable to read Vault secret: %w", err)
 	}
 
+	if secret.Data == nil {
+		return nil, errors.New("returned Vault secret has a nil Data map")
+	}
+
+	if len(secret.Data) == 0 {
+		return nil, errors.New("returned Vault secret has an empty Data map")
+	}
+
+	if secret.Data["data"] == nil {
+		return nil, fmt.Errorf("returned Vault secret has a Data map that contains no value for key \"data\". Available keys are: %v", availableKeys(secret.Data))
+	}
+
 	data, ok := secret.Data["data"].(map[string]interface{})
 	if !ok {
-		return nil, fmt.Errorf("data type assertion failed for Vault secret: %T %#v", secret.Data["data"], secret.Data["data"])
+		return nil, fmt.Errorf("data type assertion failed for Vault secret of type: %T and value %#v read from path %s", secret.Data["data"], secret.Data["data"], path)
 	}
 
 	username, err := getValue("username", data)
@@ -73,6 +85,16 @@ func getValue(key string, data map[string]interface{}) (string, error) {
 	}
 
 	return result, nil
+}
+
+func availableKeys(m map[string]interface{}) []string {
+	result := make([]string, len(m))
+	i := 0
+	for k := range m {
+		result[i] = k
+		i++
+	}
+	return result
 }
 
 func InitializeSecretStoreClient(vaultSpec *rabbitmqv1beta1.VaultSpec) (SecretStoreClient, error) {

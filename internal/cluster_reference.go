@@ -66,10 +66,6 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 		}
 	}
 
-	if cluster.Status.Binding == nil {
-		return nil, nil, nil, errors.New("no status.binding set")
-	}
-
 	var credentialsProvider CredentialsProvider
 	if cluster.Spec.SecretBackend.Vault != nil && cluster.Spec.SecretBackend.Vault.DefaultUserPath != "" {
 		// ask the configured secure store for the credentials available at the path retrived from the cluster resource
@@ -84,7 +80,11 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 		}
 		credentialsProvider = credsProv
 	} else {
-		// use credentials in namespace Kiubernetes Secret
+		// use credentials in namespace Kubernetes Secret
+		if cluster.Status.Binding == nil {
+			return nil, nil, nil, errors.New("no status.binding set")
+		}
+
 		if cluster.Status.DefaultUser == nil {
 			return nil, nil, nil, errors.New("no status.defaultUser set")
 		}
