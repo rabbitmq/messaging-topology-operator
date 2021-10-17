@@ -74,6 +74,73 @@ var _ = Describe("VaultReader", func() {
 			})
 		})
 
+		When("Vault secret data does not contain expected map", func() {
+			BeforeEach(func() {
+				fakeSecretReader = &internalfakes.FakeSecretReader{}
+				fakeSecretReader.ReadSecretReturns(&vault.Secret{}, nil)
+				secretStoreClient = internal.VaultClient{Reader: fakeSecretReader}
+			})
+
+			JustBeforeEach(func() {
+				credsProvider, err = secretStoreClient.ReadCredentials("some/path")
+			})
+
+			It("should return a nil credentials provider", func() {
+				Expect(credsProvider).To(BeNil())
+			})
+
+			It("should have returned an error", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError("returned Vault secret has a nil Data map"))
+			})
+		})
+
+		When("Vault secret data contains an empty map", func() {
+			BeforeEach(func() {
+				secretData = make(map[string]interface{})
+				fakeSecretReader = &internalfakes.FakeSecretReader{}
+				fakeSecretReader.ReadSecretReturns(&vault.Secret{Data: secretData}, nil)
+				secretStoreClient = internal.VaultClient{Reader: fakeSecretReader}
+			})
+
+			JustBeforeEach(func() {
+				credsProvider, err = secretStoreClient.ReadCredentials("some/path")
+			})
+
+			It("should return a nil credentials provider", func() {
+				Expect(credsProvider).To(BeNil())
+			})
+
+			It("should have returned an error", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError("returned Vault secret has an empty Data map"))
+			})
+		})
+
+		When("Vault secret data map does not contain expected key/value entry", func() {
+			BeforeEach(func() {
+				secretData = make(map[string]interface{})
+				secretData["somekey"] = "somevalue"
+				secretData["otherkey"] = "othervalue"
+				fakeSecretReader = &internalfakes.FakeSecretReader{}
+				fakeSecretReader.ReadSecretReturns(&vault.Secret{Data: secretData}, nil)
+				secretStoreClient = internal.VaultClient{Reader: fakeSecretReader}
+			})
+
+			JustBeforeEach(func() {
+				credsProvider, err = secretStoreClient.ReadCredentials("some/path")
+			})
+
+			It("should return a nil credentials provider", func() {
+				Expect(credsProvider).To(BeNil())
+			})
+
+			It("should have returned an error", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError("returned Vault secret has a Data map that contains no value for key \"data\". Available keys are: [somekey otherkey]"))
+			})
+		})
+
 		When("Vault secret data does not contain expected type", func() {
 			BeforeEach(func() {
 				secretData = make(map[string]interface{})
@@ -93,7 +160,7 @@ var _ = Describe("VaultReader", func() {
 
 			It("should have returned an error", func() {
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError("data type assertion failed for Vault secret: string \"I am not a map\""))
+				Expect(err).To(MatchError("data type assertion failed for Vault secret of type: string and value \"I am not a map\" read from path some/path"))
 			})
 		})
 
