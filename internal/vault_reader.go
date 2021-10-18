@@ -57,7 +57,7 @@ func (vc VaultClient) ReadCredentials(path string) (CredentialsProvider, error) 
 	}
 
 	if secret.Data["data"] == nil {
-		return nil, fmt.Errorf("returned Vault secret has a Data map that contains no value for key \"data\". Available keys are: %v", availableKeys(secret.Data))
+		return nil, fmt.Errorf("returned Vault secret has a Data map that contains no value for key 'data'. Available keys are: %v", availableKeys(secret.Data))
 	}
 
 	data, ok := secret.Data["data"].(map[string]interface{})
@@ -98,10 +98,12 @@ func availableKeys(m map[string]interface{}) []string {
 }
 
 func InitializeSecretStoreClient(vaultSpec *rabbitmqv1beta1.VaultSpec) (SecretStoreClient, error) {
-	role := vaultSpec.Role
-	if role == "" {
-		return nil, errors.New("no role value set in Vault secret backend")
-	}
+	// GCH TODO return to this...
+	// role := vaultSpec.Role
+	// if role == "" {
+	// 	return nil, errors.New("no role value set in Vault secret backend")
+	// }
+	role := "messaging-topology-operator"
 
 	// For now, the VAULT_ADDR environment variable will be the address that your pod uses to communicate with Vault.
 	config := vault.DefaultConfig() // modify for more granular configuration
