@@ -67,6 +67,7 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 	}
 
 	var credentialsProvider CredentialsProvider
+	svc := &corev1.Service{}
 	if cluster.Spec.SecretBackend.Vault != nil && cluster.Spec.SecretBackend.Vault.DefaultUserPath != "" {
 		// ask the configured secure store for the credentials available at the path retrived from the cluster resource
 		secretStoreClient, err := SecretStoreClientInitializer(cluster.Spec.SecretBackend.Vault)
@@ -79,6 +80,10 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 			return nil, nil, nil, fmt.Errorf("unable to retrieve credentials from secret store: %w", err)
 		}
 		credentialsProvider = credsProv
+
+		if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.ObjectMeta.Name}, svc); err != nil {
+			return nil, nil, nil, err
+		}
 	} else {
 		// use credentials in namespace Kubernetes Secret
 		if cluster.Status.Binding == nil {
@@ -98,11 +103,10 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 			return nil, nil, nil, fmt.Errorf("unable to retrieve credentials from Kubernetes secret %s: %w", secret.Name, err)
 		}
 		credentialsProvider = credsProv
-	}
 
-	svc := &corev1.Service{}
-	if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.DefaultUser.ServiceReference.Name}, svc); err != nil {
-		return nil, nil, nil, err
+		if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.DefaultUser.ServiceReference.Name}, svc); err != nil {
+			return nil, nil, nil, err
+		}
 	}
 	return cluster, svc, credentialsProvider, nil
 }

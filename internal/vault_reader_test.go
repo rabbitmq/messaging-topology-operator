@@ -121,7 +121,6 @@ var _ = Describe("VaultReader", func() {
 			BeforeEach(func() {
 				secretData = make(map[string]interface{})
 				secretData["somekey"] = "somevalue"
-				secretData["otherkey"] = "othervalue"
 				fakeSecretReader = &internalfakes.FakeSecretReader{}
 				fakeSecretReader.ReadSecretReturns(&vault.Secret{Data: secretData}, nil)
 				secretStoreClient = internal.VaultClient{Reader: fakeSecretReader}
@@ -137,7 +136,7 @@ var _ = Describe("VaultReader", func() {
 
 			It("should have returned an error", func() {
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError("returned Vault secret has a Data map that contains no value for key 'data'. Available keys are: [somekey otherkey]"))
+				Expect(err).To(MatchError("returned Vault secret has a Data map that contains no value for key 'data'. Available keys are: [somekey]"))
 			})
 		})
 
