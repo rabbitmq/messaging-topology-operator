@@ -51,7 +51,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 					},
 					DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
 						ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
-							Name:      "rmq-service",
+							Name:      "rmq",
 							Namespace: "rabbitmq-system",
 						},
 					},
@@ -69,7 +69,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			}
 			existingService = &corev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq-service",
+					Name:      "rmq",
 					Namespace: "rabbitmq-system",
 				},
 				Spec: corev1.ServiceSpec{
@@ -136,7 +136,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 						},
 						DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
 							ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
-								Name:      "rmq-service",
+								Name:      "rmq",
 								Namespace: "rabbitmq-system",
 							},
 						},
