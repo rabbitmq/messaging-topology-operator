@@ -48,6 +48,14 @@ func (vc VaultClient) ReadCredentials(path string) (CredentialsProvider, error) 
 		return nil, fmt.Errorf("unable to read Vault secret: %w", err)
 	}
 
+	if secret == nil {
+		return nil, errors.New("returned Vault secret is nil")
+	}
+
+	if secret != nil && secret.Warnings != nil && len(secret.Warnings) > 0 {
+		return nil, fmt.Errorf("warnings were returned from Vault: %v", secret.Warnings)
+	}
+
 	if secret.Data == nil {
 		return nil, errors.New("returned Vault secret has a nil Data map")
 	}
