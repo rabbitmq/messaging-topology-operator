@@ -21,6 +21,7 @@ var _ = Describe("VaultReader", func() {
 		secretData               map[string]interface{}
 		existingRabbitMQUsername = "abc123"
 		existingRabbitMQPassword = "foo1234"
+		vaultWarnings            []string
 	)
 
 	Describe("Read Credentials", func() {
@@ -91,7 +92,7 @@ var _ = Describe("VaultReader", func() {
 
 			It("should have returned an error", func() {
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError("returned Vault secret has a nil Data map"))
+				Expect(err.Error()).To(ContainSubstring("returned Vault secret has a nil Data map"))
 			})
 		})
 
@@ -210,6 +211,75 @@ var _ = Describe("VaultReader", func() {
 			It("should have returned an error", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("unable to get password from Vault secret"))
+			})
+		})
+
+		When("Vault secret data is nil", func() {
+			BeforeEach(func() {
+				fakeSecretReader = &internalfakes.FakeSecretReader{}
+				fakeSecretReader.ReadSecretReturns(&vault.Secret{}, nil)
+				secretStoreClient = internal.VaultClient{Reader: fakeSecretReader}
+			})
+
+			JustBeforeEach(func() {
+				credsProvider, err = secretStoreClient.ReadCredentials("some/path")
+			})
+
+			It("should return a nil credentials provider", func() {
+				Expect(credsProvider).To(BeNil())
+			})
+
+			It("should have returned an error", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("returned Vault secret has a nil Data map"))
+			})
+		})
+
+		When("Vault secret is nil", func() {
+			BeforeEach(func() {
+				fakeSecretReader = &internalfakes.FakeSecretReader{}
+				fakeSecretReader.ReadSecretReturns(nil, nil)
+				secretStoreClient = internal.VaultClient{Reader: fakeSecretReader}
+			})
+
+			JustBeforeEach(func() {
+				credsProvider, err = secretStoreClient.ReadCredentials("some/path")
+			})
+
+			It("should return a nil credentials provider", func() {
+				Expect(credsProvider).To(BeNil())
+			})
+
+			It("should have returned an error", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("returned Vault secret is nil"))
+			})
+		})
+
+		When("Vault secret contains warnings", func() {
+			BeforeEach(func() {
+				vaultWarnings = append(vaultWarnings, "something bad happened")
+				credsData = make(map[string]interface{})
+				secretData = make(map[string]interface{})
+				credsData["password"] = existingRabbitMQPassword
+				secretData["data"] = credsData
+				fakeSecretReader = &internalfakes.FakeSecretReader{}
+				fakeSecretReader.ReadSecretReturns(&vault.Secret{Data: secretData, Warnings: vaultWarnings}, nil)
+				secretStoreClient = internal.VaultClient{Reader: fakeSecretReader}
+			})
+
+			JustBeforeEach(func() {
+				credsProvider, err = secretStoreClient.ReadCredentials("some/path")
+			})
+
+			It("should return a nil credentials provider", func() {
+				Expect(credsProvider).To(BeNil())
+			})
+
+			It("should have returned an error", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("warnings were returned from Vault"))
+				Expect(err.Error()).To(ContainSubstring("something bad happened"))
 			})
 		})
 
