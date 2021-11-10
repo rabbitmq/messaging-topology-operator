@@ -21,6 +21,8 @@ type Interface interface {
 	Bindings() BindingInformer
 	// Exchanges returns a ExchangeInformer.
 	Exchanges() ExchangeInformer
+	// Federations returns a FederationInformer.
+	Federations() FederationInformer
 	// Permissions returns a PermissionInformer.
 	Permissions() PermissionInformer
 	// Policies returns a PolicyInformer.
@@ -29,6 +31,8 @@ type Interface interface {
 	Queues() QueueInformer
 	// SchemaReplications returns a SchemaReplicationInformer.
 	SchemaReplications() SchemaReplicationInformer
+	// Shovels returns a ShovelInformer.
+	Shovels() ShovelInformer
 	// Users returns a UserInformer.
 	Users() UserInformer
 	// Vhosts returns a VhostInformer.
@@ -56,6 +60,11 @@ func (v *version) Exchanges() ExchangeInformer {
 	return &exchangeInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
+// Federations returns a FederationInformer.
+func (v *version) Federations() FederationInformer {
+	return &federationInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
 // Permissions returns a PermissionInformer.
 func (v *version) Permissions() PermissionInformer {
 	return &permissionInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
@@ -74,6 +83,11 @@ func (v *version) Queues() QueueInformer {
 // SchemaReplications returns a SchemaReplicationInformer.
 func (v *version) SchemaReplications() SchemaReplicationInformer {
 	return &schemaReplicationInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Shovels returns a ShovelInformer.
+func (v *version) Shovels() ShovelInformer {
+	return &shovelInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Users returns a UserInformer.
