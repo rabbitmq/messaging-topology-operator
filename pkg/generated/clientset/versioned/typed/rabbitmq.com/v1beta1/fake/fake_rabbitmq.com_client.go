@@ -29,6 +29,10 @@ func (c *FakeRabbitmqV1beta1) Exchanges(namespace string) v1beta1.ExchangeInterf
 	return &FakeExchanges{c, namespace}
 }
 
+func (c *FakeRabbitmqV1beta1) Federations(namespace string) v1beta1.FederationInterface {
+	return &FakeFederations{c, namespace}
+}
+
 func (c *FakeRabbitmqV1beta1) Permissions(namespace string) v1beta1.PermissionInterface {
 	return &FakePermissions{c, namespace}
 }
@@ -43,6 +47,10 @@ func (c *FakeRabbitmqV1beta1) Queues(namespace string) v1beta1.QueueInterface {
 
 func (c *FakeRabbitmqV1beta1) SchemaReplications(namespace string) v1beta1.SchemaReplicationInterface {
 	return &FakeSchemaReplications{c, namespace}
+}
+
+func (c *FakeRabbitmqV1beta1) Shovels(namespace string) v1beta1.ShovelInterface {
+	return &FakeShovels{c, namespace}
 }
 
 func (c *FakeRabbitmqV1beta1) Users(namespace string) v1beta1.UserInterface {

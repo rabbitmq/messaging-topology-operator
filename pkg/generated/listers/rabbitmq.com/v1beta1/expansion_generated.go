@@ -27,6 +27,14 @@ type ExchangeListerExpansion interface{}
 // ExchangeNamespaceLister.
 type ExchangeNamespaceListerExpansion interface{}
 
+// FederationListerExpansion allows custom methods to be added to
+// FederationLister.
+type FederationListerExpansion interface{}
+
+// FederationNamespaceListerExpansion allows custom methods to be added to
+// FederationNamespaceLister.
+type FederationNamespaceListerExpansion interface{}
+
 // PermissionListerExpansion allows custom methods to be added to
 // PermissionLister.
 type PermissionListerExpansion interface{}
@@ -58,6 +66,14 @@ type SchemaReplicationListerExpansion interface{}
 // SchemaReplicationNamespaceListerExpansion allows custom methods to be added to
 // SchemaReplicationNamespaceLister.
 type SchemaReplicationNamespaceListerExpansion interface{}
+
+// ShovelListerExpansion allows custom methods to be added to
+// ShovelLister.
+type ShovelListerExpansion interface{}
+
+// ShovelNamespaceListerExpansion allows custom methods to be added to
+// ShovelNamespaceLister.
+type ShovelNamespaceListerExpansion interface{}
 
 // UserListerExpansion allows custom methods to be added to
 // UserLister.

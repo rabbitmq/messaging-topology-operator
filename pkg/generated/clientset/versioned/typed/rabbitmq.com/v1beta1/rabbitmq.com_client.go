@@ -21,10 +21,12 @@ type RabbitmqV1beta1Interface interface {
 	RESTClient() rest.Interface
 	BindingsGetter
 	ExchangesGetter
+	FederationsGetter
 	PermissionsGetter
 	PoliciesGetter
 	QueuesGetter
 	SchemaReplicationsGetter
+	ShovelsGetter
 	UsersGetter
 	VhostsGetter
 }
@@ -42,6 +44,10 @@ func (c *RabbitmqV1beta1Client) Exchanges(namespace string) ExchangeInterface {
 	return newExchanges(c, namespace)
 }
 
+func (c *RabbitmqV1beta1Client) Federations(namespace string) FederationInterface {
+	return newFederations(c, namespace)
+}
+
 func (c *RabbitmqV1beta1Client) Permissions(namespace string) PermissionInterface {
 	return newPermissions(c, namespace)
 }
@@ -56,6 +62,10 @@ func (c *RabbitmqV1beta1Client) Queues(namespace string) QueueInterface {
 
 func (c *RabbitmqV1beta1Client) SchemaReplications(namespace string) SchemaReplicationInterface {
 	return newSchemaReplications(c, namespace)
+}
+
+func (c *RabbitmqV1beta1Client) Shovels(namespace string) ShovelInterface {
+	return newShovels(c, namespace)
 }
 
 func (c *RabbitmqV1beta1Client) Users(namespace string) UserInterface {

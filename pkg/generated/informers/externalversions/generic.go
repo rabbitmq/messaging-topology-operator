@@ -50,6 +50,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().Bindings().Informer()}, nil
 	case v1beta1.SchemeGroupVersion.WithResource("exchanges"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().Exchanges().Informer()}, nil
+	case v1beta1.SchemeGroupVersion.WithResource("federations"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().Federations().Informer()}, nil
 	case v1beta1.SchemeGroupVersion.WithResource("permissions"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().Permissions().Informer()}, nil
 	case v1beta1.SchemeGroupVersion.WithResource("policies"):
@@ -58,6 +60,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().Queues().Informer()}, nil
 	case v1beta1.SchemeGroupVersion.WithResource("schemareplications"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().SchemaReplications().Informer()}, nil
+	case v1beta1.SchemeGroupVersion.WithResource("shovels"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().Shovels().Informer()}, nil
 	case v1beta1.SchemeGroupVersion.WithResource("users"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().Users().Informer()}, nil
 	case v1beta1.SchemeGroupVersion.WithResource("vhosts"):
