@@ -34,8 +34,8 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 		s.AddKnownTypes(rabbitmqv1beta1.SchemeBuilder.GroupVersion, &rabbitmqv1beta1.RabbitmqCluster{})
 		fakeClient = fake.NewClientBuilder().WithScheme(s).WithRuntimeObjects(objs...).Build()
 		fakeCredentialsProvider = &internalfakes.FakeCredentialsProvider{}
-		fakeCredentialsProvider.GetUserReturns(existingRabbitMQUsername)
-		fakeCredentialsProvider.GetPasswordReturns(existingRabbitMQPassword)
+		fakeCredentialsProvider.DataReturnsOnCall(0, []byte(existingRabbitMQUsername), true)
+		fakeCredentialsProvider.DataReturnsOnCall(1, []byte(existingRabbitMQPassword), true)
 	})
 
 	When("the RabbitmqCluster is configured without TLS", func() {
@@ -92,8 +92,11 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			Expect(rmq.Status).To(Equal(existingRabbitMQCluster.Status))
 			Expect(svc.ObjectMeta).To(Equal(existingService.ObjectMeta))
 			Expect(svc.Spec).To(Equal(existingService.Spec))
-			Expect(credsProvider.GetUser()).To(Equal(existingRabbitMQUsername))
-			Expect(credsProvider.GetPassword()).To(Equal(existingRabbitMQPassword))
+
+			usernameBytes, _ := credsProvider.Data("username")
+			passwordBytes, _ := credsProvider.Data("password")
+			Expect(usernameBytes).To(Equal([]byte(existingRabbitMQUsername)))
+			Expect(passwordBytes).To(Equal([]byte(existingRabbitMQPassword)))
 		})
 
 		When("RabbitmqCluster does not have status.defaultUser set", func() {
@@ -171,8 +174,10 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			})
 
 			It("should return the expected credentials", func() {
-				Expect(credsProv.GetUser()).To(Equal(existingRabbitMQUsername))
-				Expect(credsProv.GetPassword()).To(Equal(existingRabbitMQPassword))
+				usernameBytes, _ := credsProv.Data("username")
+				passwordBytes, _ := credsProv.Data("password")
+				Expect(usernameBytes).To(Equal([]byte(existingRabbitMQUsername)))
+				Expect(passwordBytes).To(Equal([]byte(existingRabbitMQPassword)))
 			})
 		})
 	})

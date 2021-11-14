@@ -83,7 +83,12 @@ func (vc VaultClient) ReadCredentials(path string) (CredentialsProvider, error) 
 		return nil, fmt.Errorf("unable to get password from Vault secret: %w", err)
 	}
 
-	return ClusterCredentials{username: username, password: password}, nil
+	return ClusterCredentials{
+		data: map[string][]byte{
+			"username": []byte(username),
+			"password": []byte(password),
+		},
+	}, nil
 }
 
 func getValue(key string, data map[string]interface{}) (string, error) {
@@ -121,7 +126,7 @@ func InitializeSecretStoreClient(vaultSpec *rabbitmqv1beta1.VaultSpec) (SecretSt
 		return nil, fmt.Errorf("unable to initialize Vault client: %w", err)
 	}
 
-	var annotations map[string]string = vaultSpec.Annotations
+	var annotations = vaultSpec.Annotations
 	if annotations["vault.hashicorp.com/namespace"] != "" {
 		vaultClient.SetNamespace(annotations["vault.hashicorp.com/namespace"])
 	}

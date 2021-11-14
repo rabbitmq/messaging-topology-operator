@@ -12,6 +12,7 @@ package internal
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -47,17 +48,27 @@ type RabbitMQClient interface {
 	DeleteShovel(vhost, shovel string) (res *http.Response, err error)
 }
 
-type RabbitMQClientFactory func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, username string, password string, hostname string, certPool *x509.CertPool) (RabbitMQClient, error)
+type RabbitMQClientFactory func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, credsProvider CredentialsProvider, hostname string, certPool *x509.CertPool) (RabbitMQClient, error)
 
-var RabbitholeClientFactory RabbitMQClientFactory = func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, username string, password string, hostname string, certPool *x509.CertPool) (RabbitMQClient, error) {
-	return generateRabbitholeClient(rmq, svc, username, password, hostname, certPool)
+var RabbitholeClientFactory RabbitMQClientFactory = func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, credsProvider CredentialsProvider, hostname string, certPool *x509.CertPool) (RabbitMQClient, error) {
+	return generateRabbitholeClient(rmq, svc, credsProvider, hostname, certPool)
 }
 
 // returns a http client for the given RabbitmqCluster
-func generateRabbitholeClient(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, username string, password string, hostname string, certPool *x509.CertPool) (rabbitmqClient RabbitMQClient, err error) {
+func generateRabbitholeClient(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, credsProvider CredentialsProvider, hostname string, certPool *x509.CertPool) (rabbitmqClient RabbitMQClient, err error) {
 	endpoint, err := managementEndpoint(rmq, svc, hostname)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get endpoint from specified rabbitmqcluster: %w", err)
+	}
+
+	defaultUser, found := credsProvider.Data("username")
+	if !found {
+		return nil, errors.New("failed to retrieve username: key username missing from credentials")
+	}
+
+	defaultUserPass, found := credsProvider.Data("password")
+	if !found {
+		return nil, errors.New("failed to retrieve password: key password missing from credentials")
 	}
 
 	if rmq.TLSEnabled() {
@@ -66,12 +77,12 @@ func generateRabbitholeClient(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.
 		cfg.RootCAs = certPool
 
 		transport := &http.Transport{TLSClientConfig: cfg}
-		rabbitmqClient, err = rabbithole.NewTLSClient(endpoint, username, password, transport)
+		rabbitmqClient, err = rabbithole.NewTLSClient(endpoint, string(defaultUser), string(defaultUserPass), transport)
 		if err != nil {
 			return nil, fmt.Errorf("failed to instantiate rabbit rabbitmqClient: %v", err)
 		}
 	} else {
-		rabbitmqClient, err = rabbithole.NewClient(endpoint, username, password)
+		rabbitmqClient, err = rabbithole.NewClient(endpoint, string(defaultUser), string(defaultUserPass))
 		if err != nil {
 			return nil, fmt.Errorf("failed to instantiate rabbit rabbitmqClient: %v", err)
 		}
