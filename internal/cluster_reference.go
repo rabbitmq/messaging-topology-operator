@@ -15,21 +15,16 @@ import (
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . CredentialsProvider
 type CredentialsProvider interface {
-	GetUser() string
-	GetPassword() string
+	Data(key string) ([]byte, bool)
 }
 
 type ClusterCredentials struct {
-	username string
-	password string
+	data map[string][]byte
 }
 
-func (c ClusterCredentials) GetUser() string {
-	return c.username
-}
-
-func (c ClusterCredentials) GetPassword() string {
-	return c.password
+func (c ClusterCredentials) Data(key string) ([]byte, bool) {
+	result, ok := c.data[key]
+	return result, ok
 }
 
 var SecretStoreClientInitializer = InitializeSecretStoreClient
@@ -124,5 +119,10 @@ func readCredentialsFromKubernetesSecret(secret *corev1.Secret) (CredentialsProv
 		return nil, errors.New("secret data contains no password value")
 	}
 
-	return ClusterCredentials{username: string(secret.Data["username"]), password: string(secret.Data["password"])}, nil
+	return ClusterCredentials{
+		data: map[string][]byte{
+			"username": secret.Data["username"],
+			"password": secret.Data["password"],
+		},
+	}, nil
 }

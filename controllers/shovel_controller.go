@@ -76,7 +76,7 @@ func (r *ShovelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return reconcile.Result{}, err
 	}
 
-	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, credsProvider.GetUser(), credsProvider.GetPassword(), serviceDNSAddress(svc), systemCertPool)
+	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, credsProvider, serviceDNSAddress(svc), systemCertPool)
 	if err != nil {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err

@@ -44,8 +44,10 @@ var _ = Describe("VaultReader", func() {
 
 			It("should return a credentials provider", func() {
 				Expect(credsProvider).NotTo(BeNil())
-				Expect(credsProvider.GetUser()).To(Equal(existingRabbitMQUsername))
-				Expect(credsProvider.GetPassword()).To(Equal(existingRabbitMQPassword))
+				usernameBytes, _ := credsProvider.Data("username")
+				passwordBytes, _ := credsProvider.Data("password")
+				Expect(usernameBytes).To(Equal([]byte(existingRabbitMQUsername)))
+				Expect(passwordBytes).To(Equal([]byte(existingRabbitMQPassword)))
 			})
 
 			It("should not error", func() {
