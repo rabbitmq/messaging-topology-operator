@@ -30,6 +30,8 @@ Package v1beta1 contains API Schema definitions for the rabbitmq.com v1beta1 API
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-schemareplicationlist[$$SchemaReplicationList$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-shovel[$$Shovel$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-shovellist[$$ShovelList$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-superstream[$$SuperStream$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-superstreamlist[$$SuperStreamList$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-user[$$User$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-userlist[$$UserList$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhost[$$Vhost$$]
@@ -136,6 +138,7 @@ BindingStatus defines the observed state of Binding
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-queuestatus[$$QueueStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-schemareplicationstatus[$$SchemaReplicationStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-shovelstatus[$$ShovelStatus$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-superstreamstatus[$$SuperStreamStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-userstatus[$$UserStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhoststatus[$$VhostStatus$$]
 ****
@@ -597,6 +600,7 @@ QueueStatus defines the observed state of Queue
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-queuespec[$$QueueSpec$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-schemareplicationspec[$$SchemaReplicationSpec$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-shovelspec[$$ShovelSpec$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-superstreamspec[$$SuperStreamSpec$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-userspec[$$UserSpec$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhostspec[$$VhostSpec$$]
 ****
@@ -786,6 +790,85 @@ ShovelStatus defines the observed state of Shovel
 |===
 | Field | Description
 | *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Shovel. It corresponds to the Shovel's generation, which is updated on mutation by the API Server.
+| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-superstream"]
+==== SuperStream 
+
+SuperStream is the Schema for the queues API
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-superstreamlist[$$SuperStreamList$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
+| *`kind`* __string__ | `SuperStream`
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-superstreamspec[$$SuperStreamSpec$$]__ | 
+| *`status`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-superstreamstatus[$$SuperStreamStatus$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-superstreamlist"]
+==== SuperStreamList 
+
+SuperStreamList contains a list of SuperStreams
+
+
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
+| *`kind`* __string__ | `SuperStreamList`
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-superstream[$$SuperStream$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-superstreamspec"]
+==== SuperStreamSpec 
+
+SuperStreamSpec defines the desired state of SuperStream
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-superstream[$$SuperStream$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`name`* __string__ | Name of the queue; required property.
+| *`partitions`* __integer__ | Number of partitions to create within this super stream. Defaults to '3'.
+| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the SuperStream will be created in. Required property.
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-superstreamstatus"]
+==== SuperStreamStatus 
+
+SuperStreamStatus defines the observed state of SuperStream
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-superstream[$$SuperStream$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this SuperStream. It corresponds to the SuperStream's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$]__ | 
 |===
 

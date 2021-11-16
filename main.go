@@ -169,6 +169,16 @@ func main() {
 		log.Error(err, "unable to create controller", "controller", controllers.ShovelControllerName)
 		os.Exit(1)
 	}
+	if err = (&controllers.SuperStreamReconciler{
+		Client:                mgr.GetClient(),
+		Log:                   ctrl.Log.WithName(controllers.SuperStreamControllerName),
+		Scheme:                mgr.GetScheme(),
+		Recorder:              mgr.GetEventRecorderFor(controllers.SuperStreamControllerName),
+		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", controllers.SuperStreamControllerName)
+		os.Exit(1)
+	}
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = (&topology.Binding{}).SetupWebhookWithManager(mgr); err != nil {
 			log.Error(err, "unable to create webhook", "webhook", "Binding")
@@ -208,6 +218,10 @@ func main() {
 		}
 		if err = (&topology.Shovel{}).SetupWebhookWithManager(mgr); err != nil {
 			log.Error(err, "unable to create webhook", "webhook", "Shovel")
+			os.Exit(1)
+		}
+		if err = (&topology.SuperStream{}).SetupWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "SuperStream")
 			os.Exit(1)
 		}
 	}
