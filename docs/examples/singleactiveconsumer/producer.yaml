@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: producer
+  labels:
+    app: producer
+spec:
+  resources:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: producer
+  template:
+    metadata:
+      labels:
+        app: producer
+    spec:
+      containers:
+      - name: super-stream-app-0
+        image: pivotalrabbitmq/perf-test
+        command: ["bash", "-c"]
+        args:
+        - AMQP_URI="amqp://$(cat /etc/rabbitmq-creds/username):$(cat /etc/rabbitmq-creds/password)@$(cat /etc/rabbitmq-creds/host):5672/%2f";
+          bin/runjava com.rabbitmq.perf.PerfTest --uri ${AMQP_URI} --rate 100 --predeclared --exchange orders-super-stream --routing-key 0
+        volumeMounts:
+        - name: rabbitmq-creds
+          mountPath: "/etc/rabbitmq-creds"
+          readOnly: true
+      - name: super-stream-app-1
+        image: pivotalrabbitmq/perf-test
+        command: ["bash", "-c"]
+        args:
+        - AMQP_URI="amqp://$(cat /etc/rabbitmq-creds/username):$(cat /etc/rabbitmq-creds/password)@$(cat /etc/rabbitmq-creds/host):5672/%2f";
+          bin/runjava com.rabbitmq.perf.PerfTest --uri ${AMQP_URI} --rate 100 --predeclared --exchange orders-super-stream --routing-key 1
+        volumeMounts:
+        - name: rabbitmq-creds
+          mountPath: "/etc/rabbitmq-creds"
+          readOnly: true
+      - name: super-stream-app-2
+        image: pivotalrabbitmq/perf-test
+        command: ["bash", "-c"]
+        args:
+        - AMQP_URI="amqp://$(cat /etc/rabbitmq-creds/username):$(cat /etc/rabbitmq-creds/password)@$(cat /etc/rabbitmq-creds/host):5672/%2f";
+          bin/runjava com.rabbitmq.perf.PerfTest --uri ${AMQP_URI} --rate 100 --predeclared --exchange orders-super-stream --routing-key 2
+        volumeMounts:
+        - name: rabbitmq-creds
+          mountPath: "/etc/rabbitmq-creds"
+          readOnly: true
+      volumes:
+      - name: rabbitmq-creds
+        secret:
+          secretName: test-default-user

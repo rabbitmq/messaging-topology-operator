@@ -22,17 +22,18 @@ const (
 
 // names for each of the controllers
 const (
-	VhostControllerName             = "vhost-controller"
-	QueueControllerName             = "queue-controller"
-	ExchangeControllerName          = "exchange-controller"
-	BindingControllerName           = "binding-controller"
-	UserControllerName              = "user-controller"
-	PolicyControllerName            = "policy-controller"
-	PermissionControllerName        = "permission-controller"
-	SchemaReplicationControllerName = "schema-replication-controller"
-	FederationControllerName        = "federation-controller"
-	ShovelControllerName            = "shovel-controller"
-	SuperStreamControllerName       = "super-stream-controller"
+	VhostControllerName                = "vhost-controller"
+	QueueControllerName                = "queue-controller"
+	ExchangeControllerName             = "exchange-controller"
+	BindingControllerName              = "binding-controller"
+	UserControllerName                 = "user-controller"
+	PolicyControllerName               = "policy-controller"
+	PermissionControllerName           = "permission-controller"
+	SchemaReplicationControllerName    = "schema-replication-controller"
+	FederationControllerName           = "federation-controller"
+	ShovelControllerName               = "shovel-controller"
+	SuperStreamControllerName          = "super-stream-controller"
+	CompositeConsumerSetControllerName = "composite-consumer-set-controller"
 )
 
 func extractSystemCertPool(ctx context.Context, recorder record.EventRecorder, object runtime.Object) (*x509.CertPool, error) {

@@ -18,6 +18,7 @@ var _ = Describe("super-stream-controller", func() {
 
 	var superStream topology.SuperStream
 	var superStreamName string
+	var expectedQueueNames []string
 
 	When("validating RabbitMQ Client failures", func() {
 		JustBeforeEach(func() {
@@ -100,6 +101,9 @@ var _ = Describe("super-stream-controller", func() {
 								&partition,
 							)
 							Expect(err).NotTo(HaveOccurred())
+
+							expectedQueueNames = append(expectedQueueNames, partition.Spec.Name)
+
 							Expect(partition.Spec).To(MatchFields(IgnoreExtras, Fields{
 								"Name":    Equal(fmt.Sprintf("%s.%s", superStreamName, strconv.Itoa(i))),
 								"Type":    Equal("stream"),
@@ -110,6 +114,18 @@ var _ = Describe("super-stream-controller", func() {
 								}),
 							}))
 						}
+					})
+
+					By("setting the status of the super stream to list the partition queue names", func() {
+						EventuallyWithOffset(1, func() []string {
+							_ = client.Get(
+								ctx,
+								types.NamespacedName{Name: superStreamName, Namespace: "default"},
+								&superStream,
+							)
+
+							return superStream.Status.Partitions
+						}, 10*time.Second, 1*time.Second).Should(ConsistOf(expectedQueueNames))
 					})
 
 					By("creating n bindings", func() {
@@ -136,7 +152,6 @@ var _ = Describe("super-stream-controller", func() {
 								}),
 							}))
 						}
-
 					})
 				})
 			})

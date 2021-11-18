@@ -161,6 +161,12 @@ var _ = BeforeSuite(func() {
 		RabbitmqClientFactory: fakeRabbitMQClientFactory,
 	}).SetupWithManager(mgr)
 	Expect(err).ToNot(HaveOccurred())
+	err = (&controllers.CompositeConsumerSetReconciler{
+		Client:                mgr.GetClient(),
+		Scheme:                mgr.GetScheme(),
+		Recorder:              fakeRecorder,
+	}).SetupWithManager(mgr)
+	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
 		err = mgr.Start(ctrl.SetupSignalHandler())

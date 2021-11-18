@@ -99,6 +99,12 @@ spec:
                   generation, which is updated on mutation by the API Server.
                 format: int64
                 type: integer
+              partitions:
+                description: Partitions are a list of the stream queue names which
+                  form the partitions of this SuperStream.
+                items:
+                  type: string
+                type: array
             type: object
         type: object
     served: true

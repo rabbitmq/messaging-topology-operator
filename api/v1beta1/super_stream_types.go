@@ -35,6 +35,8 @@ type SuperStreamStatus struct {
 	// SuperStream's generation, which is updated on mutation by the API Server.
 	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
 	Conditions         []Condition `json:"conditions,omitempty"`
+	// Partitions are a list of the stream queue names which form the partitions of this SuperStream.
+	Partitions []string `json:"partitions,omitempty"`
 }
 
 // +genclient

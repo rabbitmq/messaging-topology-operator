@@ -1,0 +1,44 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: CompositeConsumerSet
+metadata:
+  name: consumer
+  labels:
+    app: consumer
+spec:
+  superStreamReference:
+    name: orders-super-stream
+  replicas: 3
+  consumerPodSpec:
+    default:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: super-stream-app
+        image: pivotalrabbitmq/super-stream-app
+        command: ["bash", "-c"]
+        args:
+        - STREAM_URI="rabbitmq-stream://$(cat /etc/rabbitmq-creds/username):$(cat /etc/rabbitmq-creds/password)@$(cat /etc/rabbitmq-creds/host):5552/%2f";
+          echo "App will remain on standby until made the active consumer...";
+          while true; do
+          ACTIVE_PARTITION="$(cat /etc/podinfo/active_partition_consumer)";
+          if [[ -n $ACTIVE_PARTITION ]]; then
+            java -Dio.netty.processId=1 -jar super-stream-app.jar consumer --stream "${ACTIVE_PARTITION}" --stream-uri "${STREAM_URI}" ;
+          fi;
+          sleep 1;
+          done;
+        volumeMounts:
+        - name: podinfo
+          mountPath: /etc/podinfo
+          readOnly: true
+        - name: rabbitmq-creds
+          mountPath: "/etc/rabbitmq-creds"
+          readOnly: true
+      volumes:
+      - name: podinfo
+        downwardAPI:
+          items:
+          - path: "active_partition_consumer"
+            fieldRef:
+              fieldPath: metadata.labels['rabbitmq.com/active-partition-consumer']
+      - name: rabbitmq-creds
+        secret:
+          secretName: test-default-user

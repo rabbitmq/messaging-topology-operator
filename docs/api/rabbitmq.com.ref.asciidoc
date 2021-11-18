@@ -16,6 +16,8 @@ Package v1beta1 contains API Schema definitions for the rabbitmq.com v1beta1 API
 .Resource Types
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-binding[$$Binding$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-bindinglist[$$BindingList$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-compositeconsumerset[$$CompositeConsumerSet$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-compositeconsumersetlist[$$CompositeConsumerSetList$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-exchange[$$Exchange$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-exchangelist[$$ExchangeList$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federation[$$Federation$$]
@@ -123,6 +125,103 @@ BindingStatus defines the observed state of Binding
 |===
 
 
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-compositeconsumerpodspec"]
+==== CompositeConsumerPodSpec 
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-compositeconsumersetspec[$$CompositeConsumerSetSpec$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`default`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#podspec-v1-core[$$PodSpec$$]__ | 
+| *`perRoutingKey`* __object (keys:string, values:link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#podspec-v1-core[$$PodSpec$$])__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-compositeconsumerset"]
+==== CompositeConsumerSet 
+
+CompositeConsumerSet is the Schema for Composite Consumer Sets
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-compositeconsumersetlist[$$CompositeConsumerSetList$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
+| *`kind`* __string__ | `CompositeConsumerSet`
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-compositeconsumersetspec[$$CompositeConsumerSetSpec$$]__ | 
+| *`status`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-compositeconsumersetstatus[$$CompositeConsumerSetStatus$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-compositeconsumersetlist"]
+==== CompositeConsumerSetList 
+
+CompositeConsumerSetList contains a list of CompositeConsumerSets
+
+
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
+| *`kind`* __string__ | `CompositeConsumerSetList`
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-compositeconsumerset[$$CompositeConsumerSet$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-compositeconsumersetspec"]
+==== CompositeConsumerSetSpec 
+
+CompositeConsumerSetSpec defines the desired state of CompositeConsumerSet
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-compositeconsumerset[$$CompositeConsumerSet$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`superStreamReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-superstreamreference[$$SuperStreamReference$$]__ | Reference to the SuperStream that the CompositeConsumerSet will consume from Required property.
+| *`replicas`* __integer__ | Replicas denotes the number of composite consumers to create in the set. By default, this value matches the number of partitions in the SuperStream.
+| *`consumerPodSpec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-compositeconsumerpodspec[$$CompositeConsumerPodSpec$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-compositeconsumersetstatus"]
+==== CompositeConsumerSetStatus 
+
+CompositeConsumerSetStatus defines the observed state of CompositeConsumerSet
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-compositeconsumerset[$$CompositeConsumerSet$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this CompositeConsumerSet. It corresponds to the CompositeConsumerSet's generation, which is updated on mutation by the API Server.
+| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$]__ | 
+|===
+
+
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition"]
 ==== Condition 
 
@@ -131,6 +230,7 @@ BindingStatus defines the observed state of Binding
 .Appears In:
 ****
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-bindingstatus[$$BindingStatus$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-compositeconsumersetstatus[$$CompositeConsumerSetStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-exchangestatus[$$ExchangeStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federationstatus[$$FederationStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-permissionstatus[$$PermissionStatus$$]
@@ -836,6 +936,24 @@ SuperStreamList contains a list of SuperStreams
 |===
 
 
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-superstreamreference"]
+==== SuperStreamReference 
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-compositeconsumersetspec[$$CompositeConsumerSetSpec$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`name`* __string__ | The name of the SuperStream to reference.
+| *`namespace`* __string__ | The namespace of the SuperStream to reference. Defaults to the namespace of the requested resource if omitted.
+|===
+
+
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-superstreamspec"]
 ==== SuperStreamSpec 
 
@@ -870,6 +988,7 @@ SuperStreamStatus defines the observed state of SuperStream
 | Field | Description
 | *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this SuperStream. It corresponds to the SuperStream's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$]__ | 
+| *`partitions`* __string array__ | Partitions are a list of the stream queue names which form the partitions of this SuperStream.
 |===
 
 

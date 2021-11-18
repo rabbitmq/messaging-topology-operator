@@ -56,8 +56,6 @@ func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
 
-	logger.Info("Start reconciling")
-
 	rmq, _, _, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, superStream.Spec.RabbitmqClusterReference, superStream.Namespace)
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !superStream.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info(noSuchRabbitDeletion, "superStream", superStream.Name)
@@ -66,7 +64,7 @@ func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
 		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
-		// the Cluster is temporarily down. ResuperStream until it comes back up.
+		// the Cluster is temporarily down. Requeue until it comes back up.
 		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
 	}
@@ -87,6 +85,8 @@ func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return reconcile.Result{}, err
 	}
 
+	logger.Info("Start reconciling")
+
 	// Each SuperStream generates, for n partitions, 1 exchange, n streams and n bindings
 	managedResourceBuilder := managedresource.Builder{
 		ObjectOwner: superStream,
@@ -105,6 +105,8 @@ func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			managedResourceBuilder.SuperStreamBinding(i, strconv.Itoa(i), rmqClusterRef),
 		)
 	}
+
+	var partitionQueueNames []string
 
 	for _, builder := range builders {
 		resource, err := builder.Build()
@@ -126,6 +128,18 @@ func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			}
 			return ctrl.Result{}, err
 		}
+
+		if builder.ResourceType() == "Partition" {
+			partition := resource.(*topology.Queue)
+			partitionQueueNames = append(partitionQueueNames, partition.Spec.Name)
+		}
+	}
+
+	superStream.Status.Partitions = partitionQueueNames
+	if err := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
+		return r.Status().Update(ctx, superStream)
+	}); err != nil {
+		logger.Error(err, failedStatusUpdate)
 	}
 
 	if err := r.SetReconcileSuccess(ctx, superStream, topology.Ready(superStream.Status.Conditions)); err != nil {

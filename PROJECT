@@ -94,4 +94,22 @@ resources:
   kind: Shovel
   path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
   version: v1beta1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: rabbitmq.com
+  group: rabbitmq.com
+  kind: SuperStream
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
+  version: v1beta1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: rabbitmq.com
+  group: rabbitmq.com
+  kind: CompositeControllerSet
+  path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
+  version: v1beta1
 version: "3"

@@ -1,0 +1,9 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: SuperStream
+metadata:
+  name: orders-super-stream
+spec:
+  name: orders
+  partitions: 3
+  rabbitmqClusterReference:
+    name: test
