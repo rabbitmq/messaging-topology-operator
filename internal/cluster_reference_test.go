@@ -156,13 +156,13 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 
 				fakeSecretStoreClient = &internalfakes.FakeSecretStoreClient{}
 				fakeSecretStoreClient.ReadCredentialsReturns(fakeCredentialsProvider, nil)
-				internal.SecretStoreClientInitializer = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (internal.SecretStoreClient, error) {
+				internal.SecretStoreClientProvider = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (internal.SecretStoreClient, error) {
 					return fakeSecretStoreClient, nil
 				}
 			})
 
 			AfterEach(func() {
-				internal.SecretStoreClientInitializer = internal.InitializeSecretStoreClient
+				internal.SecretStoreClientProvider = internal.GetSecretStoreClient
 			})
 
 			JustBeforeEach(func() {
