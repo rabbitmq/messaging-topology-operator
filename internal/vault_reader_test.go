@@ -290,15 +290,21 @@ var _ = Describe("VaultReader", func() {
 	Describe("Initialize secret store client", func() {
 		var (
 			vaultSpec *rabbitmqv1beta1.VaultSpec
+			getSecretStoreClientTester func(vaultSpec *rabbitmqv1beta1.VaultSpec)(internal.SecretStoreClient, error)
 		)
 
 		When("vault spec has no role value", func() {
 			BeforeEach(func() {
 				vaultSpec = &rabbitmqv1beta1.VaultSpec{}
+
+				getSecretStoreClientTester = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (internal.SecretStoreClient, error) {
+					internal.InitializeClient(vaultSpec)()
+					return internal.SecretClient, internal.SecretClientCreationError
+				}
 			})
 
 			JustBeforeEach(func() {
-				secretStoreClient, err = internal.InitializeSecretStoreClient(vaultSpec)
+				secretStoreClient, err = getSecretStoreClientTester(vaultSpec)
 			})
 
 			PIt("should return a nil secret store client", func() {
@@ -313,13 +319,19 @@ var _ = Describe("VaultReader", func() {
 
 		When("service account token is not in the expected place", func() {
 			BeforeEach(func() {
+				internal.SecretClient = nil
+				internal.SecretClientCreationError = nil
 				vaultSpec = &rabbitmqv1beta1.VaultSpec{
 					Role: "cheese-and-ham",
+				}
+				getSecretStoreClientTester = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (internal.SecretStoreClient, error) {
+					internal.InitializeClient(vaultSpec)()
+					return internal.SecretClient, internal.SecretClientCreationError
 				}
 			})
 
 			JustBeforeEach(func() {
-				secretStoreClient, err = internal.InitializeSecretStoreClient(vaultSpec)
+				secretStoreClient, err = getSecretStoreClientTester(vaultSpec)
 			})
 
 			It("should return a nil secret store client", func() {
@@ -332,26 +344,32 @@ var _ = Describe("VaultReader", func() {
 			})
 		})
 
-		When("unable to log into vault to obtain client token", func() {
+		When("unable to log into vault to obtain client secret", func() {
 			BeforeEach(func() {
+				internal.SecretClient = nil
+				internal.SecretClientCreationError = nil
 				vaultSpec = &rabbitmqv1beta1.VaultSpec{
 					Role: "cheese-and-ham",
 				}
-				internal.ServiceAccountTokenReader = func() ([]byte, error) {
+				internal.ReadServiceAccountTokenFunc = func() ([]byte, error) {
 					return []byte("token"), nil
 				}
-				internal.VaultAuthenticator = func(vaultClient *vault.Client, authPath string, params map[string]interface{}) (*vault.Secret, error) {
+				internal.LoginToVaultFunc = func(vaultClient *vault.Client, authPath string, params map[string]interface{}) (*vault.Secret, error) {
 					return nil, errors.New("login failed (quickly!)")
+				}
+				getSecretStoreClientTester = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (internal.SecretStoreClient, error) {
+					internal.InitializeClient(vaultSpec)()
+					return internal.SecretClient, internal.SecretClientCreationError
 				}
 			})
 
 			AfterEach(func() {
-				internal.ServiceAccountTokenReader = internal.ReadServiceAccountToken
-				internal.VaultAuthenticator = internal.LoginToVault
+				internal.ReadServiceAccountTokenFunc = internal.ReadServiceAccountToken
+				internal.LoginToVaultFunc = internal.LoginToVault
 			})
 
 			JustBeforeEach(func() {
-				secretStoreClient, err = internal.InitializeSecretStoreClient(vaultSpec)
+				secretStoreClient, err = getSecretStoreClientTester(vaultSpec)
 			})
 
 			It("should return a nil secret store client", func() {
@@ -360,30 +378,48 @@ var _ = Describe("VaultReader", func() {
 
 			It("should have returned an error", func() {
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("unable to log in with Kubernetes"))
+				Expect(err.Error()).To(ContainSubstring("unable to obtain Vault client secret"))
 			})
 		})
 
-		When("client token obtained from vault", func() {
+		When("client secret obtained from vault", func() {
 			BeforeEach(func() {
+				internal.SecretClient = nil
+				internal.SecretClientCreationError = nil
 				vaultSpec = &rabbitmqv1beta1.VaultSpec{
 					Role: "cheese-and-ham",
 				}
-				internal.ServiceAccountTokenReader = func() ([]byte, error) {
+				internal.ReadServiceAccountTokenFunc = func() ([]byte, error) {
 					return []byte("token"), nil
 				}
-				internal.VaultClientTokenReader = func(vaultClient *vault.Client, jwtToken string, vaultRole string, authPath string) (string, error) {
-					return "vault-token", nil
+				internal.LoginToVaultFunc = func(vaultClient *vault.Client, authPath string, params map[string]interface{}) (*vault.Secret, error) {
+					return &vault.Secret{
+						Auth: &vault.SecretAuth{
+							ClientToken: "vault-secret-token",
+						},
+					}, nil
+				}
+				internal.ReadVaultClientSecretFunc = func(vaultClient *vault.Client, jwtToken string, vaultRole string, authPath string) (*vault.Secret, error) {
+					return &vault.Secret{
+						Auth: &vault.SecretAuth{
+							ClientToken: "vault-secret-token",
+						},
+					}, nil
+				}
+				getSecretStoreClientTester = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (internal.SecretStoreClient, error) {
+					internal.InitializeClient(vaultSpec)()
+					return internal.SecretClient, internal.SecretClientCreationError
 				}
 			})
 
 			AfterEach(func() {
-				internal.ServiceAccountTokenReader = internal.ReadServiceAccountToken
-				internal.VaultClientTokenReader = internal.ReadVaultClientToken
+				internal.ReadServiceAccountTokenFunc = internal.ReadServiceAccountToken
+				internal.LoginToVaultFunc = internal.LoginToVault
+				internal.ReadVaultClientSecretFunc = internal.ReadVaultClientSecret
 			})
 
 			JustBeforeEach(func() {
-				secretStoreClient, err = internal.InitializeSecretStoreClient(vaultSpec)
+				secretStoreClient, err = getSecretStoreClientTester(vaultSpec)
 			})
 
 			It("should not error", func() {

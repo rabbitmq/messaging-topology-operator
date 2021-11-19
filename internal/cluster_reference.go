@@ -27,7 +27,7 @@ func (c ClusterCredentials) Data(key string) ([]byte, bool) {
 	return result, ok
 }
 
-var SecretStoreClientInitializer = InitializeSecretStoreClient
+var SecretStoreClientProvider = GetSecretStoreClient
 
 var (
 	NoSuchRabbitmqClusterError = errors.New("RabbitmqCluster object does not exist")
@@ -64,8 +64,8 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 	var credentialsProvider CredentialsProvider
 	svc := &corev1.Service{}
 	if cluster.Spec.SecretBackend.Vault != nil && cluster.Spec.SecretBackend.Vault.DefaultUserPath != "" {
-		// ask the configured secure store for the credentials available at the path retrived from the cluster resource
-		secretStoreClient, err := SecretStoreClientInitializer(cluster.Spec.SecretBackend.Vault)
+		// ask the configured secure store for the credentials available at the path retrieved from the cluster resource
+		secretStoreClient, err := SecretStoreClientProvider(cluster.Spec.SecretBackend.Vault)
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("unable to create a client connection to secret store: %w", err)
 		}
@@ -74,6 +74,7 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("unable to retrieve credentials from secret store: %w", err)
 		}
+
 		credentialsProvider = credsProv
 
 		if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.ObjectMeta.Name}, svc); err != nil {

@@ -4,8 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
+
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	vault "github.com/hashicorp/vault/api"
 )
@@ -38,9 +41,42 @@ type VaultClient struct {
 	Reader SecretReader
 }
 
-var ServiceAccountTokenReader = ReadServiceAccountToken
-var VaultClientTokenReader = ReadVaultClientToken
-var VaultAuthenticator = LoginToVault
+var ReadServiceAccountTokenFunc = ReadServiceAccountToken
+var ReadVaultClientSecretFunc = ReadVaultClientSecret
+var LoginToVaultFunc = LoginToVault
+
+var createSecretStoreClientOnce sync.Once
+var SecretClient SecretStoreClient
+var SecretClientCreationError error
+
+func GetSecretStoreClient(vaultSpec *rabbitmqv1beta1.VaultSpec) (SecretStoreClient, error) {
+	createSecretStoreClientOnce.Do(InitializeClient(vaultSpec))
+	return SecretClient, SecretClientCreationError
+}
+
+func InitializeClient(vaultSpec *rabbitmqv1beta1.VaultSpec) func() {
+	return func() {
+		// VAULT_ADDR environment variable will be the address that pod uses to communicate with Vault.
+		config := vault.DefaultConfig() // modify for more granular configuration
+		vaultClient, err := vault.NewClient(config)
+		if err != nil {
+			SecretClientCreationError = fmt.Errorf("unable to initialize Vault client: %w", err)
+			return
+		}
+
+		_, err = login(vaultClient, vaultSpec)
+		if err != nil {
+			SecretClientCreationError = fmt.Errorf("unable to login to Vault: %w", err)
+			return
+		}
+
+		SecretClient = VaultClient{
+			Reader: &VaultSecretReader{client: vaultClient},
+		}
+
+		go renewToken(vaultClient, vaultSpec)
+	}
+}
 
 func (vc VaultClient) ReadCredentials(path string) (CredentialsProvider, error) {
 	secret, err := vc.Reader.ReadSecret(path)
@@ -110,7 +146,9 @@ func availableKeys(m map[string]interface{}) []string {
 	return result
 }
 
-func InitializeSecretStoreClient(vaultSpec *rabbitmqv1beta1.VaultSpec) (SecretStoreClient, error) {
+func login(vaultClient *vault.Client, vaultSpec *rabbitmqv1beta1.VaultSpec) (*vault.Secret, error) {
+	logger := ctrl.LoggerFrom(nil)
+
 	// GCH TODO return to this...
 	// role := vaultSpec.Role
 	// if role == "" {
@@ -118,38 +156,95 @@ func InitializeSecretStoreClient(vaultSpec *rabbitmqv1beta1.VaultSpec) (SecretSt
 	// }
 	role := "messaging-topology-operator"
 
-	// For now, the VAULT_ADDR environment variable will be the address that your pod uses to communicate with Vault.
-	config := vault.DefaultConfig() // modify for more granular configuration
-
-	vaultClient, err := vault.NewClient(config)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize Vault client: %w", err)
-	}
-
 	var annotations = vaultSpec.Annotations
 	if annotations["vault.hashicorp.com/namespace"] != "" {
 		vaultClient.SetNamespace(annotations["vault.hashicorp.com/namespace"])
 	}
 
-	jwt, err := ServiceAccountTokenReader()
+	jwt, err := ReadServiceAccountTokenFunc()
 	if err != nil {
 		return nil, fmt.Errorf("unable to read file containing service account token: %w", err)
 	}
 
 	loginAuthPath := defaultAuthPath
+	annotations = vaultSpec.Annotations
 	if annotations["vault.hashicorp.com/auth-path"] != "" {
 		loginAuthPath = annotations["vault.hashicorp.com/auth-path"]
 	}
 
-	vaultToken, err := VaultClientTokenReader(vaultClient, string(jwt), role, loginAuthPath)
+	logger.Info("Authenticating to Vault")
+
+	vaultSecret, err := ReadVaultClientSecretFunc(vaultClient, string(jwt), role, loginAuthPath)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read Vault client token: %w", err)
+		return nil, fmt.Errorf("unable to obtain Vault client secret: %w", err)
 	}
 
-	// use the Vault token for making all future calls to Vault
-	vaultClient.SetToken(vaultToken)
+	if vaultSecret == nil || vaultSecret.Auth == nil || vaultSecret.Auth.ClientToken == "" {
+		return nil, fmt.Errorf("no client token found in Vault secret")
+	}
 
-	return VaultClient{Reader: &VaultSecretReader{client: vaultClient}}, nil
+	vaultClient.SetToken(vaultSecret.Auth.ClientToken)
+	return vaultSecret, nil
+}
+
+func renewToken(client *vault.Client, vaultSpec *rabbitmqv1beta1.VaultSpec) {
+	logger := ctrl.LoggerFrom(nil)
+
+	for {
+		vaultLoginResp, err := login(client, vaultSpec)
+		if err != nil {
+			logger.Error(err, "unable to authenticate to Vault server")
+		}
+
+		err = manageTokenLifecycle(client, vaultLoginResp)
+		if err != nil {
+			logger.Error(err, "unable to start managing the Vault token lifecycle")
+		}
+	}
+}
+
+func manageTokenLifecycle(client *vault.Client, token *vault.Secret) error {
+	logger := ctrl.LoggerFrom(nil)
+
+	if token == nil || token.Auth == nil {
+		logger.Info("No Vault secret available. Re-attempting login")
+		return nil
+	}
+
+	renew := token.Auth.Renewable
+	if !renew {
+		logger.Info("Token is not configured to be renewable. Re-attempting login")
+		return nil
+	}
+
+	watcher, err := client.NewLifetimeWatcher(&vault.LifetimeWatcherInput{
+		Secret: token,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize new lifetime watcher for renewing auth token: %w", err)
+	}
+
+	go watcher.Start()
+	defer watcher.Stop()
+
+	for {
+		select {
+		// `DoneCh` will return if renewal fails, or if the remaining lease duration is
+		// under a built-in threshold and either renewing is not extending it or
+		// renewing is disabled.  In any case, the caller needs to attempt to log in again.
+		case err := <-watcher.DoneCh():
+			if err != nil {
+				logger.Error(err, "Failed to renew Vault token. Re-attempting login")
+				return nil
+			}
+			logger.Info("Token can no longer be renewed. Re-attempting login.")
+			return nil
+
+		// Successfully completed renewal
+		case renewal := <-watcher.RenewCh():
+			logger.Info("Successfully renewed Vault token", "renewal info", renewal)
+		}
+	}
 }
 
 func ReadServiceAccountToken() ([]byte, error) {
@@ -164,23 +259,13 @@ func ReadServiceAccountToken() ([]byte, error) {
 	return token, nil
 }
 
-func ReadVaultClientToken(vaultClient *vault.Client, jwtToken string, vaultRole string, authPath string) (string, error) {
+func ReadVaultClientSecret(vaultClient *vault.Client, jwtToken string, vaultRole string, authPath string) (*vault.Secret, error) {
 	params := map[string]interface{}{
 		"jwt":  jwtToken,
 		"role": vaultRole, // the name of the role in Vault that was created with this app's Kubernetes service account bound to it
 	}
 
-	// log in to Vault's Kubernetes auth method
-	resp, err := VaultAuthenticator(vaultClient, authPath, params)
-	if err != nil {
-		return "", fmt.Errorf("unable to log in with Kubernetes auth: %w", err)
-	}
-
-	// return the Vault client token provided in the login response
-	if resp == nil || resp.Auth == nil || resp.Auth.ClientToken == "" {
-		return "", fmt.Errorf("no client token found in Vault login response")
-	}
-	return resp.Auth.ClientToken, nil
+	return LoginToVaultFunc(vaultClient, authPath, params)
 }
 
 func LoginToVault(vaultClient *vault.Client, authPath string, params map[string]interface{}) (*vault.Secret, error) {
