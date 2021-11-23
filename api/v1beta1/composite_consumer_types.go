@@ -15,16 +15,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// CompositeConsumerSetSpec defines the desired state of CompositeConsumerSet
-type CompositeConsumerSetSpec struct {
-	// Reference to the SuperStream that the CompositeConsumerSet will consume from
+// CompositeConsumerSpec defines the desired state of CompositeConsumer
+type CompositeConsumerSpec struct {
+	// Reference to the SuperStream that the CompositeConsumer will consume from
 	// Required property.
 	// +kubebuilder:validation:Required
 	SuperStreamReference SuperStreamReference `json:"superStreamReference"`
-	// Replicas denotes the number of composite consumers to create in the set.
-	// By default, this value matches the number of partitions in the SuperStream.
-	// +kubebuilder:validation:Optional
-	Replicas int `json:"replicas,omitempty"`
 	// +kubebuilder:validation:Required
 	ConsumerPodSpec CompositeConsumerPodSpec `json:"consumerPodSpec"`
 }
@@ -36,10 +32,10 @@ type CompositeConsumerPodSpec struct {
 	PerRoutingKey map[string]corev1.PodSpec `json:"perRoutingKey,omitempty"`
 }
 
-// CompositeConsumerSetStatus defines the observed state of CompositeConsumerSet
-type CompositeConsumerSetStatus struct {
-	// observedGeneration is the most recent successful generation observed for this CompositeConsumerSet. It corresponds to the
-	// CompositeConsumerSet's generation, which is updated on mutation by the API Server.
+// CompositeConsumerStatus defines the observed state of CompositeConsumer
+type CompositeConsumerStatus struct {
+	// observedGeneration is the most recent successful generation observed for this CompositeConsumer. It corresponds to the
+	// CompositeConsumer's generation, which is updated on mutation by the API Server.
 	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
 	Conditions         []Condition `json:"conditions,omitempty"`
 }
@@ -49,25 +45,25 @@ type CompositeConsumerSetStatus struct {
 // +kubebuilder:resource:categories=all
 // +kubebuilder:subresource:status
 
-// CompositeConsumerSet is the Schema for Composite Consumer Sets
-type CompositeConsumerSet struct {
+// CompositeConsumer is the Schema for Composite Consumers
+type CompositeConsumer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   CompositeConsumerSetSpec   `json:"spec,omitempty"`
-	Status CompositeConsumerSetStatus `json:"status,omitempty"`
+	Spec   CompositeConsumerSpec   `json:"spec,omitempty"`
+	Status CompositeConsumerStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// CompositeConsumerSetList contains a list of CompositeConsumerSets
-type CompositeConsumerSetList struct {
+// CompositeConsumerList contains a list of CompositeConsumers
+type CompositeConsumerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []CompositeConsumerSet `json:"items"`
+	Items           []CompositeConsumer `json:"items"`
 }
 
-func (q *CompositeConsumerSet) GroupResource() schema.GroupResource {
+func (q *CompositeConsumer) GroupResource() schema.GroupResource {
 	return schema.GroupResource{
 		Group:    q.GroupVersionKind().Group,
 		Resource: q.GroupVersionKind().Kind,
@@ -84,7 +80,6 @@ type SuperStreamReference struct {
 	Namespace string `json:"namespace"`
 }
 
-
 func init() {
-	SchemeBuilder.Register(&CompositeConsumerSet{}, &CompositeConsumerSetList{})
+	SchemeBuilder.Register(&CompositeConsumer{}, &CompositeConsumerList{})
 }

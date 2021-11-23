@@ -94,7 +94,7 @@ func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	rmqClusterRef := &topology.RabbitmqClusterReference{
-		Name: rmq.Name,
+		Name:      rmq.Name,
 		Namespace: rmq.Namespace,
 	}
 	builders := []managedresource.ResourceBuilder{managedResourceBuilder.SuperStreamExchange(rmqClusterRef)}

@@ -7,12 +7,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("compositeConsumerSet webhook", func() {
-	var compositeConsumerSet = CompositeConsumerSet{
+var _ = Describe("compositeConsumer webhook", func() {
+	var compositeConsumer = CompositeConsumer{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test",
 		},
-		Spec: CompositeConsumerSetSpec{
+		Spec: CompositeConsumerSpec{
 			SuperStreamReference: SuperStreamReference{
 				Name: "a-super-stream",
 			},
@@ -20,10 +20,10 @@ var _ = Describe("compositeConsumerSet webhook", func() {
 	}
 
 	It("does not allow updates on SuperStreamReference", func() {
-		newCompositeConsumerSet := compositeConsumerSet.DeepCopy()
-		newCompositeConsumerSet.Spec.SuperStreamReference = SuperStreamReference{
+		newCompositeConsumer := compositeConsumer.DeepCopy()
+		newCompositeConsumer.Spec.SuperStreamReference = SuperStreamReference{
 			Name: "new-cluster",
 		}
-		Expect(apierrors.IsForbidden(newCompositeConsumerSet.ValidateUpdate(&compositeConsumerSet))).To(BeTrue())
+		Expect(apierrors.IsForbidden(newCompositeConsumer.ValidateUpdate(&compositeConsumer))).To(BeTrue())
 	})
 })

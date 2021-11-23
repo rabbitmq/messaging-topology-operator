@@ -10,7 +10,7 @@ import (
 
 type SuperStreamPartitionBuilder struct {
 	*Builder
-	routingKey string
+	routingKey      string
 	rabbitmqCluster *topology.RabbitmqClusterReference
 }
 

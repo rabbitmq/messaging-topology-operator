@@ -9,31 +9,31 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
-func (s *CompositeConsumerSet) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (s *CompositeConsumer) upWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(s).
 		Complete()
 }
 
-// +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1beta1-superstream,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=superstreams,versions=v1beta1,name=vsuperstream.kb.io,sideEffects=none,admissionReviewVersions=v1
+// +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1beta1-compositeconsumer,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=compositeconsumer,versions=v1beta1,name=vcompositeconsumer.kb.io,sideEffects=none,admissionReviewVersions=v1
 
-var _ webhook.Validator = &CompositeConsumerSet{}
+var _ webhook.Validator = &CompositeConsumer{}
 
 // no validation on create
-func (s *CompositeConsumerSet) ValidateCreate() error {
+func (s *CompositeConsumer) ValidateCreate() error {
 	return nil
 }
 
 // returns error type 'forbidden' for updates on superstream name and rabbitmqClusterReference
-func (s *CompositeConsumerSet) ValidateUpdate(old runtime.Object) error {
-	oldCompositeConsumerSet, ok := old.(*CompositeConsumerSet)
+func (s *CompositeConsumer) ValidateUpdate(old runtime.Object) error {
+	oldCompositeConsumer, ok := old.(*CompositeConsumer)
 	if !ok {
 		return apierrors.NewBadRequest(fmt.Sprintf("expected a superstream but got a %T", old))
 	}
 
 	detailMsg := "updates on superStreamReference are forbidden"
 
-	if s.Spec.SuperStreamReference != oldCompositeConsumerSet.Spec.SuperStreamReference {
+	if s.Spec.SuperStreamReference != oldCompositeConsumer.Spec.SuperStreamReference {
 		return apierrors.NewForbidden(s.GroupResource(), s.Name,
 			field.Forbidden(field.NewPath("spec", "superStreamReference"), detailMsg))
 	}
@@ -41,6 +41,6 @@ func (s *CompositeConsumerSet) ValidateUpdate(old runtime.Object) error {
 }
 
 // ValidateDelete no validation on delete
-func (s *CompositeConsumerSet) ValidateDelete() error {
+func (s *CompositeConsumer) ValidateDelete() error {
 	return nil
 }

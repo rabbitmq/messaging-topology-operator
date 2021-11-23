@@ -179,13 +179,13 @@ func main() {
 		log.Error(err, "unable to create controller", "controller", controllers.SuperStreamControllerName)
 		os.Exit(1)
 	}
-	if err = (&controllers.CompositeConsumerSetReconciler{
-		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName(controllers.CompositeConsumerSetControllerName),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              mgr.GetEventRecorderFor(controllers.CompositeConsumerSetControllerName),
+	if err = (&controllers.CompositeConsumerReconciler{
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName(controllers.CompositeConsumerControllerName),
+		Scheme:   mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorderFor(controllers.CompositeConsumerControllerName),
 	}).SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create controller", "controller", controllers.CompositeConsumerSetControllerName)
+		log.Error(err, "unable to create controller", "controller", controllers.CompositeConsumerControllerName)
 		os.Exit(1)
 	}
 
@@ -234,8 +234,8 @@ func main() {
 			log.Error(err, "unable to create webhook", "webhook", "SuperStream")
 			os.Exit(1)
 		}
-		if err = (&topology.CompositeConsumerSet{}).SetupWebhookWithManager(mgr); err != nil {
-			log.Error(err, "unable to create webhook", "webhook", "CompositeConsumerSet")
+		if err = (&topology.CompositeConsumer{}).SetupWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "CompositeConsumer")
 			os.Exit(1)
 		}
 	}

@@ -32,9 +32,9 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-rabbitmq-com-v1beta1-superstream
+      path: /validate-rabbitmq-com-v1beta1-compositeconsumer
   failurePolicy: Fail
-  name: vsuperstream.kb.io
+  name: vcompositeconsumer.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
@@ -44,7 +44,7 @@ webhooks:
     - CREATE
     - UPDATE
     resources:
-    - superstreams
+    - compositeconsumer
   sideEffects: None
 - admissionReviewVersions:
   - v1
