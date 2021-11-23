@@ -9,7 +9,7 @@ import (
 
 var _ = Describe("Leaderelection", func() {
 
-	var pods []*corev1.Pod
+	var pods []corev1.Pod
 	var numberOfPartitions int
 	var numberOfConsumerSets int
 
@@ -23,8 +23,8 @@ var _ = Describe("Leaderelection", func() {
 			numberOfConsumerSets = 3
 		})
 		It("distributes evenly", func() {
-			leaderelection.Elect(pods)
-			Expect(pods).To(BeBalanced())
+			electedPods := leaderelection.Elect(pods)
+			Expect(electedPods).To(BeBalanced())
 		})
 	})
 
@@ -34,8 +34,8 @@ var _ = Describe("Leaderelection", func() {
 			numberOfConsumerSets = 3
 		})
 		It("distributes evenly", func() {
-			leaderelection.Elect(pods)
-			Expect(pods).To(BeBalanced())
+			electedPods := leaderelection.Elect(pods)
+			Expect(electedPods).To(BeBalanced())
 		})
 
 	})
@@ -45,8 +45,22 @@ var _ = Describe("Leaderelection", func() {
 			numberOfConsumerSets = 7
 		})
 		It("distributes evenly", func() {
-			leaderelection.Elect(pods)
-			Expect(pods).To(BeBalanced())
+			electedPods := leaderelection.Elect(pods)
+			Expect(electedPods).To(BeBalanced())
+		})
+	})
+	When("one of the pods expected to be elected is missing", func() {
+		BeforeEach(func() {
+			numberOfPartitions = 3
+			numberOfConsumerSets = 3
+		})
+		JustBeforeEach(func() {
+			pods = pods[1:]
+		})
+		It("distributes evenly", func() {
+			electedPods := leaderelection.Elect(pods)
+			Expect(electedPods).NotTo(BeBalanced())
+			Expect(electedPods).To(HaveSingleConsumers())
 		})
 	})
 })

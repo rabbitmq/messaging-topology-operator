@@ -16,12 +16,13 @@ const (
 type CompositeConsumerPodBuilder struct {
 	*Builder
 	podSpec   corev1.PodSpec
+	superStreamName string
 	partition string
 	replica   int
 }
 
-func (builder *Builder) CompositeConsumerPod(podSpec corev1.PodSpec, partition string, replica int) *CompositeConsumerPodBuilder {
-	return &CompositeConsumerPodBuilder{builder, podSpec, partition, replica}
+func (builder *Builder) CompositeConsumerPod(podSpec corev1.PodSpec, superStreamName, partition string, replica int) *CompositeConsumerPodBuilder {
+	return &CompositeConsumerPodBuilder{builder, podSpec, superStreamName, partition, replica}
 }
 
 func (builder *CompositeConsumerPodBuilder) Build() (client.Object, error) {
@@ -30,6 +31,7 @@ func (builder *CompositeConsumerPodBuilder) Build() (client.Object, error) {
 			Name:      fmt.Sprintf("%s-%s-%d", builder.ObjectOwner.GetName(), builder.partition, builder.replica),
 			Namespace: builder.ObjectOwner.GetNamespace(),
 			Labels: map[string]string{
+				"rabbitmq.com/super-stream": builder.superStreamName,
 				"rabbitmq.com/super-stream-partition": builder.partition,
 				"rabbitmq.com/composite-consumer-replica": strconv.Itoa(builder.replica),
 			},

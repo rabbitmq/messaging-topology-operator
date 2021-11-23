@@ -20,11 +20,11 @@ func TestLeaderelection(t *testing.T) {
 	RunSpecs(t, "Leaderelection Suite")
 }
 
-func generateTestPodSet(numberOfPartitions, numberOfConsumerSets int) []*corev1.Pod {
-	var pods []*corev1.Pod
+func generateTestPodSet(numberOfPartitions, numberOfConsumerSets int) []corev1.Pod {
+	var pods []corev1.Pod
 	for i := 0; i < numberOfPartitions; i++ {
 		for j := 0; j < numberOfConsumerSets; j++ {
-			pods = append(pods, &corev1.Pod{
+			pods = append(pods, corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: fmt.Sprintf("consumer-partition.%d-replica.%d", i, j),
 					Labels: map[string]string{
@@ -40,16 +40,16 @@ func generateTestPodSet(numberOfPartitions, numberOfConsumerSets int) []*corev1.
 	return pods
 }
 
-func BeBalanced() types.GomegaMatcher {
+func HaveSingleConsumers() types.GomegaMatcher {
 	partitions := make(map[string]consumers)
 	replicas := make(map[string]consumers)
-	return &BeBalancedMatcher{
+	return &HaveSingleConsumersMatcher{
 		partitions: partitions,
 		replicas: replicas,
 	}
 }
 
-type BeBalancedMatcher struct {
+type HaveSingleConsumersMatcher struct {
 	partitions map[string]consumers
 	replicas map[string]consumers
 	additionalFailureContext string
@@ -67,10 +67,10 @@ func newEmptyConsumerList() consumers {
 	}
 }
 
-func (matcher *BeBalancedMatcher) Match(actual interface{}) (bool, error) {
-	pods, ok := actual.([]*corev1.Pod)
+func (matcher *HaveSingleConsumersMatcher) Match(actual interface{}) (bool, error) {
+	pods, ok := actual.([]corev1.Pod)
 	if !ok {
-		return false, fmt.Errorf("BeBalanced must be passed a list of Pod pointers. Got\n%s", format.Object(actual, 1))
+		return false, fmt.Errorf("HaveSingleConsumers must be passed a list of Pod pointers. Got\n%s", format.Object(actual, 1))
 	}
 
 	for _, pod := range pods {
@@ -108,6 +108,64 @@ func (matcher *BeBalancedMatcher) Match(actual interface{}) (bool, error) {
 			return false, nil
 		}
 	}
+	return true, nil
+}
+
+func (matcher *HaveSingleConsumersMatcher) FailureMessage(actual interface{}) string {
+	return fmt.Sprintf("Pod consumer distribution was not balanced: %s\n%s", matcher.additionalFailureContext, matcher.DistributionErrorString())
+}
+
+func (matcher *HaveSingleConsumersMatcher) NegatedFailureMessage(actual interface{}) string {
+	return fmt.Sprintf("Pod consumer distribution was not expected to be balanced.\n%s", matcher.DistributionErrorString())
+}
+
+func (matcher *HaveSingleConsumersMatcher) DistributionErrorString() string {
+	var errString = "Distribution across partitions:"
+	for partition, consumers := range matcher.partitions {
+		errString += fmt.Sprintf("\n%s:", partition)
+		errString += "\n  Active consumers:\n"
+		for _, consumer := range consumers.activeConsumers {
+			errString += fmt.Sprintf("    - %s\n", consumer)
+		}
+		errString += "\n  Standby consumers:\n"
+		for _, consumer := range consumers.standbyConsumers {
+			errString += fmt.Sprintf("    - %s\n", consumer)
+		}
+	}
+
+	errString += "Distribution across replicas:"
+	for replica, consumers := range matcher.replicas {
+		errString += fmt.Sprintf("\n%s:", replica)
+		errString += "\n  Active consumers:\n"
+		for _, consumer := range consumers.activeConsumers {
+			errString += fmt.Sprintf("    - %s\n", consumer)
+		}
+		errString += "\n  Standby consumers:\n"
+		for _, consumer := range consumers.standbyConsumers {
+			errString += fmt.Sprintf("    - %s\n", consumer)
+		}
+	}
+	return errString
+}
+
+func BeBalanced() types.GomegaMatcher {
+	partitions := make(map[string]consumers)
+	replicas := make(map[string]consumers)
+	return &BeBalancedMatcher{
+		HaveSingleConsumersMatcher{
+			partitions: partitions,
+			replicas:   replicas,
+		},
+	}
+}
+
+type BeBalancedMatcher struct {
+	HaveSingleConsumersMatcher
+}
+
+func (matcher *BeBalancedMatcher) Match(actual interface{}) (bool, error) {
+	ok, err := matcher.HaveSingleConsumersMatcher.Match(actual)
+	if !ok || err != nil {return ok, err}
 
 	// The difference between the max/min number of active consumers on each replica should be at most 1
 	var activeConsumerCounts []int
