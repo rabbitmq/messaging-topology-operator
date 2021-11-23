@@ -34,7 +34,7 @@ $(KUBEBUILDER_ASSETS):
 
 .PHONY: unit-tests
 unit-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet manifests ## Run unit tests
-	ginkgo -r --randomizeAllSpecs -p api/ internal/
+	ginkgo -r --randomizeAllSpecs api/ internal/
 
 .PHONY: integration-tests
 integration-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet manifests ## Run integration tests
