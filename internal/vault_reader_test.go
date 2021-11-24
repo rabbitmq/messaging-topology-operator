@@ -289,8 +289,8 @@ var _ = Describe("VaultReader", func() {
 
 	Describe("Initialize secret store client", func() {
 		var (
-			vaultSpec *rabbitmqv1beta1.VaultSpec
-			getSecretStoreClientTester func(vaultSpec *rabbitmqv1beta1.VaultSpec)(internal.SecretStoreClient, error)
+			vaultSpec                  *rabbitmqv1beta1.VaultSpec
+			getSecretStoreClientTester func(vaultSpec *rabbitmqv1beta1.VaultSpec) (internal.SecretStoreClient, error)
 		)
 
 		When("vault spec has no role value", func() {
@@ -319,6 +319,7 @@ var _ = Describe("VaultReader", func() {
 
 		When("service account token is not in the expected place", func() {
 			BeforeEach(func() {
+				internal.FirstLoginAttemptResultCh = make(chan error, 1)
 				internal.SecretClient = nil
 				internal.SecretClientCreationError = nil
 				vaultSpec = &rabbitmqv1beta1.VaultSpec{
@@ -346,6 +347,7 @@ var _ = Describe("VaultReader", func() {
 
 		When("unable to log into vault to obtain client secret", func() {
 			BeforeEach(func() {
+				internal.FirstLoginAttemptResultCh = make(chan error, 1)
 				internal.SecretClient = nil
 				internal.SecretClientCreationError = nil
 				vaultSpec = &rabbitmqv1beta1.VaultSpec{
@@ -384,6 +386,7 @@ var _ = Describe("VaultReader", func() {
 
 		When("client secret obtained from vault", func() {
 			BeforeEach(func() {
+				internal.FirstLoginAttemptResultCh = make(chan error, 1)
 				internal.SecretClient = nil
 				internal.SecretClientCreationError = nil
 				vaultSpec = &rabbitmqv1beta1.VaultSpec{
