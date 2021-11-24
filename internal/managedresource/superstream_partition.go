@@ -6,6 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"strings"
 )
 
 type SuperStreamPartitionBuilder struct {
@@ -33,7 +34,7 @@ func (builder *SuperStreamPartitionBuilder) Build() (client.Object, error) {
 
 func (builder *SuperStreamPartitionBuilder) Update(object client.Object) error {
 	partition := object.(*topology.Queue)
-	partition.Spec.Name = fmt.Sprintf("%s.%s", builder.ObjectOwner.GetName(), builder.routingKey)
+	partition.Spec.Name = RoutingKeyToPartitionName(builder.ObjectOwner.GetName(), builder.routingKey)
 	partition.Spec.Durable = true
 	partition.Spec.Type = "stream"
 	partition.Spec.RabbitmqClusterReference = *builder.rabbitmqCluster
@@ -46,3 +47,11 @@ func (builder *SuperStreamPartitionBuilder) Update(object client.Object) error {
 }
 
 func (builder *SuperStreamPartitionBuilder) ResourceType() string { return "Partition" }
+
+func RoutingKeyToPartitionName(parentObjectName, routingKey string) string {
+	return fmt.Sprintf("%s.%s", parentObjectName, routingKey)
+}
+
+func PartitionNameToRoutingKey(parentObjectName, partitionName string) string {
+	return strings.Replace(partitionName, fmt.Sprintf("%s.", parentObjectName), "", 1)
+}

@@ -15,6 +15,7 @@ var _ = Describe("superstream webhook", func() {
 		Spec: SuperStreamSpec{
 			Name:       "test",
 			Partitions: 4,
+			RoutingKeys: []string{"a1", "b2", "f17"},
 			RabbitmqClusterReference: RabbitmqClusterReference{
 				Name: "a-cluster",
 			},
@@ -35,9 +36,22 @@ var _ = Describe("superstream webhook", func() {
 		Expect(apierrors.IsForbidden(newSuperStream.ValidateUpdate(&superstream))).To(BeTrue())
 	})
 
-	It("allows updates on superstream.spec.partitions", func() {
+	It("does not allow updates on superstream.spec.partitions", func() {
 		newSuperStream := superstream.DeepCopy()
 		newSuperStream.Spec.Partitions = 1000
+		Expect(apierrors.IsForbidden(newSuperStream.ValidateUpdate(&superstream))).To(BeTrue())
+	})
+
+	It("does not allow updates on superstream.spec.routingKeys", func() {
+		newSuperStream := superstream.DeepCopy()
+		newSuperStream.Spec.RoutingKeys = []string{"a1", "d6"}
+		Expect(apierrors.IsForbidden(newSuperStream.ValidateUpdate(&superstream))).To(BeTrue())
+	})
+
+	It("if the superstream previously had no routing keys but now does, the update succeeds", func() {
+		superstream.Spec.RoutingKeys = nil
+		newSuperStream := superstream.DeepCopy()
+		newSuperStream.Spec.RoutingKeys = []string{"a1", "b2", "f17"}
 		Expect(newSuperStream.ValidateUpdate(&superstream)).To(Succeed())
 	})
 

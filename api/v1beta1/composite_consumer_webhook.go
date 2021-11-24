@@ -9,7 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
-func (s *CompositeConsumer) upWebhookWithManager(mgr ctrl.Manager) error {
+func (s *CompositeConsumer) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(s).
 		Complete()

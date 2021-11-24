@@ -23,6 +23,10 @@ type SuperStreamSpec struct {
 	// Defaults to '3'.
 	// +kubebuilder:default:=3
 	Partitions int `json:"partitions,omitempty"`
+	// Routing keys to use for each of the partitions in the SuperStream
+	// If unset, the routing keys for the partitions will be set to the index of the partitions
+	// +kubebuilder:validation:Optional
+	RoutingKeys []string `json:"routingKeys,omitempty"`
 	// Reference to the RabbitmqCluster that the SuperStream will be created in.
 	// Required property.
 	// +kubebuilder:validation:Required

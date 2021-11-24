@@ -158,6 +158,7 @@ func basicTestRabbitmqCluster(name, namespace string) *rabbitmqv1beta1.RabbitmqC
 			Namespace: namespace,
 		},
 		Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
+			Image: "rabbitmq:3.9-management",
 			Replicas: pointer.Int32Ptr(1),
 			Resources: &corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{

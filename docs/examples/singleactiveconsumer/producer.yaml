@@ -21,7 +21,7 @@ spec:
         command: ["bash", "-c"]
         args:
         - AMQP_URI="amqp://$(cat /etc/rabbitmq-creds/username):$(cat /etc/rabbitmq-creds/password)@$(cat /etc/rabbitmq-creds/host):5672/%2f";
-          bin/runjava com.rabbitmq.perf.PerfTest --uri ${AMQP_URI} --rate 100 --predeclared --exchange orders-super-stream --routing-key 0
+          bin/runjava com.rabbitmq.perf.PerfTest --uri ${AMQP_URI} --rate 100 --predeclared --exchange orders --routing-key amer
         volumeMounts:
         - name: rabbitmq-creds
           mountPath: "/etc/rabbitmq-creds"
@@ -31,7 +31,7 @@ spec:
         command: ["bash", "-c"]
         args:
         - AMQP_URI="amqp://$(cat /etc/rabbitmq-creds/username):$(cat /etc/rabbitmq-creds/password)@$(cat /etc/rabbitmq-creds/host):5672/%2f";
-          bin/runjava com.rabbitmq.perf.PerfTest --uri ${AMQP_URI} --rate 100 --predeclared --exchange orders-super-stream --routing-key 1
+          bin/runjava com.rabbitmq.perf.PerfTest --uri ${AMQP_URI} --rate 100 --predeclared --exchange orders --routing-key apj
         volumeMounts:
         - name: rabbitmq-creds
           mountPath: "/etc/rabbitmq-creds"
@@ -41,7 +41,7 @@ spec:
         command: ["bash", "-c"]
         args:
         - AMQP_URI="amqp://$(cat /etc/rabbitmq-creds/username):$(cat /etc/rabbitmq-creds/password)@$(cat /etc/rabbitmq-creds/host):5672/%2f";
-          bin/runjava com.rabbitmq.perf.PerfTest --uri ${AMQP_URI} --rate 100 --predeclared --exchange orders-super-stream --routing-key 2
+          bin/runjava com.rabbitmq.perf.PerfTest --uri ${AMQP_URI} --rate 100 --predeclared --exchange orders --routing-key emea
         volumeMounts:
         - name: rabbitmq-creds
           mountPath: "/etc/rabbitmq-creds"
@@ -49,4 +49,4 @@ spec:
       volumes:
       - name: rabbitmq-creds
         secret:
-          secretName: test-default-user
+          secretName: billing-default-user

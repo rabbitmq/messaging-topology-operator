@@ -71,13 +71,23 @@ func (r *CompositeConsumerReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	var builders []managedresource.ResourceBuilder
-	for j := 0; j < len(referencedSuperStream.Status.Partitions); j++ {
+	for _, partition := range referencedSuperStream.Status.Partitions {
+		podSpec := compositeConsumer.Spec.ConsumerPodSpec.Default
+		routingKey := managedresource.PartitionNameToRoutingKey(referencedSuperStream.Name, partition)
+		if foundPodSpec, ok := compositeConsumer.Spec.ConsumerPodSpec.PerRoutingKey[routingKey]; ok {
+			podSpec = foundPodSpec
+		}
+
+		if podSpec == nil {
+			return reconcile.Result{}, fmt.Errorf("failed to get matching podspec")
+		}
+
 		builders = append(
 			builders,
 			managedResourceBuilder.CompositeConsumerPod(
-				compositeConsumer.Spec.ConsumerPodSpec.Default,
+				*podSpec,
 				referencedSuperStream.Name,
-				referencedSuperStream.Status.Partitions[j],
+				partition,
 			),
 		)
 	}

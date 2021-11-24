@@ -5,6 +5,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
@@ -31,7 +32,7 @@ func (s *SuperStream) ValidateUpdate(old runtime.Object) error {
 		return apierrors.NewBadRequest(fmt.Sprintf("expected a superstream but got a %T", old))
 	}
 
-	detailMsg := "updates on name and rabbitmqClusterReference are all forbidden"
+	detailMsg := "updates on name, paritions, routingKeys and rabbitmqClusterReference are all forbidden"
 	if s.Spec.Name != oldSuperStream.Spec.Name {
 		return apierrors.NewForbidden(s.GroupResource(), s.Name,
 			field.Forbidden(field.NewPath("spec", "name"), detailMsg))
@@ -40,6 +41,16 @@ func (s *SuperStream) ValidateUpdate(old runtime.Object) error {
 	if s.Spec.RabbitmqClusterReference != oldSuperStream.Spec.RabbitmqClusterReference {
 		return apierrors.NewForbidden(s.GroupResource(), s.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
+	}
+
+	if s.Spec.Partitions != oldSuperStream.Spec.Partitions {
+		return apierrors.NewForbidden(s.GroupResource(), s.Name,
+			field.Forbidden(field.NewPath("spec", "partitions"), detailMsg))
+	}
+
+	if !(oldSuperStream.Spec.RoutingKeys == nil || reflect.DeepEqual(s.Spec.RoutingKeys, oldSuperStream.Spec.RoutingKeys)) {
+		return apierrors.NewForbidden(s.GroupResource(), s.Name,
+			field.Forbidden(field.NewPath("spec", "routingKeys"), detailMsg))
 	}
 	return nil
 }

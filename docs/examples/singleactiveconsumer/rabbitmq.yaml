@@ -1,7 +1,7 @@
 apiVersion: rabbitmq.com/v1beta1
 kind: RabbitmqCluster
 metadata:
-  name: test
+  name: billing
 spec:
   replicas: 3
   image: rabbitmq:3.9.9-management

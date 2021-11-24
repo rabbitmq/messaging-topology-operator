@@ -60,6 +60,13 @@ spec:
                 required:
                 - name
                 type: object
+              routingKeys:
+                description: Routing keys to use for each of the partitions in the
+                  SuperStream If unset, the routing keys for the partitions will be
+                  set to the index of the partitions
+                items:
+                  type: string
+                type: array
             required:
             - name
             - rabbitmqClusterReference

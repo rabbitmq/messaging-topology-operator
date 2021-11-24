@@ -1,9 +1,13 @@
 apiVersion: rabbitmq.com/v1beta1
 kind: SuperStream
 metadata:
-  name: orders-super-stream
+  name: orders
 spec:
   name: orders
   partitions: 3
+  routingKeys:
+  - amer
+  - apj
+  - emea
   rabbitmqClusterReference:
-    name: test
+    name: billing

@@ -87,6 +87,24 @@ func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	logger.Info("Start reconciling")
 
+	if len(superStream.Spec.RoutingKeys) == 0 {
+		if err := r.generateRoutingKeys(ctx, superStream); err != nil {
+			return reconcile.Result{}, err
+		}
+	} else if len(superStream.Spec.RoutingKeys) != superStream.Spec.Partitions {
+		err := fmt.Errorf(
+			"expected number of routing keys (%d) to match number of partitions (%d)",
+			len(superStream.Spec.RoutingKeys),
+			superStream.Spec.Partitions,
+		)
+		msg := fmt.Sprintf("SuperStream %s failed to reconcile", superStream.Name)
+		logger.Error(err, msg)
+		if writerErr := r.SetReconcileSuccess(ctx, superStream, topology.NotReady(msg, superStream.Status.Conditions)); writerErr != nil {
+			logger.Error(writerErr, failedStatusUpdate)
+		}
+		return reconcile.Result{}, err
+	}
+
 	// Each SuperStream generates, for n partitions, 1 exchange, n streams and n bindings
 	managedResourceBuilder := managedresource.Builder{
 		ObjectOwner: superStream,
@@ -98,16 +116,15 @@ func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		Namespace: rmq.Namespace,
 	}
 	builders := []managedresource.ResourceBuilder{managedResourceBuilder.SuperStreamExchange(rmqClusterRef)}
-	for i := 0; i < superStream.Spec.Partitions; i++ {
+	for index, routingKey := range superStream.Spec.RoutingKeys {
 		builders = append(
 			builders,
-			managedResourceBuilder.SuperStreamPartition(strconv.Itoa(i), rmqClusterRef),
-			managedResourceBuilder.SuperStreamBinding(i, strconv.Itoa(i), rmqClusterRef),
+			managedResourceBuilder.SuperStreamPartition(routingKey, rmqClusterRef),
+			managedResourceBuilder.SuperStreamBinding(index, routingKey, rmqClusterRef),
 		)
 	}
 
 	var partitionQueueNames []string
-
 	for _, builder := range builders {
 		resource, err := builder.Build()
 		if err != nil {
@@ -149,6 +166,16 @@ func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	logger.Info("Finished reconciling")
 
 	return ctrl.Result{}, nil
+}
+
+func (r *SuperStreamReconciler) generateRoutingKeys(ctx context.Context, superStream *topology.SuperStream) error {
+	for i := 0; i < superStream.Spec.Partitions; i++ {
+		superStream.Spec.RoutingKeys = append(superStream.Spec.RoutingKeys, strconv.Itoa(i))
+	}
+	if err := r.Update(ctx, superStream); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *SuperStreamReconciler) SetReconcileSuccess(ctx context.Context, superStream *topology.SuperStream, condition topology.Condition) error {

@@ -4,7 +4,6 @@ import (
 	"context"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -22,9 +21,7 @@ var _ = Describe("CompositeConsumer spec", func() {
 				Namespace: namespace,
 			},
 			Spec: CompositeConsumerSpec{
-				ConsumerPodSpec: CompositeConsumerPodSpec{
-					Default: v1.PodSpec{Containers: []v1.Container{{Name: "", Image: ""}}},
-				},
+				ConsumerPodSpec: CompositeConsumerPodSpec{},
 				SuperStreamReference: SuperStreamReference{
 					Name: "some-super-stream",
 				},
@@ -36,8 +33,6 @@ var _ = Describe("CompositeConsumer spec", func() {
 			Name:      compositeConsumer.Name,
 			Namespace: compositeConsumer.Namespace,
 		}, fetchedCompositeConsumer)).To(Succeed())
-		Expect(fetchedCompositeConsumer.Spec.SuperStreamReference).To(Equal(SuperStreamReference{
-			Name: "some-super-stream",
-		}))
+		Expect(fetchedCompositeConsumer.Spec).To(Equal(compositeConsumer.Spec))
 	})
 })

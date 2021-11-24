@@ -6,7 +6,7 @@ metadata:
     app: consumer
 spec:
   superStreamReference:
-    name: orders-super-stream
+    name: orders
   consumerPodSpec:
     default:
       terminationGracePeriodSeconds: 10
@@ -34,4 +34,4 @@ spec:
               fieldPath: metadata.labels['rabbitmq.com/super-stream-partition']
       - name: rabbitmq-creds
         secret:
-          secretName: test-default-user
+          secretName: billing-default-user

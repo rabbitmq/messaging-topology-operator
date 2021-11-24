@@ -27,9 +27,9 @@ type CompositeConsumerSpec struct {
 
 type CompositeConsumerPodSpec struct {
 	// +kubebuilder:validation:Optional
-	Default corev1.PodSpec `json:"default,omitempty"`
+	Default *corev1.PodSpec `json:"default,omitempty"`
 	// +kubebuilder:validation:Optional
-	PerRoutingKey map[string]corev1.PodSpec `json:"perRoutingKey,omitempty"`
+	PerRoutingKey map[string]*corev1.PodSpec `json:"perRoutingKey,omitempty"`
 }
 
 // CompositeConsumerStatus defines the observed state of CompositeConsumer
