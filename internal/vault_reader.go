@@ -3,10 +3,10 @@ package internal
 import (
 	"errors"
 	"fmt"
+	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 	"os"
 	"sync"
-
-	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
+	"time"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -41,13 +41,19 @@ type VaultClient struct {
 	Reader SecretReader
 }
 
-var ReadServiceAccountTokenFunc = ReadServiceAccountToken
-var ReadVaultClientSecretFunc = ReadVaultClientSecret
-var LoginToVaultFunc = LoginToVault
+// Created - and exported from package - for testing purposes
+var (
+	ReadServiceAccountTokenFunc = ReadServiceAccountToken
+	ReadVaultClientSecretFunc   = ReadVaultClientSecret
+	LoginToVaultFunc            = LoginToVault
+	FirstLoginAttemptResultCh   = make(chan error, 1)
+)
 
-var createSecretStoreClientOnce sync.Once
-var SecretClient SecretStoreClient
-var SecretClientCreationError error
+var (
+	createSecretStoreClientOnce sync.Once
+	SecretClient                SecretStoreClient
+	SecretClientCreationError   error
+)
 
 func GetSecretStoreClient(vaultSpec *rabbitmqv1beta1.VaultSpec) (SecretStoreClient, error) {
 	createSecretStoreClientOnce.Do(InitializeClient(vaultSpec))
@@ -64,7 +70,8 @@ func InitializeClient(vaultSpec *rabbitmqv1beta1.VaultSpec) func() {
 			return
 		}
 
-		_, err = login(vaultClient, vaultSpec)
+		go renewToken(vaultClient, vaultSpec, FirstLoginAttemptResultCh)
+		err = <-FirstLoginAttemptResultCh
 		if err != nil {
 			SecretClientCreationError = fmt.Errorf("unable to login to Vault: %w", err)
 			return
@@ -73,8 +80,6 @@ func InitializeClient(vaultSpec *rabbitmqv1beta1.VaultSpec) func() {
 		SecretClient = VaultClient{
 			Reader: &VaultSecretReader{client: vaultClient},
 		}
-
-		go renewToken(vaultClient, vaultSpec)
 	}
 }
 
@@ -187,8 +192,9 @@ func login(vaultClient *vault.Client, vaultSpec *rabbitmqv1beta1.VaultSpec) (*va
 	return vaultSecret, nil
 }
 
-func renewToken(client *vault.Client, vaultSpec *rabbitmqv1beta1.VaultSpec) {
+func renewToken(client *vault.Client, vaultSpec *rabbitmqv1beta1.VaultSpec, initialLoginErrorCh chan<- error) {
 	logger := ctrl.LoggerFrom(nil)
+	sentFirstLoginAttemptErr := false
 
 	for {
 		vaultLoginResp, err := login(client, vaultSpec)
@@ -196,10 +202,24 @@ func renewToken(client *vault.Client, vaultSpec *rabbitmqv1beta1.VaultSpec) {
 			logger.Error(err, "unable to authenticate to Vault server")
 		}
 
+		if !sentFirstLoginAttemptErr {
+			initialLoginErrorCh <- err
+			sentFirstLoginAttemptErr = true
+			if err != nil {
+				// Initial login attempt failed so fail fast and don't try to manage (non-existent) token lifecycle
+				logger.Info("Lifecycle management of Vault token will not be carried out")
+				return
+			}
+			logger.Info("Initiating lifecycle management of Vault token")
+		}
+
 		err = manageTokenLifecycle(client, vaultLoginResp)
 		if err != nil {
 			logger.Error(err, "unable to start managing the Vault token lifecycle")
 		}
+
+		// Reduce load on Vault server in a problem situation where repeated login attempts may be made
+		time.Sleep(2 * time.Second)
 	}
 }
 
