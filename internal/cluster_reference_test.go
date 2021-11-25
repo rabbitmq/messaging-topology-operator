@@ -33,9 +33,6 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 		s := scheme.Scheme
 		s.AddKnownTypes(rabbitmqv1beta1.SchemeBuilder.GroupVersion, &rabbitmqv1beta1.RabbitmqCluster{})
 		fakeClient = fake.NewClientBuilder().WithScheme(s).WithRuntimeObjects(objs...).Build()
-		fakeCredentialsProvider = &internalfakes.FakeCredentialsProvider{}
-		fakeCredentialsProvider.DataReturnsOnCall(0, []byte(existingRabbitMQUsername), true)
-		fakeCredentialsProvider.DataReturnsOnCall(1, []byte(existingRabbitMQPassword), true)
 	})
 
 	When("the RabbitmqCluster is configured without TLS", func() {
@@ -155,6 +152,11 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 				}
 
 				fakeSecretStoreClient = &internalfakes.FakeSecretStoreClient{}
+
+				fakeCredentialsProvider = &internalfakes.FakeCredentialsProvider{}
+				fakeCredentialsProvider.DataReturnsOnCall(0, []byte(existingRabbitMQUsername), true)
+				fakeCredentialsProvider.DataReturnsOnCall(1, []byte(existingRabbitMQPassword), true)
+
 				fakeSecretStoreClient.ReadCredentialsReturns(fakeCredentialsProvider, nil)
 				internal.SecretStoreClientProvider = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (internal.SecretStoreClient, error) {
 					return fakeSecretStoreClient, nil
