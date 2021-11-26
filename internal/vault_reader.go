@@ -13,40 +13,41 @@ import (
 	vault "github.com/hashicorp/vault/api"
 )
 
-// ValueReader Public Interface that retrieves credentials from Vault
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . SecretStoreClient
-type ValueReader interface {
+// VaultReader Public Interface that retrieves credentials from Vault
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . VaultReader
+type VaultReader interface {
 	ReadCredentials(path string) (CredentialsProvider, error)
 }
 type VaultReaderImpl struct {
 	vaultDelegate VaultDelegate
 }
-// GetSecretStoreClient Returns a singleton instance of VaultReader or an error it could not be initialized
-func GetSecretStoreClient(vaultSpec *rabbitmqv1beta1.VaultSpec) (ValueReader, error) {
+
+// GetVaultReader Returns a singleton instance of VaultReader or an error it could not be initialized
+func GetVaultReader(vaultSpec *rabbitmqv1beta1.VaultSpec) (VaultReader, error) {
 	once.Do(func() {
 		singleton, singletonError = InitializeVaultReader(vaultSpec)
 	})
 	return singleton, singletonError
 }
 
-// Public Methods that allow us to inject our own VaultDelegateFactory instance and ServiceAccountToken provider method
-// VaultReaderImpl delegates to VaultDelegateFactory and ServiceAccountToken
-var vaultDelegateFactory VaultDelegateFactory = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (VaultDelegate, error) {
+// VaultDelegateFactory Public Global Variable that allow us to inject our own VaultDelegateFactoryMethod instance and
+// ServiceAccountToken provider method VaultReaderImpl delegates to VaultDelegateFactoryMethod and ServiceAccountToken
+var VaultDelegateFactory VaultDelegateFactoryMethod = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (VaultDelegate, error) {
 	return NewVaultDelegateImpl(vaultSpec)
 }
 var ServiceAccountToken = readServiceAccountToken
 
 var (
 	once           sync.Once
-	singleton      ValueReader
+	singleton      VaultReader
 	singletonError error
 )
 
-func InitializeVaultReader(vaultSpec *rabbitmqv1beta1.VaultSpec) (ValueReader, error) {
+func InitializeVaultReader(vaultSpec *rabbitmqv1beta1.VaultSpec) (VaultReader, error) {
 
-	delegate, err := vaultDelegateFactory(vaultSpec)
+	delegate, err := VaultDelegateFactory(vaultSpec)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create VaultDelegateFactory. Reason: %+v", err)
+		return nil, fmt.Errorf("unable to create VaultDelegateFactoryMethod. Reason: %+v", err)
 	}
 	FirstLoginAttemptResultCh := make(chan error, 1)
 
@@ -146,7 +147,7 @@ func (vr *VaultReaderImpl) login() (*vault.Secret, error) {
 	}
 
 	logger.Info("Authenticating to Vault")
-	return authenticateToVault(vr.vaultDelegate, string(jwt), role)
+	return vr.authenticateToVault(string(jwt), role)
 }
 
 func (vr *VaultReaderImpl) renewToken(initialLoginErrorCh chan<- error) {
@@ -192,17 +193,16 @@ func readServiceAccountToken() ([]byte, error) {
 	return token, nil
 }
 
-func authenticateToVault(vaultDelegate VaultDelegate, jwtToken string, vaultRole string) (*vault.Secret, error) {
+func  (vr *VaultReaderImpl) authenticateToVault(jwtToken string, vaultRole string) (*vault.Secret, error) {
 	params := map[string]interface{}{
 		"jwt":  jwtToken,
 		"role": vaultRole, // the name of the role in Vault that was created with this app's Kubernetes service account bound to it
 	}
-	return vaultDelegate.Authenticate(params)
+	return vr.vaultDelegate.Authenticate(params)
 }
 
-
-
 // VaultDelegate Abstraction to model Vault collaborator/dependency
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . VaultDelegate
 type VaultDelegate interface {
 	// Authenticate and return an Auth token
 	Authenticate(params map[string]interface{}) (*vault.Secret, error)
@@ -212,13 +212,13 @@ type VaultDelegate interface {
 	ReadSecret(path string) (*vault.Secret, error)
 }
 
-// VaultDelegateFactory Factory method that instantiates a VaultDelegate implementation
-type VaultDelegateFactory func (vaultSpec *rabbitmqv1beta1.VaultSpec) (VaultDelegate, error)
+// VaultDelegateFactoryMethod Factory method that instantiates a VaultDelegate implementation
+type VaultDelegateFactoryMethod func(vaultSpec *rabbitmqv1beta1.VaultSpec) (VaultDelegate, error)
 
 // VaultDelegateImpl Implementation of VaultDelegate that talks to Vault server via Vault Go client
 type VaultDelegateImpl struct {
 	authPath string
-	client *vault.Client
+	client   *vault.Client
 }
 
 const defaultAuthPath string = "auth/kubernetes"
@@ -244,7 +244,7 @@ func NewVaultDelegateImpl(vaultSpec *rabbitmqv1beta1.VaultSpec) (VaultDelegate, 
 
 	var delegate = &VaultDelegateImpl{
 		authPath: loginAuthPath,
-		client: vaultClient,
+		client:   vaultClient,
 	}
 	return delegate, nil
 

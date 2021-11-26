@@ -119,9 +119,9 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 
 		When("vault secret backend is declared on cluster spec", func() {
 			var (
-				err                   error
-				fakeSecretStoreClient *internalfakes.FakeSecretStoreClient
-				credsProv             internal.CredentialsProvider
+				err             error
+				fakeVaultReader *internalfakes.FakeVaultReader
+				credsProv       internal.CredentialsProvider
 			)
 
 			BeforeEach(func() {
@@ -151,20 +151,20 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 					},
 				}
 
-				fakeSecretStoreClient = &internalfakes.FakeSecretStoreClient{}
+				fakeVaultReader = &internalfakes.FakeVaultReader{}
 
 				fakeCredentialsProvider = &internalfakes.FakeCredentialsProvider{}
 				fakeCredentialsProvider.DataReturnsOnCall(0, []byte(existingRabbitMQUsername), true)
 				fakeCredentialsProvider.DataReturnsOnCall(1, []byte(existingRabbitMQPassword), true)
 
-				fakeSecretStoreClient.ReadCredentialsReturns(fakeCredentialsProvider, nil)
-				internal.SecretStoreClientProvider = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (internal.SecretStoreClient, error) {
-					return fakeSecretStoreClient, nil
+				fakeVaultReader.ReadCredentialsReturns(fakeCredentialsProvider, nil)
+				internal.SecretStoreClientProvider = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (internal.VaultReader, error) {
+					return fakeVaultReader, nil
 				}
 			})
 
 			AfterEach(func() {
-				internal.SecretStoreClientProvider = internal.GetSecretStoreClient
+				internal.SecretStoreClientProvider = internal.GetVaultReader
 			})
 
 			JustBeforeEach(func() {

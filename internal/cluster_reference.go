@@ -27,7 +27,7 @@ func (c ClusterCredentials) Data(key string) ([]byte, bool) {
 	return result, ok
 }
 
-var SecretStoreClientProvider = GetSecretStoreClient
+var SecretStoreClientProvider = GetVaultReader
 
 var (
 	NoSuchRabbitmqClusterError = errors.New("RabbitmqCluster object does not exist")
