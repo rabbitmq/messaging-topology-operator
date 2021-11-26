@@ -36,7 +36,6 @@ var vaultDelegateFactory VaultDelegateFactory = func(vaultSpec *rabbitmqv1beta1.
 }
 var ServiceAccountToken = readServiceAccountToken
 
-
 var (
 	once           sync.Once
 	singleton      ValueReader
@@ -46,21 +45,25 @@ var (
 func InitializeVaultReader(vaultSpec *rabbitmqv1beta1.VaultSpec) (ValueReader, error) {
 
 	delegate, err := vaultDelegateFactory(vaultSpec)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create VaultDelegateFactory. Reason: %+v", err)
+	}
 	FirstLoginAttemptResultCh := make(chan error, 1)
 
-	go renewToken(delegate, FirstLoginAttemptResultCh)
+	vr := VaultReaderImpl{
+		vaultDelegate: delegate,
+	}
+	go vr.renewToken(FirstLoginAttemptResultCh)
 	err = <-FirstLoginAttemptResultCh
 	if err != nil {
 		return nil, fmt.Errorf("unable to login to Vault: %w", err)
 	}
-	return VaultReaderImpl{
-		vaultDelegate: delegate,
-	}, nil
+	return vr, nil
 
 }
 
-func (vc VaultReaderImpl) ReadCredentials(path string) (CredentialsProvider, error) {
-	secret, err := vc.vaultDelegate.ReadSecret(path)
+func (vr VaultReaderImpl) ReadCredentials(path string) (CredentialsProvider, error) {
+	secret, err := vr.vaultDelegate.ReadSecret(path)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read Vault secret: %w", err)
 	}
@@ -127,7 +130,7 @@ func availableKeys(m map[string]interface{}) []string {
 	return result
 }
 
-func login(delegate VaultDelegate) (*vault.Secret, error) {
+func (vr *VaultReaderImpl) login() (*vault.Secret, error) {
 	logger := ctrl.LoggerFrom(nil)
 
 	// GCH TODO return to this...
@@ -143,15 +146,15 @@ func login(delegate VaultDelegate) (*vault.Secret, error) {
 	}
 
 	logger.Info("Authenticating to Vault")
-	return authenticateToVault(delegate, string(jwt), role)
+	return authenticateToVault(vr.vaultDelegate, string(jwt), role)
 }
 
-func renewToken(vaultDelegate VaultDelegate, initialLoginErrorCh chan<- error) {
+func (vr *VaultReaderImpl) renewToken(initialLoginErrorCh chan<- error) {
 	logger := ctrl.LoggerFrom(nil)
 	sentFirstLoginAttemptErr := false
 
 	for {
-		vaultLoginResp, err := login(vaultDelegate)
+		vaultLoginResp, err := vr.login()
 		if err != nil {
 			logger.Error(err, "unable to authenticate to Vault server")
 		}
@@ -167,7 +170,7 @@ func renewToken(vaultDelegate VaultDelegate, initialLoginErrorCh chan<- error) {
 			logger.Info("Initiating lifecycle management of Vault token")
 		}
 
-		err = vaultDelegate.ManageTokenLifecycle(vaultLoginResp)
+		err = vr.vaultDelegate.ManageTokenLifecycle(vaultLoginResp)
 		if err != nil {
 			logger.Error(err, "unable to start managing the Vault token lifecycle")
 		}
