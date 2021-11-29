@@ -13,8 +13,8 @@ var _ = Describe("superstream webhook", func() {
 			Name: "test",
 		},
 		Spec: SuperStreamSpec{
-			Name:       "test",
-			Partitions: 4,
+			Name:        "test",
+			Partitions:  4,
 			RoutingKeys: []string{"a1", "b2", "f17"},
 			RabbitmqClusterReference: RabbitmqClusterReference{
 				Name: "a-cluster",

@@ -59,7 +59,7 @@ var _ = Describe("SuperstreamPartition", func() {
 		})
 
 		It("sets the name of the partition queue", func() {
-			Expect(partition.Spec.Name).To(Equal("foo.emea"))
+			Expect(partition.Spec.Name).To(Equal("foo-emea"))
 		})
 
 		It("sets the expected RabbitmqClusterReference", func() {

@@ -12,7 +12,7 @@ import (
 var _ = Describe("SuperstreamExchange", func() {
 	var (
 		builder                     *managedresource.Builder
-		compositeConsumerSet        *topology.CompositeConsumerSet
+		compositeConsumer           *topology.CompositeConsumer
 		compositeConsumerPodBuilder *managedresource.CompositeConsumerPodBuilder
 		pod                         *corev1.Pod
 		podSpec                     corev1.PodSpec
@@ -22,10 +22,10 @@ var _ = Describe("SuperstreamExchange", func() {
 	BeforeEach(func() {
 		scheme = runtime.NewScheme()
 		Expect(topology.AddToScheme(scheme)).To(Succeed())
-		compositeConsumerSet = &topology.CompositeConsumerSet{}
-		compositeConsumerSet.Name = "parent-set"
-		compositeConsumerSet.Namespace = "parent-namespace"
-		compositeConsumerSet.Spec.SuperStreamReference = topology.SuperStreamReference{
+		compositeConsumer = &topology.CompositeConsumer{}
+		compositeConsumer.Name = "parent-set"
+		compositeConsumer.Namespace = "parent-namespace"
+		compositeConsumer.Spec.SuperStreamReference = topology.SuperStreamReference{
 			Name:      "super-stream-1",
 			Namespace: "parent-namespace",
 		}
@@ -40,7 +40,7 @@ var _ = Describe("SuperstreamExchange", func() {
 		}
 
 		builder = &managedresource.Builder{
-			ObjectOwner: compositeConsumerSet,
+			ObjectOwner: compositeConsumer,
 			Scheme:      scheme,
 		}
 		compositeConsumerPodBuilder = builder.CompositeConsumerPod(podSpec, "super-stream-1", "sample-partition")
@@ -54,7 +54,7 @@ var _ = Describe("SuperstreamExchange", func() {
 		})
 
 		It("generates an pod object with the correct namespace", func() {
-			Expect(pod.Namespace).To(Equal(compositeConsumerSet.Namespace))
+			Expect(pod.Namespace).To(Equal(compositeConsumer.Namespace))
 		})
 	})
 
@@ -63,7 +63,7 @@ var _ = Describe("SuperstreamExchange", func() {
 			Expect(compositeConsumerPodBuilder.Update(pod)).To(Succeed())
 		})
 		It("sets owner reference", func() {
-			Expect(pod.OwnerReferences[0].Name).To(Equal(compositeConsumerSet.Name))
+			Expect(pod.OwnerReferences[0].Name).To(Equal(compositeConsumer.Name))
 		})
 		It("sets expected labels on the Pod", func() {
 			Expect(pod.ObjectMeta.Labels).To(HaveKeyWithValue("rabbitmq.com/super-stream", "super-stream-1"))

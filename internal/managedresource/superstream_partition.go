@@ -49,9 +49,9 @@ func (builder *SuperStreamPartitionBuilder) Update(object client.Object) error {
 func (builder *SuperStreamPartitionBuilder) ResourceType() string { return "Partition" }
 
 func RoutingKeyToPartitionName(parentObjectName, routingKey string) string {
-	return fmt.Sprintf("%s.%s", parentObjectName, routingKey)
+	return fmt.Sprintf("%s-%s", parentObjectName, routingKey)
 }
 
 func PartitionNameToRoutingKey(parentObjectName, partitionName string) string {
-	return strings.Replace(partitionName, fmt.Sprintf("%s.", parentObjectName), "", 1)
+	return strings.Replace(partitionName, fmt.Sprintf("%s-", parentObjectName), "", 1)
 }

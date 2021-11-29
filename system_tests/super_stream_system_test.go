@@ -71,7 +71,7 @@ var _ = Describe("SuperStream", func() {
 			}, 10, 2).Should(BeNil())
 
 			Expect(*qInfo).To(MatchFields(IgnoreExtras, Fields{
-				"Name":       Equal(fmt.Sprintf("super-stream-test.%s", routingKey)),
+				"Name":       Equal(fmt.Sprintf("super-stream-test-%s", routingKey)),
 				"Vhost":      Equal("/"),
 				"AutoDelete": Equal(rabbithole.AutoDelete(false)),
 				"Durable":    BeTrue(),
@@ -148,7 +148,7 @@ var _ = Describe("SuperStream", func() {
 		for _, routingKey := range superStream.Spec.RoutingKeys {
 			Eventually(func() error {
 				var err error
-				_, err = rabbitClient.GetQueue("/", fmt.Sprintf("super-stream-test.%s", routingKey))
+				_, err = rabbitClient.GetQueue("/", fmt.Sprintf("super-stream-test-%s", routingKey))
 				return err
 			}, 10, 2).Should(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Object Not Found"))

@@ -106,7 +106,7 @@ var _ = Describe("super-stream-controller", func() {
 							expectedQueueNames = append(expectedQueueNames, partition.Spec.Name)
 
 							Expect(partition.Spec).To(MatchFields(IgnoreExtras, Fields{
-								"Name":    Equal(fmt.Sprintf("%s.%s", superStreamName, strconv.Itoa(i))),
+								"Name":    Equal(fmt.Sprintf("%s-%s", superStreamName, strconv.Itoa(i))),
 								"Type":    Equal("stream"),
 								"Durable": BeTrue(),
 								"RabbitmqClusterReference": MatchAllFields(Fields{
@@ -217,7 +217,7 @@ var _ = Describe("super-stream-controller", func() {
 							expectedQueueNames = append(expectedQueueNames, partition.Spec.Name)
 
 							Expect(partition.Spec).To(MatchFields(IgnoreExtras, Fields{
-								"Name":    Equal(fmt.Sprintf("%s.%s", superStreamName, superStream.Spec.RoutingKeys[i])),
+								"Name":    Equal(fmt.Sprintf("%s-%s", superStreamName, superStream.Spec.RoutingKeys[i])),
 								"Type":    Equal("stream"),
 								"Durable": BeTrue(),
 								"RabbitmqClusterReference": MatchAllFields(Fields{

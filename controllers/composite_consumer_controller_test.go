@@ -15,7 +15,6 @@ import (
 	"time"
 )
 
-
 var _ = Describe("composite-consumer-controller", func() {
 
 	var superStream topology.SuperStream
@@ -49,7 +48,7 @@ var _ = Describe("composite-consumer-controller", func() {
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
 						Name: "example-rabbit",
 					},
-					Partitions: partitions,
+					Partitions:  partitions,
 					RoutingKeys: routingKeys,
 				},
 			}
