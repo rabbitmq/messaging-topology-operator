@@ -14,6 +14,7 @@ import (
 )
 
 const defaultAuthPath string = "auth/kubernetes"
+const defaultVaultRole string = "messaging-topology-operator"
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . SecretReader
 type SecretReader interface {
@@ -154,13 +155,6 @@ func availableKeys(m map[string]interface{}) []string {
 func login(vaultClient *vault.Client, vaultSpec *rabbitmqv1beta1.VaultSpec) (*vault.Secret, error) {
 	logger := ctrl.LoggerFrom(nil)
 
-	// GCH TODO return to this...
-	// role := vaultSpec.Role
-	// if role == "" {
-	// 	return nil, errors.New("no role value set in Vault secret backend")
-	// }
-	role := "messaging-topology-operator"
-
 	var annotations = vaultSpec.Annotations
 	if annotations["vault.hashicorp.com/namespace"] != "" {
 		vaultClient.SetNamespace(annotations["vault.hashicorp.com/namespace"])
@@ -177,7 +171,13 @@ func login(vaultClient *vault.Client, vaultSpec *rabbitmqv1beta1.VaultSpec) (*va
 		loginAuthPath = annotations["vault.hashicorp.com/auth-path"]
 	}
 
-	logger.Info("Authenticating to Vault")
+	role := os.Getenv("OPERATOR_VAULT_ROLE")
+	if role == "" {
+		role = defaultVaultRole
+		logger.Info("Authenticating to Vault using default role value because OPERATOR_VAULT_ROLE env var is not set", "vault role", role)
+	} else {
+		logger.Info("Authenticating to Vault using role set from OPERATOR_VAULT_ROLE env var", "vault role", role)
+	}
 
 	vaultSecret, err := ReadVaultClientSecretFunc(vaultClient, string(jwt), role, loginAuthPath)
 	if err != nil {

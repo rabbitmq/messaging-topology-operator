@@ -2,6 +2,7 @@ package internal_test
 
 import (
 	"errors"
+	"os"
 
 	vault "github.com/hashicorp/vault/api"
 	. "github.com/onsi/ginkgo"
@@ -293,27 +294,116 @@ var _ = Describe("VaultReader", func() {
 			getSecretStoreClientTester func(vaultSpec *rabbitmqv1beta1.VaultSpec) (internal.SecretStoreClient, error)
 		)
 
-		When("vault spec has no role value", func() {
-			BeforeEach(func() {
-				vaultSpec = &rabbitmqv1beta1.VaultSpec{}
+		When("vault role is not set in the environment", func() {
+			var (
+				vaultRoleUsedForLogin string
+			)
 
+			BeforeEach(func() {
+				internal.FirstLoginAttemptResultCh = make(chan error, 1)
+				internal.SecretClient = nil
+				internal.SecretClientCreationError = nil
+				vaultSpec = &rabbitmqv1beta1.VaultSpec{
+					Role: "cheese-and-ham",
+				}
+				internal.ReadServiceAccountTokenFunc = func() ([]byte, error) {
+					return []byte("token"), nil
+				}
+				internal.LoginToVaultFunc = func(vaultClient *vault.Client, authPath string, params map[string]interface{}) (*vault.Secret, error) {
+					return &vault.Secret{
+						Auth: &vault.SecretAuth{
+							ClientToken: "vault-secret-token",
+						},
+					}, nil
+				}
+				internal.ReadVaultClientSecretFunc = func(vaultClient *vault.Client, jwtToken string, vaultRole string, authPath string) (*vault.Secret, error) {
+					vaultRoleUsedForLogin = vaultRole
+					return &vault.Secret{
+						Auth: &vault.SecretAuth{
+							ClientToken: "vault-secret-token",
+						},
+					}, nil
+				}
 				getSecretStoreClientTester = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (internal.SecretStoreClient, error) {
 					internal.InitializeClient(vaultSpec)()
 					return internal.SecretClient, internal.SecretClientCreationError
 				}
 			})
 
+			AfterEach(func() {
+				internal.ReadServiceAccountTokenFunc = internal.ReadServiceAccountToken
+				internal.LoginToVaultFunc = internal.LoginToVault
+				internal.ReadVaultClientSecretFunc = internal.ReadVaultClientSecret
+				vaultRoleUsedForLogin = ""
+			})
+
 			JustBeforeEach(func() {
 				secretStoreClient, err = getSecretStoreClientTester(vaultSpec)
 			})
 
-			PIt("should return a nil secret store client", func() {
-				Expect(secretStoreClient).To(BeNil())
+			It("should not error", func() {
+				Expect(err).NotTo(HaveOccurred())
 			})
 
-			PIt("should have returned an error", func() {
-				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError("no role value set in Vault secret backend"))
+			It("should try to authenticate to Vault using the default Vault role value", func() {
+				Expect(vaultRoleUsedForLogin).To(Equal("messaging-topology-operator"))
+			})
+		})
+
+		When("vault role is set in the environment", func() {
+			const operatorVaultRoleValue = "custom-role-value"
+			var vaultRoleUsedForLogin string
+
+			BeforeEach(func() {
+				_ = os.Setenv("OPERATOR_VAULT_ROLE", operatorVaultRoleValue)
+				internal.FirstLoginAttemptResultCh = make(chan error, 1)
+				internal.SecretClient = nil
+				internal.SecretClientCreationError = nil
+				vaultSpec = &rabbitmqv1beta1.VaultSpec{
+					Role: "cheese-and-ham",
+				}
+				internal.ReadServiceAccountTokenFunc = func() ([]byte, error) {
+					return []byte("token"), nil
+				}
+				internal.LoginToVaultFunc = func(vaultClient *vault.Client, authPath string, params map[string]interface{}) (*vault.Secret, error) {
+					return &vault.Secret{
+						Auth: &vault.SecretAuth{
+							ClientToken: "vault-secret-token",
+						},
+					}, nil
+				}
+				internal.ReadVaultClientSecretFunc = func(vaultClient *vault.Client, jwtToken string, vaultRole string, authPath string) (*vault.Secret, error) {
+					vaultRoleUsedForLogin = vaultRole
+					return &vault.Secret{
+						Auth: &vault.SecretAuth{
+							ClientToken: "vault-secret-token",
+						},
+					}, nil
+				}
+				getSecretStoreClientTester = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (internal.SecretStoreClient, error) {
+					internal.InitializeClient(vaultSpec)()
+					return internal.SecretClient, internal.SecretClientCreationError
+				}
+			})
+
+			AfterEach(func() {
+				internal.ReadServiceAccountTokenFunc = internal.ReadServiceAccountToken
+				internal.LoginToVaultFunc = internal.LoginToVault
+				internal.ReadVaultClientSecretFunc = internal.ReadVaultClientSecret
+				vaultRoleUsedForLogin = ""
+				_ = os.Unsetenv("OPERATOR_VAULT_ROLE")
+			})
+
+			JustBeforeEach(func() {
+				secretStoreClient, err = getSecretStoreClientTester(vaultSpec)
+			})
+
+			It("should not error", func() {
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("should try to authenticate to Vault using the Vault role value set with OPERATOR_VAULT_ROLE", func() {
+				Expect(vaultRoleUsedForLogin).To(Equal(operatorVaultRoleValue))
 			})
 		})
 
