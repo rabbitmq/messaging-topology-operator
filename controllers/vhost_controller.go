@@ -65,7 +65,7 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, vhost)
 		}); writerErr != nil {
-			logger.Error(writerErr, failedStatusUpdate)
+			logger.Error(writerErr, failedStatusUpdate, "status", vhost.Status)
 		}
 		return reconcile.Result{}, nil
 	}
@@ -106,7 +106,7 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, vhost)
 		}); writerErr != nil {
-			logger.Error(writerErr, failedStatusUpdate)
+			logger.Error(writerErr, failedStatusUpdate, "status", vhost.Status)
 		}
 		return ctrl.Result{}, err
 	}
@@ -116,7 +116,7 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, vhost)
 	}); writerErr != nil {
-		logger.Error(writerErr, failedStatusUpdate)
+		logger.Error(writerErr, failedStatusUpdate, "status", vhost.Status)
 	}
 	logger.Info("Finished reconciling")
 

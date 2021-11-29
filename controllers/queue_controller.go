@@ -77,7 +77,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, queue)
 		}); writerErr != nil {
-			logger.Error(writerErr, failedStatusUpdate)
+			logger.Error(writerErr, failedStatusUpdate, "status", queue.Status)
 		}
 		return reconcile.Result{}, nil
 	}
@@ -118,7 +118,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, queue)
 		}); writerErr != nil {
-			logger.Error(writerErr, failedStatusUpdate)
+			logger.Error(writerErr, failedStatusUpdate, "status", queue.Status)
 		}
 		return ctrl.Result{}, err
 	}
@@ -128,7 +128,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, queue)
 	}); writerErr != nil {
-		logger.Error(writerErr, failedStatusUpdate)
+		logger.Error(writerErr, failedStatusUpdate, "status", queue.Status)
 	}
 	logger.Info("Finished reconciling")
 

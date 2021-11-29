@@ -67,7 +67,7 @@ func (r *ShovelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, shovel)
 		}); writerErr != nil {
-			logger.Error(writerErr, failedStatusUpdate)
+			logger.Error(writerErr, failedStatusUpdate, "status", shovel.Status)
 		}
 		return reconcile.Result{}, nil
 	}
@@ -106,7 +106,7 @@ func (r *ShovelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, shovel)
 		}); writerErr != nil {
-			logger.Error(writerErr, failedStatusUpdate)
+			logger.Error(writerErr, failedStatusUpdate, "status", shovel.Status)
 		}
 		return ctrl.Result{}, err
 	}
@@ -116,7 +116,7 @@ func (r *ShovelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, shovel)
 	}); writerErr != nil {
-		logger.Error(writerErr, failedStatusUpdate)
+		logger.Error(writerErr, failedStatusUpdate, "status", shovel.Status)
 	}
 	logger.Info("Finished reconciling")
 

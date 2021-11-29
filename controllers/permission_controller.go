@@ -68,7 +68,7 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, permission)
 		}); writerErr != nil {
-			logger.Error(writerErr, failedStatusUpdate)
+			logger.Error(writerErr, failedStatusUpdate, "status", permission.Status)
 		}
 		return reconcile.Result{}, nil
 	}
@@ -115,7 +115,7 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, permission)
 		}); writerErr != nil {
-			logger.Error(writerErr, failedStatusUpdate)
+			logger.Error(writerErr, failedStatusUpdate, "status", permission.Status)
 		}
 		return ctrl.Result{}, err
 	}
@@ -125,7 +125,7 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, permission)
 	}); writerErr != nil {
-		logger.Error(writerErr, failedStatusUpdate)
+		logger.Error(writerErr, failedStatusUpdate, "status", permission.Status)
 	}
 	logger.Info("Finished reconciling")
 

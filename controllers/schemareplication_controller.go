@@ -69,7 +69,7 @@ func (r *SchemaReplicationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, replication)
 		}); writerErr != nil {
-			logger.Error(writerErr, failedStatusUpdate)
+			logger.Error(writerErr, failedStatusUpdate, "status", replication.Status)
 		}
 		return reconcile.Result{}, nil
 	}
@@ -109,7 +109,7 @@ func (r *SchemaReplicationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, replication)
 		}); writerErr != nil {
-			logger.Error(writerErr, failedStatusUpdate)
+			logger.Error(writerErr, failedStatusUpdate, "status", replication.Status)
 		}
 		return ctrl.Result{}, err
 	}
@@ -119,7 +119,7 @@ func (r *SchemaReplicationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, replication)
 	}); writerErr != nil {
-		logger.Error(writerErr, failedStatusUpdate)
+		logger.Error(writerErr, failedStatusUpdate, "status", replication.Status)
 	}
 	logger.Info("Finished reconciling")
 

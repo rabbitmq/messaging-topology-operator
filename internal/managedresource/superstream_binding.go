@@ -38,7 +38,7 @@ func (builder *SuperStreamBindingBuilder) Update(object client.Object) error {
 
 	binding.Spec.Source = builder.ObjectOwner.GetName()
 	binding.Spec.DestinationType = "queue"
-	binding.Spec.Destination = fmt.Sprintf("%s.%s", builder.ObjectOwner.GetName(), builder.routingKey)
+	binding.Spec.Destination = fmt.Sprintf("%s-%s", builder.ObjectOwner.GetName(), builder.routingKey)
 	binding.Spec.RoutingKey = builder.routingKey
 	binding.Spec.RabbitmqClusterReference = *builder.rabbitmqCluster
 

@@ -17,31 +17,11 @@ spec:
     spec:
       containers:
       - name: super-stream-app-0
-        image: pivotalrabbitmq/perf-test
+        image: pivotalrabbitmq/super-stream-app
         command: ["bash", "-c"]
         args:
-        - AMQP_URI="amqp://$(cat /etc/rabbitmq-creds/username):$(cat /etc/rabbitmq-creds/password)@$(cat /etc/rabbitmq-creds/host):5672/%2f";
-          bin/runjava com.rabbitmq.perf.PerfTest --uri ${AMQP_URI} --rate 100 --predeclared --exchange orders --routing-key amer
-        volumeMounts:
-        - name: rabbitmq-creds
-          mountPath: "/etc/rabbitmq-creds"
-          readOnly: true
-      - name: super-stream-app-1
-        image: pivotalrabbitmq/perf-test
-        command: ["bash", "-c"]
-        args:
-        - AMQP_URI="amqp://$(cat /etc/rabbitmq-creds/username):$(cat /etc/rabbitmq-creds/password)@$(cat /etc/rabbitmq-creds/host):5672/%2f";
-          bin/runjava com.rabbitmq.perf.PerfTest --uri ${AMQP_URI} --rate 100 --predeclared --exchange orders --routing-key apj
-        volumeMounts:
-        - name: rabbitmq-creds
-          mountPath: "/etc/rabbitmq-creds"
-          readOnly: true
-      - name: super-stream-app-2
-        image: pivotalrabbitmq/perf-test
-        command: ["bash", "-c"]
-        args:
-        - AMQP_URI="amqp://$(cat /etc/rabbitmq-creds/username):$(cat /etc/rabbitmq-creds/password)@$(cat /etc/rabbitmq-creds/host):5672/%2f";
-          bin/runjava com.rabbitmq.perf.PerfTest --uri ${AMQP_URI} --rate 100 --predeclared --exchange orders --routing-key emea
+        - STREAM_URI="rabbitmq-stream://$(cat /etc/rabbitmq-creds/username):$(cat /etc/rabbitmq-creds/password)@$(cat /etc/rabbitmq-creds/host):5552/%2f";
+          java -Dio.netty.processId=1 -jar super-stream-app.jar producer --super-stream orders --pre-declared --stream-uri ${STREAM_URI} --partitions 3 ;
         volumeMounts:
         - name: rabbitmq-creds
           mountPath: "/etc/rabbitmq-creds"

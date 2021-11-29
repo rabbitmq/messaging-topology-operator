@@ -115,7 +115,7 @@ func (r *CompositeConsumerReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		if err != nil {
 			msg := fmt.Sprintf("FailedReconcile%s", builder.ResourceType())
 			if writerErr := r.SetReconcileSuccess(ctx, compositeConsumer, topology.NotReady(msg, compositeConsumer.Status.Conditions)); writerErr != nil {
-				logger.Error(writerErr, failedStatusUpdate)
+				logger.Error(writerErr, failedStatusUpdate, "status", compositeConsumer.Status)
 			}
 			return ctrl.Result{}, err
 		}

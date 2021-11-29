@@ -57,21 +57,6 @@ var _ = Describe("super-stream-controller", func() {
 				It("creates the SuperStream and any underlying resources", func() {
 					Expect(client.Create(ctx, &superStream)).To(Succeed())
 
-					By("setting the status condition 'Ready' to 'true' ", func() {
-						EventuallyWithOffset(1, func() []topology.Condition {
-							_ = client.Get(
-								ctx,
-								types.NamespacedName{Name: superStreamName, Namespace: "default"},
-								&superStream,
-							)
-
-							return superStream.Status.Conditions
-						}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-							"Type":   Equal(topology.ConditionType("Ready")),
-							"Reason": Equal("SuccessfulCreateOrUpdate"),
-							"Status": Equal(corev1.ConditionTrue),
-						})))
-					})
 					By("creating an exchange", func() {
 						var exchange topology.Exchange
 						err := client.Get(
@@ -142,7 +127,7 @@ var _ = Describe("super-stream-controller", func() {
 							Expect(binding.Spec).To(MatchFields(IgnoreExtras, Fields{
 								"Source":          Equal(superStreamName),
 								"DestinationType": Equal("queue"),
-								"Destination":     Equal(fmt.Sprintf("%s.%s", superStreamName, strconv.Itoa(i))),
+								"Destination":     Equal(fmt.Sprintf("%s-%s", superStreamName, strconv.Itoa(i))),
 								"Arguments": PointTo(MatchFields(IgnoreExtras, Fields{
 									"Raw": Equal([]byte(fmt.Sprintf(`{"x-stream-partition-order":%d}`, i))),
 								})),
@@ -153,6 +138,228 @@ var _ = Describe("super-stream-controller", func() {
 								}),
 							}))
 						}
+					})
+					By("setting the status condition 'Ready' to 'true' ", func() {
+						EventuallyWithOffset(1, func() []topology.Condition {
+							_ = client.Get(
+								ctx,
+								types.NamespacedName{Name: superStreamName, Namespace: "default"},
+								&superStream,
+							)
+
+							return superStream.Status.Conditions
+						}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+							"Type":   Equal(topology.ConditionType("Ready")),
+							"Reason": Equal("SuccessfulCreateOrUpdate"),
+							"Status": Equal(corev1.ConditionTrue),
+						})))
+					})
+				})
+			})
+
+			When("the super stream is scaled", func() {
+				JustBeforeEach(func() {
+					Expect(client.Create(ctx, &superStream)).To(Succeed())
+					EventuallyWithOffset(1, func() []topology.Condition {
+						_ = client.Get(
+							ctx,
+							types.NamespacedName{Name: superStreamName, Namespace: "default"},
+							&superStream,
+						)
+
+						return superStream.Status.Conditions
+					}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+						"Type":   Equal(topology.ConditionType("Ready")),
+						"Reason": Equal("SuccessfulCreateOrUpdate"),
+						"Status": Equal(corev1.ConditionTrue),
+					})))
+				})
+				When("the super stream is scaled out", func() {
+					BeforeEach(func() {
+						superStreamName = "scale-out-super-stream"
+					})
+					It("allows the number of partitions to be increased", func() {
+						_ = client.Get(
+							ctx,
+							types.NamespacedName{Name: superStreamName, Namespace: "default"},
+							&superStream,
+						)
+						superStream.Spec.Partitions = 5
+						Expect(client.Update(ctx, &superStream)).To(Succeed())
+
+						By("creating n stream queue partitions", func() {
+							var partition topology.Queue
+							expectedQueueNames = []string{}
+							for i := 0; i < superStream.Spec.Partitions; i++ {
+								expectedQueueName := fmt.Sprintf("%s-partition-%s", superStreamName, strconv.Itoa(i))
+								EventuallyWithOffset(1, func() error {
+									return client.Get(
+										ctx,
+										types.NamespacedName{Name: expectedQueueName, Namespace: "default"},
+										&partition,
+									)
+								}, 10*time.Second, 1*time.Second).ShouldNot(HaveOccurred())
+								expectedQueueNames = append(expectedQueueNames, partition.Spec.Name)
+
+								Expect(partition.Spec).To(MatchFields(IgnoreExtras, Fields{
+									"Name":    Equal(fmt.Sprintf("%s-%s", superStreamName, strconv.Itoa(i))),
+									"Type":    Equal("stream"),
+									"Durable": BeTrue(),
+									"RabbitmqClusterReference": MatchAllFields(Fields{
+										"Name":      Equal("example-rabbit"),
+										"Namespace": Equal("default"),
+									}),
+								}))
+							}
+						})
+
+						By("setting the status of the super stream to list the partition queue names", func() {
+							EventuallyWithOffset(1, func() []string {
+								_ = client.Get(
+									ctx,
+									types.NamespacedName{Name: superStreamName, Namespace: "default"},
+									&superStream,
+								)
+
+								return superStream.Status.Partitions
+							}, 10*time.Second, 1*time.Second).Should(ConsistOf(expectedQueueNames))
+						})
+
+						By("creating n bindings", func() {
+							var binding topology.Binding
+							for i := 0; i < superStream.Spec.Partitions; i++ {
+								expectedBindingName := fmt.Sprintf("%s-binding-%s", superStreamName, strconv.Itoa(i))
+								EventuallyWithOffset(1, func() error {
+									return client.Get(
+										ctx,
+										types.NamespacedName{Name: expectedBindingName, Namespace: "default"},
+										&binding,
+									)
+								}, 10*time.Second, 1*time.Second).ShouldNot(HaveOccurred())
+								Expect(binding.Spec).To(MatchFields(IgnoreExtras, Fields{
+									"Source":          Equal(superStreamName),
+									"DestinationType": Equal("queue"),
+									"Destination":     Equal(fmt.Sprintf("%s-%s", superStreamName, strconv.Itoa(i))),
+									"Arguments": PointTo(MatchFields(IgnoreExtras, Fields{
+										"Raw": Equal([]byte(fmt.Sprintf(`{"x-stream-partition-order":%d}`, i))),
+									})),
+									"RoutingKey": Equal(strconv.Itoa(i)),
+									"RabbitmqClusterReference": MatchAllFields(Fields{
+										"Name":      Equal("example-rabbit"),
+										"Namespace": Equal("default"),
+									}),
+								}))
+							}
+						})
+						By("setting the status condition 'Ready' to 'true' ", func() {
+							EventuallyWithOffset(1, func() []topology.Condition {
+								_ = client.Get(
+									ctx,
+									types.NamespacedName{Name: superStreamName, Namespace: "default"},
+									&superStream,
+								)
+
+								return superStream.Status.Conditions
+							}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+								"Type":   Equal(topology.ConditionType("Ready")),
+								"Reason": Equal("SuccessfulCreateOrUpdate"),
+								"Status": Equal(corev1.ConditionTrue),
+							})))
+						})
+					})
+				})
+				When("the super stream is scaled down", func() {
+					var originalPartitionCount int
+					BeforeEach(func() {
+						superStreamName = "scale-down-super-stream"
+					})
+					It("refuses scaling down the partitions with a helpful warning", func() {
+						_ = client.Get(
+							ctx,
+							types.NamespacedName{Name: superStreamName, Namespace: "default"},
+							&superStream,
+						)
+						originalPartitionCount = len(superStream.Status.Partitions)
+						superStream.Spec.Partitions = 1
+						Expect(client.Update(ctx, &superStream)).To(Succeed())
+
+						By("setting the status condition 'Ready' to 'false' ", func() {
+							EventuallyWithOffset(1, func() []topology.Condition {
+								_ = client.Get(
+									ctx,
+									types.NamespacedName{Name: superStreamName, Namespace: "default"},
+									&superStream,
+								)
+
+								return superStream.Status.Conditions
+							}, 5*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+								"Type":   Equal(topology.ConditionType("Ready")),
+								"Reason": Equal("FailedCreateOrUpdate"),
+								"Status": Equal(corev1.ConditionFalse),
+							})))
+						})
+						By("retaining the original stream queue partitions", func() {
+							var partition topology.Queue
+							expectedQueueNames = []string{}
+							for i := 0; i < originalPartitionCount; i++ {
+								expectedQueueName := fmt.Sprintf("%s-partition-%s", superStreamName, strconv.Itoa(i))
+								Expect(client.Get(
+									ctx,
+									types.NamespacedName{Name: expectedQueueName, Namespace: "default"},
+									&partition,
+								)).To(Succeed())
+								expectedQueueNames = append(expectedQueueNames, partition.Spec.Name)
+
+								Expect(partition.Spec).To(MatchFields(IgnoreExtras, Fields{
+									"Name":    Equal(fmt.Sprintf("%s-%s", superStreamName, strconv.Itoa(i))),
+									"Type":    Equal("stream"),
+									"Durable": BeTrue(),
+									"RabbitmqClusterReference": MatchAllFields(Fields{
+										"Name":      Equal("example-rabbit"),
+										"Namespace": Equal("default"),
+									}),
+								}))
+							}
+						})
+
+						By("setting the status of the super stream to list the partition queue names", func() {
+							ConsistentlyWithOffset(1, func() []string {
+								_ = client.Get(
+									ctx,
+									types.NamespacedName{Name: superStreamName, Namespace: "default"},
+									&superStream,
+								)
+
+								return superStream.Status.Partitions
+							}, 5*time.Second, 1*time.Second).Should(ConsistOf(expectedQueueNames))
+						})
+
+						By("retaining the original bindings", func() {
+							var binding topology.Binding
+							for i := 0; i < originalPartitionCount; i++ {
+								expectedBindingName := fmt.Sprintf("%s-binding-%s", superStreamName, strconv.Itoa(i))
+								EventuallyWithOffset(1, func() error {
+									return client.Get(
+										ctx,
+										types.NamespacedName{Name: expectedBindingName, Namespace: "default"},
+										&binding,
+									)
+								}, 10*time.Second, 1*time.Second).ShouldNot(HaveOccurred())
+								Expect(binding.Spec).To(MatchFields(IgnoreExtras, Fields{
+									"Source":          Equal(superStreamName),
+									"DestinationType": Equal("queue"),
+									"Destination":     Equal(fmt.Sprintf("%s-%s", superStreamName, strconv.Itoa(i))),
+									"Arguments": PointTo(MatchFields(IgnoreExtras, Fields{
+										"Raw": Equal([]byte(fmt.Sprintf(`{"x-stream-partition-order":%d}`, i))),
+									})),
+									"RoutingKey": Equal(strconv.Itoa(i)),
+									"RabbitmqClusterReference": MatchAllFields(Fields{
+										"Name":      Equal("example-rabbit"),
+										"Namespace": Equal("default"),
+									}),
+								}))
+							}
+						})
 					})
 				})
 			})
@@ -253,7 +460,7 @@ var _ = Describe("super-stream-controller", func() {
 							Expect(binding.Spec).To(MatchFields(IgnoreExtras, Fields{
 								"Source":          Equal(superStreamName),
 								"DestinationType": Equal("queue"),
-								"Destination":     Equal(fmt.Sprintf("%s.%s", superStreamName, superStream.Spec.RoutingKeys[i])),
+								"Destination":     Equal(fmt.Sprintf("%s-%s", superStreamName, superStream.Spec.RoutingKeys[i])),
 								"Arguments": PointTo(MatchFields(IgnoreExtras, Fields{
 									"Raw": Equal([]byte(fmt.Sprintf(`{"x-stream-partition-order":%d}`, i))),
 								})),

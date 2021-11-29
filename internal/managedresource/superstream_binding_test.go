@@ -59,7 +59,7 @@ var _ = Describe("SuperstreamBinding", func() {
 		})
 
 		It("sets the Destination to the partition queue", func() {
-			Expect(binding.Spec.Destination).To(Equal("foo.emea"))
+			Expect(binding.Spec.Destination).To(Equal("foo-emea"))
 		})
 
 		It("sets the stream partition args", func() {
