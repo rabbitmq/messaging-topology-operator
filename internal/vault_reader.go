@@ -5,7 +5,6 @@ import (
 	"fmt"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 	"os"
-	"sync"
 	"time"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -22,12 +21,10 @@ type VaultReaderImpl struct {
 	vaultDelegate VaultDelegate
 }
 
-// GetVaultReader Returns a singleton instance of VaultReader or an error it could not be initialized
-func GetVaultReader(vaultSpec *rabbitmqv1beta1.VaultSpec) (VaultReader, error) {
-	once.Do(func() {
-		singleton, singletonError = InitializeVaultReader(vaultSpec)
-	})
-	return singleton, singletonError
+// NewVaultReader Returns an instance of VaultReader or an error it could not be initialized
+func NewVaultReader(vaultSpec *rabbitmqv1beta1.VaultSpec) (VaultReader, error) {
+	reader, err := initializeVaultReader(vaultSpec)
+	return reader, err
 }
 
 // VaultDelegateFactory Public Global Variable that allow us to inject our own VaultDelegateFactoryMethod instance and
@@ -37,13 +34,7 @@ var VaultDelegateFactory VaultDelegateFactoryMethod = func(vaultSpec *rabbitmqv1
 }
 var ServiceAccountToken = readServiceAccountToken
 
-var (
-	once           sync.Once
-	singleton      VaultReader
-	singletonError error
-)
-
-func InitializeVaultReader(vaultSpec *rabbitmqv1beta1.VaultSpec) (VaultReader, error) {
+func initializeVaultReader(vaultSpec *rabbitmqv1beta1.VaultSpec) (VaultReader, error) {
 
 	delegate, err := VaultDelegateFactory(vaultSpec)
 	if err != nil {
@@ -193,7 +184,7 @@ func readServiceAccountToken() ([]byte, error) {
 	return token, nil
 }
 
-func  (vr *VaultReaderImpl) authenticateToVault(jwtToken string, vaultRole string) (*vault.Secret, error) {
+func (vr *VaultReaderImpl) authenticateToVault(jwtToken string, vaultRole string) (*vault.Secret, error) {
 	params := map[string]interface{}{
 		"jwt":  jwtToken,
 		"role": vaultRole, // the name of the role in Vault that was created with this app's Kubernetes service account bound to it
@@ -229,8 +220,7 @@ func NewVaultDelegateImpl(vaultSpec *rabbitmqv1beta1.VaultSpec) (VaultDelegate, 
 	config := vault.DefaultConfig() // modify for more granular configuration
 	vaultClient, err := vault.NewClient(config)
 	if err != nil {
-		singletonError = fmt.Errorf("unable to initialize Vault delegate: %w", err)
-		return nil, err
+		return nil, fmt.Errorf("unable to initialize Vault delegate: %w", err)
 	}
 	var annotations = vaultSpec.Annotations
 	if annotations["vault.hashicorp.com/namespace"] != "" {

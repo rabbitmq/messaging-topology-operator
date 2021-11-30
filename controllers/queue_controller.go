@@ -30,10 +30,11 @@ import (
 // QueueReconciler reconciles a RabbitMQ Queue
 type QueueReconciler struct {
 	client.Client
-	Log                   logr.Logger
-	Scheme                *runtime.Scheme
-	Recorder              record.EventRecorder
-	RabbitmqClientFactory internal.RabbitMQClientFactory
+	Log                        logr.Logger
+	Scheme                     *runtime.Scheme
+	Recorder                   record.EventRecorder
+	RabbitmqClientFactory      internal.RabbitMQClientFactory
+	ClusterCredentialsProvider *internal.RabbitMQClusterCredentialsProvider
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=queues,verbs=get;list;watch;create;update;patch;delete
@@ -57,7 +58,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, err
 	}
 
-	rmq, svc, credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, queue.Spec.RabbitmqClusterReference, queue.Namespace)
+	rmq, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, queue.Spec.RabbitmqClusterReference, queue.Namespace)
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !queue.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info(noSuchRabbitDeletion, "queue", queue.Name)
 		r.Recorder.Event(queue, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted queue")
@@ -85,8 +86,11 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		logger.Error(err, failedParseClusterRef)
 		return reconcile.Result{}, err
 	}
-
-	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, credsProvider, serviceDNSAddress(svc), systemCertPool)
+	credentialsProvider, svc, err := r.ClusterCredentialsProvider.GetCredentialsProvider(ctx, queue.Namespace, rmq)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, credentialsProvider, serviceDNSAddress(svc), systemCertPool)
 	if err != nil {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err

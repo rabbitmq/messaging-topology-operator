@@ -27,10 +27,11 @@ const schemaReplicationParameterName = "schema_definition_sync_upstream"
 // SchemaReplicationReconciler reconciles a SchemaReplication object
 type SchemaReplicationReconciler struct {
 	client.Client
-	Log                   logr.Logger
-	Scheme                *runtime.Scheme
-	Recorder              record.EventRecorder
-	RabbitmqClientFactory internal.RabbitMQClientFactory
+	Log                        logr.Logger
+	Scheme                     *runtime.Scheme
+	Recorder                   record.EventRecorder
+	RabbitmqClientFactory      internal.RabbitMQClientFactory
+	ClusterCredentialsProvider *internal.RabbitMQClusterCredentialsProvider
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=schemareplications,verbs=get;list;watch;create;update;patch;delete
@@ -49,7 +50,7 @@ func (r *SchemaReplicationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, err
 	}
 
-	rmq, svc, credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, replication.Spec.RabbitmqClusterReference, replication.Namespace)
+	rmq, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, replication.Spec.RabbitmqClusterReference, replication.Namespace)
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !replication.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info(noSuchRabbitDeletion, "replication", replication.Name)
 		r.Recorder.Event(replication, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted replication")
@@ -77,8 +78,11 @@ func (r *SchemaReplicationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		logger.Error(err, failedParseClusterRef)
 		return reconcile.Result{}, err
 	}
-
-	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, credsProvider, serviceDNSAddress(svc), systemCertPool)
+	credentialsProvider, svc, err := r.ClusterCredentialsProvider.GetCredentialsProvider(ctx, replication.Namespace, rmq)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, credentialsProvider, serviceDNSAddress(svc), systemCertPool)
 	if err != nil {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err

@@ -25,10 +25,11 @@ import (
 // FederationReconciler reconciles a Federation object
 type FederationReconciler struct {
 	client.Client
-	Log                   logr.Logger
-	Scheme                *runtime.Scheme
-	Recorder              record.EventRecorder
-	RabbitmqClientFactory internal.RabbitMQClientFactory
+	Log                        logr.Logger
+	Scheme                     *runtime.Scheme
+	Recorder                   record.EventRecorder
+	RabbitmqClientFactory      internal.RabbitMQClientFactory
+	ClusterCredentialsProvider *internal.RabbitMQClusterCredentialsProvider
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=federations,verbs=get;list;watch;create;update;patch;delete
@@ -47,7 +48,7 @@ func (r *FederationReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
-	rmq, svc, credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, federation.Spec.RabbitmqClusterReference, federation.Namespace)
+	rmq, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, federation.Spec.RabbitmqClusterReference, federation.Namespace)
 	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !federation.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info(noSuchRabbitDeletion, "federation", federation.Name)
 		r.Recorder.Event(federation, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted federation")
@@ -75,8 +76,11 @@ func (r *FederationReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		logger.Error(err, failedParseClusterRef)
 		return reconcile.Result{}, err
 	}
-
-	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, credsProvider, serviceDNSAddress(svc), systemCertPool)
+	credentialsProvider, svc, err := r.ClusterCredentialsProvider.GetCredentialsProvider(ctx, federation.Namespace, rmq)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, credentialsProvider, serviceDNSAddress(svc), systemCertPool)
 	if err != nil {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
