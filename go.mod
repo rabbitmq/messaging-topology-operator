@@ -15,8 +15,8 @@ require (
 	k8s.io/api v0.21.3
 	k8s.io/apimachinery v0.21.3
 	k8s.io/client-go v0.21.3
-	k8s.io/code-generator v0.22.2
-	k8s.io/kube-openapi v0.0.0-20210421082810-95288971da7e
+	k8s.io/code-generator v0.22.4
+	k8s.io/kube-openapi v0.0.0-20211109043538-20434351676c
 	k8s.io/utils v0.0.0-20210722164352-7f3ee0f31471
 	sigs.k8s.io/controller-runtime v0.9.6
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20210623192810-985e819db7af
@@ -94,6 +94,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.12 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/mitchellh/copystructure v1.0.0 // indirect
+	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/mitchellh/reflectwalk v1.0.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

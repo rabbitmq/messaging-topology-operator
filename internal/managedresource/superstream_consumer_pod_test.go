@@ -49,12 +49,20 @@ var _ = Describe("SuperstreamExchange", func() {
 	})
 
 	Context("Build", func() {
-		It("generates an exchange object with the correct name", func() {
-			Expect(pod.Name).To(Equal("parent-set-sample-partition"))
+		It("generates a pod object with the correct name", func() {
+			Expect(pod.GenerateName).To(Equal("parent-set-sample-partition-"))
 		})
 
-		It("generates an pod object with the correct namespace", func() {
+		It("generates a pod object with the correct namespace", func() {
 			Expect(pod.Namespace).To(Equal(superStreamConsumer.Namespace))
+		})
+		It("sets expected labels on the Pod", func() {
+			Expect(pod.ObjectMeta.Labels).To(HaveKeyWithValue("rabbitmq.com/super-stream", "super-stream-1"))
+			Expect(pod.ObjectMeta.Labels).To(HaveKeyWithValue("rabbitmq.com/super-stream-partition", "sample-partition"))
+			Expect(pod.ObjectMeta.Labels).To(HaveKeyWithValue("rabbitmq.com/consumer-pod-spec-hash", "5963d9e83cb18c41"))
+		})
+		It("sets the podSpec", func() {
+			Expect(pod.Spec).To(Equal(podSpec))
 		})
 	})
 
@@ -64,10 +72,6 @@ var _ = Describe("SuperstreamExchange", func() {
 		})
 		It("sets owner reference", func() {
 			Expect(pod.OwnerReferences[0].Name).To(Equal(superStreamConsumer.Name))
-		})
-		It("sets expected labels on the Pod", func() {
-			Expect(pod.ObjectMeta.Labels).To(HaveKeyWithValue("rabbitmq.com/super-stream", "super-stream-1"))
-			Expect(pod.ObjectMeta.Labels).To(HaveKeyWithValue("rabbitmq.com/super-stream-partition", "sample-partition"))
 		})
 
 	})

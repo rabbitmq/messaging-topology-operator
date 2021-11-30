@@ -12,6 +12,8 @@ package controllers_test
 import (
 	"context"
 	"crypto/x509"
+	"fmt"
+	"github.com/rabbitmq/messaging-topology-operator/internal/managedresource"
 	"go/build"
 	"path/filepath"
 	"testing"
@@ -418,4 +420,18 @@ func observedEvents() []string {
 		events = append(events, <-fakeRecorder.Events)
 	}
 	return events
+}
+
+func getActiveConsumerPod(ctx context.Context, stream topology.SuperStream, partitionName string) (corev1.Pod, error) {
+	var podList corev1.PodList
+	if err := client.List(ctx, &podList, runtimeClient.InNamespace(stream.Namespace), runtimeClient.MatchingLabels(map[string]string{
+		managedresource.AnnotationSuperStream:          stream.Name,
+		managedresource.AnnotationSuperStreamPartition: partitionName,
+	})); err != nil {
+		return corev1.Pod{}, err
+	}
+	if len(podList.Items) != 1 {
+		return corev1.Pod{}, fmt.Errorf("Expected to find 1 matching consumer pod, but found %d: %#v", len(podList.Items), podList.Items)
+	}
+	return podList.Items[0], nil
 }
