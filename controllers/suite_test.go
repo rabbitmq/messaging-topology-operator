@@ -161,7 +161,7 @@ var _ = BeforeSuite(func() {
 		RabbitmqClientFactory: fakeRabbitMQClientFactory,
 	}).SetupWithManager(mgr)
 	Expect(err).ToNot(HaveOccurred())
-	err = (&controllers.CompositeConsumerReconciler{
+	err = (&controllers.SuperStreamConsumerReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: fakeRecorder,

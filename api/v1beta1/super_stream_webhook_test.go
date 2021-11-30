@@ -36,12 +36,6 @@ var _ = Describe("superstream webhook", func() {
 		Expect(apierrors.IsForbidden(newSuperStream.ValidateUpdate(&superstream))).To(BeTrue())
 	})
 
-	It("does not allow updates on superstream.spec.partitions", func() {
-		newSuperStream := superstream.DeepCopy()
-		newSuperStream.Spec.Partitions = 1000
-		Expect(apierrors.IsForbidden(newSuperStream.ValidateUpdate(&superstream))).To(BeTrue())
-	})
-
 	It("does not allow updates on superstream.spec.routingKeys", func() {
 		newSuperStream := superstream.DeepCopy()
 		newSuperStream.Spec.RoutingKeys = []string{"a1", "d6"}
@@ -53,6 +47,17 @@ var _ = Describe("superstream webhook", func() {
 		newSuperStream := superstream.DeepCopy()
 		newSuperStream.Spec.RoutingKeys = []string{"a1", "b2", "f17"}
 		Expect(newSuperStream.ValidateUpdate(&superstream)).To(Succeed())
+	})
+
+	It("allows superstream.spec.partitions to be increased", func() {
+		newSuperStream := superstream.DeepCopy()
+		newSuperStream.Spec.Partitions = 1000
+		Expect(newSuperStream.ValidateUpdate(&superstream)).To(Succeed())
+	})
+	It("does not allow superstream.spec.partitions to be decreased", func() {
+		newSuperStream := superstream.DeepCopy()
+		newSuperStream.Spec.Partitions = 1
+		Expect(apierrors.IsForbidden(newSuperStream.ValidateUpdate(&superstream))).To(BeTrue())
 	})
 
 })

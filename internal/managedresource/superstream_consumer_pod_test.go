@@ -11,21 +11,21 @@ import (
 
 var _ = Describe("SuperstreamExchange", func() {
 	var (
-		builder                     *managedresource.Builder
-		compositeConsumer           *topology.CompositeConsumer
-		compositeConsumerPodBuilder *managedresource.CompositeConsumerPodBuilder
-		pod                         *corev1.Pod
-		podSpec                     corev1.PodSpec
-		scheme                      *runtime.Scheme
+		builder                       *managedresource.Builder
+		superStreamConsumer           *topology.SuperStreamConsumer
+		superStreamConsumerPodBuilder *managedresource.SuperStreamConsumerPodBuilder
+		pod                           *corev1.Pod
+		podSpec                       corev1.PodSpec
+		scheme                        *runtime.Scheme
 	)
 
 	BeforeEach(func() {
 		scheme = runtime.NewScheme()
 		Expect(topology.AddToScheme(scheme)).To(Succeed())
-		compositeConsumer = &topology.CompositeConsumer{}
-		compositeConsumer.Name = "parent-set"
-		compositeConsumer.Namespace = "parent-namespace"
-		compositeConsumer.Spec.SuperStreamReference = topology.SuperStreamReference{
+		superStreamConsumer = &topology.SuperStreamConsumer{}
+		superStreamConsumer.Name = "parent-set"
+		superStreamConsumer.Namespace = "parent-namespace"
+		superStreamConsumer.Spec.SuperStreamReference = topology.SuperStreamReference{
 			Name:      "super-stream-1",
 			Namespace: "parent-namespace",
 		}
@@ -40,11 +40,11 @@ var _ = Describe("SuperstreamExchange", func() {
 		}
 
 		builder = &managedresource.Builder{
-			ObjectOwner: compositeConsumer,
+			ObjectOwner: superStreamConsumer,
 			Scheme:      scheme,
 		}
-		compositeConsumerPodBuilder = builder.CompositeConsumerPod(podSpec, "super-stream-1", "sample-partition")
-		obj, _ := compositeConsumerPodBuilder.Build()
+		superStreamConsumerPodBuilder = builder.SuperStreamConsumerPod(podSpec, "super-stream-1", "sample-partition")
+		obj, _ := superStreamConsumerPodBuilder.Build()
 		pod = obj.(*corev1.Pod)
 	})
 
@@ -54,16 +54,16 @@ var _ = Describe("SuperstreamExchange", func() {
 		})
 
 		It("generates an pod object with the correct namespace", func() {
-			Expect(pod.Namespace).To(Equal(compositeConsumer.Namespace))
+			Expect(pod.Namespace).To(Equal(superStreamConsumer.Namespace))
 		})
 	})
 
 	Context("Update", func() {
 		BeforeEach(func() {
-			Expect(compositeConsumerPodBuilder.Update(pod)).To(Succeed())
+			Expect(superStreamConsumerPodBuilder.Update(pod)).To(Succeed())
 		})
 		It("sets owner reference", func() {
-			Expect(pod.OwnerReferences[0].Name).To(Equal(compositeConsumer.Name))
+			Expect(pod.OwnerReferences[0].Name).To(Equal(superStreamConsumer.Name))
 		})
 		It("sets expected labels on the Pod", func() {
 			Expect(pod.ObjectMeta.Labels).To(HaveKeyWithValue("rabbitmq.com/super-stream", "super-stream-1"))

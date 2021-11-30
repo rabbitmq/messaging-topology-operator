@@ -1,5 +1,5 @@
 apiVersion: rabbitmq.com/v1beta1
-kind: CompositeConsumer
+kind: SuperStreamConsumer
 metadata:
   name: consumer
   labels:

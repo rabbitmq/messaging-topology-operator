@@ -32,26 +32,6 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-rabbitmq-com-v1beta1-compositeconsumer
-  failurePolicy: Fail
-  name: vcompositeconsumer.kb.io
-  rules:
-  - apiGroups:
-    - rabbitmq.com
-    apiVersions:
-    - v1beta1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - compositeconsumer
-  sideEffects: None
-- admissionReviewVersions:
-  - v1
-  clientConfig:
-    service:
-      name: webhook-service
-      namespace: system
       path: /validate-rabbitmq-com-v1beta1-exchange
   failurePolicy: Fail
   name: vexchange.kb.io
@@ -185,6 +165,26 @@ webhooks:
     - UPDATE
     resources:
     - shovels
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-rabbitmq-com-v1beta1-superstreamconsumer
+  failurePolicy: Fail
+  name: vsuperstreamconsumer.kb.io
+  rules:
+  - apiGroups:
+    - rabbitmq.com
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - superstreamconsumer
   sideEffects: None
 - admissionReviewVersions:
   - v1

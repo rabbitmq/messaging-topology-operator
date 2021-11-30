@@ -43,15 +43,16 @@ func (s *SuperStream) ValidateUpdate(old runtime.Object) error {
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}
 
-	if s.Spec.Partitions != oldSuperStream.Spec.Partitions {
-		return apierrors.NewForbidden(s.GroupResource(), s.Name,
-			field.Forbidden(field.NewPath("spec", "partitions"), detailMsg))
-	}
-
 	if !(oldSuperStream.Spec.RoutingKeys == nil || reflect.DeepEqual(s.Spec.RoutingKeys, oldSuperStream.Spec.RoutingKeys)) {
 		return apierrors.NewForbidden(s.GroupResource(), s.Name,
 			field.Forbidden(field.NewPath("spec", "routingKeys"), detailMsg))
 	}
+
+	if s.Spec.Partitions < oldSuperStream.Spec.Partitions {
+		return apierrors.NewForbidden(s.GroupResource(), s.Name,
+			field.Forbidden(field.NewPath("spec", "partitions"), "updates may only increase the partition count, and may not decrease it"))
+	}
+
 	return nil
 }
 

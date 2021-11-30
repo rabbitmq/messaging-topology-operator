@@ -66,26 +66,6 @@ rules:
 - apiGroups:
   - rabbitmq.com
   resources:
-  - compositeconsumers
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - rabbitmq.com
-  resources:
-  - compositeconsumers/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - rabbitmq.com
-  resources:
   - exchanges
   verbs:
   - create
@@ -233,6 +213,26 @@ rules:
   - rabbitmq.com
   resources:
   - shovels/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - superstreamconsumers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - superstreamconsumers/status
   verbs:
   - get
   - patch

@@ -4,22 +4,22 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.6.2
   creationTimestamp: null
-  name: compositeconsumers.rabbitmq.com
+  name: superstreamconsumers.rabbitmq.com
 spec:
   group: rabbitmq.com
   names:
     categories:
       - all
-    kind: CompositeConsumer
-    listKind: CompositeConsumerList
-    plural: compositeconsumers
-    singular: compositeconsumer
+    kind: SuperStreamConsumer
+    listKind: SuperStreamConsumerList
+    plural: superstreamconsumers
+    singular: superstreamconsumer
   scope: Namespaced
   versions:
     - name: v1beta1
       schema:
         openAPIV3Schema:
-          description: CompositeConsumer is the Schema for Composite Consumers
+          description: SuperStreamConsumer is the Schema for SuperStreamConsumers
           properties:
             apiVersion:
               description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
@@ -30,7 +30,7 @@ spec:
             metadata:
               type: object
             spec:
-              description: CompositeConsumerSpec defines the desired state of CompositeConsumer
+              description: SuperStreamConsumerSpec defines the desired state of SuperStreamConsumer
               properties:
                 consumerPodSpec:
                   properties:
@@ -5868,7 +5868,7 @@ spec:
                       type: object
                   type: object
                 superStreamReference:
-                  description: Reference to the SuperStream that the CompositeConsumer will consume from Required property.
+                  description: Reference to the SuperStream that the SuperStreamConsumer will consume from Required property.
                   properties:
                     name:
                       description: The name of the SuperStream to reference.
@@ -5884,7 +5884,7 @@ spec:
                 - superStreamReference
               type: object
             status:
-              description: CompositeConsumerStatus defines the observed state of CompositeConsumer
+              description: SuperStreamConsumerStatus defines the observed state of SuperStreamConsumer
               properties:
                 conditions:
                   items:
@@ -5911,7 +5911,7 @@ spec:
                     type: object
                   type: array
                 observedGeneration:
-                  description: observedGeneration is the most recent successful generation observed for this CompositeConsumer. It corresponds to the CompositeConsumer's generation, which is updated on mutation by the API Server.
+                  description: observedGeneration is the most recent successful generation observed for this SuperStreamConsumer. It corresponds to the SuperStreamConsumer's generation, which is updated on mutation by the API Server.
                   format: int64
                   type: integer
               type: object

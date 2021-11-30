@@ -26,43 +26,43 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-// CompositeConsumerReconciler reconciles a RabbitMQ Super Stream, and any resources it comprises of
-type CompositeConsumerReconciler struct {
+// SuperStreamConsumerReconciler reconciles a RabbitMQ Super Stream, and any resources it comprises of
+type SuperStreamConsumerReconciler struct {
 	client.Client
 	Log      logr.Logger
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 }
 
-// +kubebuilder:rbac:groups=rabbitmq.com,resources=compositeconsumers,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=rabbitmq.com,resources=compositeconsumers/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=superstreamconsumers,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=superstreamconsumers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=superstreams,verbs=get;list;watch
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=superstreams/status,verbs=get
 // +kubebuilder:rbac:groups="",resources=pods,verbs=get;create;list;update;delete;patch;watch
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=events,verbs=get;create;patch
 
-func (r *CompositeConsumerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *SuperStreamConsumerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
-	compositeConsumer := &topology.CompositeConsumer{}
-	if err := r.Get(ctx, req.NamespacedName, compositeConsumer); err != nil {
+	superStreamConsumer := &topology.SuperStreamConsumer{}
+	if err := r.Get(ctx, req.NamespacedName, superStreamConsumer); err != nil {
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
 
 	logger.Info("Start reconciling")
 
 	referencedSuperStream := &topology.SuperStream{}
-	if err := r.Get(ctx, types.NamespacedName{Name: compositeConsumer.Spec.SuperStreamReference.Name, Namespace: compositeConsumer.Namespace}, referencedSuperStream); err != nil {
+	if err := r.Get(ctx, types.NamespacedName{Name: superStreamConsumer.Spec.SuperStreamReference.Name, Namespace: superStreamConsumer.Namespace}, referencedSuperStream); err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to get SuperStream from reference: %w", err)
 	}
 
 	managedResourceBuilder := managedresource.Builder{
-		ObjectOwner: compositeConsumer,
+		ObjectOwner: superStreamConsumer,
 		Scheme:      r.Scheme,
 	}
 
-	existingPods, err := r.existingMatchingPods(ctx, compositeConsumer)
+	existingPods, err := r.existingMatchingPods(ctx, superStreamConsumer)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -72,9 +72,9 @@ func (r *CompositeConsumerReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	var builders []managedresource.ResourceBuilder
 	for _, partition := range referencedSuperStream.Status.Partitions {
-		podSpec := compositeConsumer.Spec.ConsumerPodSpec.Default
+		podSpec := superStreamConsumer.Spec.ConsumerPodSpec.Default
 		routingKey := managedresource.PartitionNameToRoutingKey(referencedSuperStream.Name, partition)
-		if foundPodSpec, ok := compositeConsumer.Spec.ConsumerPodSpec.PerRoutingKey[routingKey]; ok {
+		if foundPodSpec, ok := superStreamConsumer.Spec.ConsumerPodSpec.PerRoutingKey[routingKey]; ok {
 			podSpec = foundPodSpec
 		}
 
@@ -84,7 +84,7 @@ func (r *CompositeConsumerReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 		builders = append(
 			builders,
-			managedResourceBuilder.CompositeConsumerPod(
+			managedResourceBuilder.SuperStreamConsumerPod(
 				*podSpec,
 				referencedSuperStream.Name,
 				partition,
@@ -114,14 +114,14 @@ func (r *CompositeConsumerReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		})
 		if err != nil {
 			msg := fmt.Sprintf("FailedReconcile%s", builder.ResourceType())
-			if writerErr := r.SetReconcileSuccess(ctx, compositeConsumer, topology.NotReady(msg, compositeConsumer.Status.Conditions)); writerErr != nil {
-				logger.Error(writerErr, failedStatusUpdate, "status", compositeConsumer.Status)
+			if writerErr := r.SetReconcileSuccess(ctx, superStreamConsumer, topology.NotReady(msg, superStreamConsumer.Status.Conditions)); writerErr != nil {
+				logger.Error(writerErr, failedStatusUpdate, "status", superStreamConsumer.Status)
 			}
 			return ctrl.Result{}, err
 		}
 	}
 
-	if err := r.SetReconcileSuccess(ctx, compositeConsumer, topology.Ready(compositeConsumer.Status.Conditions)); err != nil {
+	if err := r.SetReconcileSuccess(ctx, superStreamConsumer, topology.Ready(superStreamConsumer.Status.Conditions)); err != nil {
 		logger.Error(err, failedStatusUpdate)
 	}
 
@@ -130,17 +130,17 @@ func (r *CompositeConsumerReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	return ctrl.Result{}, nil
 }
 
-func (r *CompositeConsumerReconciler) SetReconcileSuccess(ctx context.Context, compositeConsumer *topology.CompositeConsumer, condition topology.Condition) error {
-	compositeConsumer.Status.Conditions = []topology.Condition{condition}
-	compositeConsumer.Status.ObservedGeneration = compositeConsumer.GetGeneration()
+func (r *SuperStreamConsumerReconciler) SetReconcileSuccess(ctx context.Context, superStreamConsumer *topology.SuperStreamConsumer, condition topology.Condition) error {
+	superStreamConsumer.Status.Conditions = []topology.Condition{condition}
+	superStreamConsumer.Status.ObservedGeneration = superStreamConsumer.GetGeneration()
 	return clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
-		return r.Status().Update(ctx, compositeConsumer)
+		return r.Status().Update(ctx, superStreamConsumer)
 	})
 }
 
-func (r *CompositeConsumerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *SuperStreamConsumerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&topology.CompositeConsumer{}).
+		For(&topology.SuperStreamConsumer{}).
 		Owns(&topology.Exchange{}).
 		Owns(&topology.Binding{}).
 		Owns(&topology.Queue{}).
@@ -148,14 +148,14 @@ func (r *CompositeConsumerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *CompositeConsumerReconciler) existingMatchingPods(ctx context.Context, compositeConsumer *topology.CompositeConsumer) ([]corev1.Pod, error) {
+func (r *SuperStreamConsumerReconciler) existingMatchingPods(ctx context.Context, superStreamConsumer *topology.SuperStreamConsumer) ([]corev1.Pod, error) {
 	existingPodList := &corev1.PodList{}
-	err := r.Client.List(ctx, existingPodList, client.InNamespace(compositeConsumer.Namespace), client.MatchingLabels(map[string]string{
-		managedresource.AnnotationSuperStream: compositeConsumer.Spec.SuperStreamReference.Name,
+	err := r.Client.List(ctx, existingPodList, client.InNamespace(superStreamConsumer.Namespace), client.MatchingLabels(map[string]string{
+		managedresource.AnnotationSuperStream: superStreamConsumer.Spec.SuperStreamReference.Name,
 	}))
 	return existingPodList.Items, err
 }
-func (r *CompositeConsumerReconciler) logExistingMatchingPods(ctx context.Context, pods []corev1.Pod) {
+func (r *SuperStreamConsumerReconciler) logExistingMatchingPods(ctx context.Context, pods []corev1.Pod) {
 	logger := ctrl.LoggerFrom(ctx)
 	logString := "Existing pods: "
 	for _, pod := range pods {

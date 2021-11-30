@@ -15,27 +15,27 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// CompositeConsumerSpec defines the desired state of CompositeConsumer
-type CompositeConsumerSpec struct {
-	// Reference to the SuperStream that the CompositeConsumer will consume from
+// SuperStreamConsumerSpec defines the desired state of SuperStreamConsumer
+type SuperStreamConsumerSpec struct {
+	// Reference to the SuperStream that the SuperStreamConsumer will consume from
 	// Required property.
 	// +kubebuilder:validation:Required
 	SuperStreamReference SuperStreamReference `json:"superStreamReference"`
 	// +kubebuilder:validation:Required
-	ConsumerPodSpec CompositeConsumerPodSpec `json:"consumerPodSpec"`
+	ConsumerPodSpec SuperStreamConsumerPodSpec `json:"consumerPodSpec"`
 }
 
-type CompositeConsumerPodSpec struct {
+type SuperStreamConsumerPodSpec struct {
 	// +kubebuilder:validation:Optional
 	Default *corev1.PodSpec `json:"default,omitempty"`
 	// +kubebuilder:validation:Optional
 	PerRoutingKey map[string]*corev1.PodSpec `json:"perRoutingKey,omitempty"`
 }
 
-// CompositeConsumerStatus defines the observed state of CompositeConsumer
-type CompositeConsumerStatus struct {
-	// observedGeneration is the most recent successful generation observed for this CompositeConsumer. It corresponds to the
-	// CompositeConsumer's generation, which is updated on mutation by the API Server.
+// SuperStreamConsumerStatus defines the observed state of SuperStreamConsumer
+type SuperStreamConsumerStatus struct {
+	// observedGeneration is the most recent successful generation observed for this SuperStreamConsumer. It corresponds to the
+	// SuperStreamConsumer's generation, which is updated on mutation by the API Server.
 	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
 	Conditions         []Condition `json:"conditions,omitempty"`
 }
@@ -45,25 +45,25 @@ type CompositeConsumerStatus struct {
 // +kubebuilder:resource:categories=all
 // +kubebuilder:subresource:status
 
-// CompositeConsumer is the Schema for Composite Consumers
-type CompositeConsumer struct {
+// SuperStreamConsumer is the Schema for SuperStreamConsumers
+type SuperStreamConsumer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   CompositeConsumerSpec   `json:"spec,omitempty"`
-	Status CompositeConsumerStatus `json:"status,omitempty"`
+	Spec   SuperStreamConsumerSpec   `json:"spec,omitempty"`
+	Status SuperStreamConsumerStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// CompositeConsumerList contains a list of CompositeConsumers
-type CompositeConsumerList struct {
+// SuperStreamConsumerList contains a list of SuperStreamConsumers
+type SuperStreamConsumerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []CompositeConsumer `json:"items"`
+	Items           []SuperStreamConsumer `json:"items"`
 }
 
-func (q *CompositeConsumer) GroupResource() schema.GroupResource {
+func (q *SuperStreamConsumer) GroupResource() schema.GroupResource {
 	return schema.GroupResource{
 		Group:    q.GroupVersionKind().Group,
 		Resource: q.GroupVersionKind().Kind,
@@ -81,5 +81,5 @@ type SuperStreamReference struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&CompositeConsumer{}, &CompositeConsumerList{})
+	SchemeBuilder.Register(&SuperStreamConsumer{}, &SuperStreamConsumerList{})
 }

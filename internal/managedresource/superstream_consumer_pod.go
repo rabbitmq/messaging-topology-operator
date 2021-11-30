@@ -9,23 +9,22 @@ import (
 )
 
 const (
-	compositeConsumerPodSuffix     = "-exchange"
 	AnnotationSuperStream          = "rabbitmq.com/super-stream"
 	AnnotationSuperStreamPartition = "rabbitmq.com/super-stream-partition"
 )
 
-type CompositeConsumerPodBuilder struct {
+type SuperStreamConsumerPodBuilder struct {
 	*Builder
 	podSpec         corev1.PodSpec
 	superStreamName string
 	partition       string
 }
 
-func (builder *Builder) CompositeConsumerPod(podSpec corev1.PodSpec, superStreamName, partition string) *CompositeConsumerPodBuilder {
-	return &CompositeConsumerPodBuilder{builder, podSpec, superStreamName, partition}
+func (builder *Builder) SuperStreamConsumerPod(podSpec corev1.PodSpec, superStreamName, partition string) *SuperStreamConsumerPodBuilder {
+	return &SuperStreamConsumerPodBuilder{builder, podSpec, superStreamName, partition}
 }
 
-func (builder *CompositeConsumerPodBuilder) Build() (client.Object, error) {
+func (builder *SuperStreamConsumerPodBuilder) Build() (client.Object, error) {
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%s", builder.ObjectOwner.GetName(), builder.partition),
@@ -38,7 +37,7 @@ func (builder *CompositeConsumerPodBuilder) Build() (client.Object, error) {
 	}, nil
 }
 
-func (builder *CompositeConsumerPodBuilder) Update(object client.Object) error {
+func (builder *SuperStreamConsumerPodBuilder) Update(object client.Object) error {
 	pod := object.(*corev1.Pod)
 	pod.Spec = builder.podSpec
 
@@ -49,4 +48,4 @@ func (builder *CompositeConsumerPodBuilder) Update(object client.Object) error {
 	return nil
 }
 
-func (builder *CompositeConsumerPodBuilder) ResourceType() string { return "CompositeConsumerPod" }
+func (builder *SuperStreamConsumerPodBuilder) ResourceType() string { return "SuperStreamConsumerPod" }

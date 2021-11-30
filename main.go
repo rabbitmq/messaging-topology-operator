@@ -179,13 +179,13 @@ func main() {
 		log.Error(err, "unable to create controller", "controller", controllers.SuperStreamControllerName)
 		os.Exit(1)
 	}
-	if err = (&controllers.CompositeConsumerReconciler{
+	if err = (&controllers.SuperStreamConsumerReconciler{
 		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName(controllers.CompositeConsumerControllerName),
+		Log:      ctrl.Log.WithName(controllers.SuperStreamConsumerControllerName),
 		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor(controllers.CompositeConsumerControllerName),
+		Recorder: mgr.GetEventRecorderFor(controllers.SuperStreamConsumerControllerName),
 	}).SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create controller", "controller", controllers.CompositeConsumerControllerName)
+		log.Error(err, "unable to create controller", "controller", controllers.SuperStreamConsumerControllerName)
 		os.Exit(1)
 	}
 
@@ -234,8 +234,8 @@ func main() {
 			log.Error(err, "unable to create webhook", "webhook", "SuperStream")
 			os.Exit(1)
 		}
-		if err = (&topology.CompositeConsumer{}).SetupWebhookWithManager(mgr); err != nil {
-			log.Error(err, "unable to create webhook", "webhook", "CompositeConsumer")
+		if err = (&topology.SuperStreamConsumer{}).SetupWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "SuperStreamConsumer")
 			os.Exit(1)
 		}
 	}

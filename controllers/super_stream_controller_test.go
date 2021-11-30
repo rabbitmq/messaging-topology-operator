@@ -59,12 +59,13 @@ var _ = Describe("super-stream-controller", func() {
 
 					By("creating an exchange", func() {
 						var exchange topology.Exchange
-						err := client.Get(
-							ctx,
-							types.NamespacedName{Name: superStreamName + "-exchange", Namespace: "default"},
-							&exchange,
-						)
-						Expect(err).NotTo(HaveOccurred())
+						EventuallyWithOffset(1, func() error {
+								return client.Get(
+									ctx,
+									types.NamespacedName{Name: superStreamName + "-exchange", Namespace: "default"},
+									&exchange,
+								)
+						}, 10*time.Second, 1*time.Second).Should(Succeed())
 						Expect(exchange.Spec).To(MatchFields(IgnoreExtras, Fields{
 							"Name":    Equal(superStreamName),
 							"Type":    Equal("direct"),
@@ -81,12 +82,13 @@ var _ = Describe("super-stream-controller", func() {
 						expectedQueueNames = []string{}
 						for i := 0; i < superStream.Spec.Partitions; i++ {
 							expectedQueueName := fmt.Sprintf("%s-partition-%s", superStreamName, strconv.Itoa(i))
-							err := client.Get(
-								ctx,
-								types.NamespacedName{Name: expectedQueueName, Namespace: "default"},
-								&partition,
-							)
-							Expect(err).NotTo(HaveOccurred())
+							EventuallyWithOffset(1, func() error {
+								return client.Get(
+									ctx,
+									types.NamespacedName{Name: expectedQueueName, Namespace: "default"},
+									&partition,
+								)
+							}, 10*time.Second, 1*time.Second).Should(Succeed())
 
 							expectedQueueNames = append(expectedQueueNames, partition.Spec.Name)
 
@@ -118,12 +120,13 @@ var _ = Describe("super-stream-controller", func() {
 						var binding topology.Binding
 						for i := 0; i < superStream.Spec.Partitions; i++ {
 							expectedBindingName := fmt.Sprintf("%s-binding-%s", superStreamName, strconv.Itoa(i))
-							err := client.Get(
-								ctx,
-								types.NamespacedName{Name: expectedBindingName, Namespace: "default"},
-								&binding,
-							)
-							Expect(err).NotTo(HaveOccurred())
+							EventuallyWithOffset(1, func() error {
+								return client.Get(
+									ctx,
+									types.NamespacedName{Name: expectedBindingName, Namespace: "default"},
+									&binding,
+								)
+							}, 10*time.Second, 1*time.Second).Should(Succeed())
 							Expect(binding.Spec).To(MatchFields(IgnoreExtras, Fields{
 								"Source":          Equal(superStreamName),
 								"DestinationType": Equal("queue"),

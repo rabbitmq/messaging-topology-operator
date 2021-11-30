@@ -15,24 +15,24 @@ import (
 	"time"
 )
 
-var _ = Describe("composite-consumer-controller", func() {
+var _ = Describe("super-stream-consumer-controller", func() {
 
 	var superStream topology.SuperStream
 	var superStreamName string
-	var compositeConsumer topology.CompositeConsumer
-	var compositeConsumerName string
+	var superStreamConsumer topology.SuperStreamConsumer
+	var superStreamConsumerName string
 	var partitions int
 	var routingKeys []string
-	var consumerPodSpec topology.CompositeConsumerPodSpec
+	var consumerPodSpec topology.SuperStreamConsumerPodSpec
 
 	When("validating RabbitMQ Client failures", func() {
 		JustBeforeEach(func() {
-			compositeConsumer = topology.CompositeConsumer{
+			superStreamConsumer = topology.SuperStreamConsumer{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      compositeConsumerName,
+					Name:      superStreamConsumerName,
 					Namespace: "default",
 				},
-				Spec: topology.CompositeConsumerSpec{
+				Spec: topology.SuperStreamConsumerSpec{
 					SuperStreamReference: topology.SuperStreamReference{
 						Name: superStreamName,
 					},
@@ -85,10 +85,10 @@ var _ = Describe("composite-consumer-controller", func() {
 			When("success", func() {
 				BeforeEach(func() {
 					superStreamName = "basic-consumer-stream"
-					compositeConsumerName = "basic-consumer"
+					superStreamConsumerName = "basic-consumer"
 					partitions = 2
 					routingKeys = nil
-					consumerPodSpec = topology.CompositeConsumerPodSpec{
+					consumerPodSpec = topology.SuperStreamConsumerPodSpec{
 						Default: &corev1.PodSpec{
 							Containers: []corev1.Container{
 								{
@@ -100,18 +100,18 @@ var _ = Describe("composite-consumer-controller", func() {
 					}
 				})
 
-				It("creates the CompositeConsumer and any underlying resources", func() {
-					Expect(client.Create(ctx, &compositeConsumer)).To(Succeed())
+				It("creates the SuperStreamConsumer and any underlying resources", func() {
+					Expect(client.Create(ctx, &superStreamConsumer)).To(Succeed())
 
 					By("setting the status condition 'Ready' to 'true' ", func() {
 						EventuallyWithOffset(1, func() []topology.Condition {
 							_ = client.Get(
 								ctx,
-								types.NamespacedName{Name: compositeConsumerName, Namespace: "default"},
-								&compositeConsumer,
+								types.NamespacedName{Name: superStreamConsumerName, Namespace: "default"},
+								&superStreamConsumer,
 							)
 
-							return compositeConsumer.Status.Conditions
+							return superStreamConsumer.Status.Conditions
 						}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 							"Type":   Equal(topology.ConditionType("Ready")),
 							"Reason": Equal("SuccessfulCreateOrUpdate"),
@@ -121,7 +121,7 @@ var _ = Describe("composite-consumer-controller", func() {
 					By("creating a Pod for each partition in the SuperStream, multiplied by the number of replicas", func() {
 						var pod corev1.Pod
 						for _, partition := range superStream.Status.Partitions {
-							expectedPodName := fmt.Sprintf("%s-%s", compositeConsumerName, partition)
+							expectedPodName := fmt.Sprintf("%s-%s", superStreamConsumerName, partition)
 							err := client.Get(
 								ctx,
 								types.NamespacedName{Name: expectedPodName, Namespace: "default"},
@@ -129,8 +129,8 @@ var _ = Describe("composite-consumer-controller", func() {
 							)
 							Expect(err).NotTo(HaveOccurred())
 
-							Expect(pod.Spec.Containers[0].Name).To(Equal(compositeConsumer.Spec.ConsumerPodSpec.Default.Containers[0].Name))
-							Expect(pod.Spec.Containers[0].Image).To(Equal(compositeConsumer.Spec.ConsumerPodSpec.Default.Containers[0].Image))
+							Expect(pod.Spec.Containers[0].Name).To(Equal(superStreamConsumer.Spec.ConsumerPodSpec.Default.Containers[0].Name))
+							Expect(pod.Spec.Containers[0].Image).To(Equal(superStreamConsumer.Spec.ConsumerPodSpec.Default.Containers[0].Image))
 							Expect(pod.ObjectMeta.Labels).To(HaveKeyWithValue(managedresource.AnnotationSuperStream, superStream.Name))
 							Expect(pod.ObjectMeta.Labels).To(HaveKeyWithValue(managedresource.AnnotationSuperStreamPartition, superStream.Status.Partitions[1]))
 						}
@@ -143,10 +143,10 @@ var _ = Describe("composite-consumer-controller", func() {
 			When("a active consumer pod is deleted", func() {
 				BeforeEach(func() {
 					superStreamName = "active-consumer-delete"
-					compositeConsumerName = "active-consumer-delete"
+					superStreamConsumerName = "active-consumer-delete"
 					partitions = 2
 					routingKeys = nil
-					consumerPodSpec = topology.CompositeConsumerPodSpec{
+					consumerPodSpec = topology.SuperStreamConsumerPodSpec{
 						Default: &corev1.PodSpec{
 							Containers: []corev1.Container{
 								{
@@ -158,15 +158,15 @@ var _ = Describe("composite-consumer-controller", func() {
 					}
 				})
 				JustBeforeEach(func() {
-					Expect(client.Create(ctx, &compositeConsumer)).To(Succeed())
+					Expect(client.Create(ctx, &superStreamConsumer)).To(Succeed())
 					EventuallyWithOffset(1, func() []topology.Condition {
 						_ = client.Get(
 							ctx,
-							types.NamespacedName{Name: compositeConsumerName, Namespace: "default"},
-							&compositeConsumer,
+							types.NamespacedName{Name: superStreamConsumerName, Namespace: "default"},
+							&superStreamConsumer,
 						)
 
-						return compositeConsumer.Status.Conditions
+						return superStreamConsumer.Status.Conditions
 					}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 						"Type":   Equal(topology.ConditionType("Ready")),
 						"Reason": Equal("SuccessfulCreateOrUpdate"),
@@ -174,7 +174,7 @@ var _ = Describe("composite-consumer-controller", func() {
 					})))
 
 					var podList corev1.PodList
-					err := client.List(ctx, &podList, runtimeclient.InNamespace(compositeConsumer.Namespace), runtimeclient.MatchingLabels(map[string]string{
+					err := client.List(ctx, &podList, runtimeclient.InNamespace(superStreamConsumer.Namespace), runtimeclient.MatchingLabels(map[string]string{
 						managedresource.AnnotationSuperStream: superStreamName,
 					}))
 					Expect(err).NotTo(HaveOccurred())
@@ -204,9 +204,9 @@ var _ = Describe("composite-consumer-controller", func() {
 			When("a different PodSpec is specified for each routing key", func() {
 				BeforeEach(func() {
 					superStreamName = "different-keys-stream"
-					compositeConsumerName = "different-keys"
+					superStreamConsumerName = "different-keys"
 					partitions = 3
-					consumerPodSpec = topology.CompositeConsumerPodSpec{
+					consumerPodSpec = topology.SuperStreamConsumerPodSpec{
 						PerRoutingKey: map[string]*corev1.PodSpec{
 							"amer": {
 								Containers: []corev1.Container{
@@ -240,7 +240,7 @@ var _ = Describe("composite-consumer-controller", func() {
 				It("creates a pod for each partition with the different pod specs", func() {
 					var pod corev1.Pod
 					for _, partition := range superStream.Status.Partitions {
-						expectedPodName := fmt.Sprintf("%s-%s", compositeConsumerName, partition)
+						expectedPodName := fmt.Sprintf("%s-%s", superStreamConsumerName, partition)
 						err := client.Get(
 							ctx,
 							types.NamespacedName{Name: expectedPodName, Namespace: "default"},
@@ -248,8 +248,8 @@ var _ = Describe("composite-consumer-controller", func() {
 						)
 						Expect(err).NotTo(HaveOccurred())
 
-						Expect(pod.Spec.Containers[0].Name).To(Equal(compositeConsumer.Spec.ConsumerPodSpec.Default.Containers[0].Name))
-						Expect(pod.Spec.Containers[0].Image).To(Equal(compositeConsumer.Spec.ConsumerPodSpec.Default.Containers[0].Image))
+						Expect(pod.Spec.Containers[0].Name).To(Equal(superStreamConsumer.Spec.ConsumerPodSpec.Default.Containers[0].Name))
+						Expect(pod.Spec.Containers[0].Image).To(Equal(superStreamConsumer.Spec.ConsumerPodSpec.Default.Containers[0].Image))
 						Expect(pod.ObjectMeta.Labels).To(HaveKeyWithValue(managedresource.AnnotationSuperStream, superStream.Name))
 						Expect(pod.ObjectMeta.Labels).To(HaveKeyWithValue(managedresource.AnnotationSuperStreamPartition, superStream.Status.Partitions[1]))
 					}

@@ -121,7 +121,6 @@ func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		routingKeys = superStream.Spec.RoutingKeys
 	}
 
-
 	// Each SuperStream generates, for n partitions, 1 exchange, n streams and n bindings
 	managedResourceBuilder := managedresource.Builder{
 		ObjectOwner: superStream,
