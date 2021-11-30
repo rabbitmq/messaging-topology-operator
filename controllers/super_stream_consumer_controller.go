@@ -16,14 +16,20 @@ import (
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal/managedresource"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+	"time"
 )
 
 // SuperStreamConsumerReconciler reconciles a RabbitMQ Super Stream, and any resources it comprises of
@@ -55,6 +61,10 @@ func (r *SuperStreamConsumerReconciler) Reconcile(ctx context.Context, req ctrl.
 	referencedSuperStream := &topology.SuperStream{}
 	if err := r.Get(ctx, types.NamespacedName{Name: superStreamConsumer.Spec.SuperStreamReference.Name, Namespace: superStreamConsumer.Namespace}, referencedSuperStream); err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to get SuperStream from reference: %w", err)
+	}
+	if len(referencedSuperStream.Status.Partitions) != referencedSuperStream.Spec.Partitions {
+		// The object is likely being reconciled, wait until all the partitions are created
+		return reconcile.Result{RequeueAfter: 1*time.Second}, nil
 	}
 
 	managedResourceBuilder := managedresource.Builder{
@@ -166,13 +176,51 @@ func (r *SuperStreamConsumerReconciler) SetReconcileSuccess(ctx context.Context,
 }
 
 func (r *SuperStreamConsumerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &topology.SuperStreamConsumer{}, ".spec.superStreamReference.name", func(rawObj client.Object) []string {
+		// Extract the SuperStream name from the SuperStreamConsumer Spec, if one is provided
+		superStreamConsumer := rawObj.(*topology.SuperStreamConsumer)
+		if superStreamConsumer.Spec.SuperStreamReference.Name == "" {
+			return nil
+		}
+		return []string{superStreamConsumer.Spec.SuperStreamReference.Name}
+	}); err != nil {
+		return err
+	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&topology.SuperStreamConsumer{}).
 		Owns(&topology.Exchange{}).
 		Owns(&topology.Binding{}).
 		Owns(&topology.Queue{}).
 		Owns(&corev1.Pod{}).
+		Watches(
+			&source.Kind{Type: &topology.SuperStream{}},
+			handler.EnqueueRequestsFromMapFunc(r.findConsumersForSuperStream),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+			).
 		Complete(r)
+}
+
+func (r *SuperStreamConsumerReconciler) findConsumersForSuperStream(superStream client.Object) []reconcile.Request {
+	consumerList := &topology.SuperStreamConsumerList{}
+	listOps := &client.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector(".spec.superStreamReference.name", superStream.GetName()),
+		Namespace:     superStream.GetNamespace(),
+	}
+	err := r.List(context.Background(), consumerList, listOps)
+	if err != nil {
+		return []reconcile.Request{}
+	}
+
+	requests := make([]reconcile.Request, len(consumerList.Items))
+	for i, item := range consumerList.Items {
+		requests[i] = reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      item.GetName(),
+				Namespace: item.GetNamespace(),
+			},
+		}
+	}
+	return requests
 }
 
 func (r *SuperStreamConsumerReconciler) existingActiveConsumerPod(ctx context.Context, namespace string, podLabels map[string]string) (*corev1.Pod, error) {
