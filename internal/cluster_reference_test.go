@@ -158,7 +158,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 				fakeCredentialsProvider.DataReturnsOnCall(1, []byte(existingRabbitMQPassword), true)
 
 				fakeSecretStoreClient.ReadCredentialsReturns(fakeCredentialsProvider, nil)
-				internal.SecretStoreClientProvider = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (internal.SecretStoreClient, error) {
+				internal.SecretStoreClientProvider = func() (internal.SecretStoreClient, error) {
 					return fakeSecretStoreClient, nil
 				}
 			})

@@ -325,7 +325,7 @@ var _ = Describe("VaultReader", func() {
 					}, nil
 				}
 				getSecretStoreClientTester = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (internal.SecretStoreClient, error) {
-					internal.InitializeClient(vaultSpec)()
+					internal.InitializeClient()()
 					return internal.SecretClient, internal.SecretClientCreationError
 				}
 			})
@@ -381,7 +381,7 @@ var _ = Describe("VaultReader", func() {
 					}, nil
 				}
 				getSecretStoreClientTester = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (internal.SecretStoreClient, error) {
-					internal.InitializeClient(vaultSpec)()
+					internal.InitializeClient()()
 					return internal.SecretClient, internal.SecretClientCreationError
 				}
 			})
@@ -416,7 +416,7 @@ var _ = Describe("VaultReader", func() {
 					Role: "cheese-and-ham",
 				}
 				getSecretStoreClientTester = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (internal.SecretStoreClient, error) {
-					internal.InitializeClient(vaultSpec)()
+					internal.InitializeClient()()
 					return internal.SecretClient, internal.SecretClientCreationError
 				}
 			})
@@ -450,7 +450,7 @@ var _ = Describe("VaultReader", func() {
 					return nil, errors.New("login failed (quickly!)")
 				}
 				getSecretStoreClientTester = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (internal.SecretStoreClient, error) {
-					internal.InitializeClient(vaultSpec)()
+					internal.InitializeClient()()
 					return internal.SecretClient, internal.SecretClientCreationError
 				}
 			})
@@ -500,7 +500,7 @@ var _ = Describe("VaultReader", func() {
 					}, nil
 				}
 				getSecretStoreClientTester = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (internal.SecretStoreClient, error) {
-					internal.InitializeClient(vaultSpec)()
+					internal.InitializeClient()()
 					return internal.SecretClient, internal.SecretClientCreationError
 				}
 			})

@@ -65,7 +65,7 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 	svc := &corev1.Service{}
 	if cluster.Spec.SecretBackend.Vault != nil && cluster.Spec.SecretBackend.Vault.DefaultUserPath != "" {
 		// ask the configured secure store for the credentials available at the path retrieved from the cluster resource
-		secretStoreClient, err := SecretStoreClientProvider(cluster.Spec.SecretBackend.Vault)
+		secretStoreClient, err := SecretStoreClientProvider()
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("unable to create a client connection to secret store: %w", err)
 		}

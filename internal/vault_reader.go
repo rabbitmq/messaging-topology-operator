@@ -3,7 +3,6 @@ package internal
 import (
 	"errors"
 	"fmt"
-	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 	"os"
 	"sync"
 	"time"
@@ -56,12 +55,12 @@ var (
 	SecretClientCreationError   error
 )
 
-func GetSecretStoreClient(vaultSpec *rabbitmqv1beta1.VaultSpec) (SecretStoreClient, error) {
-	createSecretStoreClientOnce.Do(InitializeClient(vaultSpec))
+func GetSecretStoreClient() (SecretStoreClient, error) {
+	createSecretStoreClientOnce.Do(InitializeClient())
 	return SecretClient, SecretClientCreationError
 }
 
-func InitializeClient(vaultSpec *rabbitmqv1beta1.VaultSpec) func() {
+func InitializeClient() func() {
 	return func() {
 		// VAULT_ADDR environment variable will be the address that pod uses to communicate with Vault.
 		config := vault.DefaultConfig() // modify for more granular configuration
@@ -71,7 +70,7 @@ func InitializeClient(vaultSpec *rabbitmqv1beta1.VaultSpec) func() {
 			return
 		}
 
-		go renewToken(vaultClient, vaultSpec, FirstLoginAttemptResultCh)
+		go renewToken(vaultClient, FirstLoginAttemptResultCh)
 		err = <-FirstLoginAttemptResultCh
 		if err != nil {
 			SecretClientCreationError = fmt.Errorf("unable to login to Vault: %w", err)
@@ -152,32 +151,30 @@ func availableKeys(m map[string]interface{}) []string {
 	return result
 }
 
-func login(vaultClient *vault.Client, vaultSpec *rabbitmqv1beta1.VaultSpec) (*vault.Secret, error) {
+func login(vaultClient *vault.Client) (*vault.Secret, error) {
 	logger := ctrl.LoggerFrom(nil)
-
-	var annotations = vaultSpec.Annotations
-	if annotations["vault.hashicorp.com/namespace"] != "" {
-		vaultClient.SetNamespace(annotations["vault.hashicorp.com/namespace"])
-	}
 
 	jwt, err := ReadServiceAccountTokenFunc()
 	if err != nil {
 		return nil, fmt.Errorf("unable to read file containing service account token: %w", err)
 	}
 
-	loginAuthPath := defaultAuthPath
-	annotations = vaultSpec.Annotations
-	if annotations["vault.hashicorp.com/auth-path"] != "" {
-		loginAuthPath = annotations["vault.hashicorp.com/auth-path"]
+	vaultNamespace := os.Getenv("OPERATOR_VAULT_NAMESPACE")
+	if vaultNamespace != "" {
+		vaultClient.SetNamespace(vaultNamespace)
+	}
+
+	loginAuthPath := os.Getenv("OPERATOR_VAULT_AUTH_PATH")
+	if loginAuthPath == "" {
+		loginAuthPath = defaultAuthPath
 	}
 
 	role := os.Getenv("OPERATOR_VAULT_ROLE")
 	if role == "" {
 		role = defaultVaultRole
-		logger.Info("Authenticating to Vault using default role value because OPERATOR_VAULT_ROLE env var is not set", "vault role", role)
-	} else {
-		logger.Info("Authenticating to Vault using role set from OPERATOR_VAULT_ROLE env var", "vault role", role)
 	}
+
+	logger.Info("Authenticating to Vault", "vault role", role, "vault namespace", vaultNamespace, "vault auth path", loginAuthPath)
 
 	vaultSecret, err := ReadVaultClientSecretFunc(vaultClient, string(jwt), role, loginAuthPath)
 	if err != nil {
@@ -192,12 +189,12 @@ func login(vaultClient *vault.Client, vaultSpec *rabbitmqv1beta1.VaultSpec) (*va
 	return vaultSecret, nil
 }
 
-func renewToken(client *vault.Client, vaultSpec *rabbitmqv1beta1.VaultSpec, initialLoginErrorCh chan<- error) {
+func renewToken(client *vault.Client, initialLoginErrorCh chan<- error) {
 	logger := ctrl.LoggerFrom(nil)
 	sentFirstLoginAttemptErr := false
 
 	for {
-		vaultLoginResp, err := login(client, vaultSpec)
+		vaultLoginResp, err := login(client)
 		if err != nil {
 			logger.Error(err, "unable to authenticate to Vault server")
 		}
