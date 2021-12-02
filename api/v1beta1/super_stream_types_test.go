@@ -17,6 +17,7 @@ var _ = Describe("SuperStream spec", func() {
 	It("creates a superstream with default settings", func() {
 		expectedSpec := SuperStreamSpec{
 			Name:       "test-super-stream",
+			Vhost:      "/",
 			Partitions: 3,
 			RabbitmqClusterReference: RabbitmqClusterReference{
 				Name: "some-cluster",
@@ -47,6 +48,7 @@ var _ = Describe("SuperStream spec", func() {
 	It("creates a superstream with specified settings", func() {
 		expectedSpec := SuperStreamSpec{
 			Name:       "test-super-stream2",
+			Vhost:      "test-vhost",
 			Partitions: 5,
 			RabbitmqClusterReference: RabbitmqClusterReference{
 				Name: "some-cluster",
@@ -60,6 +62,7 @@ var _ = Describe("SuperStream spec", func() {
 			},
 			Spec: SuperStreamSpec{
 				Name:       "test-super-stream2",
+				Vhost:      "test-vhost",
 				Partitions: 5,
 				RabbitmqClusterReference: RabbitmqClusterReference{
 					Name: "some-cluster",

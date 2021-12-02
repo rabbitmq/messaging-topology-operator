@@ -19,6 +19,9 @@ type SuperStreamSpec struct {
 	// Name of the queue; required property.
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`
+	// Default to vhost '/'; cannot be updated
+	// +kubebuilder:default:=/
+	Vhost string `json:"vhost,omitempty"`
 	// Number of partitions to create within this super stream.
 	// Defaults to '3'.
 	// +kubebuilder:default:=3

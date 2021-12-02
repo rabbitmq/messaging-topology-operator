@@ -31,10 +31,14 @@ func (s *SuperStream) ValidateUpdate(old runtime.Object) error {
 		return apierrors.NewBadRequest(fmt.Sprintf("expected a superstream but got a %T", old))
 	}
 
-	detailMsg := "updates on name and rabbitmqClusterReference are all forbidden"
+	detailMsg := "updates on name, vhost and rabbitmqClusterReference are all forbidden"
 	if s.Spec.Name != oldSuperStream.Spec.Name {
 		return apierrors.NewForbidden(s.GroupResource(), s.Name,
 			field.Forbidden(field.NewPath("spec", "name"), detailMsg))
+	}
+	if s.Spec.Vhost != oldSuperStream.Spec.Vhost {
+		return apierrors.NewForbidden(s.GroupResource(), s.Name,
+			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
 	if s.Spec.RabbitmqClusterReference != oldSuperStream.Spec.RabbitmqClusterReference {
@@ -62,6 +66,9 @@ func (s *SuperStream) ValidateDelete() error {
 
 // routingKeyUpdatePermitted allows updates only if adding additional keys at the end of the list of keys
 func routingKeyUpdatePermitted(old, new []string) bool {
+	if len(old) == 0 && len(new) != 0 {
+		return false
+	}
 	for i := 0; i < len(old); i++ {
 		if old[i] != new[i] {
 			return false

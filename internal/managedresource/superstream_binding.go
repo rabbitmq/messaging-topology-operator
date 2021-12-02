@@ -13,11 +13,12 @@ type SuperStreamBindingBuilder struct {
 	*Builder
 	partitionIndex  int
 	routingKey      string
+	vhost           string
 	rabbitmqCluster *topology.RabbitmqClusterReference
 }
 
-func (builder *Builder) SuperStreamBinding(index int, routingKey string, rabbitmqCluster *topology.RabbitmqClusterReference) *SuperStreamBindingBuilder {
-	return &SuperStreamBindingBuilder{builder, index, routingKey, rabbitmqCluster}
+func (builder *Builder) SuperStreamBinding(index int, routingKey, vhost string, rabbitmqCluster *topology.RabbitmqClusterReference) *SuperStreamBindingBuilder {
+	return &SuperStreamBindingBuilder{builder, index, routingKey, vhost, rabbitmqCluster}
 }
 
 func (builder *SuperStreamBindingBuilder) partitionSuffix() string {
@@ -40,6 +41,7 @@ func (builder *SuperStreamBindingBuilder) Update(object client.Object) error {
 	binding.Spec.DestinationType = "queue"
 	binding.Spec.Destination = fmt.Sprintf("%s-%s", builder.ObjectOwner.GetName(), builder.routingKey)
 	binding.Spec.RoutingKey = builder.routingKey
+	binding.Spec.Vhost = builder.vhost
 	binding.Spec.RabbitmqClusterReference = *builder.rabbitmqCluster
 
 	argumentString := fmt.Sprintf(`{"x-stream-partition-order": %d}`, builder.partitionIndex)

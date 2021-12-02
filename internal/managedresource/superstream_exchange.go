@@ -14,11 +14,12 @@ const (
 
 type SuperStreamExchangeBuilder struct {
 	*Builder
+	vhost           string
 	rabbitmqCluster *topology.RabbitmqClusterReference
 }
 
-func (builder *Builder) SuperStreamExchange(rabbitmqCluster *topology.RabbitmqClusterReference) *SuperStreamExchangeBuilder {
-	return &SuperStreamExchangeBuilder{builder, rabbitmqCluster}
+func (builder *Builder) SuperStreamExchange(vhost string, rabbitmqCluster *topology.RabbitmqClusterReference) *SuperStreamExchangeBuilder {
+	return &SuperStreamExchangeBuilder{builder, vhost, rabbitmqCluster}
 }
 
 func (builder *SuperStreamExchangeBuilder) Build() (client.Object, error) {
@@ -34,6 +35,7 @@ func (builder *SuperStreamExchangeBuilder) Update(object client.Object) error {
 	exchange := object.(*topology.Exchange)
 	exchange.Spec.Durable = true
 	exchange.Spec.Name = builder.ObjectOwner.GetName()
+	exchange.Spec.Vhost = builder.vhost
 	exchange.Spec.RabbitmqClusterReference = *builder.rabbitmqCluster
 
 	if err := controllerutil.SetControllerReference(builder.ObjectOwner, object, builder.Scheme); err != nil {

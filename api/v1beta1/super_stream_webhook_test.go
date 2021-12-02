@@ -28,6 +28,12 @@ var _ = Describe("superstream webhook", func() {
 		Expect(apierrors.IsForbidden(newSuperStream.ValidateUpdate(&superstream))).To(BeTrue())
 	})
 
+	It("does not allow updates on superstream vhost", func() {
+		newSuperStream := superstream.DeepCopy()
+		newSuperStream.Spec.Vhost = "new-vhost"
+		Expect(apierrors.IsForbidden(newSuperStream.ValidateUpdate(&superstream))).To(BeTrue())
+	})
+
 	It("does not allow updates on RabbitmqClusterReference", func() {
 		newSuperStream := superstream.DeepCopy()
 		newSuperStream.Spec.RabbitmqClusterReference = RabbitmqClusterReference{

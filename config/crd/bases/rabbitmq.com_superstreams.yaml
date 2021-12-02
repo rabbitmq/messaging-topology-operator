@@ -67,6 +67,10 @@ spec:
                 items:
                   type: string
                 type: array
+              vhost:
+                default: /
+                description: Default to vhost '/'; cannot be updated
+                type: string
             required:
             - name
             - rabbitmqClusterReference

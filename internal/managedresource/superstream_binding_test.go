@@ -27,7 +27,7 @@ var _ = Describe("SuperstreamBinding", func() {
 			ObjectOwner: &superStream,
 			Scheme:      scheme,
 		}
-		bindingBuilder = builder.SuperStreamBinding(678, "emea", testRabbitmqClusterReference)
+		bindingBuilder = builder.SuperStreamBinding(678, "emea", "vvv", testRabbitmqClusterReference)
 		obj, _ := bindingBuilder.Build()
 		binding = obj.(*topology.Binding)
 	})
@@ -68,6 +68,10 @@ var _ = Describe("SuperstreamBinding", func() {
 
 		It("sets the routing key", func() {
 			Expect(binding.Spec.RoutingKey).To(Equal("emea"))
+		})
+
+		It("sets the vhost", func() {
+			Expect(binding.Spec.Vhost).To(Equal("vvv"))
 		})
 
 		It("sets the expected RabbitmqClusterReference", func() {

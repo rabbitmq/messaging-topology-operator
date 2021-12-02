@@ -967,6 +967,7 @@ SuperStreamSpec defines the desired state of SuperStream
 |===
 | Field | Description
 | *`name`* __string__ | Name of the queue; required property.
+| *`vhost`* __string__ | Default to vhost '/'; cannot be updated
 | *`partitions`* __integer__ | Number of partitions to create within this super stream. Defaults to '3'.
 | *`routingKeys`* __string array__ | Routing keys to use for each of the partitions in the SuperStream If unset, the routing keys for the partitions will be set to the index of the partitions
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the SuperStream will be created in. Required property.

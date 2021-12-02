@@ -27,7 +27,7 @@ var _ = Describe("SuperstreamExchange", func() {
 			ObjectOwner: &superStream,
 			Scheme:      scheme,
 		}
-		exchangeBuilder = builder.SuperStreamExchange(testRabbitmqClusterReference)
+		exchangeBuilder = builder.SuperStreamExchange("vvv", testRabbitmqClusterReference)
 		obj, _ := exchangeBuilder.Build()
 		exchange = obj.(*topology.Exchange)
 	})
@@ -52,6 +52,10 @@ var _ = Describe("SuperstreamExchange", func() {
 
 		It("uses the name of the super stream as the name of the exchange", func() {
 			Expect(exchange.Spec.Name).To(Equal(superStream.Name))
+		})
+
+		It("sets the vhost", func() {
+			Expect(exchange.Spec.Vhost).To(Equal("vvv"))
 		})
 
 		It("generates a durable exchange", func() {

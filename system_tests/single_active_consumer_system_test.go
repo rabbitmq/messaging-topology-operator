@@ -20,6 +20,8 @@ var _ = Describe("SuperStream", func() {
 	var (
 		namespace               = MustHaveEnv("NAMESPACE")
 		ctx                     = context.Background()
+		vhost                   *topology.Vhost
+		vhostName               string
 		superStream             *topology.SuperStream
 		superStreamName         string
 		superStreamConsumer     *topology.SuperStreamConsumer
@@ -27,6 +29,18 @@ var _ = Describe("SuperStream", func() {
 	)
 
 	JustBeforeEach(func() {
+		vhost = &topology.Vhost{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      vhostName,
+				Namespace: namespace,
+			},
+			Spec: topology.VhostSpec{
+				Name: vhostName,
+				RabbitmqClusterReference: topology.RabbitmqClusterReference{
+					Name: rmq.Name,
+				},
+			},
+		}
 		superStream = &topology.SuperStream{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      superStreamName,
@@ -37,6 +51,7 @@ var _ = Describe("SuperStream", func() {
 					Name: rmq.Name,
 				},
 				Name:       superStreamName,
+				Vhost:      vhostName,
 				Partitions: 4,
 				RoutingKeys: []string{
 					"eu-west-1",
@@ -109,6 +124,7 @@ java -Dio.netty.processId=1 -jar super-stream-app.jar consumer --stream "${ACTIV
 				},
 			},
 		}
+		Expect(k8sClient.Create(ctx, vhost)).To(Succeed())
 	})
 
 	AfterEach(func() {
@@ -122,11 +138,13 @@ java -Dio.netty.processId=1 -jar super-stream-app.jar consumer --stream "${ACTIV
 			"../system_tests/fixtures/container-kill.yaml",
 			"--ignore-not-found",
 		)
+		_ = k8sClient.Delete(ctx, vhost)
 	})
 
 	When("just creating a superstream", func() {
 		BeforeEach(func() {
 			superStreamName = "super-stream-test"
+			vhostName = "super-vhost-1"
 		})
 		It("creates and deletes a superStream successfully", func() {
 			By("creating an exchange")
@@ -134,13 +152,13 @@ java -Dio.netty.processId=1 -jar super-stream-app.jar consumer --stream "${ACTIV
 			var exchangeInfo *rabbithole.DetailedExchangeInfo
 			Eventually(func() error {
 				var err error
-				exchangeInfo, err = rabbitClient.GetExchange("/", "super-stream-test")
+				exchangeInfo, err = rabbitClient.GetExchange(vhostName, "super-stream-test")
 				return err
-			}, 10, 2).Should(BeNil())
+			}, 1000, 2).Should(BeNil())
 
 			Expect(*exchangeInfo).To(MatchFields(IgnoreExtras, Fields{
 				"Name":       Equal("super-stream-test"),
-				"Vhost":      Equal("/"),
+				"Vhost":      Equal(vhostName),
 				"Type":       Equal("direct"),
 				"AutoDelete": BeFalse(),
 				"Durable":    BeTrue(),
@@ -151,13 +169,13 @@ java -Dio.netty.processId=1 -jar super-stream-app.jar consumer --stream "${ACTIV
 				var qInfo *rabbithole.DetailedQueueInfo
 				Eventually(func() error {
 					var err error
-					qInfo, err = rabbitClient.GetQueue("/", fmt.Sprintf("super-stream-test-%s", routingKey))
+					qInfo, err = rabbitClient.GetQueue(vhostName, fmt.Sprintf("super-stream-test-%s", routingKey))
 					return err
 				}, 10, 2).Should(BeNil())
 
 				Expect(*qInfo).To(MatchFields(IgnoreExtras, Fields{
 					"Name":       Equal(fmt.Sprintf("super-stream-test-%s", routingKey)),
-					"Vhost":      Equal("/"),
+					"Vhost":      Equal(vhostName),
 					"AutoDelete": Equal(rabbithole.AutoDelete(false)),
 					"Durable":    BeTrue(),
 					"Type":       Equal("stream"),
@@ -170,7 +188,7 @@ java -Dio.netty.processId=1 -jar super-stream-app.jar consumer --stream "${ACTIV
 				var fetchedBinding rabbithole.BindingInfo
 				Eventually(func() bool {
 					var err error
-					bindings, err := rabbitClient.ListBindingsIn("/")
+					bindings, err := rabbitClient.ListBindingsIn(vhostName)
 					Expect(err).NotTo(HaveOccurred())
 					for _, b := range bindings {
 						if b.Source == "super-stream-test" && b.Destination == fmt.Sprintf("super-stream-test-%s", routingKey) {
@@ -181,7 +199,7 @@ java -Dio.netty.processId=1 -jar super-stream-app.jar consumer --stream "${ACTIV
 					return false
 				}, 10, 2).Should(BeTrue(), "cannot find created binding")
 				Expect(fetchedBinding).To(MatchFields(IgnoreExtras, Fields{
-					"Vhost":           Equal("/"),
+					"Vhost":           Equal(vhostName),
 					"Source":          Equal("super-stream-test"),
 					"Destination":     Equal(fmt.Sprintf("super-stream-test-%s", routingKey)),
 					"DestinationType": Equal("queue"),
@@ -217,27 +235,27 @@ java -Dio.netty.processId=1 -jar super-stream-app.jar consumer --stream "${ACTIV
 			Expect(k8sClient.Delete(ctx, superStream)).To(Succeed())
 			var err error
 			Eventually(func() error {
-				_, err = rabbitClient.GetExchange("/", "super-stream-test")
+				_, err = rabbitClient.GetExchange(vhostName, "super-stream-test")
 				return err
 			}, 10).Should(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Object Not Found"))
 
 			By("deleting underlying resources")
 			Eventually(func() error {
-				_, err = rabbitClient.GetExchange("/", "super-stream-test")
+				_, err = rabbitClient.GetExchange(vhostName, "super-stream-test")
 				return err
 			}, 10, 2).Should(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Object Not Found"))
 
 			for _, routingKey := range superStream.Spec.RoutingKeys {
 				Eventually(func() error {
-					_, err = rabbitClient.GetQueue("/", fmt.Sprintf("super-stream-test-%s", routingKey))
+					_, err = rabbitClient.GetQueue(vhostName, fmt.Sprintf("super-stream-test-%s", routingKey))
 					return err
 				}, 10, 2).Should(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("Object Not Found"))
 
 				Eventually(func() bool {
-					bindings, err := rabbitClient.ListBindingsIn("/")
+					bindings, err := rabbitClient.ListBindingsIn(vhostName)
 					Expect(err).NotTo(HaveOccurred())
 					for _, b := range bindings {
 						if b.Source == "super-stream-test" && b.Destination == fmt.Sprintf("super-stream-test.%s", routingKey) {
@@ -283,6 +301,7 @@ java -Dio.netty.processId=1 -jar super-stream-app.jar consumer --stream "${ACTIV
 			BeforeEach(func() {
 				superStreamName = "topology-test"
 				superStreamConsumerName = "topology-consumer"
+				vhostName = "super-vhost-2"
 			})
 			It("creates a consumer pod for each partition in the super stream", func() {
 				containerName := func(element interface{}) string {
@@ -310,6 +329,7 @@ java -Dio.netty.processId=1 -jar super-stream-app.jar consumer --stream "${ACTIV
 			BeforeEach(func() {
 				superStreamName = "deletion-test"
 				superStreamConsumerName = "deletion-consumer"
+				vhostName = "super-vhost-3"
 			})
 			JustBeforeEach(func() {
 				Expect(k8sClient.Get(ctx, types.NamespacedName{Name: superStream.Name, Namespace: superStream.Namespace}, superStream)).To(Succeed())
@@ -324,7 +344,9 @@ java -Dio.netty.processId=1 -jar super-stream-app.jar consumer --stream "${ACTIV
 						managedresource.AnnotationSuperStream:          superStream.Name,
 						managedresource.AnnotationSuperStreamPartition: targetPartition,
 					}))).To(Succeed())
-					if len(consumerPods.Items) != 1 { return corev1.Pod{} }
+					if len(consumerPods.Items) != 1 {
+						return corev1.Pod{}
+					}
 					return consumerPods.Items[0]
 				}, 30*time.Second, 1*time.Second).Should(MatchFields(IgnoreExtras, Fields{
 					"ObjectMeta": MatchFields(IgnoreExtras, Fields{
@@ -339,6 +361,7 @@ java -Dio.netty.processId=1 -jar super-stream-app.jar consumer --stream "${ACTIV
 			BeforeEach(func() {
 				superStreamName = "error-test"
 				superStreamConsumerName = "error-consumer"
+				vhostName = "super-vhost-4"
 			})
 			It("recreates the container in the same Pod", func() {
 				if !environmentHasChaosMeshInstalled {
@@ -385,6 +408,7 @@ java -Dio.netty.processId=1 -jar super-stream-app.jar consumer --stream "${ACTIV
 			BeforeEach(func() {
 				superStreamName = "scaling-test"
 				superStreamConsumerName = "scaling-consumer"
+				vhostName = "super-vhost-5"
 			})
 			JustBeforeEach(func() {
 				Expect(k8sClient.Get(ctx, types.NamespacedName{Name: superStream.Name, Namespace: superStream.Namespace}, superStream)).To(Succeed())
@@ -407,14 +431,16 @@ java -Dio.netty.processId=1 -jar super-stream-app.jar consumer --stream "${ACTIV
 				}, 30*time.Second, 1*time.Second).Should(Succeed())
 
 				By("creating an extra consumer pod")
-				Eventually(func() error{
+				Eventually(func() error {
 					var consumerPods corev1.PodList
 					targetPartition := managedresource.RoutingKeyToPartitionName(superStream.Name, "eu-west-5")
 					Expect(k8sClient.List(ctx, &consumerPods, client.InNamespace(superStream.Namespace), client.MatchingLabels(map[string]string{
 						managedresource.AnnotationSuperStream:          superStream.Name,
 						managedresource.AnnotationSuperStreamPartition: targetPartition,
 					}))).To(Succeed())
-					if len(consumerPods.Items) != 1 {return fmt.Errorf("Cannot find pod for routing key eu-west-5")}
+					if len(consumerPods.Items) != 1 {
+						return fmt.Errorf("Cannot find pod for routing key eu-west-5")
+					}
 					return nil
 				}, 30*time.Second, 1*time.Second).Should(Succeed())
 

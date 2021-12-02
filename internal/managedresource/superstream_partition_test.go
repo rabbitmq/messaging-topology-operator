@@ -27,7 +27,7 @@ var _ = Describe("SuperstreamPartition", func() {
 			ObjectOwner: &superStream,
 			Scheme:      scheme,
 		}
-		partitionBuilder = builder.SuperStreamPartition("emea", testRabbitmqClusterReference)
+		partitionBuilder = builder.SuperStreamPartition("emea", "vvv", testRabbitmqClusterReference)
 		obj, _ := partitionBuilder.Build()
 		partition = obj.(*topology.Queue)
 	})
@@ -60,6 +60,10 @@ var _ = Describe("SuperstreamPartition", func() {
 
 		It("sets the name of the partition queue", func() {
 			Expect(partition.Spec.Name).To(Equal("foo-emea"))
+		})
+
+		It("sets the vhost", func() {
+			Expect(partition.Spec.Vhost).To(Equal("vvv"))
 		})
 
 		It("sets the expected RabbitmqClusterReference", func() {

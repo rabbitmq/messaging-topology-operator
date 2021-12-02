@@ -11,12 +11,13 @@ import (
 
 type SuperStreamPartitionBuilder struct {
 	*Builder
+	vhost           string
 	routingKey      string
 	rabbitmqCluster *topology.RabbitmqClusterReference
 }
 
-func (builder *Builder) SuperStreamPartition(routingKey string, rabbitmqCluster *topology.RabbitmqClusterReference) *SuperStreamPartitionBuilder {
-	return &SuperStreamPartitionBuilder{builder, routingKey, rabbitmqCluster}
+func (builder *Builder) SuperStreamPartition(routingKey, vhost string, rabbitmqCluster *topology.RabbitmqClusterReference) *SuperStreamPartitionBuilder {
+	return &SuperStreamPartitionBuilder{builder, vhost, routingKey, rabbitmqCluster}
 }
 
 func partitionSuffix(routingKey string) string {
@@ -37,6 +38,7 @@ func (builder *SuperStreamPartitionBuilder) Update(object client.Object) error {
 	partition.Spec.Name = RoutingKeyToPartitionName(builder.ObjectOwner.GetName(), builder.routingKey)
 	partition.Spec.Durable = true
 	partition.Spec.Type = "stream"
+	partition.Spec.Vhost = builder.vhost
 	partition.Spec.RabbitmqClusterReference = *builder.rabbitmqCluster
 
 	if err := controllerutil.SetControllerReference(builder.ObjectOwner, object, builder.Scheme); err != nil {

@@ -131,12 +131,12 @@ func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		Name:      rmq.Name,
 		Namespace: rmq.Namespace,
 	}
-	builders := []managedresource.ResourceBuilder{managedResourceBuilder.SuperStreamExchange(rmqClusterRef)}
+	builders := []managedresource.ResourceBuilder{managedResourceBuilder.SuperStreamExchange(superStream.Spec.Vhost, rmqClusterRef)}
 	for index, routingKey := range routingKeys {
 		builders = append(
 			builders,
-			managedResourceBuilder.SuperStreamPartition(routingKey, rmqClusterRef),
-			managedResourceBuilder.SuperStreamBinding(index, routingKey, rmqClusterRef),
+			managedResourceBuilder.SuperStreamPartition(routingKey, superStream.Spec.Vhost, rmqClusterRef),
+			managedResourceBuilder.SuperStreamBinding(index, routingKey, superStream.Spec.Vhost, rmqClusterRef),
 		)
 	}
 
