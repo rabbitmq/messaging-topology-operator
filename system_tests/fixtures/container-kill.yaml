@@ -1,0 +1,13 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: consumer-container-error
+spec:
+  action: container-kill
+  containerNames:
+  - super-stream-app
+  gracePeriod: 0
+  mode: one
+  selector:
+    labelSelectors:
+      rabbitmq.com/super-stream-partition: error-test-eu-west-2

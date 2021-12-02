@@ -42,11 +42,17 @@ var _ = Describe("superstream webhook", func() {
 		Expect(apierrors.IsForbidden(newSuperStream.ValidateUpdate(&superstream))).To(BeTrue())
 	})
 
-	It("if the superstream previously had no routing keys but now does, the update succeeds", func() {
+	It("if the superstream previously had routing keys and the update only appends, the update succeeds", func() {
+		newSuperStream := superstream.DeepCopy()
+		newSuperStream.Spec.RoutingKeys = []string{"a1", "b2", "f17", "z66"}
+		Expect(newSuperStream.ValidateUpdate(&superstream)).To(Succeed())
+	})
+
+	It("if the superstream previously had no routing keys but now does, the update fails", func() {
 		superstream.Spec.RoutingKeys = nil
 		newSuperStream := superstream.DeepCopy()
 		newSuperStream.Spec.RoutingKeys = []string{"a1", "b2", "f17"}
-		Expect(newSuperStream.ValidateUpdate(&superstream)).To(Succeed())
+		Expect(apierrors.IsForbidden(newSuperStream.ValidateUpdate(&superstream))).To(BeTrue())
 	})
 
 	It("allows superstream.spec.partitions to be increased", func() {

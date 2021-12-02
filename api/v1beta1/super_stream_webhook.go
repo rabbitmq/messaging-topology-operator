@@ -5,7 +5,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
@@ -32,7 +31,7 @@ func (s *SuperStream) ValidateUpdate(old runtime.Object) error {
 		return apierrors.NewBadRequest(fmt.Sprintf("expected a superstream but got a %T", old))
 	}
 
-	detailMsg := "updates on name, paritions, routingKeys and rabbitmqClusterReference are all forbidden"
+	detailMsg := "updates on name and rabbitmqClusterReference are all forbidden"
 	if s.Spec.Name != oldSuperStream.Spec.Name {
 		return apierrors.NewForbidden(s.GroupResource(), s.Name,
 			field.Forbidden(field.NewPath("spec", "name"), detailMsg))
@@ -43,9 +42,9 @@ func (s *SuperStream) ValidateUpdate(old runtime.Object) error {
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}
 
-	if !(oldSuperStream.Spec.RoutingKeys == nil || reflect.DeepEqual(s.Spec.RoutingKeys, oldSuperStream.Spec.RoutingKeys)) {
+	if !routingKeyUpdatePermitted(oldSuperStream.Spec.RoutingKeys, s.Spec.RoutingKeys) {
 		return apierrors.NewForbidden(s.GroupResource(), s.Name,
-			field.Forbidden(field.NewPath("spec", "routingKeys"), detailMsg))
+			field.Forbidden(field.NewPath("spec", "routingKeys"), "updates may only add to the existing list of routing keys"))
 	}
 
 	if s.Spec.Partitions < oldSuperStream.Spec.Partitions {
@@ -59,4 +58,14 @@ func (s *SuperStream) ValidateUpdate(old runtime.Object) error {
 // ValidateDelete no validation on delete
 func (s *SuperStream) ValidateDelete() error {
 	return nil
+}
+
+// routingKeyUpdatePermitted allows updates only if adding additional keys at the end of the list of keys
+func routingKeyUpdatePermitted(old, new []string) bool {
+	for i := 0; i < len(old); i++ {
+		if old[i] != new[i] {
+			return false
+		}
+	}
+	return true
 }

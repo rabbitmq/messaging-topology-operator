@@ -158,10 +158,9 @@ var _ = Describe("super-stream-consumer-controller", func() {
 					"Status": Equal(corev1.ConditionTrue),
 				})))
 
-				err := client.List(ctx, &podList, runtimeClient.InNamespace(superStreamConsumer.Namespace), runtimeClient.MatchingLabels(map[string]string{
+				Expect(client.List(ctx, &podList, runtimeClient.InNamespace(superStreamConsumer.Namespace), runtimeClient.MatchingLabels(map[string]string{
 					managedresource.AnnotationSuperStream: superStreamName,
-				}))
-				Expect(err).NotTo(HaveOccurred())
+				}))).To(Succeed())
 				sort.Slice(byNamePrefixPodSorter(podList.Items))
 			})
 
@@ -170,6 +169,7 @@ var _ = Describe("super-stream-consumer-controller", func() {
 					superStreamName = "modify"
 					superStreamConsumerName = "default-change"
 					routingKeys = nil
+					partitions = 3
 					consumerPodSpec = topology.SuperStreamConsumerPodSpec{
 						Default: &corev1.PodSpec{
 							Containers: []corev1.Container{
@@ -213,6 +213,7 @@ var _ = Describe("super-stream-consumer-controller", func() {
 				BeforeEach(func() {
 					superStreamName = "removal"
 					superStreamConsumerName = "routing-key-removal"
+					partitions = 3
 					routingKeys = []string{"foo", "bar", "baz"}
 					consumerPodSpec = topology.SuperStreamConsumerPodSpec{
 						Default: &corev1.PodSpec{
@@ -331,7 +332,7 @@ var _ = Describe("super-stream-consumer-controller", func() {
 					superStreamConsumer.Spec.ConsumerPodSpec.PerRoutingKey["bar"] = &corev1.PodSpec{
 						Containers: []corev1.Container{
 							{
-								Name: "my-special-container",
+								Name:  "my-special-container",
 								Image: "my-special-image",
 							},
 						},

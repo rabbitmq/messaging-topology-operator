@@ -13,7 +13,7 @@ import (
 const (
 	AnnotationSuperStream          = "rabbitmq.com/super-stream"
 	AnnotationSuperStreamPartition = "rabbitmq.com/super-stream-partition"
-	AnnotationConsumerPodSpecHash = "rabbitmq.com/consumer-pod-spec-hash"
+	AnnotationConsumerPodSpecHash  = "rabbitmq.com/consumer-pod-spec-hash"
 )
 
 type SuperStreamConsumerPodBuilder struct {
@@ -39,7 +39,7 @@ func (builder *SuperStreamConsumerPodBuilder) Build() (client.Object, error) {
 			Labels: map[string]string{
 				AnnotationSuperStream:          builder.superStreamName,
 				AnnotationSuperStreamPartition: builder.partition,
-				AnnotationConsumerPodSpecHash: strconv.FormatUint(podSpecHash, 16),
+				AnnotationConsumerPodSpecHash:  strconv.FormatUint(podSpecHash, 16),
 			},
 		},
 		Spec: builder.podSpec,

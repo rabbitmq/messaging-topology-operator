@@ -64,7 +64,7 @@ func (r *SuperStreamConsumerReconciler) Reconcile(ctx context.Context, req ctrl.
 	}
 	if len(referencedSuperStream.Status.Partitions) != referencedSuperStream.Spec.Partitions {
 		// The object is likely being reconciled, wait until all the partitions are created
-		return reconcile.Result{RequeueAfter: 1*time.Second}, nil
+		return reconcile.Result{RequeueAfter: 1 * time.Second}, nil
 	}
 
 	managedResourceBuilder := managedresource.Builder{
@@ -118,8 +118,8 @@ func (r *SuperStreamConsumerReconciler) Reconcile(ctx context.Context, req ctrl.
 	}
 
 	for resource, builder := range podBuilders {
-		existingPod, err := r.existingActiveConsumerPod(ctx, referencedSuperStream.Namespace, map[string]string {
-			managedresource.AnnotationSuperStream: resource.Labels[managedresource.AnnotationSuperStream],
+		existingPod, err := r.existingActiveConsumerPod(ctx, referencedSuperStream.Namespace, map[string]string{
+			managedresource.AnnotationSuperStream:          resource.Labels[managedresource.AnnotationSuperStream],
 			managedresource.AnnotationSuperStreamPartition: resource.Labels[managedresource.AnnotationSuperStreamPartition],
 		})
 		if err != nil {
@@ -196,7 +196,7 @@ func (r *SuperStreamConsumerReconciler) SetupWithManager(mgr ctrl.Manager) error
 			&source.Kind{Type: &topology.SuperStream{}},
 			handler.EnqueueRequestsFromMapFunc(r.findConsumersForSuperStream),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
-			).
+		).
 		Complete(r)
 }
 

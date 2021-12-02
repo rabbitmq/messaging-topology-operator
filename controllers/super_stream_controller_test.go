@@ -60,11 +60,11 @@ var _ = Describe("super-stream-controller", func() {
 					By("creating an exchange", func() {
 						var exchange topology.Exchange
 						EventuallyWithOffset(1, func() error {
-								return client.Get(
-									ctx,
-									types.NamespacedName{Name: superStreamName + "-exchange", Namespace: "default"},
-									&exchange,
-								)
+							return client.Get(
+								ctx,
+								types.NamespacedName{Name: superStreamName + "-exchange", Namespace: "default"},
+								&exchange,
+							)
 						}, 10*time.Second, 1*time.Second).Should(Succeed())
 						Expect(exchange.Spec).To(MatchFields(IgnoreExtras, Fields{
 							"Name":    Equal(superStreamName),
