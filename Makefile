@@ -4,8 +4,6 @@ platform := $(shell uname | tr A-Z a-z)
 # runs the target list by default
 .DEFAULT_GOAL = list
 
-CRD_OPTIONS ?= "crd:trivialVersions=true, preserveUnknownFields=false"
-
 # Insert a comment starting with '##' after a target, and it will be printed by 'make' and 'make list'
 list:    ## list Makefile targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -93,7 +91,7 @@ deploy-rbac:
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: install-tools
-	controller-gen $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	controller-gen crd rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 # Generate API reference documentation
 api-reference:
