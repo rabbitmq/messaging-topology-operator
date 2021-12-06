@@ -33,6 +33,10 @@ type Interface interface {
 	SchemaReplications() SchemaReplicationInformer
 	// Shovels returns a ShovelInformer.
 	Shovels() ShovelInformer
+	// SuperStreams returns a SuperStreamInformer.
+	SuperStreams() SuperStreamInformer
+	// SuperStreamConsumers returns a SuperStreamConsumerInformer.
+	SuperStreamConsumers() SuperStreamConsumerInformer
 	// Users returns a UserInformer.
 	Users() UserInformer
 	// Vhosts returns a VhostInformer.
@@ -88,6 +92,16 @@ func (v *version) SchemaReplications() SchemaReplicationInformer {
 // Shovels returns a ShovelInformer.
 func (v *version) Shovels() ShovelInformer {
 	return &shovelInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// SuperStreams returns a SuperStreamInformer.
+func (v *version) SuperStreams() SuperStreamInformer {
+	return &superStreamInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// SuperStreamConsumers returns a SuperStreamConsumerInformer.
+func (v *version) SuperStreamConsumers() SuperStreamConsumerInformer {
+	return &superStreamConsumerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Users returns a UserInformer.

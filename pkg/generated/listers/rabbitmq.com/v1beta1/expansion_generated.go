@@ -75,6 +75,22 @@ type ShovelListerExpansion interface{}
 // ShovelNamespaceLister.
 type ShovelNamespaceListerExpansion interface{}
 
+// SuperStreamListerExpansion allows custom methods to be added to
+// SuperStreamLister.
+type SuperStreamListerExpansion interface{}
+
+// SuperStreamNamespaceListerExpansion allows custom methods to be added to
+// SuperStreamNamespaceLister.
+type SuperStreamNamespaceListerExpansion interface{}
+
+// SuperStreamConsumerListerExpansion allows custom methods to be added to
+// SuperStreamConsumerLister.
+type SuperStreamConsumerListerExpansion interface{}
+
+// SuperStreamConsumerNamespaceListerExpansion allows custom methods to be added to
+// SuperStreamConsumerNamespaceLister.
+type SuperStreamConsumerNamespaceListerExpansion interface{}
+
 // UserListerExpansion allows custom methods to be added to
 // UserLister.
 type UserListerExpansion interface{}

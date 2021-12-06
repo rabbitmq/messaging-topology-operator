@@ -27,6 +27,8 @@ type RabbitmqV1beta1Interface interface {
 	QueuesGetter
 	SchemaReplicationsGetter
 	ShovelsGetter
+	SuperStreamsGetter
+	SuperStreamConsumersGetter
 	UsersGetter
 	VhostsGetter
 }
@@ -66,6 +68,14 @@ func (c *RabbitmqV1beta1Client) SchemaReplications(namespace string) SchemaRepli
 
 func (c *RabbitmqV1beta1Client) Shovels(namespace string) ShovelInterface {
 	return newShovels(c, namespace)
+}
+
+func (c *RabbitmqV1beta1Client) SuperStreams(namespace string) SuperStreamInterface {
+	return newSuperStreams(c, namespace)
+}
+
+func (c *RabbitmqV1beta1Client) SuperStreamConsumers(namespace string) SuperStreamConsumerInterface {
+	return newSuperStreamConsumers(c, namespace)
 }
 
 func (c *RabbitmqV1beta1Client) Users(namespace string) UserInterface {

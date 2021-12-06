@@ -53,6 +53,14 @@ func (c *FakeRabbitmqV1beta1) Shovels(namespace string) v1beta1.ShovelInterface 
 	return &FakeShovels{c, namespace}
 }
 
+func (c *FakeRabbitmqV1beta1) SuperStreams(namespace string) v1beta1.SuperStreamInterface {
+	return &FakeSuperStreams{c, namespace}
+}
+
+func (c *FakeRabbitmqV1beta1) SuperStreamConsumers(namespace string) v1beta1.SuperStreamConsumerInterface {
+	return &FakeSuperStreamConsumers{c, namespace}
+}
+
 func (c *FakeRabbitmqV1beta1) Users(namespace string) v1beta1.UserInterface {
 	return &FakeUsers{c, namespace}
 }
