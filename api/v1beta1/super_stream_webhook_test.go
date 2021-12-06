@@ -8,19 +8,22 @@ import (
 )
 
 var _ = Describe("superstream webhook", func() {
-	var superstream = SuperStream{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test",
-		},
-		Spec: SuperStreamSpec{
-			Name:        "test",
-			Partitions:  4,
-			RoutingKeys: []string{"a1", "b2", "f17"},
-			RabbitmqClusterReference: RabbitmqClusterReference{
-				Name: "a-cluster",
+	var superstream = SuperStream{}
+	BeforeEach(func() {
+		superstream = SuperStream{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "test",
 			},
-		},
-	}
+			Spec: SuperStreamSpec{
+				Name:        "test",
+				Partitions:  4,
+				RoutingKeys: []string{"a1", "b2", "f17"},
+				RabbitmqClusterReference: RabbitmqClusterReference{
+					Name: "a-cluster",
+				},
+			},
+		}
+	})
 
 	It("does not allow updates on superstream name", func() {
 		newSuperStream := superstream.DeepCopy()
