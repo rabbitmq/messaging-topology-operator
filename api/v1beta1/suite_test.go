@@ -33,6 +33,8 @@ var _ = BeforeSuite(func() {
 		CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},
 	}
 
+	testEnv.ControlPlane.GetAPIServer().Configure().Set("bind-address", "127.0.0.1")
+
 	err := SchemeBuilder.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 

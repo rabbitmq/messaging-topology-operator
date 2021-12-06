@@ -8,15 +8,18 @@ CRD_OPTIONS ?= "crd:trivialVersions=true, preserveUnknownFields=false"
 
 # Insert a comment starting with '##' after a target, and it will be printed by 'make' and 'make list'
 list:    ## list Makefile targets
-	@echo "The most used targets: \n"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
+define get_mod_code_generator
+echo "Only go get & mod k8s.io/code-generator, but do not install it"
+echo "⚠️  Keep it at the same version as captured in go.mod, otherwise we may end up with version inconsistencies"
+awk '/k8s.io\/code-generator/ { system("go get -d " $$1 "@" $$2) }' go.mod
+endef
 install-tools:
 	go mod download
-	grep _ tools/tools.go | awk -F '"' '{print $$2}' | grep -v k8s.io/code-generator | xargs -t go install
-	# This one just needs to be fetched and not installed, get & mod so it ends up in the right place.
-	# Note we grep it out above, and just do a go get & go mod for it.
-	go get -d k8s.io/code-generator
+	@echo "Install all tools..."
+	@awk -F '"' '/_/ && !/k8s.io\/code-generator/ { system("go install " $$2) }' tools/tools.go
+	@$(get_mod_code_generator)
 
 ENVTEST_K8S_VERSION = 1.20.2
 ARCHITECTURE = amd64
@@ -31,7 +34,7 @@ $(KUBEBUILDER_ASSETS):
 
 .PHONY: unit-tests
 unit-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet manifests ## Run unit tests
-	ginkgo -r --randomizeAllSpecs -p api/ internal/
+	ginkgo -r --randomizeAllSpecs api/ internal/
 
 .PHONY: integration-tests
 integration-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet manifests ## Run integration tests
@@ -115,9 +118,7 @@ generate: install-tools api-reference
 	controller-gen object:headerFile="hack/NOTICE.go.txt" paths="./..."
 
 generate-client-set:
-	# This one just needs to be fetched and not installed, get & mod so it ends up in the right place.
-	# Note we grep it out above, and just do a go get & go mod for it.
-	go get -d k8s.io/code-generator
+	$(get_mod_code_generator)
 	go mod vendor
 	./hack/update-codegen.sh
 
