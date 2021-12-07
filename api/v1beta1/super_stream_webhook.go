@@ -24,7 +24,7 @@ func (s *SuperStream) ValidateCreate() error {
 	return nil
 }
 
-// returns error type 'forbidden' for updates on superstream name and rabbitmqClusterReference
+// returns error type 'forbidden' for updates on superstream name, vhost and rabbitmqClusterReference
 func (s *SuperStream) ValidateUpdate(old runtime.Object) error {
 	oldSuperStream, ok := old.(*SuperStream)
 	if !ok {

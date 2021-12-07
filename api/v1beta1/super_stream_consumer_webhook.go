@@ -24,14 +24,14 @@ func (s *SuperStreamConsumer) ValidateCreate() error {
 	return nil
 }
 
-// returns error type 'forbidden' for updates on superstream name and rabbitmqClusterReference
+// returns error type 'forbidden' for updates on superStreamReference
 func (s *SuperStreamConsumer) ValidateUpdate(old runtime.Object) error {
 	oldSuperStreamConsumer, ok := old.(*SuperStreamConsumer)
 	if !ok {
 		return apierrors.NewBadRequest(fmt.Sprintf("expected a superstream but got a %T", old))
 	}
 
-	detailMsg := "updates on superStreamReference and consumerPodSpec are forbidden"
+	detailMsg := "updates on superStreamReference are forbidden"
 
 	if s.Spec.SuperStreamReference != oldSuperStreamConsumer.Spec.SuperStreamReference {
 		return apierrors.NewForbidden(s.GroupResource(), s.Name,

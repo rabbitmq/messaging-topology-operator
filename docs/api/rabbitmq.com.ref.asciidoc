@@ -875,8 +875,8 @@ SuperStreamConsumerList contains a list of SuperStreamConsumers
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`default`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#podspec-v1-core[$$PodSpec$$]__ | 
-| *`perRoutingKey`* __object (keys:string, values:link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#podspec-v1-core[$$PodSpec$$])__ | 
+| *`default`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#podspec-v1-core[$$PodSpec$$]__ | Default defines the PodSpec to use for all consumer Pods, if no routing key-specific PodSpec is provided.
+| *`perRoutingKey`* __object (keys:string, values:link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#podspec-v1-core[$$PodSpec$$])__ | PerRoutingKey maps PodsSpecs to specific routing keys. If a consumer is spun up for a SuperStream partition, and the routing key for that partition matches an entry in PerRoutingKey, that PodSpec will be used for the consumer Pod; otherwise the default PodSpec is used.
 |===
 
 
@@ -893,8 +893,8 @@ SuperStreamConsumerSpec defines the desired state of SuperStreamConsumer
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`superStreamReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-superstreamreference[$$SuperStreamReference$$]__ | Reference to the SuperStream that the SuperStreamConsumer will consume from Required property.
-| *`consumerPodSpec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-superstreamconsumerpodspec[$$SuperStreamConsumerPodSpec$$]__ | 
+| *`superStreamReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-superstreamreference[$$SuperStreamReference$$]__ | Reference to the SuperStream that the SuperStreamConsumer will consume from, in the same namespace. Required property.
+| *`consumerPodSpec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-superstreamconsumerpodspec[$$SuperStreamConsumerPodSpec$$]__ | ConsumerPodSpec defines the PodSpecs to use for any consumer Pods that are created for the SuperStream.
 |===
 
 
@@ -949,7 +949,6 @@ SuperStreamList contains a list of SuperStreams
 |===
 | Field | Description
 | *`name`* __string__ | The name of the SuperStream to reference.
-| *`namespace`* __string__ | The namespace of the SuperStream to reference. Defaults to the namespace of the requested resource if omitted.
 |===
 
 

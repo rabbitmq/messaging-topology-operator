@@ -17,17 +17,22 @@ import (
 
 // SuperStreamConsumerSpec defines the desired state of SuperStreamConsumer
 type SuperStreamConsumerSpec struct {
-	// Reference to the SuperStream that the SuperStreamConsumer will consume from
+	// Reference to the SuperStream that the SuperStreamConsumer will consume from, in the same namespace.
 	// Required property.
 	// +kubebuilder:validation:Required
 	SuperStreamReference SuperStreamReference `json:"superStreamReference"`
+	// ConsumerPodSpec defines the PodSpecs to use for any consumer Pods that are created for the SuperStream.
 	// +kubebuilder:validation:Required
 	ConsumerPodSpec SuperStreamConsumerPodSpec `json:"consumerPodSpec"`
 }
 
 type SuperStreamConsumerPodSpec struct {
+	// Default defines the PodSpec to use for all consumer Pods, if no routing key-specific PodSpec is provided.
 	// +kubebuilder:validation:Optional
 	Default *corev1.PodSpec `json:"default,omitempty"`
+	// PerRoutingKey maps PodsSpecs to specific routing keys. If a consumer is spun up for a SuperStream partition,
+	// and the routing key for that partition matches an entry in PerRoutingKey, that PodSpec will be used for the
+	// consumer Pod; otherwise the default PodSpec is used.
 	// +kubebuilder:validation:Optional
 	PerRoutingKey map[string]*corev1.PodSpec `json:"perRoutingKey,omitempty"`
 }
@@ -74,10 +79,6 @@ type SuperStreamReference struct {
 	// The name of the SuperStream to reference.
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`
-	// The namespace of the SuperStream to reference.
-	// Defaults to the namespace of the requested resource if omitted.
-	// +kubebuilder:validation:Optional
-	Namespace string `json:"namespace"`
 }
 
 func init() {
