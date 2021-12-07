@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"time"
-
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
@@ -46,32 +44,8 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	rmq, svc, secret, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, vhost.Spec.RabbitmqClusterReference, vhost.Namespace)
-	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !vhost.ObjectMeta.DeletionTimestamp.IsZero() {
-		logger.Info(noSuchRabbitDeletion, "vhost", vhost.Name)
-		r.Recorder.Event(vhost, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted vhost")
-		return reconcile.Result{}, removeFinalizer(ctx, r.Client, vhost)
-	}
-	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
-		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
-		// the Cluster is temporarily down. Requeue until it comes back up.
-		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
-		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
-	}
-	if errors.Is(err, internal.ResourceNotAllowedError) {
-		logger.Info("Could not create vhost resource: " + err.Error())
-		vhost.Status.Conditions = []topology.Condition{
-			topology.NotReady(internal.ResourceNotAllowedError.Error(), vhost.Status.Conditions),
-		}
-		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
-			return r.Status().Update(ctx, vhost)
-		}); writerErr != nil {
-			logger.Error(writerErr, failedStatusUpdate, "status", vhost.Status)
-		}
-		return reconcile.Result{}, nil
-	}
 	if err != nil {
-		logger.Error(err, failedParseClusterRef)
-		return reconcile.Result{}, err
+		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, vhost, &vhost.Status.Conditions, err)
 	}
 
 	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, secret, serviceDNSAddress(svc), systemCertPool)

@@ -13,8 +13,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"time"
-
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
@@ -56,32 +54,8 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	rmq, svc, secret, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, policy.Spec.RabbitmqClusterReference, policy.Namespace)
-	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !policy.ObjectMeta.DeletionTimestamp.IsZero() {
-		logger.Info(noSuchRabbitDeletion, "policy", policy.Name)
-		r.Recorder.Event(policy, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted policy")
-		return reconcile.Result{}, removeFinalizer(ctx, r.Client, policy)
-	}
-	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
-		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
-		// the Cluster is temporarily down. Requeue until it comes back up.
-		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
-		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
-	}
-	if errors.Is(err, internal.ResourceNotAllowedError) {
-		logger.Info("Could not create policy resource: " + err.Error())
-		policy.Status.Conditions = []topology.Condition{
-			topology.NotReady(internal.ResourceNotAllowedError.Error(), policy.Status.Conditions),
-		}
-		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
-			return r.Status().Update(ctx, policy)
-		}); writerErr != nil {
-			logger.Error(writerErr, failedStatusUpdate, "status", policy.Status)
-		}
-		return reconcile.Result{}, nil
-	}
 	if err != nil {
-		logger.Error(err, failedParseClusterRef)
-		return reconcile.Result{}, err
+		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, policy, &policy.Status.Conditions, err)
 	}
 
 	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, secret, serviceDNSAddress(svc), systemCertPool)

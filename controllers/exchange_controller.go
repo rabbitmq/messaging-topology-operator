@@ -13,8 +13,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"time"
-
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
@@ -55,32 +53,8 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	rmq, svc, secret, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, exchange.Spec.RabbitmqClusterReference, exchange.Namespace)
-	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !exchange.ObjectMeta.DeletionTimestamp.IsZero() {
-		logger.Info(noSuchRabbitDeletion, "exchange", exchange.Name)
-		r.Recorder.Event(exchange, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted exchange")
-		return reconcile.Result{}, removeFinalizer(ctx, r.Client, exchange)
-	}
-	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
-		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
-		// the Cluster is temporarily down. Requeue until it comes back up.
-		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
-		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
-	}
-	if errors.Is(err, internal.ResourceNotAllowedError) {
-		logger.Info("Could not create exchange resource: " + err.Error())
-		exchange.Status.Conditions = []topology.Condition{
-			topology.NotReady(internal.ResourceNotAllowedError.Error(), exchange.Status.Conditions),
-		}
-		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
-			return r.Status().Update(ctx, exchange)
-		}); writerErr != nil {
-			logger.Error(writerErr, failedStatusUpdate, "status", exchange.Status)
-		}
-		return reconcile.Result{}, nil
-	}
 	if err != nil {
-		logger.Error(err, failedParseClusterRef)
-		return reconcile.Result{}, err
+		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, exchange, &exchange.Status.Conditions, err)
 	}
 
 	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, secret, serviceDNSAddress(svc), systemCertPool)

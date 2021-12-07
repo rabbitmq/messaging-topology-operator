@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
-
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -50,32 +48,8 @@ func (r *SchemaReplicationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	rmq, svc, secret, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, replication.Spec.RabbitmqClusterReference, replication.Namespace)
-	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !replication.ObjectMeta.DeletionTimestamp.IsZero() {
-		logger.Info(noSuchRabbitDeletion, "replication", replication.Name)
-		r.Recorder.Event(replication, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted replication")
-		return reconcile.Result{}, removeFinalizer(ctx, r.Client, replication)
-	}
-	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
-		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
-		// the Cluster is temporarily down. Requeue until it comes back up.
-		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
-		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
-	}
-	if errors.Is(err, internal.ResourceNotAllowedError) {
-		logger.Info("Could not create schema replication resource: " + err.Error())
-		replication.Status.Conditions = []topology.Condition{
-			topology.NotReady(internal.ResourceNotAllowedError.Error(), replication.Status.Conditions),
-		}
-		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
-			return r.Status().Update(ctx, replication)
-		}); writerErr != nil {
-			logger.Error(writerErr, failedStatusUpdate, "status", replication.Status)
-		}
-		return reconcile.Result{}, nil
-	}
 	if err != nil {
-		logger.Error(err, failedParseClusterRef)
-		return reconcile.Result{}, err
+		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, replication, &replication.Status.Conditions, err)
 	}
 
 	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, secret, serviceDNSAddress(svc), systemCertPool)
