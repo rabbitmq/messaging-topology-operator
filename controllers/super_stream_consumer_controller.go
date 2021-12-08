@@ -215,9 +215,6 @@ func (r *SuperStreamConsumerReconciler) SetupWithManager(mgr ctrl.Manager) error
 	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&topology.SuperStreamConsumer{}).
-		Owns(&topology.Exchange{}).
-		Owns(&topology.Binding{}).
-		Owns(&topology.Queue{}).
 		Owns(&corev1.Pod{}).
 		Watches(
 			&source.Kind{Type: &topology.SuperStream{}},

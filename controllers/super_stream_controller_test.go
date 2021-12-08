@@ -34,6 +34,18 @@ var _ = Describe("super-stream-controller", func() {
 				Status:     "201 Created",
 				StatusCode: http.StatusCreated,
 			}, nil)
+			fakeRabbitMQClient.DeleteExchangeReturns(&http.Response{
+				Status:     "204 No Content",
+				StatusCode: http.StatusNoContent,
+			}, nil)
+			fakeRabbitMQClient.DeleteQueueReturns(&http.Response{
+				Status:     "204 No Content",
+				StatusCode: http.StatusNoContent,
+			}, nil)
+			fakeRabbitMQClient.DeleteBindingReturns(&http.Response{
+				Status:     "204 No Content",
+				StatusCode: http.StatusNoContent,
+			}, nil)
 			superStream = topology.SuperStream{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      superStreamName,
@@ -156,6 +168,256 @@ var _ = Describe("super-stream-controller", func() {
 							"Reason": Equal("SuccessfulCreateOrUpdate"),
 							"Status": Equal(corev1.ConditionTrue),
 						})))
+					})
+				})
+			})
+
+			When("an underlying resource is deleted", func() {
+				JustBeforeEach(func() {
+					Expect(client.Create(ctx, &superStream)).To(Succeed())
+					EventuallyWithOffset(1, func() []topology.Condition {
+						_ = client.Get(
+							ctx,
+							types.NamespacedName{Name: superStreamName, Namespace: "default"},
+							&superStream,
+						)
+
+						return superStream.Status.Conditions
+					}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+						"Type":   Equal(topology.ConditionType("Ready")),
+						"Reason": Equal("SuccessfulCreateOrUpdate"),
+						"Status": Equal(corev1.ConditionTrue),
+					})))
+				})
+				When("a binding is deleted", func() {
+					BeforeEach(func() {
+						superStreamName = "delete-binding"
+					})
+					It("recreates the missing object", func() {
+						var binding topology.Binding
+						expectedBindingName := fmt.Sprintf("%s-binding-2", superStreamName)
+						Expect(client.Get(
+							ctx,
+							types.NamespacedName{Name: expectedBindingName, Namespace: "default"},
+							&binding,
+						)).To(Succeed())
+						initialCreationTimestamp := binding.CreationTimestamp
+						Expect(client.Delete(ctx, &binding)).To(Succeed())
+
+						By("setting the status condition 'Ready' to 'true' ", func() {
+							EventuallyWithOffset(1, func() []topology.Condition {
+								_ = client.Get(
+									ctx,
+									types.NamespacedName{Name: superStreamName, Namespace: "default"},
+									&superStream,
+								)
+
+								return superStream.Status.Conditions
+							}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+								"Type":   Equal(topology.ConditionType("Ready")),
+								"Reason": Equal("SuccessfulCreateOrUpdate"),
+								"Status": Equal(corev1.ConditionTrue),
+							})))
+						})
+
+						By("recreating the queue", func() {
+							EventuallyWithOffset(1, func() bool {
+								err := client.Get(
+									ctx,
+									types.NamespacedName{Name: expectedBindingName, Namespace: "default"},
+									&binding,
+								)
+								if err != nil {
+									return false
+								}
+								return binding.CreationTimestamp != initialCreationTimestamp
+							}, 10*time.Second, 1*time.Second).Should(BeTrue())
+						})
+					})
+				})
+				When("a queue is deleted", func() {
+					BeforeEach(func() {
+						superStreamName = "delete-queue"
+					})
+					It("recreates the missing object", func() {
+						var queue topology.Queue
+						expectedQueueName := fmt.Sprintf("%s-partition-1", superStreamName)
+						Expect(client.Get(
+							ctx,
+							types.NamespacedName{Name: expectedQueueName, Namespace: "default"},
+							&queue,
+						)).To(Succeed())
+						initialCreationTimestamp := queue.CreationTimestamp
+						Expect(client.Delete(ctx, &queue)).To(Succeed())
+
+						By("setting the status condition 'Ready' to 'true' ", func() {
+							EventuallyWithOffset(1, func() []topology.Condition {
+								_ = client.Get(
+									ctx,
+									types.NamespacedName{Name: superStreamName, Namespace: "default"},
+									&superStream,
+								)
+
+								return superStream.Status.Conditions
+							}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+								"Type":   Equal(topology.ConditionType("Ready")),
+								"Reason": Equal("SuccessfulCreateOrUpdate"),
+								"Status": Equal(corev1.ConditionTrue),
+							})))
+						})
+
+						By("recreating the queue", func() {
+							EventuallyWithOffset(1, func() bool {
+								err := client.Get(
+									ctx,
+									types.NamespacedName{Name: expectedQueueName, Namespace: "default"},
+									&queue,
+								)
+								if err != nil {
+									return false
+								}
+								return queue.CreationTimestamp != initialCreationTimestamp
+							}, 10*time.Second, 1*time.Second).Should(BeTrue())
+						})
+					})
+				})
+				When("the exchange is deleted", func() {
+					BeforeEach(func() {
+						superStreamName = "delete-exchange"
+					})
+					It("recreates the missing object", func() {
+						var exchange topology.Exchange
+						Expect(client.Get(
+							ctx,
+							types.NamespacedName{Name: superStreamName + "-exchange", Namespace: "default"},
+							&exchange,
+						)).To(Succeed())
+						initialCreationTimestamp := exchange.CreationTimestamp
+						Expect(client.Delete(ctx, &exchange)).To(Succeed())
+
+						By("setting the status condition 'Ready' to 'true' ", func() {
+							EventuallyWithOffset(1, func() []topology.Condition {
+								_ = client.Get(
+									ctx,
+									types.NamespacedName{Name: superStreamName, Namespace: "default"},
+									&superStream,
+								)
+
+								return superStream.Status.Conditions
+							}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+								"Type":   Equal(topology.ConditionType("Ready")),
+								"Reason": Equal("SuccessfulCreateOrUpdate"),
+								"Status": Equal(corev1.ConditionTrue),
+							})))
+						})
+
+						By("recreating the exchange", func() {
+							EventuallyWithOffset(1, func() bool {
+								err := client.Get(
+									ctx,
+									types.NamespacedName{Name: superStreamName + "-exchange", Namespace: "default"},
+									&exchange,
+								)
+								if err != nil {
+									return false
+								}
+								return exchange.CreationTimestamp != initialCreationTimestamp
+							}, 10*time.Second, 1*time.Second).Should(BeTrue())
+						})
+					})
+				})
+				When("the super stream is scaled down", func() {
+					var originalPartitionCount int
+					BeforeEach(func() {
+						superStreamName = "scale-down-super-stream"
+					})
+					It("refuses scaling down the partitions with a helpful warning", func() {
+						_ = client.Get(
+							ctx,
+							types.NamespacedName{Name: superStreamName, Namespace: "default"},
+							&superStream,
+						)
+						originalPartitionCount = len(superStream.Status.Partitions)
+						superStream.Spec.Partitions = 1
+						Expect(client.Update(ctx, &superStream)).To(Succeed())
+
+						By("setting the status condition 'Ready' to 'false' ", func() {
+							EventuallyWithOffset(1, func() []topology.Condition {
+								_ = client.Get(
+									ctx,
+									types.NamespacedName{Name: superStreamName, Namespace: "default"},
+									&superStream,
+								)
+
+								return superStream.Status.Conditions
+							}, 5*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+								"Type":   Equal(topology.ConditionType("Ready")),
+								"Reason": Equal("FailedCreateOrUpdate"),
+								"Status": Equal(corev1.ConditionFalse),
+							})))
+						})
+						By("retaining the original stream queue partitions", func() {
+							var partition topology.Queue
+							expectedQueueNames = []string{}
+							for i := 0; i < originalPartitionCount; i++ {
+								expectedQueueName := fmt.Sprintf("%s-partition-%s", superStreamName, strconv.Itoa(i))
+								Expect(client.Get(
+									ctx,
+									types.NamespacedName{Name: expectedQueueName, Namespace: "default"},
+									&partition,
+								)).To(Succeed())
+								expectedQueueNames = append(expectedQueueNames, partition.Spec.Name)
+
+								Expect(partition.Spec).To(MatchFields(IgnoreExtras, Fields{
+									"Name":    Equal(fmt.Sprintf("%s-%s", superStreamName, strconv.Itoa(i))),
+									"Type":    Equal("stream"),
+									"Durable": BeTrue(),
+									"RabbitmqClusterReference": MatchAllFields(Fields{
+										"Name":      Equal("example-rabbit"),
+										"Namespace": Equal("default"),
+									}),
+								}))
+							}
+						})
+
+						By("setting the status of the super stream to list the partition queue names", func() {
+							ConsistentlyWithOffset(1, func() []string {
+								_ = client.Get(
+									ctx,
+									types.NamespacedName{Name: superStreamName, Namespace: "default"},
+									&superStream,
+								)
+
+								return superStream.Status.Partitions
+							}, 5*time.Second, 1*time.Second).Should(ConsistOf(expectedQueueNames))
+						})
+
+						By("retaining the original bindings", func() {
+							var binding topology.Binding
+							for i := 0; i < originalPartitionCount; i++ {
+								expectedBindingName := fmt.Sprintf("%s-binding-%s", superStreamName, strconv.Itoa(i))
+								EventuallyWithOffset(1, func() error {
+									return client.Get(
+										ctx,
+										types.NamespacedName{Name: expectedBindingName, Namespace: "default"},
+										&binding,
+									)
+								}, 10*time.Second, 1*time.Second).ShouldNot(HaveOccurred())
+								Expect(binding.Spec).To(MatchFields(IgnoreExtras, Fields{
+									"Source":          Equal(superStreamName),
+									"DestinationType": Equal("queue"),
+									"Destination":     Equal(fmt.Sprintf("%s-%s", superStreamName, strconv.Itoa(i))),
+									"Arguments": PointTo(MatchFields(IgnoreExtras, Fields{
+										"Raw": Equal([]byte(fmt.Sprintf(`{"x-stream-partition-order":%d}`, i))),
+									})),
+									"RoutingKey": Equal(strconv.Itoa(i)),
+									"RabbitmqClusterReference": MatchAllFields(Fields{
+										"Name":      Equal("example-rabbit"),
+										"Namespace": Equal("default"),
+									}),
+								}))
+							}
+						})
 					})
 				})
 			})

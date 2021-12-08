@@ -175,5 +175,8 @@ func (r *SuperStreamReconciler) SetReconcileSuccess(ctx context.Context, superSt
 func (r *SuperStreamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&topology.SuperStream{}).
+		Owns(&topology.Exchange{}).
+		Owns(&topology.Binding{}).
+		Owns(&topology.Queue{}).
 		Complete(r)
 }
