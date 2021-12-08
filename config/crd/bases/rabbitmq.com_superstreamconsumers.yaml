@@ -5868,13 +5868,10 @@ spec:
                       type: object
                   type: object
                 superStreamReference:
-                  description: Reference to the SuperStream that the SuperStreamConsumer will consume from Required property.
+                  description: Reference to the SuperStream that the SuperStreamConsumer will consume from, in the same namespace. Required property.
                   properties:
                     name:
                       description: The name of the SuperStream to reference.
-                      type: string
-                    namespace:
-                      description: The namespace of the SuperStream to reference. Defaults to the namespace of the requested resource if omitted.
                       type: string
                   required:
                     - name

@@ -80,47 +80,47 @@ func (r *SuperStreamConsumerReconciler) Reconcile(ctx context.Context, req ctrl.
 		r.logExistingMatchingPods(ctx, existingPods)
 	}
 
-	var builders []managedresource.ResourceBuilder
-	for _, partition := range referencedSuperStream.Status.Partitions {
-		podSpec := superStreamConsumer.Spec.ConsumerPodSpec.Default
-		routingKey := managedresource.PartitionNameToRoutingKey(referencedSuperStream.Name, partition)
-		if foundPodSpec, ok := superStreamConsumer.Spec.ConsumerPodSpec.PerRoutingKey[routingKey]; ok {
-			podSpec = foundPodSpec
-		}
-
-		if podSpec == nil {
-			if writerErr := r.SetReconcileSuccess(ctx, superStreamConsumer, topology.NotReady("FailedReconcile", superStreamConsumer.Status.Conditions)); writerErr != nil {
-				logger.Error(writerErr, failedStatusUpdate, "status", superStreamConsumer.Status)
-			}
-			return reconcile.Result{}, fmt.Errorf("failed to get matching podspec")
-		}
-
-		builders = append(
-			builders,
-			managedResourceBuilder.SuperStreamConsumerPod(
-				*podSpec,
-				referencedSuperStream.Name,
-				partition,
-			),
-		)
-	}
-
 	var podBuilders = make(map[*corev1.Pod]managedresource.ResourceBuilder, len(referencedSuperStream.Status.Partitions))
-	var pods []corev1.Pod
-	for _, builder := range builders {
+	for _, partition := range referencedSuperStream.Status.Partitions {
+		podSpec := r.getPartitionPodSpec(referencedSuperStream, partition, superStreamConsumer)
+		if podSpec == nil {
+			// There may be an existing Pod for this partition. We must delete the original Pod
+			// before creating the new Pod with the new PodSpec.
+			existingPods, err := r.getMatchingPods(ctx, referencedSuperStream.Namespace, map[string]string{
+				managedresource.AnnotationSuperStream:          referencedSuperStream.Name,
+				managedresource.AnnotationSuperStreamPartition: partition,
+			})
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+			for _, existingPod := range existingPods {
+				err := r.deleteExistingPod(ctx, &existingPod, superStreamConsumer)
+				if err != nil {
+					return ctrl.Result{}, err
+				}
+				r.Recorder.Event(&existingPod, corev1.EventTypeNormal, "SuccessfulDelete", "Successfully deleted pod due to updated podSpec")
+			}
+			continue
+		}
+
+		builder := managedResourceBuilder.SuperStreamConsumerPod(
+			*podSpec,
+			referencedSuperStream.Name,
+			partition,
+		)
+
 		resource, err := builder.Build()
 		if err != nil {
 			return ctrl.Result{}, err
 		}
 		pod := resource.(*corev1.Pod)
 		podBuilders[pod] = builder
-		pods = append(pods, *pod)
 	}
 
-	for resource, builder := range podBuilders {
+	for pod, builder := range podBuilders {
 		existingPod, err := r.existingActiveConsumerPod(ctx, referencedSuperStream.Namespace, map[string]string{
-			managedresource.AnnotationSuperStream:          resource.Labels[managedresource.AnnotationSuperStream],
-			managedresource.AnnotationSuperStreamPartition: resource.Labels[managedresource.AnnotationSuperStreamPartition],
+			managedresource.AnnotationSuperStream:          pod.Labels[managedresource.AnnotationSuperStream],
+			managedresource.AnnotationSuperStreamPartition: pod.Labels[managedresource.AnnotationSuperStreamPartition],
 		})
 		if err != nil {
 			msg := fmt.Sprintf("FailedReconcile%s", builder.ResourceType())
@@ -129,24 +129,24 @@ func (r *SuperStreamConsumerReconciler) Reconcile(ctx context.Context, req ctrl.
 			}
 			return ctrl.Result{}, err
 		}
-		if existingPod != nil && existingPod.Labels[managedresource.AnnotationConsumerPodSpecHash] == resource.Labels[managedresource.AnnotationConsumerPodSpecHash] {
+		if podSpecHasNotChanged(existingPod, pod) {
 			continue
 		}
 		if existingPod != nil {
-			if err := r.Delete(ctx, existingPod); err != nil {
-				msg := fmt.Sprintf("FailedDelete%s", builder.ResourceType())
-				if writerErr := r.SetReconcileSuccess(ctx, superStreamConsumer, topology.NotReady(msg, superStreamConsumer.Status.Conditions)); writerErr != nil {
-					logger.Error(writerErr, failedStatusUpdate, "status", superStreamConsumer.Status)
-				}
+			// There is an existing Pod for this partition, with a different PodSpec. We must delete the original Pod
+			// before creating the new Pod with the new PodSpec.
+			err := r.deleteExistingPod(ctx, existingPod, superStreamConsumer)
+			if err != nil {
 				return ctrl.Result{}, err
 			}
 			r.Recorder.Event(existingPod, corev1.EventTypeNormal, "SuccessfulDelete", "Successfully deleted pod due to updated podSpec")
 		}
 
+		// Create the new Pod for this partition
 		err = clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			var apiError error
-			_, apiError = controllerutil.CreateOrUpdate(ctx, r.Client, resource, func() error {
-				return builder.Update(resource)
+			_, apiError = controllerutil.CreateOrUpdate(ctx, r.Client, pod, func() error {
+				return builder.Update(pod)
 			})
 			return apiError
 		})
@@ -165,6 +165,33 @@ func (r *SuperStreamConsumerReconciler) Reconcile(ctx context.Context, req ctrl.
 
 	logger.Info("Finished reconciling")
 	return ctrl.Result{}, nil
+}
+
+func (r *SuperStreamConsumerReconciler) deleteExistingPod(ctx context.Context, existingPod *corev1.Pod, superStreamConsumer *topology.SuperStreamConsumer) error {
+	logger := ctrl.LoggerFrom(ctx)
+	if err := r.Delete(ctx, existingPod); err != nil {
+		if writerErr := r.SetReconcileSuccess(ctx, superStreamConsumer, topology.NotReady("FailedDeleteSuperStreamConsumerPod", superStreamConsumer.Status.Conditions)); writerErr != nil {
+			logger.Error(writerErr, failedStatusUpdate, "status", superStreamConsumer.Status)
+		}
+		return err
+	}
+	return nil
+}
+
+func podSpecHasNotChanged(existingPod *corev1.Pod, pod *corev1.Pod) bool {
+	return existingPod != nil && existingPod.Labels[managedresource.AnnotationConsumerPodSpecHash] == pod.Labels[managedresource.AnnotationConsumerPodSpecHash]
+}
+
+func (r *SuperStreamConsumerReconciler) getPartitionPodSpec(referencedSuperStream *topology.SuperStream, partition string, superStreamConsumer *topology.SuperStreamConsumer) *corev1.PodSpec {
+	var podSpec *corev1.PodSpec = nil
+	routingKey := managedresource.PartitionNameToRoutingKey(referencedSuperStream.Name, partition)
+	if foundPodSpec, ok := superStreamConsumer.Spec.ConsumerPodSpec.PerRoutingKey[routingKey]; ok {
+		podSpec = foundPodSpec
+	} else {
+		podSpec = superStreamConsumer.Spec.ConsumerPodSpec.Default
+	}
+
+	return podSpec
 }
 
 func (r *SuperStreamConsumerReconciler) SetReconcileSuccess(ctx context.Context, superStreamConsumer *topology.SuperStreamConsumer, condition topology.Condition) error {
@@ -223,24 +250,33 @@ func (r *SuperStreamConsumerReconciler) findConsumersForSuperStream(superStream 
 	return requests
 }
 
-func (r *SuperStreamConsumerReconciler) existingActiveConsumerPod(ctx context.Context, namespace string, podLabels map[string]string) (*corev1.Pod, error) {
+func (r *SuperStreamConsumerReconciler) getMatchingPods(ctx context.Context, namespace string, podLabels map[string]string) ([]corev1.Pod, error) {
 	existingPodList := &corev1.PodList{}
 	if err := r.Client.List(ctx, existingPodList, client.InNamespace(namespace), client.MatchingLabels(podLabels)); err != nil {
 		return nil, err
 	}
 
-	if len(existingPodList.Items) == 0 {
+	return existingPodList.Items, nil
+}
+
+func (r *SuperStreamConsumerReconciler) existingActiveConsumerPod(ctx context.Context, namespace string, podLabels map[string]string) (*corev1.Pod, error) {
+	existingPods, err := r.getMatchingPods(ctx, namespace, podLabels)
+	if err != nil {
+		return nil, fmt.Errorf("failed to lookup matching existing pods: %w", err)
+	}
+
+	if len(existingPods) == 0 {
 		return nil, nil
 	}
 
-	if len(existingPodList.Items) > 1 {
+	if len(existingPods) > 1 {
 		var podNames []string
-		for _, pod := range existingPodList.Items {
+		for _, pod := range existingPods {
 			podNames = append(podNames, pod.Name)
 		}
-		return nil, fmt.Errorf("expected to find 1 matching consumer pod, but found %d: %s", len(existingPodList.Items), podNames)
+		return nil, fmt.Errorf("expected to find 1 matching consumer pod, but found %d: %s", len(existingPods), podNames)
 	}
-	return &existingPodList.Items[0], nil
+	return &existingPods[0], nil
 }
 func (r *SuperStreamConsumerReconciler) existingMatchingPods(ctx context.Context, superStreamConsumer *topology.SuperStreamConsumer) ([]corev1.Pod, error) {
 	existingPodList := &corev1.PodList{}

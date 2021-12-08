@@ -310,6 +310,75 @@ var _ = Describe("super-stream-consumer-controller", func() {
 					}
 				})
 			})
+			When("a routing-key-specific podSpec is removed and no default is provided", func() {
+				BeforeEach(func() {
+					superStreamName = "no-default"
+					superStreamConsumerName = "no-default"
+					partitions = 3
+					routingKeys = []string{"foo", "bar", "baz"}
+					consumerPodSpec = topology.SuperStreamConsumerPodSpec{
+						PerRoutingKey: map[string]*corev1.PodSpec{
+							"foo": {
+								Containers: []corev1.Container{
+									{
+										Name:  "specific-container",
+										Image: "specific-image",
+									},
+								},
+							},
+							"bar": {
+								Containers: []corev1.Container{
+									{
+										Name:  "specific-container",
+										Image: "specific-image",
+									},
+								},
+							},
+							"baz": {
+								Containers: []corev1.Container{
+									{
+										Name:  "specific-container",
+										Image: "specific-image",
+									},
+								},
+							},
+						},
+					}
+				})
+
+				It("deletes the affected pod and leaves the rest alone", func() {
+					superStreamConsumer.Spec.ConsumerPodSpec.PerRoutingKey = map[string]*corev1.PodSpec{
+						"foo": {
+							Containers: []corev1.Container{
+								{
+									Name:  "specific-container",
+									Image: "specific-image",
+								},
+							},
+						},
+						"bar": {
+							Containers: []corev1.Container{
+								{
+									Name:  "specific-container",
+									Image: "specific-image",
+								},
+							},
+						},
+					}
+					Expect(client.Update(ctx, &superStreamConsumer)).To(Succeed())
+
+					EventuallyWithOffset(1, func() int {
+						var updatedPodList corev1.PodList
+						err := client.List(ctx, &updatedPodList, runtimeClient.InNamespace(superStreamConsumer.Namespace), runtimeClient.MatchingLabels(map[string]string{
+							managedresource.AnnotationSuperStream: superStreamName,
+						}))
+						Expect(err).NotTo(HaveOccurred())
+						sort.Slice(byNamePrefixPodSorter(updatedPodList.Items))
+						return len(updatedPodList.Items)
+					}, 10*time.Second, 1*time.Second).Should(Equal(len(podList.Items)-1))
+
+				})
+			})
 			When("a routing-key-specific podSpec is provided", func() {
 				BeforeEach(func() {
 					superStreamName = "specific"
@@ -544,7 +613,7 @@ var _ = Describe("super-stream-consumer-controller", func() {
 					routingKeys = []string{"amer", "apj", "emea"}
 				})
 
-				It("creates a pod for each partition with the different pod specs", func() {
+				It("creates a pod for each partition that has a podSpec", func() {
 					Expect(client.Create(ctx, &superStreamConsumer)).To(Succeed())
 					EventuallyWithOffset(1, func() []topology.Condition {
 						_ = client.Get(
@@ -556,9 +625,30 @@ var _ = Describe("super-stream-consumer-controller", func() {
 						return superStreamConsumer.Status.Conditions
 					}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 						"Type":   Equal(topology.ConditionType("Ready")),
-						"Reason": Equal("FailedCreateOrUpdate"),
-						"Status": Equal(corev1.ConditionFalse),
+						"Reason": Equal("SuccessfulCreateOrUpdate"),
+						"Status": Equal(corev1.ConditionTrue),
 					})))
+					for _, partition := range superStream.Status.Partitions {
+						var pod corev1.Pod
+						var err error
+						if partition == "missing-apj" {
+							ConsistentlyWithOffset(1, func() error {
+								pod, err = getActiveConsumerPod(ctx, superStream, partition)
+								return err
+							}, 10*time.Second, 1*time.Second).ShouldNot(Succeed())
+						} else {
+							EventuallyWithOffset(1, func() error {
+								pod, err = getActiveConsumerPod(ctx, superStream, partition)
+								return err
+							}, 10*time.Second, 1*time.Second).Should(Succeed())
+
+							routingKey := managedresource.PartitionNameToRoutingKey(superStream.Name, partition)
+							Expect(pod.Spec.Containers[0].Name).To(Equal(superStreamConsumer.Spec.ConsumerPodSpec.PerRoutingKey[routingKey].Containers[0].Name))
+							Expect(pod.Spec.Containers[0].Image).To(Equal(superStreamConsumer.Spec.ConsumerPodSpec.PerRoutingKey[routingKey].Containers[0].Image))
+							Expect(pod.ObjectMeta.Labels).To(HaveKeyWithValue(managedresource.AnnotationSuperStream, superStream.Name))
+							Expect(pod.ObjectMeta.Labels).To(HaveKeyWithValue(managedresource.AnnotationSuperStreamPartition, partition))
+						}
+					}
 				})
 			})
 		})
