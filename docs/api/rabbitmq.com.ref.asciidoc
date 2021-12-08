@@ -53,8 +53,8 @@ Binding is the Schema for the bindings API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Binding`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
-| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-bindingspec[$$BindingSpec$$]__ | 
 | *`status`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-bindingstatus[$$BindingStatus$$]__ | 
@@ -73,8 +73,8 @@ BindingList contains a list of Binding
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `BindingList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
-| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-binding[$$Binding$$]__ | 
 |===
@@ -144,8 +144,8 @@ BindingStatus defines the observed state of Binding
 |===
 | Field | Description
 | *`type`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-conditiontype[$$ConditionType$$]__ | Type indicates the scope of the custom resource status addressed by the condition.
-| *`status`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#conditionstatus-v1-core[$$ConditionStatus$$]__ | True, False, or Unknown
-| *`lastTransitionTime`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#time-v1-meta[$$Time$$]__ | The last time this Condition status changed.
+| *`status`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#conditionstatus-v1-core[$$ConditionStatus$$]__ | True, False, or Unknown
+| *`lastTransitionTime`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#time-v1-meta[$$Time$$]__ | The last time this Condition status changed.
 | *`reason`* __string__ | One word, camel-case reason for current status of the condition.
 | *`message`* __string__ | Full text reason for current status of the condition.
 |===
@@ -178,8 +178,8 @@ Exchange is the Schema for the exchanges API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Exchange`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
-| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-exchangespec[$$ExchangeSpec$$]__ | 
 | *`status`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-exchangestatus[$$ExchangeStatus$$]__ | 
@@ -198,8 +198,8 @@ ExchangeList contains a list of Exchange
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `ExchangeList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
-| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-exchange[$$Exchange$$]__ | 
 |===
@@ -261,8 +261,8 @@ Federation is the Schema for the federations API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Federation`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
-| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federationspec[$$FederationSpec$$]__ | 
 | *`status`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federationstatus[$$FederationStatus$$]__ | 
@@ -281,8 +281,8 @@ FederationList contains a list of Federation
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `FederationList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
-| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federation[$$Federation$$]__ | 
 |===
@@ -304,7 +304,7 @@ FederationSpec defines the desired state of Federation For how to configure fede
 | *`name`* __string__ | Required property; cannot be updated
 | *`vhost`* __string__ | Default to vhost '/'; cannot be updated
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that this federation upstream will be created in. Required property.
-| *`uriSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Secret contains the AMQP URI(s) for the upstream. The Secret must contain the key `uri` or operator will error. `uri` should be one or multiple uris separated by ','. Required property.
+| *`uriSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Secret contains the AMQP URI(s) for the upstream. The Secret must contain the key `uri` or operator will error. `uri` should be one or multiple uris separated by ','. Required property.
 | *`prefetch-count`* __integer__ | 
 | *`ackMode`* __string__ | 
 | *`expires`* __integer__ | 
@@ -350,8 +350,8 @@ Permission is the Schema for the permissions API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Permission`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
-| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-permissionspec[$$PermissionSpec$$]__ | 
 | *`status`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-permissionstatus[$$PermissionStatus$$]__ | 
@@ -370,8 +370,8 @@ PermissionList contains a list of Permission
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `PermissionList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
-| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-permission[$$Permission$$]__ | 
 |===
@@ -391,7 +391,7 @@ PermissionSpec defines the desired state of Permission
 |===
 | Field | Description
 | *`user`* __string__ | Name of an existing user; must provide user or userReference, else create/update will fail; cannot be updated
-| *`userReference`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Reference to an existing user.rabbitmq.com object; must provide user or userReference, else create/update will fail; cannot be updated
+| *`userReference`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Reference to an existing user.rabbitmq.com object; must provide user or userReference, else create/update will fail; cannot be updated
 | *`vhost`* __string__ | Name of an existing vhost; required property; cannot be updated
 | *`permissions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhostpermissions[$$VhostPermissions$$]__ | Permissions to grant to the user in the specific vhost; required property. See RabbitMQ doc for more information: https://www.rabbitmq.com/access-control.html#user-management
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that both the provided user and vhost are. Required property.
@@ -431,8 +431,8 @@ Policy is the Schema for the policies API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Policy`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
-| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-policyspec[$$PolicySpec$$]__ | 
 | *`status`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-policystatus[$$PolicyStatus$$]__ | 
@@ -451,8 +451,8 @@ PolicyList contains a list of Policy
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `PolicyList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
-| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-policy[$$Policy$$]__ | 
 |===
@@ -514,8 +514,8 @@ Queue is the Schema for the queues API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Queue`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
-| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-queuespec[$$QueueSpec$$]__ | 
 | *`status`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-queuestatus[$$QueueStatus$$]__ | 
@@ -534,8 +534,8 @@ QueueList contains a list of Queue
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `QueueList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
-| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-queue[$$Queue$$]__ | 
 |===
@@ -624,8 +624,8 @@ SchemaReplication is the Schema for the schemareplications API This feature requ
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `SchemaReplication`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
-| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-schemareplicationspec[$$SchemaReplicationSpec$$]__ | 
 | *`status`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-schemareplicationstatus[$$SchemaReplicationStatus$$]__ | 
@@ -644,8 +644,8 @@ SchemaReplicationList contains a list of SchemaReplication
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `SchemaReplicationList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
-| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-schemareplication[$$SchemaReplication$$]__ | 
 |===
@@ -665,7 +665,7 @@ SchemaReplicationSpec defines the desired state of SchemaReplication
 |===
 | Field | Description
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that schema replication would be set for. Must be an existing cluster.
-| *`upstreamSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Defines a Secret which contains credentials to be used for schema replication. The Secret must contain the keys `username` and `password` in its Data field, or operator will error.
+| *`upstreamSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Defines a Secret which contains credentials to be used for schema replication. The Secret must contain the keys `username` and `password` in its Data field, or operator will error.
 | *`endpoints`* __string__ | endpoints should be one or multiple endpoints separated by ','. Must provide either spec.endpoints or endpoints in spec.upstreamSecret. When endpoints are provided in both spec.endpoints and spec.upstreamSecret, spec.endpoints takes precedence.
 |===
 
@@ -703,8 +703,8 @@ Shovel is the Schema for the shovels API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Shovel`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
-| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-shovelspec[$$ShovelSpec$$]__ | 
 | *`status`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-shovelstatus[$$ShovelStatus$$]__ | 
@@ -723,8 +723,8 @@ ShovelList contains a list of Shovel
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `ShovelList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
-| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-shovel[$$Shovel$$]__ | 
 |===
@@ -746,7 +746,7 @@ ShovelSpec defines the desired state of Shovel For how to configure Shovel, see:
 | *`name`* __string__ | Required property; cannot be updated
 | *`vhost`* __string__ | Default to vhost '/'; cannot be updated
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that this Shovel will be created in. Required property.
-| *`uriSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Secret contains the AMQP URI(s) to configure Shovel destination and source. The Secret must contain the key `destUri` and `srcUri` or operator will error. Both fields should be one or multiple uris separated by ','. Required property.
+| *`uriSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Secret contains the AMQP URI(s) to configure Shovel destination and source. The Secret must contain the key `destUri` and `srcUri` or operator will error. Both fields should be one or multiple uris separated by ','. Required property.
 | *`ackMode`* __string__ | 
 | *`addForwardHeaders`* __boolean__ | 
 | *`deleteAfter`* __string__ | 
@@ -805,8 +805,8 @@ User is the Schema for the users API.
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `User`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
-| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-userspec[$$UserSpec$$]__ | Spec configures the desired state of the User object.
 | *`status`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-userstatus[$$UserStatus$$]__ | Status exposes the observed state of the User object.
@@ -825,8 +825,8 @@ UserList contains a list of Users.
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `UserList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
-| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-user[$$User$$]__ | 
 |===
@@ -847,7 +847,7 @@ UserSpec defines the desired state of User.
 | Field | Description
 | *`tags`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-usertag[$$UserTag$$] array__ | List of permissions tags to associate with the user. This determines the level of access to the RabbitMQ management UI granted to the user. Omitting this field will lead to a user than can still connect to the cluster through messaging protocols, but cannot perform any management actions. For more information, see https://www.rabbitmq.com/management.html#permissions.
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the user will be created for. This cluster must exist for the User object to be created.
-| *`importCredentialsSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Defines a Secret used to pre-define the username and password set for this User. User objects created with this field set will not have randomly-generated credentials, and will instead import the username/password values from this Secret. The Secret must contain the keys `username` and `password` in its Data field, or the import will fail. Note that this import only occurs at creation time, and is ignored once a password has been set on a User.
+| *`importCredentialsSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Defines a Secret used to pre-define the username and password set for this User. User objects created with this field set will not have randomly-generated credentials, and will instead import the username/password values from this Secret. The Secret must contain the keys `username` and `password` in its Data field, or the import will fail. Note that this import only occurs at creation time, and is ignored once a password has been set on a User.
 |===
 
 
@@ -866,7 +866,7 @@ UserStatus defines the observed state of User.
 | Field | Description
 | *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this User. It corresponds to the User's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$]__ | 
-| *`credentials`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Provides a reference to a Secret object containing the user credentials.
+| *`credentials`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Provides a reference to a Secret object containing the user credentials.
 |===
 
 
@@ -897,8 +897,8 @@ Vhost is the Schema for the vhosts API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Vhost`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
-| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhostspec[$$VhostSpec$$]__ | 
 | *`status`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhoststatus[$$VhostStatus$$]__ | 
@@ -917,8 +917,8 @@ VhostList contains a list of Vhost
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `VhostList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#typemeta-v1-meta[$$TypeMeta$$]__ | 
-| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhost[$$Vhost$$]__ | 
 |===
