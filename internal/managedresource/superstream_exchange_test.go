@@ -40,6 +40,10 @@ var _ = Describe("SuperstreamExchange", func() {
 		It("generates an exchange object with the correct namespace", func() {
 			Expect(exchange.Namespace).To(Equal(superStream.Namespace))
 		})
+
+		It("sets labels on the object to tie back to the original super stream", func() {
+			Expect(exchange.ObjectMeta.Labels).To(HaveKeyWithValue("rabbitmq.com/super-stream", "foo"))
+		})
 	})
 
 	Context("Update", func() {

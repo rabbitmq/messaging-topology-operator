@@ -27,6 +27,9 @@ func (builder *SuperStreamExchangeBuilder) Build() (client.Object, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      builder.GenerateChildResourceName(superStreamExchangeSuffix),
 			Namespace: builder.ObjectOwner.GetNamespace(),
+			Labels: map[string]string{
+				AnnotationSuperStream: builder.ObjectOwner.GetName(),
+			},
 		},
 	}, nil
 }

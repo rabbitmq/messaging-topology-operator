@@ -152,9 +152,9 @@ java -Dio.netty.processId=1 -jar super-stream-app.jar consumer --stream "${ACTIV
 			var exchangeInfo *rabbithole.DetailedExchangeInfo
 			Eventually(func() error {
 				var err error
-				exchangeInfo, err = rabbitClient.GetExchange(vhostName, "super-stream-test")
+				exchangeInfo, err = rabbitClient.GetExchange(vhostName, superStreamName)
 				return err
-			}, 1000, 2).Should(BeNil())
+			}, 30, 2).Should(BeNil())
 
 			Expect(*exchangeInfo).To(MatchFields(IgnoreExtras, Fields{
 				"Name":       Equal("super-stream-test"),
@@ -165,11 +165,11 @@ java -Dio.netty.processId=1 -jar super-stream-app.jar consumer --stream "${ACTIV
 			}))
 
 			By("creating n queues")
-			for _, routingKey := range superStream.Spec.RoutingKeys {
+			for index, routingKey := range superStream.Spec.RoutingKeys {
 				var qInfo *rabbithole.DetailedQueueInfo
 				Eventually(func() error {
 					var err error
-					qInfo, err = rabbitClient.GetQueue(vhostName, fmt.Sprintf("super-stream-test-%s", routingKey))
+					qInfo, err = rabbitClient.GetQueue(vhostName, fmt.Sprintf("super-stream-test-%d", index))
 					return err
 				}, 10, 2).Should(BeNil())
 
@@ -424,10 +424,10 @@ java -Dio.netty.processId=1 -jar super-stream-app.jar consumer --stream "${ACTIV
 			It("scales the topology", func() {
 				By("creating an extra binding and partition queue")
 				Eventually(func() error {
-					return k8sClient.Get(ctx, types.NamespacedName{Name: "scaling-test-partition-eu-west-5", Namespace: superStream.Namespace}, &topology.Queue{})
+					return k8sClient.Get(ctx, types.NamespacedName{Name: "scaling-test-partition-4", Namespace: superStream.Namespace}, &topology.Queue{})
 				}, 30*time.Second, 1*time.Second).Should(Succeed())
 				Eventually(func() error {
-					return k8sClient.Get(ctx, types.NamespacedName{Name: "scaling-test-binding-eu-west-5", Namespace: superStream.Namespace}, &topology.Binding{})
+					return k8sClient.Get(ctx, types.NamespacedName{Name: "scaling-test-binding-4", Namespace: superStream.Namespace}, &topology.Binding{})
 				}, 30*time.Second, 1*time.Second).Should(Succeed())
 
 				By("creating an extra consumer pod")

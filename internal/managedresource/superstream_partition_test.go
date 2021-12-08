@@ -27,18 +27,23 @@ var _ = Describe("SuperstreamPartition", func() {
 			ObjectOwner: &superStream,
 			Scheme:      scheme,
 		}
-		partitionBuilder = builder.SuperStreamPartition("emea", "vvv", testRabbitmqClusterReference)
+		partitionBuilder = builder.SuperStreamPartition(345, "emea", "vvv", testRabbitmqClusterReference)
 		obj, _ := partitionBuilder.Build()
 		partition = obj.(*topology.Queue)
 	})
 
 	Context("Build", func() {
 		It("generates an partition object with the correct name", func() {
-			Expect(partition.Name).To(Equal("foo-partition-emea"))
+			Expect(partition.Name).To(Equal("foo-partition-345"))
 		})
 
 		It("generates an partition object with the correct namespace", func() {
 			Expect(partition.Namespace).To(Equal(superStream.Namespace))
+		})
+
+		It("sets labels on the object to tie back to the original super stream", func() {
+			Expect(partition.ObjectMeta.Labels).To(HaveKeyWithValue("rabbitmq.com/super-stream", "foo"))
+			Expect(partition.ObjectMeta.Labels).To(HaveKeyWithValue("rabbitmq.com/super-stream-routing-key", "emea"))
 		})
 	})
 

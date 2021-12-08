@@ -5873,8 +5873,11 @@ spec:
                     name:
                       description: The name of the SuperStream to reference.
                       type: string
+                    namespace:
+                      type: string
                   required:
                     - name
+                    - namespace
                   type: object
               required:
                 - consumerPodSpec

@@ -17,12 +17,12 @@ type SuperStreamBindingBuilder struct {
 	rabbitmqCluster *topology.RabbitmqClusterReference
 }
 
-func (builder *Builder) SuperStreamBinding(index int, routingKey, vhost string, rabbitmqCluster *topology.RabbitmqClusterReference) *SuperStreamBindingBuilder {
-	return &SuperStreamBindingBuilder{builder, index, routingKey, vhost, rabbitmqCluster}
+func (builder *Builder) SuperStreamBinding(partitionIndex int, routingKey, vhost string, rabbitmqCluster *topology.RabbitmqClusterReference) *SuperStreamBindingBuilder {
+	return &SuperStreamBindingBuilder{builder, partitionIndex, routingKey, vhost, rabbitmqCluster}
 }
 
 func (builder *SuperStreamBindingBuilder) partitionSuffix() string {
-	return fmt.Sprintf("-binding-%s", builder.routingKey)
+	return fmt.Sprintf("-binding-%d", builder.partitionIndex)
 }
 
 func (builder *SuperStreamBindingBuilder) Build() (client.Object, error) {
@@ -30,6 +30,10 @@ func (builder *SuperStreamBindingBuilder) Build() (client.Object, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      builder.GenerateChildResourceName(builder.partitionSuffix()),
 			Namespace: builder.ObjectOwner.GetNamespace(),
+			Labels: map[string]string{
+				AnnotationSuperStream:           builder.ObjectOwner.GetName(),
+				AnnotationSuperStreamRoutingKey: builder.routingKey,
+			},
 		},
 	}, nil
 }

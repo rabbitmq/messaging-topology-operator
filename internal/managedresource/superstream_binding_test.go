@@ -34,11 +34,16 @@ var _ = Describe("SuperstreamBinding", func() {
 
 	Context("Build", func() {
 		It("generates a binding object with the correct name", func() {
-			Expect(binding.Name).To(Equal("foo-binding-emea"))
+			Expect(binding.Name).To(Equal("foo-binding-678"))
 		})
 
 		It("generates a binding object with the correct namespace", func() {
 			Expect(binding.Namespace).To(Equal(superStream.Namespace))
+		})
+
+		It("sets labels on the object to tie back to the original super stream", func() {
+			Expect(binding.ObjectMeta.Labels).To(HaveKeyWithValue("rabbitmq.com/super-stream", "foo"))
+			Expect(binding.ObjectMeta.Labels).To(HaveKeyWithValue("rabbitmq.com/super-stream-routing-key", "emea"))
 		})
 	})
 

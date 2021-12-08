@@ -375,7 +375,7 @@ var _ = Describe("super-stream-consumer-controller", func() {
 						Expect(err).NotTo(HaveOccurred())
 						sort.Slice(byNamePrefixPodSorter(updatedPodList.Items))
 						return len(updatedPodList.Items)
-					}, 10*time.Second, 1*time.Second).Should(Equal(len(podList.Items)-1))
+					}, 10*time.Second, 1*time.Second).Should(Equal(len(podList.Items) - 1))
 
 				})
 			})

@@ -13,22 +13,27 @@ type SuperStreamPartitionBuilder struct {
 	*Builder
 	vhost           string
 	routingKey      string
+	partitionIndex  int
 	rabbitmqCluster *topology.RabbitmqClusterReference
 }
 
-func (builder *Builder) SuperStreamPartition(routingKey, vhost string, rabbitmqCluster *topology.RabbitmqClusterReference) *SuperStreamPartitionBuilder {
-	return &SuperStreamPartitionBuilder{builder, vhost, routingKey, rabbitmqCluster}
+func (builder *Builder) SuperStreamPartition(partitionIndex int, routingKey, vhost string, rabbitmqCluster *topology.RabbitmqClusterReference) *SuperStreamPartitionBuilder {
+	return &SuperStreamPartitionBuilder{builder, vhost, routingKey, partitionIndex, rabbitmqCluster}
 }
 
-func partitionSuffix(routingKey string) string {
-	return fmt.Sprintf("-partition-%s", routingKey)
+func partitionSuffix(partitionIndex int) string {
+	return fmt.Sprintf("-partition-%d", partitionIndex)
 }
 
 func (builder *SuperStreamPartitionBuilder) Build() (client.Object, error) {
 	return &topology.Queue{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      builder.GenerateChildResourceName(partitionSuffix(builder.routingKey)),
+			Name:      builder.GenerateChildResourceName(partitionSuffix(builder.partitionIndex)),
 			Namespace: builder.ObjectOwner.GetNamespace(),
+			Labels: map[string]string{
+				AnnotationSuperStream:           builder.ObjectOwner.GetName(),
+				AnnotationSuperStreamRoutingKey: builder.routingKey,
+			},
 		},
 	}, nil
 }
@@ -55,5 +60,5 @@ func RoutingKeyToPartitionName(parentObjectName, routingKey string) string {
 }
 
 func PartitionNameToRoutingKey(parentObjectName, partitionName string) string {
-	return strings.Replace(partitionName, fmt.Sprintf("%s-", parentObjectName), "", 1)
+	return strings.TrimPrefix(partitionName, fmt.Sprintf("%s-", parentObjectName))
 }

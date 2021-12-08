@@ -108,7 +108,7 @@ func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	for index, routingKey := range routingKeys {
 		builders = append(
 			builders,
-			managedResourceBuilder.SuperStreamPartition(routingKey, superStream.Spec.Vhost, rmqClusterRef),
+			managedResourceBuilder.SuperStreamPartition(index, routingKey, superStream.Spec.Vhost, rmqClusterRef),
 			managedResourceBuilder.SuperStreamBinding(index, routingKey, superStream.Spec.Vhost, rmqClusterRef),
 		)
 	}

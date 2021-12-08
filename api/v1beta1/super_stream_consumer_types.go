@@ -78,7 +78,8 @@ func (q *SuperStreamConsumer) GroupResource() schema.GroupResource {
 type SuperStreamReference struct {
 	// The name of the SuperStream to reference.
 	// +kubebuilder:validation:Required
-	Name string `json:"name"`
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
 }
 
 func init() {
