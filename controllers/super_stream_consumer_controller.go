@@ -59,7 +59,11 @@ func (r *SuperStreamConsumerReconciler) Reconcile(ctx context.Context, req ctrl.
 	logger.Info("Start reconciling")
 
 	referencedSuperStream := &topology.SuperStream{}
-	if err := r.Get(ctx, types.NamespacedName{Name: superStreamConsumer.Spec.SuperStreamReference.Name, Namespace: superStreamConsumer.Namespace}, referencedSuperStream); err != nil {
+	superStreamNamespace := superStreamConsumer.Spec.SuperStreamReference.Namespace
+	if superStreamNamespace == "" {
+		superStreamNamespace = superStreamConsumer.Namespace
+	}
+	if err := r.Get(ctx, types.NamespacedName{Name: superStreamConsumer.Spec.SuperStreamReference.Name, Namespace: superStreamNamespace}, referencedSuperStream); err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to get SuperStream from reference: %w", err)
 	}
 	if len(referencedSuperStream.Status.Partitions) != referencedSuperStream.Spec.Partitions {

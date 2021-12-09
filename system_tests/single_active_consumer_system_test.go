@@ -165,11 +165,11 @@ java -Dio.netty.processId=1 -jar super-stream-app.jar consumer --stream "${ACTIV
 			}))
 
 			By("creating n queues")
-			for index, routingKey := range superStream.Spec.RoutingKeys {
+			for _, routingKey := range superStream.Spec.RoutingKeys {
 				var qInfo *rabbithole.DetailedQueueInfo
 				Eventually(func() error {
 					var err error
-					qInfo, err = rabbitClient.GetQueue(vhostName, fmt.Sprintf("super-stream-test-%d", index))
+					qInfo, err = rabbitClient.GetQueue(vhostName, fmt.Sprintf("super-stream-test-%s", routingKey))
 					return err
 				}, 10, 2).Should(BeNil())
 
@@ -258,7 +258,7 @@ java -Dio.netty.processId=1 -jar super-stream-app.jar consumer --stream "${ACTIV
 					bindings, err := rabbitClient.ListBindingsIn(vhostName)
 					Expect(err).NotTo(HaveOccurred())
 					for _, b := range bindings {
-						if b.Source == "super-stream-test" && b.Destination == fmt.Sprintf("super-stream-test.%s", routingKey) {
+						if b.Source == "super-stream-test" && b.Destination == fmt.Sprintf("super-stream-test-%s", routingKey) {
 							return true
 						}
 					}
