@@ -101,7 +101,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	if strings.Contains(string(output), "1/1") {
-		// helm install chaos-mesh chaos-mesh/chaos-mesh --namespace=chaos-testing --version 2.0.4 --set dashboard.securityMode=false --set chaosDaemon.runtime=containerd --set chaosDaemon.socketPath=/run/containerd/containerd.sock
+		// helm install chaos-mesh chaos-mesh/chaos-mesh --namespace=chaos-testing --version 2.1.0 --set dashboard.securityMode=false --set chaosDaemon.runtime=containerd --set chaosDaemon.socketPath=/run/containerd/containerd.sock
 		environmentHasChaosMeshInstalled = true
 	}
 

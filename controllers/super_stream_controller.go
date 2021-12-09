@@ -64,8 +64,8 @@ func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		// This would constitute a scale down, which may result in data loss.
 		err := fmt.Errorf(
 			"SuperStreams cannot be scaled down: an attempt was made to scale from %d partitions to %d",
-			superStream.Spec.Partitions,
 			len(superStream.Status.Partitions),
+			superStream.Spec.Partitions,
 		)
 		msg := fmt.Sprintf("SuperStream %s failed to reconcile", superStream.Name)
 		logger.Error(err, msg)
