@@ -133,7 +133,7 @@ var _ = Describe("super-stream-consumer-controller", func() {
 							var pod corev1.Pod
 							var err error
 							EventuallyWithOffset(1, func() error {
-								pod, err = getActiveConsumerPod(ctx, superStream, superStreamConsumer, partition)
+								pod, err = getActiveConsumerPod(ctx, superStream, superStreamConsumer.Namespace, partition)
 								return err
 							}, 10*time.Second, 1*time.Second).Should(Succeed())
 
@@ -182,7 +182,7 @@ var _ = Describe("super-stream-consumer-controller", func() {
 							var pod corev1.Pod
 							var err error
 							EventuallyWithOffset(1, func() error {
-								pod, err = getActiveConsumerPod(ctx, superStream, superStreamConsumer, partition)
+								pod, err = getActiveConsumerPod(ctx, superStream, superStreamConsumer.Namespace, partition)
 								return err
 							}, 10*time.Second, 1*time.Second).Should(Succeed())
 
@@ -550,7 +550,7 @@ var _ = Describe("super-stream-consumer-controller", func() {
 				It("ensures a consumer is recreated", func() {
 					By("recreating the deleted Pod", func() {
 						EventuallyWithOffset(1, func() error {
-							_, err := getActiveConsumerPod(ctx, superStream, superStreamConsumer, deletedPodPartition)
+							_, err := getActiveConsumerPod(ctx, superStream, superStreamConsumer.Namespace, deletedPodPartition)
 							return err
 						}, 10*time.Second, 1*time.Second).Should(Succeed())
 					})
@@ -629,7 +629,7 @@ var _ = Describe("super-stream-consumer-controller", func() {
 						var pod corev1.Pod
 						var err error
 						EventuallyWithOffset(1, func() error {
-							pod, err = getActiveConsumerPod(ctx, superStream, superStreamConsumer, partition)
+							pod, err = getActiveConsumerPod(ctx, superStream, superStreamConsumer.Namespace, partition)
 							return err
 						}, 10*time.Second, 1*time.Second).Should(Succeed())
 
@@ -689,12 +689,12 @@ var _ = Describe("super-stream-consumer-controller", func() {
 						var err error
 						if partition == "missing-apj" {
 							ConsistentlyWithOffset(1, func() error {
-								pod, err = getActiveConsumerPod(ctx, superStream, superStreamConsumer, partition)
+								pod, err = getActiveConsumerPod(ctx, superStream, superStreamConsumer.Namespace, partition)
 								return err
 							}, 10*time.Second, 1*time.Second).ShouldNot(Succeed())
 						} else {
 							EventuallyWithOffset(1, func() error {
-								pod, err = getActiveConsumerPod(ctx, superStream, superStreamConsumer, partition)
+								pod, err = getActiveConsumerPod(ctx, superStream, superStreamConsumer.Namespace, partition)
 								return err
 							}, 10*time.Second, 1*time.Second).Should(Succeed())
 
