@@ -67,7 +67,10 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 	return c.tracker
 }
 
-var _ clientset.Interface = &Clientset{}
+var (
+	_ clientset.Interface = &Clientset{}
+	_ testing.FakeClient  = &Clientset{}
+)
 
 // RabbitmqV1beta1 retrieves the RabbitmqV1beta1Client
 func (c *Clientset) RabbitmqV1beta1() rabbitmqv1beta1.RabbitmqV1beta1Interface {
