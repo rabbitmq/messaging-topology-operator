@@ -422,9 +422,9 @@ func observedEvents() []string {
 	return events
 }
 
-func getActiveConsumerPod(ctx context.Context, stream topology.SuperStream, partitionName string) (corev1.Pod, error) {
+func getActiveConsumerPod(ctx context.Context, stream topology.SuperStream, consumer topology.SuperStreamConsumer, partitionName string) (corev1.Pod, error) {
 	var podList corev1.PodList
-	if err := client.List(ctx, &podList, runtimeClient.InNamespace(stream.Namespace), runtimeClient.MatchingLabels(map[string]string{
+	if err := client.List(ctx, &podList, runtimeClient.InNamespace(consumer.Namespace), runtimeClient.MatchingLabels(map[string]string{
 		managedresource.AnnotationSuperStream:          stream.Name,
 		managedresource.AnnotationSuperStreamPartition: partitionName,
 	})); err != nil {

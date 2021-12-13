@@ -58,11 +58,12 @@ func (r *SuperStreamConsumerReconciler) Reconcile(ctx context.Context, req ctrl.
 
 	logger.Info("Start reconciling")
 
-	referencedSuperStream := &topology.SuperStream{}
 	superStreamNamespace := superStreamConsumer.Spec.SuperStreamReference.Namespace
 	if superStreamNamespace == "" {
 		superStreamNamespace = superStreamConsumer.Namespace
 	}
+
+	referencedSuperStream := &topology.SuperStream{}
 	if err := r.Get(ctx, types.NamespacedName{Name: superStreamConsumer.Spec.SuperStreamReference.Name, Namespace: superStreamNamespace}, referencedSuperStream); err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to get SuperStream from reference: %w", err)
 	}
@@ -90,7 +91,7 @@ func (r *SuperStreamConsumerReconciler) Reconcile(ctx context.Context, req ctrl.
 		if podSpec == nil {
 			// There may be an existing Pod for this partition. We must delete the original Pod
 			// before creating the new Pod with the new PodSpec.
-			existingPods, err := r.getMatchingPods(ctx, referencedSuperStream.Namespace, map[string]string{
+			existingPods, err := r.getMatchingPods(ctx, superStreamConsumer.Namespace, map[string]string{
 				managedresource.AnnotationSuperStream:          referencedSuperStream.Name,
 				managedresource.AnnotationSuperStreamPartition: partition,
 			})
@@ -122,7 +123,7 @@ func (r *SuperStreamConsumerReconciler) Reconcile(ctx context.Context, req ctrl.
 	}
 
 	for pod, builder := range podBuilders {
-		existingPod, err := r.existingActiveConsumerPod(ctx, referencedSuperStream.Namespace, map[string]string{
+		existingPod, err := r.existingActiveConsumerPod(ctx, superStreamConsumer.Namespace, map[string]string{
 			managedresource.AnnotationSuperStream:          pod.Labels[managedresource.AnnotationSuperStream],
 			managedresource.AnnotationSuperStreamPartition: pod.Labels[managedresource.AnnotationSuperStreamPartition],
 		})

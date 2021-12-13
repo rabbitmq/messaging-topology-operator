@@ -949,7 +949,7 @@ SuperStreamList contains a list of SuperStreams
 |===
 | Field | Description
 | *`name`* __string__ | The name of the SuperStream to reference.
-| *`namespace`* __string__ | 
+| *`namespace`* __string__ | The namespace of the SuperStream to reference.
 |===
 
 

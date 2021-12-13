@@ -23,22 +23,29 @@ var _ = Describe("super-stream-consumer-controller", func() {
 
 	var superStream topology.SuperStream
 	var superStreamName string
+	var superStreamNamespace string
 	var superStreamConsumer topology.SuperStreamConsumer
 	var superStreamConsumerName string
+	var superStreamConsumerNamespace string
 	var partitions int
 	var routingKeys []string
 	var consumerPodSpec topology.SuperStreamConsumerPodSpec
 
-	When("validating RabbitMQ Client failures", func() {
+	When("using super stream consumers", func() {
+		BeforeEach(func() {
+			superStreamNamespace = "default"
+			superStreamConsumerNamespace = "default"
+		})
 		JustBeforeEach(func() {
 			superStreamConsumer = topology.SuperStreamConsumer{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      superStreamConsumerName,
-					Namespace: "default",
+					Namespace: superStreamConsumerNamespace,
 				},
 				Spec: topology.SuperStreamConsumerSpec{
 					SuperStreamReference: topology.SuperStreamReference{
-						Name: superStreamName,
+						Name:      superStreamName,
+						Namespace: superStreamNamespace,
 					},
 					ConsumerPodSpec: consumerPodSpec,
 				},
@@ -46,7 +53,7 @@ var _ = Describe("super-stream-consumer-controller", func() {
 			superStream = topology.SuperStream{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      superStreamName,
-					Namespace: "default",
+					Namespace: superStreamNamespace,
 				},
 				Spec: topology.SuperStreamSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
@@ -126,7 +133,56 @@ var _ = Describe("super-stream-consumer-controller", func() {
 							var pod corev1.Pod
 							var err error
 							EventuallyWithOffset(1, func() error {
-								pod, err = getActiveConsumerPod(ctx, superStream, partition)
+								pod, err = getActiveConsumerPod(ctx, superStream, superStreamConsumer, partition)
+								return err
+							}, 10*time.Second, 1*time.Second).Should(Succeed())
+
+							Expect(pod.Spec.Containers[0].Name).To(Equal(superStreamConsumer.Spec.ConsumerPodSpec.Default.Containers[0].Name))
+							Expect(pod.Spec.Containers[0].Image).To(Equal(superStreamConsumer.Spec.ConsumerPodSpec.Default.Containers[0].Image))
+							Expect(pod.ObjectMeta.Labels).To(HaveKeyWithValue(managedresource.AnnotationSuperStream, superStream.Name))
+							Expect(pod.ObjectMeta.Labels).To(HaveKeyWithValue(managedresource.AnnotationSuperStreamPartition, partition))
+						}
+					})
+				})
+			})
+			When("the consumer is in a different namespace as the super stream", func() {
+				namespace := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "new-namespace"}}
+
+				BeforeEach(func() {
+					superStreamName = "a-namespace-stream"
+					superStreamConsumerName = "b-consumer"
+					superStreamConsumerNamespace = namespace.Name
+					Expect(client.Create(ctx, &namespace)).To(Succeed())
+				})
+
+				AfterEach(func() {
+					Expect(client.Delete(ctx, &namespace)).To(Succeed())
+				})
+
+				It("creates the SuperStreamConsumer and any underlying resources", func() {
+					Expect(client.Create(ctx, &superStreamConsumer)).To(Succeed())
+
+					By("setting the status condition 'Ready' to 'true' ", func() {
+						EventuallyWithOffset(1, func() []topology.Condition {
+							_ = client.Get(
+								ctx,
+								types.NamespacedName{Name: superStreamConsumerName, Namespace: namespace.Name},
+								&superStreamConsumer,
+							)
+
+							return superStreamConsumer.Status.Conditions
+						}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+							"Type":   Equal(topology.ConditionType("Ready")),
+							"Reason": Equal("SuccessfulCreateOrUpdate"),
+							"Status": Equal(corev1.ConditionTrue),
+						})))
+					})
+					By("creating a Pod for each partition in the SuperStream, multiplied by the number of replicas", func() {
+						for _, partition := range superStream.Status.Partitions {
+							var pod corev1.Pod
+							var err error
+							EventuallyWithOffset(1, func() error {
+								pod, err = getActiveConsumerPod(ctx, superStream, superStreamConsumer, partition)
 								return err
 							}, 10*time.Second, 1*time.Second).Should(Succeed())
 
@@ -494,7 +550,7 @@ var _ = Describe("super-stream-consumer-controller", func() {
 				It("ensures a consumer is recreated", func() {
 					By("recreating the deleted Pod", func() {
 						EventuallyWithOffset(1, func() error {
-							_, err := getActiveConsumerPod(ctx, superStream, deletedPodPartition)
+							_, err := getActiveConsumerPod(ctx, superStream, superStreamConsumer, deletedPodPartition)
 							return err
 						}, 10*time.Second, 1*time.Second).Should(Succeed())
 					})
@@ -573,7 +629,7 @@ var _ = Describe("super-stream-consumer-controller", func() {
 						var pod corev1.Pod
 						var err error
 						EventuallyWithOffset(1, func() error {
-							pod, err = getActiveConsumerPod(ctx, superStream, partition)
+							pod, err = getActiveConsumerPod(ctx, superStream, superStreamConsumer, partition)
 							return err
 						}, 10*time.Second, 1*time.Second).Should(Succeed())
 
@@ -633,12 +689,12 @@ var _ = Describe("super-stream-consumer-controller", func() {
 						var err error
 						if partition == "missing-apj" {
 							ConsistentlyWithOffset(1, func() error {
-								pod, err = getActiveConsumerPod(ctx, superStream, partition)
+								pod, err = getActiveConsumerPod(ctx, superStream, superStreamConsumer, partition)
 								return err
 							}, 10*time.Second, 1*time.Second).ShouldNot(Succeed())
 						} else {
 							EventuallyWithOffset(1, func() error {
-								pod, err = getActiveConsumerPod(ctx, superStream, partition)
+								pod, err = getActiveConsumerPod(ctx, superStream, superStreamConsumer, partition)
 								return err
 							}, 10*time.Second, 1*time.Second).Should(Succeed())
 
