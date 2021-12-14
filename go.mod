@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/cloudflare/cfssl v1.6.1
 	github.com/elastic/crd-ref-docs v0.0.7
-	github.com/go-logr/logr v0.4.0
+	github.com/go-logr/logr v1.2.2
 	github.com/google/uuid v1.3.0
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.4.1
 	github.com/michaelklishin/rabbit-hole/v2 v2.12.0
