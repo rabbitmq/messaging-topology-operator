@@ -58,6 +58,29 @@ func validateResponseForDeletion(res *http.Response, err error) error {
 	return validateResponse(res, err)
 }
 
+// serviceDNSAddress returns the cluster-local DNS entry associated
+// with the provided Service
+func serviceDNSAddress(svc *corev1.Service) string {
+	// NOTE: this does not use the `cluster.local` suffix, because that is not
+	// uniform across clusters. See the `clusterDomain` KubeletConfiguration
+	// value for how this can be changed for a cluster.
+	return fmt.Sprintf("%s.%s.svc", svc.Name, svc.Namespace)
+}
+
+// serviceDNSAddress returns the cluster-local DNS entry associated
+// with the provided Service
+//func serviceDNSAddress(svc *corev1.Service, clusterDomain string) string {
+//	// NOTE: cluster domain can be configured to support star certificates
+//	// like `*.example.com`. Check https://github.com/rabbitmq/messaging-topology-operator/issues/233
+//	// The cluster domain parameter must start with a leading dot
+//	// e.g. ".example.com"
+//	shortName := fmt.Sprintf("%s.%s.svc", svc.Name, svc.Namespace)
+//	if len(clusterDomain) == 0 {
+//		return shortName
+//	}
+//	return fmt.Sprintf("%s%s", shortName, clusterDomain)
+//}
+
 func addFinalizerIfNeeded(ctx context.Context, client client.Client, obj client.Object) error {
 	finalizer := deletionFinalizer(obj.GetObjectKind().GroupVersionKind().Kind)
 	if obj.GetDeletionTimestamp().IsZero() && !controllerutil.ContainsFinalizer(obj, finalizer) {

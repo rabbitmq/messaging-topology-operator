@@ -83,7 +83,8 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
-		Scheme: scheme.Scheme,
+		Scheme:             scheme.Scheme,
+		MetricsBindAddress: "0", // To avoid MacOS firewall pop-up every time you run this suite
 	})
 	Expect(err).ToNot(HaveOccurred())
 
