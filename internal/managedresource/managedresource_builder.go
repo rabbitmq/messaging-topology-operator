@@ -6,6 +6,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	AnnotationSuperStream           = "rabbitmq.com/super-stream"
+	AnnotationSuperStreamPartition  = "rabbitmq.com/super-stream-partition"
+	AnnotationSuperStreamRoutingKey = "rabbitmq.com/super-stream-routing-key"
+	AnnotationConsumerPodSpecHash   = "rabbitmq.com/consumer-pod-spec-hash"
+)
+
 type Builder struct {
 	ObjectOwner metav1.Object
 	Scheme      *runtime.Scheme

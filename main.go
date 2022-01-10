@@ -179,15 +179,6 @@ func main() {
 		log.Error(err, "unable to create controller", "controller", controllers.SuperStreamControllerName)
 		os.Exit(1)
 	}
-	if err = (&controllers.SuperStreamConsumerReconciler{
-		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName(controllers.SuperStreamConsumerControllerName),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor(controllers.SuperStreamConsumerControllerName),
-	}).SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create controller", "controller", controllers.SuperStreamConsumerControllerName)
-		os.Exit(1)
-	}
 
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = (&topology.Binding{}).SetupWebhookWithManager(mgr); err != nil {
@@ -232,10 +223,6 @@ func main() {
 		}
 		if err = (&topology.SuperStream{}).SetupWebhookWithManager(mgr); err != nil {
 			log.Error(err, "unable to create webhook", "webhook", "SuperStream")
-			os.Exit(1)
-		}
-		if err = (&topology.SuperStreamConsumer{}).SetupWebhookWithManager(mgr); err != nil {
-			log.Error(err, "unable to create webhook", "webhook", "SuperStreamConsumer")
 			os.Exit(1)
 		}
 	}

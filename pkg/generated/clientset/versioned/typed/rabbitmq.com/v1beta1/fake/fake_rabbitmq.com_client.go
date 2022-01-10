@@ -57,10 +57,6 @@ func (c *FakeRabbitmqV1beta1) SuperStreams(namespace string) v1beta1.SuperStream
 	return &FakeSuperStreams{c, namespace}
 }
 
-func (c *FakeRabbitmqV1beta1) SuperStreamConsumers(namespace string) v1beta1.SuperStreamConsumerInterface {
-	return &FakeSuperStreamConsumers{c, namespace}
-}
-
 func (c *FakeRabbitmqV1beta1) Users(namespace string) v1beta1.UserInterface {
 	return &FakeUsers{c, namespace}
 }

@@ -83,14 +83,6 @@ type SuperStreamListerExpansion interface{}
 // SuperStreamNamespaceLister.
 type SuperStreamNamespaceListerExpansion interface{}
 
-// SuperStreamConsumerListerExpansion allows custom methods to be added to
-// SuperStreamConsumerLister.
-type SuperStreamConsumerListerExpansion interface{}
-
-// SuperStreamConsumerNamespaceListerExpansion allows custom methods to be added to
-// SuperStreamConsumerNamespaceLister.
-type SuperStreamConsumerNamespaceListerExpansion interface{}
-
 // UserListerExpansion allows custom methods to be added to
 // UserLister.
 type UserListerExpansion interface{}

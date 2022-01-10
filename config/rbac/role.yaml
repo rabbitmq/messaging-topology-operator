@@ -17,18 +17,6 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - pods
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
   - secrets
   verbs:
   - create
@@ -213,26 +201,6 @@ rules:
   - rabbitmq.com
   resources:
   - shovels/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - rabbitmq.com
-  resources:
-  - superstreamconsumers
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - rabbitmq.com
-  resources:
-  - superstreamconsumers/status
   verbs:
   - get
   - patch

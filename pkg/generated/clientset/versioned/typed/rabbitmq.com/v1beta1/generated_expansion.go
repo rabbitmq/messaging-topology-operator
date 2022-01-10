@@ -29,8 +29,6 @@ type ShovelExpansion interface{}
 
 type SuperStreamExpansion interface{}
 
-type SuperStreamConsumerExpansion interface{}
-
 type UserExpansion interface{}
 
 type VhostExpansion interface{}

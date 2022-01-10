@@ -64,8 +64,6 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().Shovels().Informer()}, nil
 	case v1beta1.SchemeGroupVersion.WithResource("superstreams"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().SuperStreams().Informer()}, nil
-	case v1beta1.SchemeGroupVersion.WithResource("superstreamconsumers"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().SuperStreamConsumers().Informer()}, nil
 	case v1beta1.SchemeGroupVersion.WithResource("users"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().Users().Informer()}, nil
 	case v1beta1.SchemeGroupVersion.WithResource("vhosts"):
