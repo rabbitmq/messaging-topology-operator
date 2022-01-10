@@ -13,6 +13,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-logr/logr"
+	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"github.com/rabbitmq/messaging-topology-operator/internal/managedresource"
@@ -48,7 +49,7 @@ type SuperStreamReconciler struct {
 func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
-	superStream := &topology.SuperStream{}
+	superStream := &topologyv1alpha1.SuperStream{}
 	if err := r.Get(ctx, req.NamespacedName, superStream); err != nil {
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
@@ -157,14 +158,14 @@ func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	return ctrl.Result{}, nil
 }
 
-func (r *SuperStreamReconciler) generateRoutingKeys(superStream *topology.SuperStream) (routingKeys []string) {
+func (r *SuperStreamReconciler) generateRoutingKeys(superStream *topologyv1alpha1.SuperStream) (routingKeys []string) {
 	for i := 0; i < superStream.Spec.Partitions; i++ {
 		routingKeys = append(routingKeys, strconv.Itoa(i))
 	}
 	return routingKeys
 }
 
-func (r *SuperStreamReconciler) SetReconcileSuccess(ctx context.Context, superStream *topology.SuperStream, condition topology.Condition) error {
+func (r *SuperStreamReconciler) SetReconcileSuccess(ctx context.Context, superStream *topologyv1alpha1.SuperStream, condition topology.Condition) error {
 	superStream.Status.Conditions = []topology.Condition{condition}
 	superStream.Status.ObservedGeneration = superStream.GetGeneration()
 	return clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
@@ -174,7 +175,7 @@ func (r *SuperStreamReconciler) SetReconcileSuccess(ctx context.Context, superSt
 
 func (r *SuperStreamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&topology.SuperStream{}).
+		For(&topologyv1alpha1.SuperStream{}).
 		Owns(&topology.Exchange{}).
 		Owns(&topology.Binding{}).
 		Owns(&topology.Queue{}).

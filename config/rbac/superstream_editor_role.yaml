@@ -1,0 +1,24 @@
+# permissions for end users to edit superstreams.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: superstream-editor-role
+rules:
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - superstreams
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - superstreams/status
+  verbs:
+  - get

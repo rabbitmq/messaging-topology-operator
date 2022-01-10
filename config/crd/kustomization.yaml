@@ -26,6 +26,7 @@ resources:
 #- patches/webhook_in_schemareplications.yaml
 #- patches/webhook_in_federations.yaml
 #- patches/webhook_in_shovels.yaml
+#- patches/webhook_in_superstreams.yaml
 # +kubebuilder:scaffold:crdkustomizewebhookpatch
 
 #- patches/cainjection_in_bindings.yaml
@@ -38,6 +39,7 @@ resources:
 #- patches/cainjection_in_schemareplications.yaml
 #- patches/cainjection_in_federations.yaml
 #- patches/cainjection_in_shovels.yaml
+#- patches/cainjection_in_superstreams.yaml
 # +kubebuilder:scaffold:crdkustomizecainjectionpatch
 
 configurations:

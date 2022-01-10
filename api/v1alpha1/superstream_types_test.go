@@ -1,9 +1,10 @@
-package v1beta1
+package v1alpha1
 
 import (
 	"context"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	topologyv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -19,7 +20,7 @@ var _ = Describe("SuperStream spec", func() {
 			Name:       "test-super-stream",
 			Vhost:      "/",
 			Partitions: 3,
-			RabbitmqClusterReference: RabbitmqClusterReference{
+			RabbitmqClusterReference: topologyv1beta1.RabbitmqClusterReference{
 				Name: "some-cluster",
 			},
 		}
@@ -31,7 +32,7 @@ var _ = Describe("SuperStream spec", func() {
 			},
 			Spec: SuperStreamSpec{
 				Name: "test-super-stream",
-				RabbitmqClusterReference: RabbitmqClusterReference{
+				RabbitmqClusterReference: topologyv1beta1.RabbitmqClusterReference{
 					Name: "some-cluster",
 				},
 			},
@@ -50,7 +51,7 @@ var _ = Describe("SuperStream spec", func() {
 			Name:       "test-super-stream2",
 			Vhost:      "test-vhost",
 			Partitions: 5,
-			RabbitmqClusterReference: RabbitmqClusterReference{
+			RabbitmqClusterReference: topologyv1beta1.RabbitmqClusterReference{
 				Name: "some-cluster",
 			},
 		}
@@ -64,7 +65,7 @@ var _ = Describe("SuperStream spec", func() {
 				Name:       "test-super-stream2",
 				Vhost:      "test-vhost",
 				Partitions: 5,
-				RabbitmqClusterReference: RabbitmqClusterReference{
+				RabbitmqClusterReference: topologyv1beta1.RabbitmqClusterReference{
 					Name: "some-cluster",
 				},
 			},

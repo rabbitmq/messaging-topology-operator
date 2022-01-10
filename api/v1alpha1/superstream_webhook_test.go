@@ -1,8 +1,9 @@
-package v1beta1
+package v1alpha1
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	topologyv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -18,7 +19,7 @@ var _ = Describe("superstream webhook", func() {
 				Name:        "test",
 				Partitions:  4,
 				RoutingKeys: []string{"a1", "b2", "f17"},
-				RabbitmqClusterReference: RabbitmqClusterReference{
+				RabbitmqClusterReference: topologyv1beta1.RabbitmqClusterReference{
 					Name: "a-cluster",
 				},
 			},
@@ -39,7 +40,7 @@ var _ = Describe("superstream webhook", func() {
 
 	It("does not allow updates on RabbitmqClusterReference", func() {
 		newSuperStream := superstream.DeepCopy()
-		newSuperStream.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
+		newSuperStream.Spec.RabbitmqClusterReference = topologyv1beta1.RabbitmqClusterReference{
 			Name: "new-cluster",
 		}
 		Expect(apierrors.IsForbidden(newSuperStream.ValidateUpdate(&superstream))).To(BeTrue())

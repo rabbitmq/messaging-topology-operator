@@ -14,7 +14,7 @@ package fake
 import (
 	"context"
 
-	v1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	v1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/rabbitmq.com/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -25,29 +25,29 @@ import (
 
 // FakeSuperStreams implements SuperStreamInterface
 type FakeSuperStreams struct {
-	Fake *FakeRabbitmqV1beta1
+	Fake *FakeRabbitmqV1alpha1
 	ns   string
 }
 
-var superstreamsResource = schema.GroupVersionResource{Group: "rabbitmq.com", Version: "v1beta1", Resource: "superstreams"}
+var superstreamsResource = schema.GroupVersionResource{Group: "rabbitmq.com", Version: "v1alpha1", Resource: "superstreams"}
 
-var superstreamsKind = schema.GroupVersionKind{Group: "rabbitmq.com", Version: "v1beta1", Kind: "SuperStream"}
+var superstreamsKind = schema.GroupVersionKind{Group: "rabbitmq.com", Version: "v1alpha1", Kind: "SuperStream"}
 
 // Get takes name of the superStream, and returns the corresponding superStream object, and an error if there is any.
-func (c *FakeSuperStreams) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.SuperStream, err error) {
+func (c *FakeSuperStreams) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.SuperStream, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(superstreamsResource, c.ns, name), &v1beta1.SuperStream{})
+		Invokes(testing.NewGetAction(superstreamsResource, c.ns, name), &v1alpha1.SuperStream{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1beta1.SuperStream), err
+	return obj.(*v1alpha1.SuperStream), err
 }
 
 // List takes label and field selectors, and returns the list of SuperStreams that match those selectors.
-func (c *FakeSuperStreams) List(ctx context.Context, opts v1.ListOptions) (result *v1beta1.SuperStreamList, err error) {
+func (c *FakeSuperStreams) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.SuperStreamList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(superstreamsResource, superstreamsKind, c.ns, opts), &v1beta1.SuperStreamList{})
+		Invokes(testing.NewListAction(superstreamsResource, superstreamsKind, c.ns, opts), &v1alpha1.SuperStreamList{})
 
 	if obj == nil {
 		return nil, err
@@ -57,8 +57,8 @@ func (c *FakeSuperStreams) List(ctx context.Context, opts v1.ListOptions) (resul
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &v1beta1.SuperStreamList{ListMeta: obj.(*v1beta1.SuperStreamList).ListMeta}
-	for _, item := range obj.(*v1beta1.SuperStreamList).Items {
+	list := &v1alpha1.SuperStreamList{ListMeta: obj.(*v1alpha1.SuperStreamList).ListMeta}
+	for _, item := range obj.(*v1alpha1.SuperStreamList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -74,43 +74,43 @@ func (c *FakeSuperStreams) Watch(ctx context.Context, opts v1.ListOptions) (watc
 }
 
 // Create takes the representation of a superStream and creates it.  Returns the server's representation of the superStream, and an error, if there is any.
-func (c *FakeSuperStreams) Create(ctx context.Context, superStream *v1beta1.SuperStream, opts v1.CreateOptions) (result *v1beta1.SuperStream, err error) {
+func (c *FakeSuperStreams) Create(ctx context.Context, superStream *v1alpha1.SuperStream, opts v1.CreateOptions) (result *v1alpha1.SuperStream, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(superstreamsResource, c.ns, superStream), &v1beta1.SuperStream{})
+		Invokes(testing.NewCreateAction(superstreamsResource, c.ns, superStream), &v1alpha1.SuperStream{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1beta1.SuperStream), err
+	return obj.(*v1alpha1.SuperStream), err
 }
 
 // Update takes the representation of a superStream and updates it. Returns the server's representation of the superStream, and an error, if there is any.
-func (c *FakeSuperStreams) Update(ctx context.Context, superStream *v1beta1.SuperStream, opts v1.UpdateOptions) (result *v1beta1.SuperStream, err error) {
+func (c *FakeSuperStreams) Update(ctx context.Context, superStream *v1alpha1.SuperStream, opts v1.UpdateOptions) (result *v1alpha1.SuperStream, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(superstreamsResource, c.ns, superStream), &v1beta1.SuperStream{})
+		Invokes(testing.NewUpdateAction(superstreamsResource, c.ns, superStream), &v1alpha1.SuperStream{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1beta1.SuperStream), err
+	return obj.(*v1alpha1.SuperStream), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeSuperStreams) UpdateStatus(ctx context.Context, superStream *v1beta1.SuperStream, opts v1.UpdateOptions) (*v1beta1.SuperStream, error) {
+func (c *FakeSuperStreams) UpdateStatus(ctx context.Context, superStream *v1alpha1.SuperStream, opts v1.UpdateOptions) (*v1alpha1.SuperStream, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(superstreamsResource, "status", c.ns, superStream), &v1beta1.SuperStream{})
+		Invokes(testing.NewUpdateSubresourceAction(superstreamsResource, "status", c.ns, superStream), &v1alpha1.SuperStream{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1beta1.SuperStream), err
+	return obj.(*v1alpha1.SuperStream), err
 }
 
 // Delete takes name of the superStream and deletes it. Returns an error if one occurs.
 func (c *FakeSuperStreams) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(superstreamsResource, c.ns, name), &v1beta1.SuperStream{})
+		Invokes(testing.NewDeleteAction(superstreamsResource, c.ns, name), &v1alpha1.SuperStream{})
 
 	return err
 }
@@ -119,17 +119,17 @@ func (c *FakeSuperStreams) Delete(ctx context.Context, name string, opts v1.Dele
 func (c *FakeSuperStreams) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(superstreamsResource, c.ns, listOpts)
 
-	_, err := c.Fake.Invokes(action, &v1beta1.SuperStreamList{})
+	_, err := c.Fake.Invokes(action, &v1alpha1.SuperStreamList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched superStream.
-func (c *FakeSuperStreams) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.SuperStream, err error) {
+func (c *FakeSuperStreams) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.SuperStream, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(superstreamsResource, c.ns, name, pt, data, subresources...), &v1beta1.SuperStream{})
+		Invokes(testing.NewPatchSubresourceAction(superstreamsResource, c.ns, name, pt, data, subresources...), &v1alpha1.SuperStream{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1beta1.SuperStream), err
+	return obj.(*v1alpha1.SuperStream), err
 }

@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
+	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,7 +21,7 @@ var _ = Describe("SuperStream", func() {
 		ctx             = context.Background()
 		vhost           *topology.Vhost
 		vhostName       string
-		superStream     *topology.SuperStream
+		superStream     *topologyv1alpha1.SuperStream
 		superStreamName string
 	)
 
@@ -37,12 +38,12 @@ var _ = Describe("SuperStream", func() {
 				},
 			},
 		}
-		superStream = &topology.SuperStream{
+		superStream = &topologyv1alpha1.SuperStream{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      superStreamName,
 				Namespace: namespace,
 			},
-			Spec: topology.SuperStreamSpec{
+			Spec: topologyv1alpha1.SuperStreamSpec{
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: rmq.Name,
 				},
@@ -150,7 +151,7 @@ var _ = Describe("SuperStream", func() {
 			}
 
 			By("updating status condition 'Ready'")
-			updatedSuperStream := topology.SuperStream{}
+			updatedSuperStream := topologyv1alpha1.SuperStream{}
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: superStream.Name, Namespace: superStream.Namespace}, &updatedSuperStream)).To(Succeed())
 
 			Expect(updatedSuperStream.Status.Conditions).To(HaveLen(1))

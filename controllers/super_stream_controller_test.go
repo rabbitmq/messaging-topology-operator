@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
+	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal/managedresource"
 	corev1 "k8s.io/api/core/v1"
@@ -17,7 +18,7 @@ import (
 
 var _ = Describe("super-stream-controller", func() {
 
-	var superStream topology.SuperStream
+	var superStream topologyv1alpha1.SuperStream
 	var superStreamName string
 	var expectedQueueNames []string
 
@@ -47,12 +48,12 @@ var _ = Describe("super-stream-controller", func() {
 				Status:     "204 No Content",
 				StatusCode: http.StatusNoContent,
 			}, nil)
-			superStream = topology.SuperStream{
+			superStream = topologyv1alpha1.SuperStream{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      superStreamName,
 					Namespace: "default",
 				},
-				Spec: topology.SuperStreamSpec{
+				Spec: topologyv1alpha1.SuperStreamSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
 						Name: "example-rabbit",
 					},
@@ -548,7 +549,7 @@ var _ = Describe("super-stream-controller", func() {
 
 					By("setting the status condition 'Ready' to 'true' ", func() {
 						EventuallyWithOffset(1, func() []topology.Condition {
-							var fetchedSuperStream topology.SuperStream
+							var fetchedSuperStream topologyv1alpha1.SuperStream
 							_ = client.Get(
 								ctx,
 								types.NamespacedName{Name: superStreamName, Namespace: "default"},
@@ -656,7 +657,7 @@ var _ = Describe("super-stream-controller", func() {
 					superStream.Spec.Partitions = 2
 					Expect(client.Create(ctx, &superStream)).To(Succeed())
 					EventuallyWithOffset(1, func() []topology.Condition {
-						var fetchedSuperStream topology.SuperStream
+						var fetchedSuperStream topologyv1alpha1.SuperStream
 						_ = client.Get(
 							ctx,
 							types.NamespacedName{Name: superStreamName, Namespace: "default"},

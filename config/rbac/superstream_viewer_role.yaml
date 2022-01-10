@@ -1,0 +1,20 @@
+# permissions for end users to view superstreams.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: superstream-viewer-role
+rules:
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - superstreams
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - superstreams/status
+  verbs:
+  - get

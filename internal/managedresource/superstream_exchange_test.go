@@ -3,6 +3,7 @@ package managedresource_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal/managedresource"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -10,7 +11,7 @@ import (
 
 var _ = Describe("SuperstreamExchange", func() {
 	var (
-		superStream     topology.SuperStream
+		superStream     topologyv1alpha1.SuperStream
 		builder         *managedresource.Builder
 		exchangeBuilder *managedresource.SuperStreamExchangeBuilder
 		exchange        *topology.Exchange
@@ -20,7 +21,8 @@ var _ = Describe("SuperstreamExchange", func() {
 	BeforeEach(func() {
 		scheme = runtime.NewScheme()
 		Expect(topology.AddToScheme(scheme)).To(Succeed())
-		superStream = topology.SuperStream{}
+		Expect(topologyv1alpha1.AddToScheme(scheme)).To(Succeed())
+		superStream = topologyv1alpha1.SuperStream{}
 		superStream.Namespace = "foo"
 		superStream.Name = "foo"
 		builder = &managedresource.Builder{

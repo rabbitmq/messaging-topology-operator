@@ -12,8 +12,7 @@ package controllers_test
 import (
 	"context"
 	"crypto/x509"
-	"fmt"
-	"github.com/rabbitmq/messaging-topology-operator/internal/managedresource"
+	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	"go/build"
 	"path/filepath"
 	"testing"
@@ -74,6 +73,7 @@ var _ = BeforeSuite(func() {
 
 	Expect(scheme.AddToScheme(scheme.Scheme)).To(Succeed())
 	Expect(topology.AddToScheme(scheme.Scheme)).To(Succeed())
+	Expect(topologyv1alpha1.AddToScheme(scheme.Scheme)).To(Succeed())
 	Expect(rabbitmqv1beta1.AddToScheme(scheme.Scheme)).To(Succeed())
 
 	clientSet, err = kubernetes.NewForConfig(cfg)
@@ -414,18 +414,4 @@ func observedEvents() []string {
 		events = append(events, <-fakeRecorder.Events)
 	}
 	return events
-}
-
-func getActiveConsumerPod(ctx context.Context, stream topology.SuperStream, namespace, partitionName string) (corev1.Pod, error) {
-	var podList corev1.PodList
-	if err := client.List(ctx, &podList, runtimeClient.InNamespace(namespace), runtimeClient.MatchingLabels(map[string]string{
-		managedresource.AnnotationSuperStream:          stream.Name,
-		managedresource.AnnotationSuperStreamPartition: partitionName,
-	})); err != nil {
-		return corev1.Pod{}, err
-	}
-	if len(podList.Items) != 1 {
-		return corev1.Pod{}, fmt.Errorf("Expected to find 1 matching consumer pod, but found %d: %#v", len(podList.Items), podList.Items)
-	}
-	return podList.Items[0], nil
 }

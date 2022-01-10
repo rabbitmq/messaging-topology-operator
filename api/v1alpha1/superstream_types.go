@@ -7,9 +7,10 @@ This product is licensed to you under the Mozilla Public License 2.0 license (th
 This product may include a number of subcomponents with separate copyright notices and license terms. Your use of these subcomponents is subject to the terms and conditions of the subcomponent's license, as noted in the LICENSE file.
 */
 
-package v1beta1
+package v1alpha1
 
 import (
+	topologyv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -33,15 +34,15 @@ type SuperStreamSpec struct {
 	// Reference to the RabbitmqCluster that the SuperStream will be created in.
 	// Required property.
 	// +kubebuilder:validation:Required
-	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
+	RabbitmqClusterReference topologyv1beta1.RabbitmqClusterReference `json:"rabbitmqClusterReference"`
 }
 
 // SuperStreamStatus defines the observed state of SuperStream
 type SuperStreamStatus struct {
 	// observedGeneration is the most recent successful generation observed for this SuperStream. It corresponds to the
 	// SuperStream's generation, which is updated on mutation by the API Server.
-	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
-	Conditions         []Condition `json:"conditions,omitempty"`
+	ObservedGeneration int64                       `json:"observedGeneration,omitempty"`
+	Conditions         []topologyv1beta1.Condition `json:"conditions,omitempty"`
 	// Partitions are a list of the stream queue names which form the partitions of this SuperStream.
 	Partitions []string `json:"partitions,omitempty"`
 }

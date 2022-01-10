@@ -21,6 +21,7 @@ import (
 
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 
+	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
@@ -37,6 +38,7 @@ func init() {
 	_ = rabbitmqv1beta1.AddToScheme(scheme)
 
 	_ = topology.AddToScheme(scheme)
+	_ = topologyv1alpha1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -221,7 +223,7 @@ func main() {
 			log.Error(err, "unable to create webhook", "webhook", "Shovel")
 			os.Exit(1)
 		}
-		if err = (&topology.SuperStream{}).SetupWebhookWithManager(mgr); err != nil {
+		if err = (&topologyv1alpha1.SuperStream{}).SetupWebhookWithManager(mgr); err != nil {
 			log.Error(err, "unable to create webhook", "webhook", "SuperStream")
 			os.Exit(1)
 		}
