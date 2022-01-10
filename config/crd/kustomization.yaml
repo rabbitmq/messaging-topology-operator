@@ -13,7 +13,6 @@ resources:
 - bases/rabbitmq.com_federations.yaml
 - bases/rabbitmq.com_shovels.yaml
 - bases/rabbitmq.com_superstreams.yaml
-- bases/rabbitmq.com_superstreamconsumers.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 #patchesStrategicMerge:
