@@ -12,6 +12,7 @@ package system_tests
 import (
 	"context"
 	"embed"
+	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strings"
 	"testing"
@@ -49,6 +50,7 @@ var _ = BeforeSuite(func() {
 	namespace := MustHaveEnv("NAMESPACE")
 	scheme := runtime.NewScheme()
 	Expect(topology.AddToScheme(scheme)).To(Succeed())
+	Expect(topologyv1alpha1.AddToScheme(scheme)).To(Succeed())
 	Expect(rabbitmqv1beta1.AddToScheme(scheme)).To(Succeed())
 	Expect(defaultscheme.AddToScheme(scheme)).To(Succeed())
 	restConfig, err := createRestConfig()
