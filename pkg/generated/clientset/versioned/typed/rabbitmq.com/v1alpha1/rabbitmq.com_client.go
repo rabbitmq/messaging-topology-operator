@@ -12,7 +12,7 @@ This product may include a number of subcomponents with separate copyright notic
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/rabbitmq.com/v1alpha1"
+	v1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	"github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )

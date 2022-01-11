@@ -15,7 +15,7 @@ import (
 	"context"
 	time "time"
 
-	rabbitmqcomv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/rabbitmq.com/v1alpha1"
+	rabbitmqcomv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	versioned "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned"
 	internalinterfaces "github.com/rabbitmq/messaging-topology-operator/pkg/generated/informers/externalversions/internalinterfaces"
 	v1alpha1 "github.com/rabbitmq/messaging-topology-operator/pkg/generated/listers/rabbitmq.com/v1alpha1"

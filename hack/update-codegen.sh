@@ -45,7 +45,6 @@ rm -rf api/rabbitmq.com
 # Because there's no way how to modify any of these settings,
 # we need to hack things a little bit (replace the name of package)
 find pkg/generated -type f -name "*.go" |\
-xargs sed -i".out" -e "s#github.com/rabbitmq/messaging-topology-operator/api/rabbitmq.com/v1beta1#github.com/rabbitmq/messaging-topology-operator/api/v1beta1#g" |\
-xargs sed -i".out" -e "s#github.com/rabbitmq/messaging-topology-operator/api/rabbitmq.com/v1alpha1#github.com/rabbitmq/messaging-topology-operator/api/v1alpha1#g"
+xargs sed -i".out" -e "s#github.com/rabbitmq/messaging-topology-operator/api/rabbitmq.com/#github.com/rabbitmq/messaging-topology-operator/api/#g"
 find pkg/generated -type f -name "*.go.out" | xargs rm -rf
 
