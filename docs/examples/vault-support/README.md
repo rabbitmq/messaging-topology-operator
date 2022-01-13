@@ -34,13 +34,15 @@ $ vault auth enable kubernetes
 
 In order for the RabbitMQ Messaging Topology operator to authenticate with
 a Vault server and access RabbitMQ cluster default user credentials it is
-necessary for the operator container to have one or more environment variables
-set. 
+necessary for the operator container to have the `VAULT_ADDR` environment
+variable set to the URL of the Vault server API.
 
-- `VAULT_ADDR` should be set to the URL of the Vault server API
-- `OPERATOR_VAULT_ROLE` should be set to the name of the Vault role that is used when accessing credentials. This defaults to "messaging-topology-operator"
-- `OPERATOR_VAULT_NAMESPACE` may be set to the Vault namespace to use when the Messaging Topology operator is authenticating. If not set then the default Vault namespace is assumed
-- `OPERATOR_VAULT_AUTH_PATH` may be set to the auth path that the operator ought to use when authenticating to Vault. If not set then it is assumed that the “auth/kubernetes” path should be used
+The following environment variables may be optionally set if the defaults are
+not applicable.
+
+- `OPERATOR_VAULT_ROLE` the name of the Vault role that is used when accessing credentials. Defaults to "messaging-topology-operator"
+- `OPERATOR_VAULT_NAMESPACE` the [Vault namespace](https://www.vaultproject.io/docs/enterprise/namespaces) to use when the Messaging Topology operator is authenticating. If not set then the default Vault namespace is assumed
+- `OPERATOR_VAULT_AUTH_PATH` the auth path that the operator ought to use when authenticating to Vault. Default behaviour is to use the “auth/kubernetes” path
 
 In this example the Vault configuration is carried out automatically using
 the  [setup.sh](./setup.sh) script.
@@ -52,8 +54,25 @@ This example requires:
 2. RabbitMQ Messaging Topology operator is installed
 
 Run the [setup.sh](./setup.sh) script to install Vault to the current
-Kubernetes cluster. This will also create the necessary credentials, 
-policy, and configuration in preparation for running the example.
+namespace of the Kubernetes cluster. It also carries out the following
+activities in preparation for running the test script.
+
+- creates the default user credentials for cluster `cluster-vault-a`
+- creates a Vault policy called `messaging-topology-operator-policy` that grants _read access_ to the credentials of `cluster-vault-a`.
+- creates a separate Vault policy called `cluster-vault-a-policy` that grants _read write access_ to the credentials of `cluster-vault-a`.
+- creates the Vault role `messaging-topology-operator` which references the Vault policy `messaging-topology-operator-policy` to permit the service account for the Messaging Topology operator to read the cluster credentials
+- creates the Vault role `rabbitmq-cluster` which references the policy `cluster-vault-a-policy` to permit the service account for the RabbitMQ cluster `cluster-vault-a` to read and write the cluster credentials
+
+Note that an alternative to the above approach of configuring each RabbitMQ
+cluster with its own Vault policy and role would be to make use of
+[wildcards](https://www.vaultproject.io/docs/concepts/policies#policy-syntax)
+in the Vault policy path value. For instance, a Vault policy
+which grants access to the path `secret/data/rabbitmq/some-group-name/*`
+could be associated with a single Vault role used by a group
+of RabbitMQ clusters. The role's `bound_service_account_names` value would
+need to include the name of each group member's Kubernetes service account.
+Similarly, the role's `bound_service_account_namespaces` would need to
+include the name of each member's Kubernetes namespace.
 
 Next, run the [test.sh](./test.sh) script. This automates the execution of the
 following steps:

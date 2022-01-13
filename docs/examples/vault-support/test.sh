@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+CURRENT_KUBE_NAMESPACE=$(kubectl config view --minify --output 'jsonpath={..namespace}'; echo)
+
 wait_for_operator() {
     sleep 10
     kubectl wait --for=condition=Available deployment/messaging-topology-operator -n rabbitmq-system
@@ -24,7 +26,7 @@ wait_for_operator() {
 
 # Update the Messaging Topology operator deployment, providing it with the Vault related environment variables
 echo "Updating Messaging Topology operator to work with Vault..."
-kubectl set env deployment/messaging-topology-operator -n rabbitmq-system --containers='manager' OPERATOR_VAULT_ROLE=messaging-topology-operator VAULT_ADDR=http://vault.default.svc.cluster.local:8200
+kubectl set env deployment/messaging-topology-operator -n rabbitmq-system --containers='manager' OPERATOR_VAULT_ROLE=messaging-topology-operator VAULT_ADDR=http://vault.$CURRENT_KUBE_NAMESPACE.svc.cluster.local:8200
 wait_for_operator
 
 echo
