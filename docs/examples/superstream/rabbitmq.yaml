@@ -3,8 +3,8 @@ kind: RabbitmqCluster
 metadata:
   name: billing
 spec:
-  replicas: 3
-  image: rabbitmq:3.9.9-management
+  replicas: 1
+  image: rabbitmq:3.9-management
   rabbitmq:
     additionalPlugins:
     - rabbitmq_stream

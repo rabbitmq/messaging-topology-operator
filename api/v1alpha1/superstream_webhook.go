@@ -24,7 +24,7 @@ func (s *SuperStream) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1beta1-superstream,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=superstreams,versions=v1beta1,name=vsuperstream.kb.io,sideEffects=none,admissionReviewVersions=v1
+// +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1alpha1-superstream,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=superstreams,versions=v1alpha1,name=vsuperstream.kb.io,sideEffects=none,admissionReviewVersions=v1
 
 var _ webhook.Validator = &SuperStream{}
 

@@ -17,6 +17,7 @@ import (
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"github.com/rabbitmq/messaging-topology-operator/internal/managedresource"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
@@ -70,10 +71,11 @@ func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		)
 		msg := fmt.Sprintf("SuperStream %s failed to reconcile", superStream.Name)
 		logger.Error(err, msg)
+		r.Recorder.Event(superStream, corev1.EventTypeWarning, "FailedScaleDown", err.Error())
 		if writerErr := r.SetReconcileSuccess(ctx, superStream, topology.NotReady(msg, superStream.Status.Conditions)); writerErr != nil {
 			logger.Error(writerErr, failedStatusUpdate, "status", superStream.Status)
 		}
-		return reconcile.Result{}, err
+		return reconcile.Result{}, nil
 	}
 
 	var routingKeys []string

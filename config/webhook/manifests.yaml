@@ -212,14 +212,14 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-rabbitmq-com-v1beta1-superstream
+      path: /validate-rabbitmq-com-v1alpha1-superstream
   failurePolicy: Fail
   name: vsuperstream.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
     apiVersions:
-    - v1beta1
+    - v1alpha1
     operations:
     - CREATE
     - UPDATE

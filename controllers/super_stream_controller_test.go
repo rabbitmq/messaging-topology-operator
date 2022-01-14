@@ -89,8 +89,8 @@ var _ = Describe("super-stream-controller", func() {
 								"Namespace": Equal("default"),
 							}),
 						}))
-
 					})
+
 					By("creating n stream queue partitions", func() {
 						var partition topology.Queue
 						expectedQueueNames = []string{}
@@ -156,6 +156,7 @@ var _ = Describe("super-stream-controller", func() {
 							}))
 						}
 					})
+
 					By("setting the status condition 'Ready' to 'true' ", func() {
 						EventuallyWithOffset(1, func() []topology.Condition {
 							_ = client.Get(
@@ -191,6 +192,7 @@ var _ = Describe("super-stream-controller", func() {
 						"Status": Equal(corev1.ConditionTrue),
 					})))
 				})
+
 				When("a binding is deleted", func() {
 					BeforeEach(func() {
 						superStreamName = "delete-binding"
@@ -237,6 +239,7 @@ var _ = Describe("super-stream-controller", func() {
 						})
 					})
 				})
+
 				When("a queue is deleted", func() {
 					BeforeEach(func() {
 						superStreamName = "delete-queue"
@@ -283,6 +286,7 @@ var _ = Describe("super-stream-controller", func() {
 						})
 					})
 				})
+
 				When("the exchange is deleted", func() {
 					BeforeEach(func() {
 						superStreamName = "delete-exchange"
@@ -328,6 +332,7 @@ var _ = Describe("super-stream-controller", func() {
 						})
 					})
 				})
+
 				When("the super stream is scaled down", func() {
 					var originalPartitionCount int
 					BeforeEach(func() {
@@ -358,6 +363,7 @@ var _ = Describe("super-stream-controller", func() {
 								"Status": Equal(corev1.ConditionFalse),
 							})))
 						})
+
 						By("retaining the original stream queue partitions", func() {
 							var partition topology.Queue
 							expectedQueueNames = []string{}
@@ -420,6 +426,11 @@ var _ = Describe("super-stream-controller", func() {
 								}))
 							}
 						})
+
+						By("raising a warning event", func() {
+							Expect(observedEvents()).To(ContainElement("Warning FailedScaleDown SuperStreams cannot be scaled down: an attempt was made to scale from 3 partitions to 1"))
+						})
+
 					})
 				})
 			})
@@ -518,6 +529,7 @@ var _ = Describe("super-stream-controller", func() {
 								}))
 							}
 						})
+
 						By("setting the status condition 'Ready' to 'true' ", func() {
 							EventuallyWithOffset(1, func() []topology.Condition {
 								_ = client.Get(
@@ -563,6 +575,7 @@ var _ = Describe("super-stream-controller", func() {
 							"Status": Equal(corev1.ConditionTrue),
 						})))
 					})
+
 					By("creating an exchange", func() {
 						var exchange topology.Exchange
 						err := client.Get(
@@ -580,8 +593,8 @@ var _ = Describe("super-stream-controller", func() {
 								"Namespace": Equal("default"),
 							}),
 						}))
-
 					})
+
 					By("creating n stream queue partitions", func() {
 						var partition topology.Queue
 						expectedQueueNames = []string{}
@@ -647,6 +660,7 @@ var _ = Describe("super-stream-controller", func() {
 					})
 				})
 			})
+
 			When("the number of routing keys does not match the partition count", func() {
 				BeforeEach(func() {
 					superStreamName = "mismatch"
