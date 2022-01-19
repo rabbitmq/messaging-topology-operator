@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"strings"
 
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
@@ -112,12 +113,14 @@ func readCredentialsFromKubernetesSecret(secret *corev1.Secret) (CredentialsProv
 		return nil, errors.New("unable to extract data from nil secret")
 	}
 
+	logger := ctrl.LoggerFrom(nil)
+
 	if secret.Data["username"] == nil {
-		return nil, errors.New("secret data contains no username value")
+		logger.Info("Kubernetes secret data contains no username value")
 	}
 
 	if secret.Data["password"] == nil {
-		return nil, errors.New("secret data contains no password value")
+		logger.Info("Kubernetes secret data contains no password value")
 	}
 
 	return ClusterCredentials{
