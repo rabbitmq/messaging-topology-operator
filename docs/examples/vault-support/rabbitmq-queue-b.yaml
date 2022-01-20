@@ -1,0 +1,12 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: Queue
+metadata:
+  name: queue-b
+spec:
+  name: queue-b # name of the queue
+  type: quorum # without providing a queue type, rabbitmq creates a classic queue
+  autoDelete: false
+  durable: true # seting 'durable' to false means this queue won't survive a server restart
+  rabbitmqClusterReference:
+    name: cluster-b  # rabbitmqCluster must exist in the same namespace as this resource
+

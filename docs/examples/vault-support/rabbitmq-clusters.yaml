@@ -1,0 +1,37 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: cluster-vault-a
+  annotations:
+    rabbitmq.com/topology-allowed-namespaces: "*"
+spec:
+  image: rabbitmq:3.9.7-management
+  replicas: 1
+  service:
+    type: NodePort
+  rabbitmq:
+    additionalConfig: |
+      loopback_users = none
+  secretBackend:
+    vault:
+      role: rabbitmq-cluster
+      defaultUserPath: secret/data/rabbitmq/cluster-vault-a/creds
+
+---
+
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: cluster-b
+  annotations:
+    rabbitmq.com/topology-allowed-namespaces: "*"
+spec:
+  image: rabbitmq:3.9.7-management
+  replicas: 1
+  service:
+    type: NodePort
+  rabbitmq:
+    additionalConfig: |
+      loopback_users = none
+
+
