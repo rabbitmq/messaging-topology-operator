@@ -3,17 +3,12 @@ title: Star Certificate Support
 authors:
   - "@acedres"
 reviewers:
-  - "@janedoe"
+  - "@MirahImage"
+  - "@coro"
 creation-date: 2022-01-05
-last-updated: 2022-01-05
+last-updated: 2022-01-24
 status: provisional ~~|implementable|implemented|deferred|rejected|withdrawn|replaced~~
-see-also:
-  - "/docs/proposals/20190101-we-heard-you-like-proposals.md"
-  - "/docs/proposals/20190102-everyone-gets-a-proposal.md"
-replaces:
-  - "/docs/proposals/20181231-replaced-proposal.md"
-superseded-by:
-  - "/docs/proposals/20190104-superceding-proposal.md"
+
 ---
 
 # Star Certificate Support
@@ -257,13 +252,10 @@ Not applicable. This section could be removed before the proposal is accepted.
 
 ## Implementation History
 
-- [ ] MM/DD/YYYY: Proposed idea in an issue or [community meeting]
-- [ ] MM/DD/YYYY: Compile a Google Doc following the CAEP template (link here)
-- [ ] MM/DD/YYYY: First round of feedback from community
-- [ ] MM/DD/YYYY: Present proposal at a [community meeting]
-- [ ] MM/DD/YYYY: Open proposal PR
+- [ ] 01/11/2021: Proposed idea in a [Pull Request][idea-pr]
+- [ ] MM/DD/YYYY: reserved space
 
 <!-- Links -->
-[community meeting]: https://docs.google.com/document/d/1Ys-DOR5UsgbMEeciuG0HOgDQc8kZsaWIWJeKJ1-UfbY
+[idea-pr]: https://github.com/rabbitmq/messaging-topology-operator/pull/282
 [kubelet-config]: https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/#options
 [testing-guidelines]: https://git.k8s.io/community/contributors/devel/sig-testing/testing.md
