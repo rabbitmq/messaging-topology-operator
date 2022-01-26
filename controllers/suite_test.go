@@ -51,10 +51,13 @@ var (
 	ctx                       = context.Background()
 	fakeRabbitMQClient        *internalfakes.FakeRabbitMQClient
 	fakeRabbitMQClientError   error
-	fakeRabbitMQClientFactory = func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, secret *corev1.Secret, hostname string, certPool *x509.CertPool) (internal.RabbitMQClient, error) {
+	fakeRabbitMQClientFactory = func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, credsProvider internal.CredentialsProvider, hostname string, certPool *x509.CertPool) (internal.RabbitMQClient, error) {
 		return fakeRabbitMQClient, fakeRabbitMQClientError
 	}
-	fakeRecorder *record.FakeRecorder
+	existingRabbitMQUsername = "abc123"
+	existingRabbitMQPassword = "foo1234"
+	fakeCredentialsProvider  *internalfakes.FakeCredentialsProvider
+	fakeRecorder             *record.FakeRecorder
 )
 
 var _ = BeforeSuite(func() {
@@ -84,6 +87,10 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
+	fakeCredentialsProvider = &internalfakes.FakeCredentialsProvider{}
+
+	fakeCredentialsProvider.DataReturnsOnCall(0, []byte(existingRabbitMQUsername), true)
+	fakeCredentialsProvider.DataReturnsOnCall(1, []byte(existingRabbitMQPassword), true)
 	fakeRecorder = record.NewFakeRecorder(128)
 
 	err = (&controllers.BindingReconciler{

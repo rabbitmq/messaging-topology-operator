@@ -48,27 +48,27 @@ type RabbitMQClient interface {
 	DeleteShovel(vhost, shovel string) (res *http.Response, err error)
 }
 
-type RabbitMQClientFactory func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, secret *corev1.Secret, hostname string, certPool *x509.CertPool) (RabbitMQClient, error)
+type RabbitMQClientFactory func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, credsProvider CredentialsProvider, hostname string, certPool *x509.CertPool) (RabbitMQClient, error)
 
-var RabbitholeClientFactory RabbitMQClientFactory = func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, secret *corev1.Secret, hostname string, certPool *x509.CertPool) (RabbitMQClient, error) {
-	return generateRabbitholeClient(rmq, svc, secret, hostname, certPool)
+var RabbitholeClientFactory RabbitMQClientFactory = func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, credsProvider CredentialsProvider, hostname string, certPool *x509.CertPool) (RabbitMQClient, error) {
+	return generateRabbitholeClient(rmq, svc, credsProvider, hostname, certPool)
 }
 
 // returns a http client for the given RabbitmqCluster
-func generateRabbitholeClient(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, secret *corev1.Secret, hostname string, certPool *x509.CertPool) (rabbitmqClient RabbitMQClient, err error) {
+func generateRabbitholeClient(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, credsProvider CredentialsProvider, hostname string, certPool *x509.CertPool) (rabbitmqClient RabbitMQClient, err error) {
 	endpoint, err := managementEndpoint(rmq, svc, hostname)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get endpoint from specified rabbitmqcluster: %w", err)
 	}
 
-	defaultUser, found := secret.Data["username"]
+	defaultUser, found := credsProvider.Data("username")
 	if !found {
-		return nil, errors.New("failed to retrieve username: key username missing from secret")
+		return nil, errors.New("failed to retrieve username: key username missing from credentials")
 	}
 
-	defaultUserPass, found := secret.Data["password"]
+	defaultUserPass, found := credsProvider.Data("password")
 	if !found {
-		return nil, errors.New("failed to retrieve username: key password missing from secret")
+		return nil, errors.New("failed to retrieve password: key password missing from credentials")
 	}
 
 	if rmq.TLSEnabled() {
