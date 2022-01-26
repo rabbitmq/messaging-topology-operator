@@ -12,6 +12,7 @@ package controllers_test
 import (
 	"context"
 	"crypto/x509"
+	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	"go/build"
 	"path/filepath"
 	"testing"
@@ -75,6 +76,7 @@ var _ = BeforeSuite(func() {
 
 	Expect(scheme.AddToScheme(scheme.Scheme)).To(Succeed())
 	Expect(topology.AddToScheme(scheme.Scheme)).To(Succeed())
+	Expect(topologyv1alpha1.AddToScheme(scheme.Scheme)).To(Succeed())
 	Expect(rabbitmqv1beta1.AddToScheme(scheme.Scheme)).To(Succeed())
 
 	clientSet, err = kubernetes.NewForConfig(cfg)
@@ -155,6 +157,13 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(mgr)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.ShovelReconciler{
+		Client:                mgr.GetClient(),
+		Scheme:                mgr.GetScheme(),
+		Recorder:              fakeRecorder,
+		RabbitmqClientFactory: fakeRabbitMQClientFactory,
+	}).SetupWithManager(mgr)
+	Expect(err).ToNot(HaveOccurred())
+	err = (&controllers.SuperStreamReconciler{
 		Client:                mgr.GetClient(),
 		Scheme:                mgr.GetScheme(),
 		Recorder:              fakeRecorder,

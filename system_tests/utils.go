@@ -158,6 +158,7 @@ func basicTestRabbitmqCluster(name, namespace string) *rabbitmqv1beta1.RabbitmqC
 			Namespace: namespace,
 		},
 		Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
+			Image:    "rabbitmq:3.9-management",
 			Replicas: pointer.Int32Ptr(1),
 			Resources: &corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
@@ -168,7 +169,7 @@ func basicTestRabbitmqCluster(name, namespace string) *rabbitmqv1beta1.RabbitmqC
 				Type: corev1.ServiceTypeNodePort,
 			},
 			Rabbitmq: rabbitmqv1beta1.RabbitmqClusterConfigurationSpec{
-				AdditionalPlugins: []rabbitmqv1beta1.Plugin{"rabbitmq_federation", "rabbitmq_shovel"},
+				AdditionalPlugins: []rabbitmqv1beta1.Plugin{"rabbitmq_federation", "rabbitmq_shovel", "rabbitmq_stream"},
 			},
 		},
 	}

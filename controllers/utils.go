@@ -13,11 +13,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"io/ioutil"
+	"k8s.io/client-go/tools/record"
+	clientretry "k8s.io/client-go/util/retry"
 	"net/http"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"strings"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -91,4 +98,40 @@ func deletionFinalizer(kind string) string {
 		plural = strings.ToLower(kind) + "s"
 	}
 	return fmt.Sprintf("deletion.finalizers.%s.%s", plural, "rabbitmq.com")
+}
+
+// handleRMQReferenceParseError handles the error output from internal.ParseRabbitmqClusterReference, returning a
+// result for the Reconcile loop for a controller, and adding logs or status updates on the object being reconciled.
+func handleRMQReferenceParseError(ctx context.Context, client client.Client, eventRecorder record.EventRecorder, object client.Object, objectConditions *[]topology.Condition, err error) (ctrl.Result, error) {
+	logger := ctrl.LoggerFrom(ctx)
+	if err == nil {
+		logger.Error(errors.New("expected error to parse, but it was nil"), "Failed to parse error from RabbitmqClusterReference parsing")
+		return reconcile.Result{}, err
+	}
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !object.GetDeletionTimestamp().IsZero() {
+		logger.Info(noSuchRabbitDeletion, "object", object.GetName())
+		eventRecorder.Event(object, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted "+object.GetName())
+		return reconcile.Result{}, removeFinalizer(ctx, client, object)
+	}
+	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
+		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
+		// the Cluster is temporarily down. Requeue until it comes back up.
+		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
+		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
+	}
+	if errors.Is(err, internal.ResourceNotAllowedError) {
+		logger.Info("Could not create resource: " + err.Error())
+		*objectConditions = []topology.Condition{
+			topology.NotReady(internal.ResourceNotAllowedError.Error(), *objectConditions),
+		}
+		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
+			return client.Status().Update(ctx, object)
+		}); writerErr != nil {
+			logger.Error(writerErr, failedStatusUpdate, "object", object.GetName())
+		}
+		return reconcile.Result{}, nil
+	}
+	logger.Error(err, failedParseClusterRef)
+	return reconcile.Result{}, err
+
 }

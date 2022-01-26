@@ -12,7 +12,9 @@ package system_tests
 import (
 	"context"
 	"embed"
+	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strings"
 	"testing"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
@@ -35,10 +37,11 @@ func TestSystemTests(t *testing.T) {
 }
 
 var (
-	k8sClient    client.Client
-	rabbitClient *rabbithole.Client
-	clientSet    *kubernetes.Clientset
-	rmq          *rabbitmqv1beta1.RabbitmqCluster
+	k8sClient                        client.Client
+	rabbitClient                     *rabbithole.Client
+	clientSet                        *kubernetes.Clientset
+	rmq                              *rabbitmqv1beta1.RabbitmqCluster
+	environmentHasChaosMeshInstalled bool
 	//go:embed fixtures
 	fixtures embed.FS
 )
@@ -47,6 +50,7 @@ var _ = BeforeSuite(func() {
 	namespace := MustHaveEnv("NAMESPACE")
 	scheme := runtime.NewScheme()
 	Expect(topology.AddToScheme(scheme)).To(Succeed())
+	Expect(topologyv1alpha1.AddToScheme(scheme)).To(Succeed())
 	Expect(rabbitmqv1beta1.AddToScheme(scheme)).To(Succeed())
 	Expect(defaultscheme.AddToScheme(scheme)).To(Succeed())
 	restConfig, err := createRestConfig()
@@ -86,6 +90,22 @@ var _ = BeforeSuite(func() {
 
 		return output
 	}, 10, 1).Should(ContainSubstring("1/1"), "messaging-topology-operator not deployed")
+
+	output, err := kubectl(
+		"-n",
+		"chaos-testing",
+		"get",
+		"deployment",
+		"-l",
+		"app.kubernetes.io/name=chaos-mesh",
+	)
+
+	Expect(err).NotTo(HaveOccurred())
+
+	if strings.Contains(string(output), "1/1") {
+		// helm install chaos-mesh chaos-mesh/chaos-mesh --namespace=chaos-testing --version 2.1.0 --set dashboard.securityMode=false --set chaosDaemon.runtime=containerd --set chaosDaemon.socketPath=/run/containerd/containerd.sock
+		environmentHasChaosMeshInstalled = true
+	}
 
 	// setup a RabbitmqCluster used for system tests
 	rmq = basicTestRabbitmqCluster("system-test", namespace)

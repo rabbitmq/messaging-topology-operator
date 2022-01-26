@@ -1,0 +1,10 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: billing
+spec:
+  replicas: 1
+  image: rabbitmq:3.9-management
+  rabbitmq:
+    additionalPlugins:
+    - rabbitmq_stream

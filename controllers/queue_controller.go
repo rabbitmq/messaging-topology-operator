@@ -13,8 +13,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"time"
-
 	"github.com/go-logr/logr"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
@@ -58,32 +56,8 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	rmq, svc, credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, queue.Spec.RabbitmqClusterReference, queue.Namespace)
-	if errors.Is(err, internal.NoSuchRabbitmqClusterError) && !queue.ObjectMeta.DeletionTimestamp.IsZero() {
-		logger.Info(noSuchRabbitDeletion, "queue", queue.Name)
-		r.Recorder.Event(queue, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted queue")
-		return reconcile.Result{}, removeFinalizer(ctx, r.Client, queue)
-	}
-	if errors.Is(err, internal.NoSuchRabbitmqClusterError) {
-		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
-		// the Cluster is temporarily down. Requeue until it comes back up.
-		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
-		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
-	}
-	if errors.Is(err, internal.ResourceNotAllowedError) {
-		logger.Info("Could not create queue resource: " + err.Error())
-		queue.Status.Conditions = []topology.Condition{
-			topology.NotReady(internal.ResourceNotAllowedError.Error(), queue.Status.Conditions),
-		}
-		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
-			return r.Status().Update(ctx, queue)
-		}); writerErr != nil {
-			logger.Error(writerErr, failedStatusUpdate)
-		}
-		return reconcile.Result{}, nil
-	}
 	if err != nil {
-		logger.Error(err, failedParseClusterRef)
-		return reconcile.Result{}, err
+		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, queue, &queue.Status.Conditions, err)
 	}
 
 	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, credsProvider, serviceDNSAddress(svc), systemCertPool)
@@ -118,7 +92,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, queue)
 		}); writerErr != nil {
-			logger.Error(writerErr, failedStatusUpdate)
+			logger.Error(writerErr, failedStatusUpdate, "status", queue.Status)
 		}
 		return ctrl.Result{}, err
 	}
@@ -128,7 +102,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, queue)
 	}); writerErr != nil {
-		logger.Error(writerErr, failedStatusUpdate)
+		logger.Error(writerErr, failedStatusUpdate, "status", queue.Status)
 	}
 	logger.Info("Finished reconciling")
 

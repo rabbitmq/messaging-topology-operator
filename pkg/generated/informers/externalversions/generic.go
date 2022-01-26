@@ -14,6 +14,7 @@ package externalversions
 import (
 	"fmt"
 
+	v1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	v1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
@@ -45,7 +46,11 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=rabbitmq.com, Version=v1beta1
+	// Group=rabbitmq.com, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("superstreams"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1alpha1().SuperStreams().Informer()}, nil
+
+		// Group=rabbitmq.com, Version=v1beta1
 	case v1beta1.SchemeGroupVersion.WithResource("bindings"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().Bindings().Informer()}, nil
 	case v1beta1.SchemeGroupVersion.WithResource("exchanges"):

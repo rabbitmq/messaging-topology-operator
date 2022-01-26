@@ -12,6 +12,7 @@ This product may include a number of subcomponents with separate copyright notic
 package fake
 
 import (
+	rabbitmqv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	rabbitmqv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -24,6 +25,7 @@ var scheme = runtime.NewScheme()
 var codecs = serializer.NewCodecFactory(scheme)
 
 var localSchemeBuilder = runtime.SchemeBuilder{
+	rabbitmqv1alpha1.AddToScheme,
 	rabbitmqv1beta1.AddToScheme,
 }
 
