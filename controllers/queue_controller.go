@@ -61,9 +61,6 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	var hostname string
-	// If rabbitmqClusterReference.connectionSecret is set instead of rabbitmqClusterReference.name
-	// ParseRabbitmqClusterReference returns a nil rmq and only credsProvider will be used for generating the rabbit client
-	// set hostname to cluster-local DNS when returned rmq is not nil (rabbitmqClusterReference.name is set)
 	if rmq != nil {
 		hostname = serviceDNSAddress(svc)
 	}

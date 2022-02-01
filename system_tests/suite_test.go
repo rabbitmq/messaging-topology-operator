@@ -13,8 +13,8 @@ import (
 	"context"
 	"embed"
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strings"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
