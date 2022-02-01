@@ -3,6 +3,7 @@ package v1beta1
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -11,7 +12,7 @@ var _ = Describe("queue webhook", func() {
 
 	var queue = Queue{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "update-binding",
+			Name: "test-queue",
 		},
 		Spec: QueueSpec{
 			Name:       "test",
@@ -25,6 +26,19 @@ var _ = Describe("queue webhook", func() {
 		},
 	}
 
+	It("does not allow both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret be configured", func() {
+		notAllowedQ := queue.DeepCopy()
+		notAllowedQ.Spec.RabbitmqClusterReference.ConnectionSecret = &corev1.LocalObjectReference{Name: "some-secret"}
+		Expect(apierrors.IsForbidden(notAllowedQ.ValidateCreate())).To(BeTrue())
+	})
+
+	It("spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret cannot both be not set", func() {
+		notAllowedQ := queue.DeepCopy()
+		notAllowedQ.Spec.RabbitmqClusterReference.Name = ""
+		notAllowedQ.Spec.RabbitmqClusterReference.ConnectionSecret = nil
+		Expect(apierrors.IsForbidden(notAllowedQ.ValidateCreate())).To(BeTrue())
+	})
+
 	It("does not allow updates on queue name", func() {
 		newQueue := queue.DeepCopy()
 		newQueue.Spec.Name = "new-name"
@@ -37,12 +51,39 @@ var _ = Describe("queue webhook", func() {
 		Expect(apierrors.IsForbidden(newQueue.ValidateUpdate(&queue))).To(BeTrue())
 	})
 
-	It("does not allow updates on RabbitmqClusterReference", func() {
+	It("does not allow updates on rabbitmqClusterReference.name", func() {
 		newQueue := queue.DeepCopy()
 		newQueue.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
 			Name: "new-cluster",
 		}
 		Expect(apierrors.IsForbidden(newQueue.ValidateUpdate(&queue))).To(BeTrue())
+	})
+
+	It("does not allow updates on rabbitmqClusterReference.namespace", func() {
+		newQueue := queue.DeepCopy()
+		newQueue.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
+			Namespace: "new-ns",
+		}
+		Expect(apierrors.IsForbidden(newQueue.ValidateUpdate(&queue))).To(BeTrue())
+	})
+
+	It("does not allow updates on rabbitmqClusterReference.connectionSecret", func() {
+		connectionScrQ := Queue{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "connect-test-queue",
+			},
+			Spec: QueueSpec{
+				Name: "test",
+				RabbitmqClusterReference: RabbitmqClusterReference{
+					ConnectionSecret: &corev1.LocalObjectReference{
+						Name: "a-secret",
+					},
+				},
+			},
+		}
+		newQueue := connectionScrQ.DeepCopy()
+		newQueue.Spec.RabbitmqClusterReference.ConnectionSecret.Name = "new-secret"
+		Expect(apierrors.IsForbidden(newQueue.ValidateUpdate(&connectionScrQ))).To(BeTrue())
 	})
 
 	It("does not allow updates on queue type", func() {

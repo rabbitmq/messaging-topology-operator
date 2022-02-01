@@ -9,9 +9,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
-func (r *Queue) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (q *Queue) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
+		For(q).
 		Complete()
 }
 
@@ -19,8 +19,21 @@ func (r *Queue) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Validator = &Queue{}
 
-// no validation on create
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+// returns error type 'forbidden' if a valid rabbitmqClusterReference is provided
+// either rabbitmqClusterReference.name or rabbitmqClusterReference.uriSecret must be provided but not both
 func (q *Queue) ValidateCreate() error {
+	if q.Spec.RabbitmqClusterReference.Name != "" && q.Spec.RabbitmqClusterReference.ConnectionSecret != nil {
+		return apierrors.NewForbidden(q.GroupResource(), q.Name,
+			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
+				"do not provide both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.uriSecret"))
+	}
+
+	if q.Spec.RabbitmqClusterReference.Name == "" && q.Spec.RabbitmqClusterReference.ConnectionSecret == nil {
+		return apierrors.NewForbidden(q.GroupResource(), q.Name,
+			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
+				"must provide either spec.rabbitmqClusterReference.name or spec.rabbitmqClusterReference.uriSecret"))
+	}
 	return nil
 }
 
@@ -46,7 +59,7 @@ func (q *Queue) ValidateUpdate(old runtime.Object) error {
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
-	if q.Spec.RabbitmqClusterReference != oldQueue.Spec.RabbitmqClusterReference {
+	if !compareRabbitmqClusterReference(&q.Spec.RabbitmqClusterReference, &oldQueue.Spec.RabbitmqClusterReference) {
 		return apierrors.NewForbidden(q.GroupResource(), q.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}

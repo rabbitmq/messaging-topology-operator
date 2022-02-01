@@ -54,21 +54,27 @@ var RabbitholeClientFactory RabbitMQClientFactory = func(rmq *rabbitmqv1beta1.Ra
 	return generateRabbitholeClient(rmq, svc, credsProvider, hostname, certPool)
 }
 
-// returns a http client for the given RabbitmqCluster
+// generateRabbitholeClient returns a http client for the given RabbitmqCluster
+// if provided RabbitmqCluster is nil, generateRabbitholeClient uses username, passwords, and uri
+// information from credsProvider to generate a rabbit client
 func generateRabbitholeClient(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, credsProvider CredentialsProvider, hostname string, certPool *x509.CertPool) (rabbitmqClient RabbitMQClient, err error) {
-	endpoint, err := managementEndpoint(rmq, svc, hostname)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get endpoint from specified rabbitmqcluster: %w", err)
+	if rmq == nil {
+		return generateRabbitmqClientFromCredsProvider(credsProvider)
 	}
 
 	defaultUser, found := credsProvider.Data("username")
 	if !found {
-		return nil, errors.New("failed to retrieve username: key username missing from credentials")
+		return nil, keyMissingErr("username")
 	}
 
 	defaultUserPass, found := credsProvider.Data("password")
 	if !found {
-		return nil, errors.New("failed to retrieve password: key password missing from credentials")
+		return nil, keyMissingErr("password")
+	}
+
+	endpoint, err := managementEndpoint(rmq, svc, hostname)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get endpoint from specified rabbitmqcluster: %w", err)
 	}
 
 	if rmq.TLSEnabled() {
@@ -88,6 +94,37 @@ func generateRabbitholeClient(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.
 		}
 	}
 	return rabbitmqClient, nil
+}
+
+// generateRabbitmqClientFromCredsProvider generates a rabbit http client
+// it expects key "username", "password", "uri" to be present, else it errors
+//  TODO: it currently hardcode scheme to http, https will be added in a followup PR
+func generateRabbitmqClientFromCredsProvider(credsProvider CredentialsProvider) (RabbitMQClient, error) {
+	defaultUser, found := credsProvider.Data("username")
+	if !found {
+		return nil, keyMissingErr("username")
+	}
+
+	defaultUserPass, found := credsProvider.Data("password")
+	if !found {
+		return nil, keyMissingErr("password")
+	}
+
+	uri, found := credsProvider.Data("uri")
+	if !found {
+		return nil, keyMissingErr("uri")
+	}
+
+	rabbitmqClient, err := rabbithole.NewClient("http://"+string(uri), string(defaultUser), string(defaultUserPass))
+	if err != nil {
+		return nil, fmt.Errorf("failed to instantiate rabbit rabbitmqClient: %v", err)
+	}
+
+	return rabbitmqClient, nil
+}
+
+func keyMissingErr(key string) error {
+	return errors.New(fmt.Sprintf("failed to retrieve %s: key %s missing from credentials", key, key))
 }
 
 func managementEndpoint(cluster *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, hostname string) (string, error) {

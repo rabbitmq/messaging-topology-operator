@@ -28,6 +28,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 		existingService          *corev1.Service
 		ctx                      = context.Background()
 		fakeCredentialsProvider  *internalfakes.FakeCredentialsProvider
+		namespace                = "rabbitmq-system"
 	)
 	JustBeforeEach(func() {
 		s := scheme.Scheme
@@ -40,7 +41,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			existingRabbitMQCluster = &rabbitmqv1beta1.RabbitmqCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rmq",
-					Namespace: "rabbitmq-system",
+					Namespace: namespace,
 				},
 				Status: rabbitmqv1beta1.RabbitmqClusterStatus{
 					Binding: &corev1.LocalObjectReference{
@@ -49,7 +50,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 					DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
 						ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
 							Name:      "rmq",
-							Namespace: "rabbitmq-system",
+							Namespace: namespace,
 						},
 					},
 				},
@@ -57,7 +58,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			existingCredentialSecret = &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rmq-default-user-credentials",
-					Namespace: "rabbitmq-system",
+					Namespace: namespace,
 				},
 				Data: map[string][]byte{
 					"username": []byte(existingRabbitMQUsername),
@@ -67,7 +68,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			existingService = &corev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rmq",
-					Namespace: "rabbitmq-system",
+					Namespace: namespace,
 				},
 				Spec: corev1.ServiceSpec{
 					ClusterIP: "1.2.3.4",
@@ -101,7 +102,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 				*existingRabbitMQCluster = rabbitmqv1beta1.RabbitmqCluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "rmq-incomplete",
-						Namespace: "rabbitmq-system",
+						Namespace: namespace,
 					},
 					Status: rabbitmqv1beta1.RabbitmqClusterStatus{
 						Binding: &corev1.LocalObjectReference{
@@ -128,7 +129,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 				*existingRabbitMQCluster = rabbitmqv1beta1.RabbitmqCluster{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "rmq",
-						Namespace: "rabbitmq-system",
+						Namespace: namespace,
 					},
 					Status: rabbitmqv1beta1.RabbitmqClusterStatus{
 						Binding: &corev1.LocalObjectReference{
@@ -137,7 +138,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 						DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
 							ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
 								Name:      "rmq",
-								Namespace: "rabbitmq-system",
+								Namespace: namespace,
 							},
 						},
 					},
@@ -181,6 +182,40 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 				Expect(usernameBytes).To(Equal([]byte(existingRabbitMQUsername)))
 				Expect(passwordBytes).To(Equal([]byte(existingRabbitMQPassword)))
 			})
+		})
+	})
+	When("spec.rabbitmqClusterReference.connectionSecret is set instead of cluster name", func() {
+		BeforeEach(func() {
+			connectionSecret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rmq-connection-info",
+					Namespace: namespace,
+				},
+				Data: map[string][]byte{
+					"uri":      []byte("10.0.0.0:15671"),
+					"username": []byte("test-user"),
+					"password": []byte("test-password"),
+				},
+			}
+			objs = []runtime.Object{connectionSecret}
+		})
+
+		It("returns the expected connection information", func() {
+			_, _, credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient,
+				topology.RabbitmqClusterReference{
+					ConnectionSecret: &corev1.LocalObjectReference{
+						Name: "rmq-connection-info",
+					},
+				},
+				namespace)
+			Expect(err).NotTo(HaveOccurred())
+
+			returnedUser, _ := credsProvider.Data("username")
+			returnedPass, _ := credsProvider.Data("password")
+			returnedURI, _ := credsProvider.Data("uri")
+			Expect(string(returnedUser)).To(Equal("test-user"))
+			Expect(string(returnedPass)).To(Equal("test-password"))
+			Expect(string(returnedURI)).To(Equal("10.0.0.0:15671"))
 		})
 	})
 })

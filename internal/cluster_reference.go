@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"strings"
 
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
@@ -36,30 +35,32 @@ var (
 )
 
 func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string) (*rabbitmqv1beta1.RabbitmqCluster, *corev1.Service, CredentialsProvider, error) {
+	if rmq.ConnectionSecret != nil {
+		secret := &corev1.Secret{}
+		if err := c.Get(ctx, types.NamespacedName{Namespace: requestNamespace, Name: rmq.ConnectionSecret.Name}, secret); err != nil {
+			return nil, nil, nil, err
+		}
+		creds, err := readCredentialsFromKubernetesSecret(secret)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("unable to retrieve information from Kubernetes secret %s: %w", secret.Name, err)
+		}
+		return nil, nil, creds, nil
+	}
+
 	var namespace string
 	if rmq.Namespace == "" {
 		namespace = requestNamespace
 	} else {
 		namespace = rmq.Namespace
 	}
+
 	cluster := &rabbitmqv1beta1.RabbitmqCluster{}
 	if err := c.Get(ctx, types.NamespacedName{Name: rmq.Name, Namespace: namespace}, cluster); err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to get cluster from reference: %s Error: %w", err, NoSuchRabbitmqClusterError)
 	}
 
-	if rmq.Namespace != "" && rmq.Namespace != requestNamespace {
-		var isAllowed bool
-		if allowedNamespaces, ok := cluster.Annotations["rabbitmq.com/topology-allowed-namespaces"]; ok {
-			for _, allowedNamespace := range strings.Split(allowedNamespaces, ",") {
-				if requestNamespace == allowedNamespace || allowedNamespace == "*" {
-					isAllowed = true
-					break
-				}
-			}
-		}
-		if !isAllowed {
-			return nil, nil, nil, ResourceNotAllowedError
-		}
+	if !allowedNamespace(rmq, requestNamespace, cluster) {
+		return nil, nil, nil, ResourceNotAllowedError
 	}
 
 	var credentialsProvider CredentialsProvider
@@ -108,25 +109,34 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 	return cluster, svc, credentialsProvider, nil
 }
 
+func allowedNamespace(rmq topology.RabbitmqClusterReference, requestNamespace string, cluster *rabbitmqv1beta1.RabbitmqCluster) bool {
+	if rmq.Namespace != "" && rmq.Namespace != requestNamespace {
+		var isAllowed bool
+		if allowedNamespaces, ok := cluster.Annotations["rabbitmq.com/topology-allowed-namespaces"]; ok {
+			for _, allowedNamespace := range strings.Split(allowedNamespaces, ",") {
+				if requestNamespace == allowedNamespace || allowedNamespace == "*" {
+					isAllowed = true
+					break
+				}
+			}
+		}
+		if !isAllowed {
+			return false
+		}
+	}
+	return true
+}
+
 func readCredentialsFromKubernetesSecret(secret *corev1.Secret) (CredentialsProvider, error) {
 	if secret == nil {
 		return nil, errors.New("unable to extract data from nil secret")
-	}
-
-	logger := ctrl.LoggerFrom(nil)
-
-	if secret.Data["username"] == nil {
-		logger.Info("Kubernetes secret data contains no username value")
-	}
-
-	if secret.Data["password"] == nil {
-		logger.Info("Kubernetes secret data contains no password value")
 	}
 
 	return ClusterCredentials{
 		data: map[string][]byte{
 			"username": secret.Data["username"],
 			"password": secret.Data["password"],
+			"uri":      secret.Data["uri"],
 		},
 	}, nil
 }

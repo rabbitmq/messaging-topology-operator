@@ -60,7 +60,15 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, queue, &queue.Status.Conditions, err)
 	}
 
-	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, credsProvider, serviceDNSAddress(svc), systemCertPool)
+	var hostname string
+	// If rabbitmqClusterReference.connectionSecret is set instead of rabbitmqClusterReference.name
+	// ParseRabbitmqClusterReference returns a nil rmq and only credsProvider will be used for generating the rabbit client
+	// set hostname to cluster-local DNS when returned rmq is not nil (rabbitmqClusterReference.name is set)
+	if rmq != nil {
+		hostname = serviceDNSAddress(svc)
+	}
+
+	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, credsProvider, hostname, systemCertPool)
 	if err != nil {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
