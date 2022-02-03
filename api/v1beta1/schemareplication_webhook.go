@@ -19,8 +19,20 @@ func (s *SchemaReplication) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Validator = &SchemaReplication{}
 
-// no validation on create
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+// either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (s *SchemaReplication) ValidateCreate() error {
+	if s.Spec.RabbitmqClusterReference.Name != "" && s.Spec.RabbitmqClusterReference.ConnectionSecret != nil {
+		return apierrors.NewForbidden(s.GroupResource(), s.Name,
+			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
+				"do not provide both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret"))
+	}
+
+	if s.Spec.RabbitmqClusterReference.Name == "" && s.Spec.RabbitmqClusterReference.ConnectionSecret == nil {
+		return apierrors.NewForbidden(s.GroupResource(), s.Name,
+			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
+				"must provide either spec.rabbitmqClusterReference.name or spec.rabbitmqClusterReference.connectionSecret"))
+	}
 	return nil
 }
 
@@ -31,7 +43,7 @@ func (s *SchemaReplication) ValidateUpdate(old runtime.Object) error {
 		return apierrors.NewBadRequest(fmt.Sprintf("expected a schema replication type but got a %T", old))
 	}
 
-	if s.Spec.RabbitmqClusterReference != oldReplication.Spec.RabbitmqClusterReference {
+	if oldReplication.Spec.RabbitmqClusterReference.hasChange(&s.Spec.RabbitmqClusterReference) {
 		return apierrors.NewForbidden(s.GroupResource(), s.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), "update on rabbitmqClusterReference is forbidden"))
 	}

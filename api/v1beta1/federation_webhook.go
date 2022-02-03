@@ -16,8 +16,20 @@ func (f *Federation) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1beta1-federation,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=federations,versions=v1beta1,name=vfederation.kb.io,sideEffects=none,admissionReviewVersions=v1
 
-// no validation for create
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+// either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (f *Federation) ValidateCreate() error {
+	if f.Spec.RabbitmqClusterReference.Name != "" && f.Spec.RabbitmqClusterReference.ConnectionSecret != nil {
+		return apierrors.NewForbidden(f.GroupResource(), f.Name,
+			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
+				"do not provide both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret"))
+	}
+
+	if f.Spec.RabbitmqClusterReference.Name == "" && f.Spec.RabbitmqClusterReference.ConnectionSecret == nil {
+		return apierrors.NewForbidden(f.GroupResource(), f.Name,
+			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
+				"must provide either spec.rabbitmqClusterReference.name or spec.rabbitmqClusterReference.connectionSecret"))
+	}
 	return nil
 }
 
@@ -39,7 +51,7 @@ func (f *Federation) ValidateUpdate(old runtime.Object) error {
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
-	if f.Spec.RabbitmqClusterReference != oldFederation.Spec.RabbitmqClusterReference {
+	if oldFederation.Spec.RabbitmqClusterReference.hasChange(&f.Spec.RabbitmqClusterReference) {
 		return apierrors.NewForbidden(f.GroupResource(), f.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}

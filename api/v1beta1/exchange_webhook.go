@@ -19,8 +19,20 @@ func (r *Exchange) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Validator = &Exchange{}
 
-// no validation on create
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+// either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (e *Exchange) ValidateCreate() error {
+	if e.Spec.RabbitmqClusterReference.Name != "" && e.Spec.RabbitmqClusterReference.ConnectionSecret != nil {
+		return apierrors.NewForbidden(e.GroupResource(), e.Name,
+			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
+				"do not provide both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret"))
+	}
+
+	if e.Spec.RabbitmqClusterReference.Name == "" && e.Spec.RabbitmqClusterReference.ConnectionSecret == nil {
+		return apierrors.NewForbidden(e.GroupResource(), e.Name,
+			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
+				"must provide either spec.rabbitmqClusterReference.name or spec.rabbitmqClusterReference.connectionSecret"))
+	}
 	return nil
 }
 
@@ -46,7 +58,7 @@ func (e *Exchange) ValidateUpdate(old runtime.Object) error {
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
-	if e.Spec.RabbitmqClusterReference != oldExchange.Spec.RabbitmqClusterReference {
+	if oldExchange.Spec.RabbitmqClusterReference.hasChange(&e.Spec.RabbitmqClusterReference) {
 		return apierrors.NewForbidden(e.GroupResource(), e.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}

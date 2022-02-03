@@ -20,19 +20,18 @@ func (q *Queue) SetupWebhookWithManager(mgr ctrl.Manager) error {
 var _ webhook.Validator = &Queue{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-// returns error type 'forbidden' if a valid rabbitmqClusterReference is provided
-// either rabbitmqClusterReference.name or rabbitmqClusterReference.uriSecret must be provided but not both
+// either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (q *Queue) ValidateCreate() error {
 	if q.Spec.RabbitmqClusterReference.Name != "" && q.Spec.RabbitmqClusterReference.ConnectionSecret != nil {
 		return apierrors.NewForbidden(q.GroupResource(), q.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
-				"do not provide both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.uriSecret"))
+				"do not provide both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret"))
 	}
 
 	if q.Spec.RabbitmqClusterReference.Name == "" && q.Spec.RabbitmqClusterReference.ConnectionSecret == nil {
 		return apierrors.NewForbidden(q.GroupResource(), q.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
-				"must provide either spec.rabbitmqClusterReference.name or spec.rabbitmqClusterReference.uriSecret"))
+				"must provide either spec.rabbitmqClusterReference.name or spec.rabbitmqClusterReference.connectionSecret"))
 	}
 	return nil
 }
@@ -59,7 +58,7 @@ func (q *Queue) ValidateUpdate(old runtime.Object) error {
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
-	if !compareRabbitmqClusterReference(&q.Spec.RabbitmqClusterReference, &oldQueue.Spec.RabbitmqClusterReference) {
+	if oldQueue.Spec.RabbitmqClusterReference.hasChange(&q.Spec.RabbitmqClusterReference) {
 		return apierrors.NewForbidden(q.GroupResource(), q.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}

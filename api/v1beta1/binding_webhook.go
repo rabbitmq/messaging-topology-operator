@@ -20,12 +20,24 @@ func (b *Binding) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Validator = &Binding{}
 
-// no validation logic on create
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+// either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (b *Binding) ValidateCreate() error {
+	if b.Spec.RabbitmqClusterReference.Name != "" && b.Spec.RabbitmqClusterReference.ConnectionSecret != nil {
+		return apierrors.NewForbidden(b.GroupResource(), b.Name,
+			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
+				"do not provide both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret"))
+	}
+
+	if b.Spec.RabbitmqClusterReference.Name == "" && b.Spec.RabbitmqClusterReference.ConnectionSecret == nil {
+		return apierrors.NewForbidden(b.GroupResource(), b.Name,
+			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
+				"must provide either spec.rabbitmqClusterReference.name or spec.rabbitmqClusterReference.connectionSecret"))
+	}
 	return nil
 }
 
-// updates on bindings.rabbitmq.com is forbidden
+// ValidateUpdate updates on vhost and rabbitmqClusterReference are forbidden
 func (b *Binding) ValidateUpdate(old runtime.Object) error {
 	oldBinding, ok := old.(*Binding)
 	if !ok {
@@ -40,7 +52,7 @@ func (b *Binding) ValidateUpdate(old runtime.Object) error {
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
-	if b.Spec.RabbitmqClusterReference != oldBinding.Spec.RabbitmqClusterReference {
+	if oldBinding.Spec.RabbitmqClusterReference.hasChange(&b.Spec.RabbitmqClusterReference) {
 		return apierrors.NewForbidden(b.GroupResource(), b.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}
