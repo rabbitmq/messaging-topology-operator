@@ -85,8 +85,9 @@ var _ = Describe("super-stream-controller", func() {
 							"Type":    Equal("direct"),
 							"Durable": BeTrue(),
 							"RabbitmqClusterReference": MatchAllFields(Fields{
-								"Name":      Equal("example-rabbit"),
-								"Namespace": Equal("default"),
+								"Name":             Equal("example-rabbit"),
+								"Namespace":        Equal("default"),
+								"ConnectionSecret": BeNil(),
 							}),
 						}))
 					})
@@ -111,8 +112,9 @@ var _ = Describe("super-stream-controller", func() {
 								"Type":    Equal("stream"),
 								"Durable": BeTrue(),
 								"RabbitmqClusterReference": MatchAllFields(Fields{
-									"Name":      Equal("example-rabbit"),
-									"Namespace": Equal("default"),
+									"Name":             Equal("example-rabbit"),
+									"Namespace":        Equal("default"),
+									"ConnectionSecret": BeNil(),
 								}),
 							}))
 						}
@@ -150,8 +152,9 @@ var _ = Describe("super-stream-controller", func() {
 								})),
 								"RoutingKey": Equal(strconv.Itoa(i)),
 								"RabbitmqClusterReference": MatchAllFields(Fields{
-									"Name":      Equal("example-rabbit"),
-									"Namespace": Equal("default"),
+									"Name":             Equal("example-rabbit"),
+									"Namespace":        Equal("default"),
+									"ConnectionSecret": BeNil(),
 								}),
 							}))
 						}
@@ -381,8 +384,9 @@ var _ = Describe("super-stream-controller", func() {
 									"Type":    Equal("stream"),
 									"Durable": BeTrue(),
 									"RabbitmqClusterReference": MatchAllFields(Fields{
-										"Name":      Equal("example-rabbit"),
-										"Namespace": Equal("default"),
+										"Name":             Equal("example-rabbit"),
+										"Namespace":        Equal("default"),
+										"ConnectionSecret": BeNil(),
 									}),
 								}))
 							}
@@ -420,8 +424,9 @@ var _ = Describe("super-stream-controller", func() {
 									})),
 									"RoutingKey": Equal(strconv.Itoa(i)),
 									"RabbitmqClusterReference": MatchAllFields(Fields{
-										"Name":      Equal("example-rabbit"),
-										"Namespace": Equal("default"),
+										"Name":             Equal("example-rabbit"),
+										"Namespace":        Equal("default"),
+										"ConnectionSecret": BeNil(),
 									}),
 								}))
 							}
@@ -484,8 +489,9 @@ var _ = Describe("super-stream-controller", func() {
 									"Type":    Equal("stream"),
 									"Durable": BeTrue(),
 									"RabbitmqClusterReference": MatchAllFields(Fields{
-										"Name":      Equal("example-rabbit"),
-										"Namespace": Equal("default"),
+										"Name":             Equal("example-rabbit"),
+										"Namespace":        Equal("default"),
+										"ConnectionSecret": BeNil(),
 									}),
 								}))
 							}
@@ -523,8 +529,9 @@ var _ = Describe("super-stream-controller", func() {
 									})),
 									"RoutingKey": Equal(strconv.Itoa(i)),
 									"RabbitmqClusterReference": MatchAllFields(Fields{
-										"Name":      Equal("example-rabbit"),
-										"Namespace": Equal("default"),
+										"Name":             Equal("example-rabbit"),
+										"Namespace":        Equal("default"),
+										"ConnectionSecret": BeNil(),
 									}),
 								}))
 							}
@@ -589,8 +596,9 @@ var _ = Describe("super-stream-controller", func() {
 							"Type":    Equal("direct"),
 							"Durable": BeTrue(),
 							"RabbitmqClusterReference": MatchAllFields(Fields{
-								"Name":      Equal("example-rabbit"),
-								"Namespace": Equal("default"),
+								"Name":             Equal("example-rabbit"),
+								"Namespace":        Equal("default"),
+								"ConnectionSecret": BeNil(),
 							}),
 						}))
 					})
@@ -614,8 +622,9 @@ var _ = Describe("super-stream-controller", func() {
 								"Type":    Equal("stream"),
 								"Durable": BeTrue(),
 								"RabbitmqClusterReference": MatchAllFields(Fields{
-									"Name":      Equal("example-rabbit"),
-									"Namespace": Equal("default"),
+									"Name":             Equal("example-rabbit"),
+									"Namespace":        Equal("default"),
+									"ConnectionSecret": BeNil(),
 								}),
 							}))
 						}
@@ -652,8 +661,9 @@ var _ = Describe("super-stream-controller", func() {
 								})),
 								"RoutingKey": Equal(superStream.Spec.RoutingKeys[i]),
 								"RabbitmqClusterReference": MatchAllFields(Fields{
-									"Name":      Equal("example-rabbit"),
-									"Namespace": Equal("default"),
+									"Name":             Equal("example-rabbit"),
+									"Namespace":        Equal("default"),
+									"ConnectionSecret": BeNil(),
 								}),
 							}))
 						}
