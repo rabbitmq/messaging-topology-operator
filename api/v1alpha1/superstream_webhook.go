@@ -28,8 +28,20 @@ func (s *SuperStream) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Validator = &SuperStream{}
 
-// no validation on create
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+// either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (s *SuperStream) ValidateCreate() error {
+	if s.Spec.RabbitmqClusterReference.Name != "" && s.Spec.RabbitmqClusterReference.ConnectionSecret != nil {
+		return apierrors.NewForbidden(s.GroupResource(), s.Name,
+			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
+				"do not provide both spec.rabbitmqClusterReferencs.name and spec.rabbitmqClusterReferencs.connectionSecret"))
+	}
+
+	if s.Spec.RabbitmqClusterReference.Name == "" && s.Spec.RabbitmqClusterReference.ConnectionSecret == nil {
+		return apierrors.NewForbidden(s.GroupResource(), s.Name,
+			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
+				"must provide either spec.rabbitmqClusterReference.name or spec.rabbitmqClusterReference.connectionSecret"))
+	}
 	return nil
 }
 
@@ -50,7 +62,7 @@ func (s *SuperStream) ValidateUpdate(old runtime.Object) error {
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
-	if s.Spec.RabbitmqClusterReference != oldSuperStream.Spec.RabbitmqClusterReference {
+	if oldSuperStream.Spec.RabbitmqClusterReference.HasChange(&s.Spec.RabbitmqClusterReference) {
 		return apierrors.NewForbidden(s.GroupResource(), s.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}

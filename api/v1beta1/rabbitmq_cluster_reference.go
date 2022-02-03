@@ -18,7 +18,7 @@ type RabbitmqClusterReference struct {
 	ConnectionSecret *corev1.LocalObjectReference `json:"connectionSecret,omitempty"`
 }
 
-func (r *RabbitmqClusterReference) hasChange(new *RabbitmqClusterReference) bool {
+func (r *RabbitmqClusterReference) HasChange(new *RabbitmqClusterReference) bool {
 	if new.Name != r.Name || new.Namespace != r.Namespace {
 		return true
 	}

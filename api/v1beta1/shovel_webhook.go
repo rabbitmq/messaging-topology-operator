@@ -54,7 +54,7 @@ func (s *Shovel) ValidateUpdate(old runtime.Object) error {
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
-	if oldShovel.Spec.RabbitmqClusterReference.hasChange(&s.Spec.RabbitmqClusterReference) {
+	if oldShovel.Spec.RabbitmqClusterReference.HasChange(&s.Spec.RabbitmqClusterReference) {
 		return apierrors.NewForbidden(s.GroupResource(), s.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}

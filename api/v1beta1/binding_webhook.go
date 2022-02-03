@@ -52,7 +52,7 @@ func (b *Binding) ValidateUpdate(old runtime.Object) error {
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
-	if oldBinding.Spec.RabbitmqClusterReference.hasChange(&b.Spec.RabbitmqClusterReference) {
+	if oldBinding.Spec.RabbitmqClusterReference.HasChange(&b.Spec.RabbitmqClusterReference) {
 		return apierrors.NewForbidden(b.GroupResource(), b.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}

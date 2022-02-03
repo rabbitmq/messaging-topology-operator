@@ -6,7 +6,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-var _ = Describe("RabbitmqClusterReference hasChange", func() {
+var _ = Describe("RabbitmqClusterReference HasChange", func() {
 	var reference *RabbitmqClusterReference
 
 	BeforeEach(func() {
@@ -23,7 +23,7 @@ var _ = Describe("RabbitmqClusterReference hasChange", func() {
 		It("returns false", func() {
 			new := reference.DeepCopy()
 			new.Name = "new-name"
-			Expect(reference.hasChange(new)).To(BeTrue())
+			Expect(reference.HasChange(new)).To(BeTrue())
 		})
 	})
 
@@ -31,7 +31,7 @@ var _ = Describe("RabbitmqClusterReference hasChange", func() {
 		It("returns false", func() {
 			new := reference.DeepCopy()
 			new.Namespace = "new-ns"
-			Expect(reference.hasChange(new)).To(BeTrue())
+			Expect(reference.HasChange(new)).To(BeTrue())
 		})
 	})
 
@@ -39,7 +39,7 @@ var _ = Describe("RabbitmqClusterReference hasChange", func() {
 		It("returns false", func() {
 			new := reference.DeepCopy()
 			new.ConnectionSecret.Name = "new-secret-name"
-			Expect(reference.hasChange(new)).To(BeTrue())
+			Expect(reference.HasChange(new)).To(BeTrue())
 		})
 	})
 
@@ -47,7 +47,7 @@ var _ = Describe("RabbitmqClusterReference hasChange", func() {
 		It("returns false", func() {
 			new := reference.DeepCopy()
 			new.ConnectionSecret = nil
-			Expect(reference.hasChange(new)).To(BeTrue())
+			Expect(reference.HasChange(new)).To(BeTrue())
 		})
 	})
 
@@ -58,14 +58,14 @@ var _ = Describe("RabbitmqClusterReference hasChange", func() {
 			new.ConnectionSecret = &v1.LocalObjectReference{
 				Name: "a-secret-name",
 			}
-			Expect(reference.hasChange(new)).To(BeTrue())
+			Expect(reference.HasChange(new)).To(BeTrue())
 		})
 	})
 
 	When("RabbitmqClusterReference stayed the same", func() {
 		It("returns true", func() {
 			new := reference.DeepCopy()
-			Expect(reference.hasChange(new)).To(BeFalse())
+			Expect(reference.HasChange(new)).To(BeFalse())
 		})
 	})
 })

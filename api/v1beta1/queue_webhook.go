@@ -58,7 +58,7 @@ func (q *Queue) ValidateUpdate(old runtime.Object) error {
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
-	if oldQueue.Spec.RabbitmqClusterReference.hasChange(&q.Spec.RabbitmqClusterReference) {
+	if oldQueue.Spec.RabbitmqClusterReference.HasChange(&q.Spec.RabbitmqClusterReference) {
 		return apierrors.NewForbidden(q.GroupResource(), q.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}
