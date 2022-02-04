@@ -20,7 +20,7 @@ var _ = Describe("RabbitmqClusterReference HasChange", func() {
 	})
 
 	When("name was changed", func() {
-		It("returns false", func() {
+		It("returns true", func() {
 			new := reference.DeepCopy()
 			new.Name = "new-name"
 			Expect(reference.HasChange(new)).To(BeTrue())
@@ -28,7 +28,7 @@ var _ = Describe("RabbitmqClusterReference HasChange", func() {
 	})
 
 	When("namespace was changed", func() {
-		It("returns false", func() {
+		It("returns true", func() {
 			new := reference.DeepCopy()
 			new.Namespace = "new-ns"
 			Expect(reference.HasChange(new)).To(BeTrue())
@@ -36,7 +36,7 @@ var _ = Describe("RabbitmqClusterReference HasChange", func() {
 	})
 
 	When("connectionSecret.name was changed", func() {
-		It("returns false", func() {
+		It("returns true", func() {
 			new := reference.DeepCopy()
 			new.ConnectionSecret.Name = "new-secret-name"
 			Expect(reference.HasChange(new)).To(BeTrue())
@@ -44,7 +44,7 @@ var _ = Describe("RabbitmqClusterReference HasChange", func() {
 	})
 
 	When("connectionSecret was removed", func() {
-		It("returns false", func() {
+		It("returns true", func() {
 			new := reference.DeepCopy()
 			new.ConnectionSecret = nil
 			Expect(reference.HasChange(new)).To(BeTrue())
@@ -52,7 +52,7 @@ var _ = Describe("RabbitmqClusterReference HasChange", func() {
 	})
 
 	When("connectionSecret was added", func() {
-		It("returns false", func() {
+		It("returns true", func() {
 			reference.ConnectionSecret = nil
 			new := reference.DeepCopy()
 			new.ConnectionSecret = &v1.LocalObjectReference{
@@ -63,7 +63,7 @@ var _ = Describe("RabbitmqClusterReference HasChange", func() {
 	})
 
 	When("RabbitmqClusterReference stayed the same", func() {
-		It("returns true", func() {
+		It("returns false", func() {
 			new := reference.DeepCopy()
 			Expect(reference.HasChange(new)).To(BeFalse())
 		})
