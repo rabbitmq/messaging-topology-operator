@@ -50,7 +50,12 @@ func (r *FederationReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, federation, &federation.Status.Conditions, err)
 	}
 
-	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, credsProvider, serviceDNSAddress(svc), systemCertPool)
+	var hostname string
+	if rmq != nil {
+		hostname = serviceDNSAddress(svc)
+	}
+
+	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, credsProvider, hostname, systemCertPool)
 	if err != nil {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
