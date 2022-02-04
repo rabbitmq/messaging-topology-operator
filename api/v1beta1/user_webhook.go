@@ -44,7 +44,7 @@ func (u *User) ValidateUpdate(old runtime.Object) error {
 		return apierrors.NewBadRequest(fmt.Sprintf("expected a user but got a %T", old))
 	}
 
-	if oldUser.Spec.RabbitmqClusterReference.HasChange(&u.Spec.RabbitmqClusterReference) {
+	if !oldUser.Spec.RabbitmqClusterReference.Matches(&u.Spec.RabbitmqClusterReference) {
 		return apierrors.NewForbidden(u.GroupResource(), u.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), "update on rabbitmqClusterReference is forbidden"))
 	}

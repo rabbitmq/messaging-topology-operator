@@ -62,7 +62,7 @@ func (s *SuperStream) ValidateUpdate(old runtime.Object) error {
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
-	if oldSuperStream.Spec.RabbitmqClusterReference.HasChange(&s.Spec.RabbitmqClusterReference) {
+	if !oldSuperStream.Spec.RabbitmqClusterReference.Matches(&s.Spec.RabbitmqClusterReference) {
 		return apierrors.NewForbidden(s.GroupResource(), s.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}

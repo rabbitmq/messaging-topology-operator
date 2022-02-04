@@ -18,25 +18,25 @@ type RabbitmqClusterReference struct {
 	ConnectionSecret *corev1.LocalObjectReference `json:"connectionSecret,omitempty"`
 }
 
-func (r *RabbitmqClusterReference) HasChange(new *RabbitmqClusterReference) bool {
+func (r *RabbitmqClusterReference) Matches(new *RabbitmqClusterReference) bool {
 	if new.Name != r.Name || new.Namespace != r.Namespace {
-		return true
+		return false
 	}
 
 	// when connectionSecret has been updated
 	if new.ConnectionSecret != nil && r.ConnectionSecret != nil && *new.ConnectionSecret != *r.ConnectionSecret {
-		return true
+		return false
 	}
 
 	// when connectionSecret is removed
 	if new.ConnectionSecret == nil && r.ConnectionSecret != nil {
-		return true
+		return false
 	}
 
 	// when connectionSecret is added
 	if new.ConnectionSecret != nil && r.ConnectionSecret == nil {
-		return true
+		return false
 	}
 
-	return false
+	return true
 }

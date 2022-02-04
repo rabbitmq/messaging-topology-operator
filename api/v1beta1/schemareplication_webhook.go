@@ -43,7 +43,7 @@ func (s *SchemaReplication) ValidateUpdate(old runtime.Object) error {
 		return apierrors.NewBadRequest(fmt.Sprintf("expected a schema replication type but got a %T", old))
 	}
 
-	if oldReplication.Spec.RabbitmqClusterReference.HasChange(&s.Spec.RabbitmqClusterReference) {
+	if !oldReplication.Spec.RabbitmqClusterReference.Matches(&s.Spec.RabbitmqClusterReference) {
 		return apierrors.NewForbidden(s.GroupResource(), s.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), "update on rabbitmqClusterReference is forbidden"))
 	}
