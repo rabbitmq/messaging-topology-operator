@@ -22,18 +22,7 @@ var _ webhook.Validator = &User{}
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (u *User) ValidateCreate() error {
-	if u.Spec.RabbitmqClusterReference.Name != "" && u.Spec.RabbitmqClusterReference.ConnectionSecret != nil {
-		return apierrors.NewForbidden(u.GroupResource(), u.Name,
-			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
-				"do not provide both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret"))
-	}
-
-	if u.Spec.RabbitmqClusterReference.Name == "" && u.Spec.RabbitmqClusterReference.ConnectionSecret == nil {
-		return apierrors.NewForbidden(u.GroupResource(), u.Name,
-			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
-				"must provide either spec.rabbitmqClusterReference.name or spec.rabbitmqClusterReference.connectionSecret"))
-	}
-	return nil
+	return u.Spec.RabbitmqClusterReference.ValidateOnCreate(u.GroupResource(), u.Name)
 }
 
 // ValidateUpdate returns error type 'forbidden' for updates on rabbitmqClusterReference

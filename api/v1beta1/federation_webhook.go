@@ -19,18 +19,7 @@ func (f *Federation) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (f *Federation) ValidateCreate() error {
-	if f.Spec.RabbitmqClusterReference.Name != "" && f.Spec.RabbitmqClusterReference.ConnectionSecret != nil {
-		return apierrors.NewForbidden(f.GroupResource(), f.Name,
-			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
-				"do not provide both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret"))
-	}
-
-	if f.Spec.RabbitmqClusterReference.Name == "" && f.Spec.RabbitmqClusterReference.ConnectionSecret == nil {
-		return apierrors.NewForbidden(f.GroupResource(), f.Name,
-			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
-				"must provide either spec.rabbitmqClusterReference.name or spec.rabbitmqClusterReference.connectionSecret"))
-	}
-	return nil
+	return f.Spec.RabbitmqClusterReference.ValidateOnCreate(f.GroupResource(), f.Name)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type

@@ -22,18 +22,7 @@ var _ webhook.Validator = &Exchange{}
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (e *Exchange) ValidateCreate() error {
-	if e.Spec.RabbitmqClusterReference.Name != "" && e.Spec.RabbitmqClusterReference.ConnectionSecret != nil {
-		return apierrors.NewForbidden(e.GroupResource(), e.Name,
-			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
-				"do not provide both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret"))
-	}
-
-	if e.Spec.RabbitmqClusterReference.Name == "" && e.Spec.RabbitmqClusterReference.ConnectionSecret == nil {
-		return apierrors.NewForbidden(e.GroupResource(), e.Name,
-			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
-				"must provide either spec.rabbitmqClusterReference.name or spec.rabbitmqClusterReference.connectionSecret"))
-	}
-	return nil
+	return e.Spec.RabbitmqClusterReference.ValidateOnCreate(e.GroupResource(), e.Name)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type

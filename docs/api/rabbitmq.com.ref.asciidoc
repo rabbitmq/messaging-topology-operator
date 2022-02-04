@@ -704,7 +704,7 @@ QueueStatus defines the observed state of Queue
 | Field | Description
 | *`name`* __string__ | The name of the RabbitMQ cluster to reference. Have to set either name or connectionSecret, but not both.
 | *`namespace`* __string__ | The namespace of the RabbitMQ cluster to reference. Defaults to the namespace of the requested resource if omitted.
-| *`connectionSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Secret contains the http management uri for the RabbitMQ cluster. The Secret must contain the key `uri` or operator will error. Have to set either name or connectionSecret, but not both.
+| *`connectionSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Secret contains the http management uri for the RabbitMQ cluster. The Secret must contain the key `uri`, `username` and `password` or operator will error. Have to set either name or connectionSecret, but not both.
 |===
 
 
