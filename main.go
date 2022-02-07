@@ -52,7 +52,8 @@ func sanitizeClusterDomainInput(clusterDomain string) string {
 
 	match, _ := regexp.MatchString("^\\.?[a-zA-Z-]+(\\.[a-zA-Z-]+)*$", clusterDomain) // Allow-list expression
 	if !match {
-		log.V(1).Info("KUBERNETES_CLUSTER_DOMAIN value is invalid. Only alphanumeric characters, hyphens and dots are allowed.")
+		log.V(1).Info("Domain name value is invalid. Only alphanumeric characters, hyphens and dots are allowed.",
+			controllers.KubernetesInternalDomainEnvVar, clusterDomain)
 		return ""
 	}
 
@@ -74,13 +75,13 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	operatorNamespace := os.Getenv("OPERATOR_NAMESPACE")
+	operatorNamespace := os.Getenv(controllers.OperatorNamespaceEnvVar)
 	if operatorNamespace == "" {
 		log.Info("unable to find operator namespace")
 		os.Exit(1)
 	}
 
-	clusterDomain := sanitizeClusterDomainInput(os.Getenv("KUBERNETES_CLUSTER_DOMAIN"))
+	clusterDomain := sanitizeClusterDomainInput(os.Getenv(controllers.KubernetesInternalDomainEnvVar))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                  scheme,
@@ -215,7 +216,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+	if os.Getenv(controllers.EnableWebhooksEnvVar) != "false" {
 		if err = (&topology.Binding{}).SetupWebhookWithManager(mgr); err != nil {
 			log.Error(err, "unable to create webhook", "webhook", "Binding")
 			os.Exit(1)

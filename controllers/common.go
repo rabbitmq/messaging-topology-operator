@@ -22,18 +22,24 @@ const (
 
 // names for each of the controllers
 const (
-	VhostControllerName               = "vhost-controller"
-	QueueControllerName               = "queue-controller"
-	ExchangeControllerName            = "exchange-controller"
-	BindingControllerName             = "binding-controller"
-	UserControllerName                = "user-controller"
-	PolicyControllerName              = "policy-controller"
-	PermissionControllerName          = "permission-controller"
-	SchemaReplicationControllerName   = "schema-replication-controller"
-	FederationControllerName          = "federation-controller"
-	ShovelControllerName              = "shovel-controller"
-	SuperStreamControllerName         = "super-stream-controller"
-	SuperStreamConsumerControllerName = "super-stream-consumer-controller"
+	VhostControllerName             = "vhost-controller"
+	QueueControllerName             = "queue-controller"
+	ExchangeControllerName          = "exchange-controller"
+	BindingControllerName           = "binding-controller"
+	UserControllerName              = "user-controller"
+	PolicyControllerName            = "policy-controller"
+	PermissionControllerName        = "permission-controller"
+	SchemaReplicationControllerName = "schema-replication-controller"
+	FederationControllerName        = "federation-controller"
+	ShovelControllerName            = "shovel-controller"
+	SuperStreamControllerName       = "super-stream-controller"
+)
+
+// names for environment variables
+const (
+	KubernetesInternalDomainEnvVar = "MESSAGING_DOMAIN_NAME"
+	OperatorNamespaceEnvVar        = "OPERATOR_NAMESPACE"
+	EnableWebhooksEnvVar           = "ENABLE_WEBHOOKS"
 )
 
 func extractSystemCertPool(ctx context.Context, recorder record.EventRecorder, object runtime.Object) (*x509.CertPool, error) {

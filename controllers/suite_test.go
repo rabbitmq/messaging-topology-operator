@@ -88,11 +88,6 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
-	fakeConnectionCredentials = &internalfakes.FakeConnectionCredentials{}
-
-	fakeConnectionCredentials.DataReturnsOnCall(0, []byte(existingRabbitMQUsername), true)
-	fakeConnectionCredentials.DataReturnsOnCall(1, []byte(existingRabbitMQPassword), true)
-	fakeConnectionCredentials.DataReturnsOnCall(2, []byte("example.com"), true)
 	fakeRecorder = record.NewFakeRecorder(128)
 
 	err = (&controllers.BindingReconciler{
