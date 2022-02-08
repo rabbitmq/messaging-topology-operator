@@ -34,17 +34,17 @@ var (
 	ResourceNotAllowedError    = errors.New("Resource is not allowed to reference defined cluster reference. Check the namespace of the resource is allowed as part of the cluster's `rabbitmq.com/topology-allowed-namespaces` annotation")
 )
 
-func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string) (ConnectionCredentials, error) {
+func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string) (ConnectionCredentials, bool, error) {
 	if rmq.ConnectionSecret != nil {
 		secret := &corev1.Secret{}
 		if err := c.Get(ctx, types.NamespacedName{Namespace: requestNamespace, Name: rmq.ConnectionSecret.Name}, secret); err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		creds, err := readCredentialsFromKubernetesSecret(secret)
 		if err != nil {
-			return nil, fmt.Errorf("unable to retrieve information from Kubernetes secret %s: %w", secret.Name, err)
+			return nil, false, fmt.Errorf("unable to retrieve information from Kubernetes secret %s: %w", secret.Name, err)
 		}
-		return creds, nil
+		return creds, false, nil
 	}
 
 	var namespace string
@@ -56,11 +56,11 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 
 	cluster := &rabbitmqv1beta1.RabbitmqCluster{}
 	if err := c.Get(ctx, types.NamespacedName{Name: rmq.Name, Namespace: namespace}, cluster); err != nil {
-		return nil, fmt.Errorf("failed to get cluster from reference: %s Error: %w", err, NoSuchRabbitmqClusterError)
+		return nil, false, fmt.Errorf("failed to get cluster from reference: %s Error: %w", err, NoSuchRabbitmqClusterError)
 	}
 
 	if !allowedNamespace(rmq, requestNamespace, cluster) {
-		return nil, ResourceNotAllowedError
+		return nil, false, ResourceNotAllowedError
 	}
 
 	var user, pass string
@@ -68,42 +68,42 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 		// ask the configured secure store for the credentials available at the path retrieved from the cluster resource
 		secretStoreClient, err := SecretStoreClientProvider()
 		if err != nil {
-			return nil, fmt.Errorf("unable to create a client connection to secret store: %w", err)
+			return nil, false, fmt.Errorf("unable to create a client connection to secret store: %w", err)
 		}
 
 		user, pass, err = secretStoreClient.ReadCredentials(cluster.Spec.SecretBackend.Vault.DefaultUserPath)
 		if err != nil {
-			return nil, fmt.Errorf("unable to retrieve credentials from secret store: %w", err)
+			return nil, false, fmt.Errorf("unable to retrieve credentials from secret store: %w", err)
 		}
 	} else {
 		// use credentials in namespace Kubernetes Secret
 		if cluster.Status.Binding == nil {
-			return nil, errors.New("no status.binding set")
+			return nil, false, errors.New("no status.binding set")
 		}
 
 		if cluster.Status.DefaultUser == nil {
-			return nil, errors.New("no status.defaultUser set")
+			return nil, false, errors.New("no status.defaultUser set")
 		}
 
 		secret := &corev1.Secret{}
 		if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.Binding.Name}, secret); err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		var err error
 		user, pass, err = readUsernamePassword(secret)
 		if err != nil {
-			return nil, fmt.Errorf("unable to retrieve credentials from Kubernetes secret %s: %w", secret.Name, err)
+			return nil, false, fmt.Errorf("unable to retrieve credentials from Kubernetes secret %s: %w", secret.Name, err)
 		}
 	}
 
 	svc := &corev1.Service{}
 	if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.DefaultUser.ServiceReference.Name}, svc); err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	endpoint, err := managementURI(svc)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get endpoint from specified rabbitmqcluster: %w", err)
+		return nil, false, fmt.Errorf("failed to get endpoint from specified rabbitmqcluster: %w", err)
 	}
 
 	return ClusterCredentials{
@@ -112,7 +112,7 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 			"password": []byte(pass),
 			"uri":      []byte(endpoint),
 		},
-	}, nil
+	}, cluster.TLSEnabled(), nil
 }
 
 func allowedNamespace(rmq topology.RabbitmqClusterReference, requestNamespace string, cluster *rabbitmqv1beta1.RabbitmqCluster) bool {
