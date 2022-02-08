@@ -21,19 +21,19 @@ import (
 
 var _ = Describe("ParseRabbitmqClusterReference", func() {
 	var (
-		existingRabbitMQUsername = "abc123"
-		existingRabbitMQPassword = "foo1234"
-		existingRabbitMQCluster  *rabbitmqv1beta1.RabbitmqCluster
-		fakeCredentialsProvider  *internalfakes.FakeCredentialsProvider
-		existingService          *corev1.Service
-		fakeRabbitMQServer       *ghttp.Server
-		fakeRabbitMQURL          *url.URL
-		fakeRabbitMQPort         int
-		certPool                 *x509.CertPool
-		serverCertPath           string
-		serverKeyPath            string
-		caCertPath               string
-		caCertBytes              []byte
+		existingRabbitMQUsername  = "abc123"
+		existingRabbitMQPassword  = "foo1234"
+		existingRabbitMQCluster   *rabbitmqv1beta1.RabbitmqCluster
+		FakeConnectionCredentials *internalfakes.FakeConnectionCredentials
+		existingService           *corev1.Service
+		fakeRabbitMQServer        *ghttp.Server
+		fakeRabbitMQURL           *url.URL
+		fakeRabbitMQPort          int
+		certPool                  *x509.CertPool
+		serverCertPath            string
+		serverKeyPath             string
+		caCertPath                string
+		caCertBytes               []byte
 	)
 	BeforeEach(func() {
 		certPool = x509.NewCertPool()
@@ -44,9 +44,12 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 
 	When("RabbitmqCluster is provided", func() {
 		JustBeforeEach(func() {
-			fakeCredentialsProvider = &internalfakes.FakeCredentialsProvider{}
-			fakeCredentialsProvider.DataReturnsOnCall(0, []byte(existingRabbitMQUsername), true)
-			fakeCredentialsProvider.DataReturnsOnCall(1, []byte(existingRabbitMQPassword), true)
+			FakeConnectionCredentials = &internalfakes.FakeConnectionCredentials{}
+			FakeConnectionCredentials.DataReturnsOnCall(0, []byte(existingRabbitMQUsername), true)
+			FakeConnectionCredentials.DataReturnsOnCall(1, []byte(existingRabbitMQPassword), true)
+			FakeConnectionCredentials.DataReturnsOnCall(2, []byte(fmt.Sprintf("%s:%s",
+				fakeRabbitMQURL.Hostname(),
+				fakeRabbitMQURL.Port())), true)
 
 			fakeRabbitMQServer.RouteToHandler("PUT", "/api/users/example-user", func(w http.ResponseWriter, req *http.Request) {
 				user, password, ok := req.BasicAuth()
@@ -99,7 +102,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			})
 
 			It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
-				generatedClient, err := internal.RabbitholeClientFactory(existingRabbitMQCluster, existingService, fakeCredentialsProvider, fakeRabbitMQURL.Hostname(), certPool)
+				generatedClient, err := internal.RabbitholeClientFactory(FakeConnectionCredentials, false, certPool)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(generatedClient).NotTo(BeNil())
 
@@ -178,7 +181,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 
 			When("the CA that signed the certs is not trusted", func() {
 				It("generates a rabbithole client which fails to authenticate with the cluster", func() {
-					generatedClient, err := internal.RabbitholeClientFactory(existingRabbitMQCluster, existingService, fakeCredentialsProvider, fakeRabbitMQURL.Hostname(), certPool)
+					generatedClient, err := internal.RabbitholeClientFactory(FakeConnectionCredentials, true, certPool)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(generatedClient).NotTo(BeNil())
 
@@ -193,7 +196,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 					Expect(ok).To(BeTrue())
 				})
 				It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
-					generatedClient, err := internal.RabbitholeClientFactory(existingRabbitMQCluster, existingService, fakeCredentialsProvider, fakeRabbitMQURL.Hostname(), certPool)
+					generatedClient, err := internal.RabbitholeClientFactory(FakeConnectionCredentials, true, certPool)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(generatedClient).NotTo(BeNil())
 
@@ -213,10 +216,10 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			fakeRabbitMQURL, fakeRabbitMQPort, err = mockRabbitMQURLPort(fakeRabbitMQServer)
 			Expect(err).NotTo(HaveOccurred())
 
-			fakeCredentialsProvider = &internalfakes.FakeCredentialsProvider{}
-			fakeCredentialsProvider.DataReturnsOnCall(0, []byte(existingRabbitMQUsername), true)
-			fakeCredentialsProvider.DataReturnsOnCall(1, []byte(existingRabbitMQPassword), true)
-			fakeCredentialsProvider.DataReturnsOnCall(2, []byte(fmt.Sprintf("%s:%d", fakeRabbitMQURL.Hostname(), fakeRabbitMQPort)), true)
+			FakeConnectionCredentials = &internalfakes.FakeConnectionCredentials{}
+			FakeConnectionCredentials.DataReturnsOnCall(0, []byte(existingRabbitMQUsername), true)
+			FakeConnectionCredentials.DataReturnsOnCall(1, []byte(existingRabbitMQPassword), true)
+			FakeConnectionCredentials.DataReturnsOnCall(2, []byte(fmt.Sprintf("%s:%d", fakeRabbitMQURL.Hostname(), fakeRabbitMQPort)), true)
 
 			fakeRabbitMQServer.RouteToHandler("PUT", "/api/users/example-user", func(w http.ResponseWriter, req *http.Request) {
 				user, password, ok := req.BasicAuth()
@@ -228,7 +231,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 		})
 
 		It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
-			generatedClient, err := internal.RabbitholeClientFactory(nil, nil, fakeCredentialsProvider, "", certPool)
+			generatedClient, err := internal.RabbitholeClientFactory(FakeConnectionCredentials, false, certPool)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(generatedClient).NotTo(BeNil())
 

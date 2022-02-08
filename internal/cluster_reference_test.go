@@ -19,16 +19,15 @@ import (
 
 var _ = Describe("ParseRabbitmqClusterReference", func() {
 	var (
-		objs                     []runtime.Object
-		fakeClient               client.Client
-		existingRabbitMQUsername = "abc123"
-		existingRabbitMQPassword = "foo1234"
-		existingRabbitMQCluster  *rabbitmqv1beta1.RabbitmqCluster
-		existingCredentialSecret *corev1.Secret
-		existingService          *corev1.Service
-		ctx                      = context.Background()
-		fakeCredentialsProvider  *internalfakes.FakeCredentialsProvider
-		namespace                = "rabbitmq-system"
+		objs                      []runtime.Object
+		fakeClient                client.Client
+		existingRabbitMQUsername  = "abc123"
+		existingRabbitMQPassword  = "foo1234"
+		existingRabbitMQCluster   *rabbitmqv1beta1.RabbitmqCluster
+		existingCredentialSecret  *corev1.Secret
+		existingService           *corev1.Service
+		ctx                       = context.Background()
+		namespace                 = "rabbitmq-system"
 	)
 	JustBeforeEach(func() {
 		s := scheme.Scheme
@@ -84,12 +83,8 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 		})
 
 		It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
-			rmq, svc, credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
+			credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(rmq.ObjectMeta).To(Equal(existingRabbitMQCluster.ObjectMeta))
-			Expect(rmq.Status).To(Equal(existingRabbitMQCluster.Status))
-			Expect(svc.ObjectMeta).To(Equal(existingService.ObjectMeta))
-			Expect(svc.Spec).To(Equal(existingService.Spec))
 
 			usernameBytes, _ := credsProvider.Data("username")
 			passwordBytes, _ := credsProvider.Data("password")
@@ -113,7 +108,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			})
 
 			It("errors", func() {
-				_, _, _, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
+				 _, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
 				Expect(err).To(MatchError("no status.defaultUser set"))
 			})
 		})
@@ -122,7 +117,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			var (
 				err                   error
 				fakeSecretStoreClient *internalfakes.FakeSecretStoreClient
-				credsProv             internal.CredentialsProvider
+				credsProv             internal.ConnectionCredentials
 			)
 
 			BeforeEach(func() {
@@ -153,12 +148,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 				}
 
 				fakeSecretStoreClient = &internalfakes.FakeSecretStoreClient{}
-
-				fakeCredentialsProvider = &internalfakes.FakeCredentialsProvider{}
-				fakeCredentialsProvider.DataReturnsOnCall(0, []byte(existingRabbitMQUsername), true)
-				fakeCredentialsProvider.DataReturnsOnCall(1, []byte(existingRabbitMQPassword), true)
-
-				fakeSecretStoreClient.ReadCredentialsReturns(fakeCredentialsProvider, nil)
+				fakeSecretStoreClient.ReadCredentialsReturns(existingRabbitMQUsername, existingRabbitMQPassword, nil)
 				internal.SecretStoreClientProvider = func() (internal.SecretStoreClient, error) {
 					return fakeSecretStoreClient, nil
 				}
@@ -169,7 +159,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			})
 
 			JustBeforeEach(func() {
-				_, _, credsProv, err = internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
+				credsProv, err = internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
 			})
 
 			It("should not return an error", func() {
@@ -201,7 +191,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 		})
 
 		It("returns the expected connection information", func() {
-			_, _, credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient,
+			credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient,
 				topology.RabbitmqClusterReference{
 					ConnectionSecret: &corev1.LocalObjectReference{
 						Name: "rmq-connection-info",

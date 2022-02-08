@@ -15,7 +15,7 @@ import (
 var _ = Describe("VaultReader", func() {
 	var (
 		err                      error
-		credsProvider            internal.CredentialsProvider
+		username, password       string
 		secretStoreClient        internal.SecretStoreClient
 		fakeSecretReader         *internalfakes.FakeSecretReader
 		credsData                map[string]interface{}
@@ -40,15 +40,12 @@ var _ = Describe("VaultReader", func() {
 			})
 
 			JustBeforeEach(func() {
-				credsProvider, err = secretStoreClient.ReadCredentials("some/path")
+				username, password, err = secretStoreClient.ReadCredentials("some/path")
 			})
 
 			It("should return a credentials provider", func() {
-				Expect(credsProvider).NotTo(BeNil())
-				usernameBytes, _ := credsProvider.Data("username")
-				passwordBytes, _ := credsProvider.Data("password")
-				Expect(usernameBytes).To(Equal([]byte(existingRabbitMQUsername)))
-				Expect(passwordBytes).To(Equal([]byte(existingRabbitMQPassword)))
+				Expect(username).To(Equal(existingRabbitMQUsername))
+				Expect(password).To(Equal(existingRabbitMQPassword))
 			})
 
 			It("should not error", func() {
@@ -65,11 +62,12 @@ var _ = Describe("VaultReader", func() {
 			})
 
 			JustBeforeEach(func() {
-				credsProvider, err = secretStoreClient.ReadCredentials("some/path")
+				username, password, err = secretStoreClient.ReadCredentials("some/path")
 			})
 
-			It("should return a nil credentials provider", func() {
-				Expect(credsProvider).To(BeNil())
+			It("should return empty strings for username and password", func() {
+				Expect(username).To(BeEmpty())
+				Expect(password).To(BeEmpty())
 			})
 
 			It("should have returned an error", func() {
@@ -86,11 +84,12 @@ var _ = Describe("VaultReader", func() {
 			})
 
 			JustBeforeEach(func() {
-				credsProvider, err = secretStoreClient.ReadCredentials("some/path")
+				username, password, err = secretStoreClient.ReadCredentials("some/path")
 			})
 
-			It("should return a nil credentials provider", func() {
-				Expect(credsProvider).To(BeNil())
+			It("should return empty strings for username and password", func() {
+				Expect(username).To(BeEmpty())
+				Expect(password).To(BeEmpty())
 			})
 
 			It("should have returned an error", func() {
@@ -108,11 +107,12 @@ var _ = Describe("VaultReader", func() {
 			})
 
 			JustBeforeEach(func() {
-				credsProvider, err = secretStoreClient.ReadCredentials("some/path")
+				username, password, err = secretStoreClient.ReadCredentials("some/path")
 			})
 
-			It("should return a nil credentials provider", func() {
-				Expect(credsProvider).To(BeNil())
+			It("should return empty strings for username and password", func() {
+				Expect(username).To(BeEmpty())
+				Expect(password).To(BeEmpty())
 			})
 
 			It("should have returned an error", func() {
@@ -131,11 +131,12 @@ var _ = Describe("VaultReader", func() {
 			})
 
 			JustBeforeEach(func() {
-				credsProvider, err = secretStoreClient.ReadCredentials("some/path")
+				username, password, err = secretStoreClient.ReadCredentials("some/path")
 			})
 
-			It("should return a nil credentials provider", func() {
-				Expect(credsProvider).To(BeNil())
+			It("should return empty strings for username and password", func() {
+				Expect(username).To(BeEmpty())
+				Expect(password).To(BeEmpty())
 			})
 
 			It("should have returned an error", func() {
@@ -154,11 +155,12 @@ var _ = Describe("VaultReader", func() {
 			})
 
 			JustBeforeEach(func() {
-				credsProvider, err = secretStoreClient.ReadCredentials("some/path")
+				username, password, err = secretStoreClient.ReadCredentials("some/path")
 			})
 
-			It("should return a nil credentials provider", func() {
-				Expect(credsProvider).To(BeNil())
+			It("should return empty strings for username and password", func() {
+				Expect(username).To(BeEmpty())
+				Expect(password).To(BeEmpty())
 			})
 
 			It("should have returned an error", func() {
@@ -179,11 +181,12 @@ var _ = Describe("VaultReader", func() {
 			})
 
 			JustBeforeEach(func() {
-				credsProvider, err = secretStoreClient.ReadCredentials("some/path")
+				username, password, err = secretStoreClient.ReadCredentials("some/path")
 			})
 
-			It("should return a nil credentials provider", func() {
-				Expect(credsProvider).To(BeNil())
+			It("should return empty strings for username and password", func() {
+				Expect(username).To(BeEmpty())
+				Expect(password).To(BeEmpty())
 			})
 
 			It("should have returned an error", func() {
@@ -204,11 +207,12 @@ var _ = Describe("VaultReader", func() {
 			})
 
 			JustBeforeEach(func() {
-				credsProvider, err = secretStoreClient.ReadCredentials("some/path")
+				username, password, err = secretStoreClient.ReadCredentials("some/path")
 			})
 
-			It("should return a nil credentials provider", func() {
-				Expect(credsProvider).To(BeNil())
+			It("should return empty strings for username and password", func() {
+				Expect(username).To(BeEmpty())
+				Expect(password).To(BeEmpty())
 			})
 
 			It("should have returned an error", func() {
@@ -225,11 +229,12 @@ var _ = Describe("VaultReader", func() {
 			})
 
 			JustBeforeEach(func() {
-				credsProvider, err = secretStoreClient.ReadCredentials("some/path")
+				username, password, err = secretStoreClient.ReadCredentials("some/path")
 			})
 
-			It("should return a nil credentials provider", func() {
-				Expect(credsProvider).To(BeNil())
+			It("should return empty strings for username and password", func() {
+				Expect(username).To(BeEmpty())
+				Expect(password).To(BeEmpty())
 			})
 
 			It("should have returned an error", func() {
@@ -246,11 +251,12 @@ var _ = Describe("VaultReader", func() {
 			})
 
 			JustBeforeEach(func() {
-				credsProvider, err = secretStoreClient.ReadCredentials("some/path")
+				username, password, err = secretStoreClient.ReadCredentials("some/path")
 			})
 
-			It("should return a nil credentials provider", func() {
-				Expect(credsProvider).To(BeNil())
+			It("should return empty strings for username and password", func() {
+				Expect(username).To(BeEmpty())
+				Expect(password).To(BeEmpty())
 			})
 
 			It("should have returned an error", func() {
@@ -272,11 +278,12 @@ var _ = Describe("VaultReader", func() {
 			})
 
 			JustBeforeEach(func() {
-				credsProvider, err = secretStoreClient.ReadCredentials("some/path")
+				username, password, err = secretStoreClient.ReadCredentials("some/path")
 			})
 
-			It("should return a nil credentials provider", func() {
-				Expect(credsProvider).To(BeNil())
+			It("should return empty strings for username and password", func() {
+				Expect(username).To(BeEmpty())
+				Expect(password).To(BeEmpty())
 			})
 
 			It("should have returned an error", func() {

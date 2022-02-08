@@ -8,24 +8,26 @@ import (
 )
 
 type FakeSecretStoreClient struct {
-	ReadCredentialsStub        func(string) (internal.CredentialsProvider, error)
+	ReadCredentialsStub        func(string) (string, string, error)
 	readCredentialsMutex       sync.RWMutex
 	readCredentialsArgsForCall []struct {
 		arg1 string
 	}
 	readCredentialsReturns struct {
-		result1 internal.CredentialsProvider
-		result2 error
+		result1 string
+		result2 string
+		result3 error
 	}
 	readCredentialsReturnsOnCall map[int]struct {
-		result1 internal.CredentialsProvider
-		result2 error
+		result1 string
+		result2 string
+		result3 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeSecretStoreClient) ReadCredentials(arg1 string) (internal.CredentialsProvider, error) {
+func (fake *FakeSecretStoreClient) ReadCredentials(arg1 string) (string, string, error) {
 	fake.readCredentialsMutex.Lock()
 	ret, specificReturn := fake.readCredentialsReturnsOnCall[len(fake.readCredentialsArgsForCall)]
 	fake.readCredentialsArgsForCall = append(fake.readCredentialsArgsForCall, struct {
@@ -39,9 +41,9 @@ func (fake *FakeSecretStoreClient) ReadCredentials(arg1 string) (internal.Creden
 		return stub(arg1)
 	}
 	if specificReturn {
-		return ret.result1, ret.result2
+		return ret.result1, ret.result2, ret.result3
 	}
-	return fakeReturns.result1, fakeReturns.result2
+	return fakeReturns.result1, fakeReturns.result2, fakeReturns.result3
 }
 
 func (fake *FakeSecretStoreClient) ReadCredentialsCallCount() int {
@@ -50,7 +52,7 @@ func (fake *FakeSecretStoreClient) ReadCredentialsCallCount() int {
 	return len(fake.readCredentialsArgsForCall)
 }
 
-func (fake *FakeSecretStoreClient) ReadCredentialsCalls(stub func(string) (internal.CredentialsProvider, error)) {
+func (fake *FakeSecretStoreClient) ReadCredentialsCalls(stub func(string) (string, string, error)) {
 	fake.readCredentialsMutex.Lock()
 	defer fake.readCredentialsMutex.Unlock()
 	fake.ReadCredentialsStub = stub
@@ -63,30 +65,33 @@ func (fake *FakeSecretStoreClient) ReadCredentialsArgsForCall(i int) string {
 	return argsForCall.arg1
 }
 
-func (fake *FakeSecretStoreClient) ReadCredentialsReturns(result1 internal.CredentialsProvider, result2 error) {
+func (fake *FakeSecretStoreClient) ReadCredentialsReturns(result1 string, result2 string, result3 error) {
 	fake.readCredentialsMutex.Lock()
 	defer fake.readCredentialsMutex.Unlock()
 	fake.ReadCredentialsStub = nil
 	fake.readCredentialsReturns = struct {
-		result1 internal.CredentialsProvider
-		result2 error
-	}{result1, result2}
+		result1 string
+		result2 string
+		result3 error
+	}{result1, result2, result3}
 }
 
-func (fake *FakeSecretStoreClient) ReadCredentialsReturnsOnCall(i int, result1 internal.CredentialsProvider, result2 error) {
+func (fake *FakeSecretStoreClient) ReadCredentialsReturnsOnCall(i int, result1 string, result2 string, result3 error) {
 	fake.readCredentialsMutex.Lock()
 	defer fake.readCredentialsMutex.Unlock()
 	fake.ReadCredentialsStub = nil
 	if fake.readCredentialsReturnsOnCall == nil {
 		fake.readCredentialsReturnsOnCall = make(map[int]struct {
-			result1 internal.CredentialsProvider
-			result2 error
+			result1 string
+			result2 string
+			result3 error
 		})
 	}
 	fake.readCredentialsReturnsOnCall[i] = struct {
-		result1 internal.CredentialsProvider
-		result2 error
-	}{result1, result2}
+		result1 string
+		result2 string
+		result3 error
+	}{result1, result2, result3}
 }
 
 func (fake *FakeSecretStoreClient) Invocations() map[string][][]interface{} {
