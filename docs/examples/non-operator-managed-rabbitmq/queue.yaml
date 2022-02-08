@@ -1,0 +1,23 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-rabbitmq-creds
+type: Opaque
+stringData:
+  username: a-user # an existing user
+  password: a-secure-password
+  uri: my.rabbit:15672 # uri for the management api
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Queue
+metadata:
+  name: qq-example
+spec:
+  name: qq
+  type: quorum
+  autoDelete: false
+  durable: true
+  rabbitmqClusterReference:
+    connectionSecret:
+      name: my-rabbitmq-creds # provided instead of a rabbitmqcluster name; secret must contain keys username, password and uri, and be in the same namespace as the object

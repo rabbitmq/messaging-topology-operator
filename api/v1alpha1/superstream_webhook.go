@@ -31,18 +31,7 @@ var _ webhook.Validator = &SuperStream{}
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (s *SuperStream) ValidateCreate() error {
-	if s.Spec.RabbitmqClusterReference.Name != "" && s.Spec.RabbitmqClusterReference.ConnectionSecret != nil {
-		return apierrors.NewForbidden(s.GroupResource(), s.Name,
-			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
-				"do not provide both spec.rabbitmqClusterReferencs.name and spec.rabbitmqClusterReferencs.connectionSecret"))
-	}
-
-	if s.Spec.RabbitmqClusterReference.Name == "" && s.Spec.RabbitmqClusterReference.ConnectionSecret == nil {
-		return apierrors.NewForbidden(s.GroupResource(), s.Name,
-			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
-				"must provide either spec.rabbitmqClusterReference.name or spec.rabbitmqClusterReference.connectionSecret"))
-	}
-	return nil
+	return s.Spec.RabbitmqClusterReference.ValidateOnCreate(s.GroupResource(), s.Name)
 }
 
 // returns error type 'forbidden' for updates on superstream name, vhost and rabbitmqClusterReference
