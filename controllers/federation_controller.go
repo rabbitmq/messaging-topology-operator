@@ -45,17 +45,12 @@ func (r *FederationReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
-	rmq, svc, credsProvider, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, federation.Spec.RabbitmqClusterReference, federation.Namespace)
+	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, federation.Spec.RabbitmqClusterReference, federation.Namespace)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, federation, &federation.Status.Conditions, err)
 	}
 
-	var hostname string
-	if rmq != nil {
-		hostname = serviceDNSAddress(svc)
-	}
-
-	rabbitClient, err := r.RabbitmqClientFactory(rmq, svc, credsProvider, hostname, systemCertPool)
+	rabbitClient, err := r.RabbitmqClientFactory(credsProvider, tlsEnabled, systemCertPool)
 	if err != nil {
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err

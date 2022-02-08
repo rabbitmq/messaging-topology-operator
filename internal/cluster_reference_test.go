@@ -213,3 +213,63 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 		})
 	})
 })
+
+var _ = Describe("AllowedNamespace", func() {
+	When("rabbitmqcluster reference namespace is an empty string", func() {
+		It("returns true", func() {
+			Expect(internal.AllowedNamespace(topology.RabbitmqClusterReference{Name: "a-name"}, "", nil)).To(BeTrue())
+		})
+	})
+
+	When("rabbitmqcluster reference namespace matches requested namespace", func() {
+		It("returns true", func() {
+			Expect(internal.AllowedNamespace(topology.RabbitmqClusterReference{Name: "a-name", Namespace: "a-ns"}, "a-ns", nil)).To(BeTrue())
+		})
+	})
+
+	When("requested namespace matches topology-allowed-namespaces annotation", func() {
+		It("returns true", func() {
+			cluster := &rabbitmqv1beta1.RabbitmqCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"rabbitmq.com/topology-allowed-namespaces": "test,test0,test1",
+					},
+				},
+			}
+			ref := topology.RabbitmqClusterReference{Name: "a-name"}
+			Expect(internal.AllowedNamespace(ref, "test", cluster)).To(BeTrue())
+			Expect(internal.AllowedNamespace(ref, "test0", cluster)).To(BeTrue())
+			Expect(internal.AllowedNamespace(ref, "test1", cluster)).To(BeTrue())
+		})
+	})
+
+	When("request namespace is not listed in topology-allowed-namespaces annotations", func() {
+		It("returns false", func() {
+			cluster := &rabbitmqv1beta1.RabbitmqCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"rabbitmq.com/topology-allowed-namespaces": "test,test0,test1",
+					},
+				},
+			}
+			ref := topology.RabbitmqClusterReference{Name: "a-name"}
+			Expect(internal.AllowedNamespace(ref, "notThere", cluster)).To(BeTrue())
+		})
+	})
+
+	When("topology-allowed-namespaces is set to *", func() {
+		It("returns true", func() {
+			cluster := &rabbitmqv1beta1.RabbitmqCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"rabbitmq.com/topology-allowed-namespaces": "*",
+					},
+				},
+			}
+			ref := topology.RabbitmqClusterReference{Name: "a-name"}
+			Expect(internal.AllowedNamespace(ref, "anything", cluster)).To(BeTrue())
+			Expect(internal.AllowedNamespace(ref, "whatever", cluster)).To(BeTrue())
+		})
+	})
+
+})

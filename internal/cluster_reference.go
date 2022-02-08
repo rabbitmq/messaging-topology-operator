@@ -59,7 +59,7 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 		return nil, false, fmt.Errorf("failed to get cluster from reference: %s Error: %w", err, NoSuchRabbitmqClusterError)
 	}
 
-	if !allowedNamespace(rmq, requestNamespace, cluster) {
+	if !AllowedNamespace(rmq, requestNamespace, cluster) {
 		return nil, false, ResourceNotAllowedError
 	}
 
@@ -115,7 +115,7 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 	}, cluster.TLSEnabled(), nil
 }
 
-func allowedNamespace(rmq topology.RabbitmqClusterReference, requestNamespace string, cluster *rabbitmqv1beta1.RabbitmqCluster) bool {
+func AllowedNamespace(rmq topology.RabbitmqClusterReference, requestNamespace string, cluster *rabbitmqv1beta1.RabbitmqCluster) bool {
 	if rmq.Namespace != "" && rmq.Namespace != requestNamespace {
 		var isAllowed bool
 		if allowedNamespaces, ok := cluster.Annotations["rabbitmq.com/topology-allowed-namespaces"]; ok {

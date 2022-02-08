@@ -58,15 +58,6 @@ func validateResponseForDeletion(res *http.Response, err error) error {
 	return validateResponse(res, err)
 }
 
-// serviceDNSAddress returns the cluster-local DNS entry associated
-// with the provided Service
-func serviceDNSAddress(svc *corev1.Service) string {
-	// NOTE: this does not use the `cluster.local` suffix, because that is not
-	// uniform across clusters. See the `clusterDomain` KubeletConfiguration
-	// value for how this can be changed for a cluster.
-	return fmt.Sprintf("%s.%s.svc", svc.Name, svc.Namespace)
-}
-
 func addFinalizerIfNeeded(ctx context.Context, client client.Client, obj client.Object) error {
 	finalizer := deletionFinalizer(obj.GetObjectKind().GroupVersionKind().Kind)
 	if obj.GetDeletionTimestamp().IsZero() && !controllerutil.ContainsFinalizer(obj, finalizer) {
