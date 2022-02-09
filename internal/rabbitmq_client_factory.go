@@ -65,7 +65,7 @@ func generateRabbitholeClient(connectionCreds ConnectionCredentials, tlsEnabled 
 		return nil, keyMissingErr("password")
 	}
 
-	endpoint, found := connectionCreds.Data("uri")
+	uri, found := connectionCreds.Data("uri")
 	if !found {
 		return nil, keyMissingErr("uri")
 	}
@@ -76,12 +76,12 @@ func generateRabbitholeClient(connectionCreds ConnectionCredentials, tlsEnabled 
 		cfg.RootCAs = certPool
 
 		transport := &http.Transport{TLSClientConfig: cfg}
-		rabbitmqClient, err = rabbithole.NewTLSClient(fmt.Sprintf("https://%s", string(endpoint)), string(defaultUser), string(defaultUserPass), transport)
+		rabbitmqClient, err = rabbithole.NewTLSClient(fmt.Sprintf("%s", string(uri)), string(defaultUser), string(defaultUserPass), transport)
 		if err != nil {
 			return nil, fmt.Errorf("failed to instantiate rabbit rabbitmqClient: %v", err)
 		}
 	} else {
-		rabbitmqClient, err = rabbithole.NewClient(fmt.Sprintf("http://%s", string(endpoint)), string(defaultUser), string(defaultUserPass))
+		rabbitmqClient, err = rabbithole.NewClient(fmt.Sprintf("%s", string(uri)), string(defaultUser), string(defaultUserPass))
 		if err != nil {
 			return nil, fmt.Errorf("failed to instantiate rabbit rabbitmqClient: %v", err)
 		}
