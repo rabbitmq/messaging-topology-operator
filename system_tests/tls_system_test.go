@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("RabbitmqCluster with TLS", func() {
+var _ = Describe("RabbitMQ Cluster with TLS enabled", func() {
 	var (
 		namespace        = MustHaveEnv("NAMESPACE")
 		ctx              = context.Background()
@@ -59,7 +59,7 @@ var _ = Describe("RabbitmqCluster with TLS", func() {
 			StringData: map[string]string{
 				"username": user,
 				"password": pass,
-				"uri":      fmt.Sprintf("https://%s:15671", "tls-cluster.rabbitmq-system.svc"),
+				"uri":      "https://tls-cluster.rabbitmq-system.svc:15671",
 			},
 		}
 		Expect(k8sClient.Create(ctx, connectionSecret, &client.CreateOptions{})).To(Succeed())
@@ -117,8 +117,8 @@ var _ = Describe("RabbitmqCluster with TLS", func() {
 		Expect(k8sClient.Delete(ctx, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: tlsSecretName + "-ca", Namespace: targetCluster.Namespace}})).To(Succeed())
 	})
 
-	It("succeeds creating objects on the TLS-enabled instance", func() {
-		By("setting rabbitmqClusterReference.name")
+	It("works", func() {
+		By("successfully creating object when rabbitmqClusterReference.name is set")
 		policy = topology.Policy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "policy-tls-test",
@@ -147,7 +147,7 @@ var _ = Describe("RabbitmqCluster with TLS", func() {
 		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))
 		Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
 
-		By("setting rabbitmqClusterReference.connectionSecret instead of RabbitmqClusterName")
+		By("successfully creating object when rabbitmqClusterReference.connectionSecret is set")
 		exchange = topology.Exchange{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "tls-test",
