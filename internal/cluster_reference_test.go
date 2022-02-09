@@ -29,6 +29,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 		ctx                      = context.Background()
 		namespace                = "rabbitmq-system"
 	)
+
 	JustBeforeEach(func() {
 		s := scheme.Scheme
 		s.AddKnownTypes(rabbitmqv1beta1.SchemeBuilder.GroupVersion, &rabbitmqv1beta1.RabbitmqCluster{})
@@ -248,6 +249,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			Expect(uriBytes).To(Equal([]byte("https://rmq.rabbitmq-system.svc:15671")))
 		})
 	})
+
 	Context("spec.rabbitmqClusterReference.connectionSecret is set", func() {
 		When("uri has no scheme defined", func() {
 			BeforeEach(func() {
@@ -257,7 +259,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 						Namespace: namespace,
 					},
 					Data: map[string][]byte{
-						"uri":      []byte("10.0.0.0:15671"),
+						"uri":      []byte("10.0.0.0:15672"),
 						"username": []byte("test-user"),
 						"password": []byte("test-password"),
 					},
@@ -281,7 +283,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 				returnedURI, _ := credsProvider.Data("uri")
 				Expect(string(returnedUser)).To(Equal("test-user"))
 				Expect(string(returnedPass)).To(Equal("test-password"))
-				Expect(string(returnedURI)).To(Equal("http://10.0.0.0:15671"))
+				Expect(string(returnedURI)).To(Equal("http://10.0.0.0:15672"))
 			})
 		})
 
@@ -293,7 +295,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 						Namespace: namespace,
 					},
 					Data: map[string][]byte{
-						"uri":      []byte("http://10.0.0.0:15671"),
+						"uri":      []byte("http://10.0.0.0:15672"),
 						"username": []byte("test-user"),
 						"password": []byte("test-password"),
 					},
@@ -317,7 +319,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 				returnedURI, _ := credsProvider.Data("uri")
 				Expect(string(returnedUser)).To(Equal("test-user"))
 				Expect(string(returnedPass)).To(Equal("test-password"))
-				Expect(string(returnedURI)).To(Equal("http://10.0.0.0:15671"))
+				Expect(string(returnedURI)).To(Equal("http://10.0.0.0:15672"))
 			})
 		})
 
@@ -416,5 +418,4 @@ var _ = Describe("AllowedNamespace", func() {
 			Expect(internal.AllowedNamespace(ref, "whatever", cluster)).To(BeTrue())
 		})
 	})
-
 })
