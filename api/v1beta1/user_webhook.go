@@ -19,12 +19,13 @@ func (u *User) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Validator = &User{}
 
-// no validation on create
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+// either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (u *User) ValidateCreate() error {
-	return nil
+	return u.Spec.RabbitmqClusterReference.ValidateOnCreate(u.GroupResource(), u.Name)
 }
 
-// returns error type 'forbidden' for updates on rabbitmqClusterReference
+// ValidateUpdate returns error type 'forbidden' for updates on rabbitmqClusterReference
 // user.spec.tags can be updated
 func (u *User) ValidateUpdate(old runtime.Object) error {
 	oldUser, ok := old.(*User)
@@ -32,7 +33,7 @@ func (u *User) ValidateUpdate(old runtime.Object) error {
 		return apierrors.NewBadRequest(fmt.Sprintf("expected a user but got a %T", old))
 	}
 
-	if u.Spec.RabbitmqClusterReference != oldUser.Spec.RabbitmqClusterReference {
+	if !oldUser.Spec.RabbitmqClusterReference.Matches(&u.Spec.RabbitmqClusterReference) {
 		return apierrors.NewForbidden(u.GroupResource(), u.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), "update on rabbitmqClusterReference is forbidden"))
 	}

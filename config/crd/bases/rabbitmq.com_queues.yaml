@@ -59,15 +59,25 @@ spec:
                 description: Reference to the RabbitmqCluster that the queue will
                   be created in. Required property.
                 properties:
+                  connectionSecret:
+                    description: Secret contains the http management uri for the RabbitMQ
+                      cluster. The Secret must contain the key `uri`, `username` and
+                      `password` or operator will error. Have to set either name or
+                      connectionSecret, but not both.
+                    properties:
+                      name:
+                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                          TODO: Add other useful fields. apiVersion, kind, uid?'
+                        type: string
+                    type: object
                   name:
-                    description: The name of the RabbitMQ cluster to reference.
+                    description: The name of the RabbitMQ cluster to reference. Have
+                      to set either name or connectionSecret, but not both.
                     type: string
                   namespace:
                     description: The namespace of the RabbitMQ cluster to reference.
                       Defaults to the namespace of the requested resource if omitted.
                     type: string
-                required:
-                - name
                 type: object
               type:
                 type: string

@@ -16,10 +16,7 @@ import (
 	"fmt"
 	"net/http"
 
-	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
-
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
-	corev1 "k8s.io/api/core/v1"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . RabbitMQClient
@@ -48,41 +45,43 @@ type RabbitMQClient interface {
 	DeleteShovel(vhost, shovel string) (res *http.Response, err error)
 }
 
-type RabbitMQClientFactory func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, credsProvider CredentialsProvider, hostname string, certPool *x509.CertPool) (RabbitMQClient, error)
+type RabbitMQClientFactory func(connectionCreds ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (RabbitMQClient, error)
 
-var RabbitholeClientFactory RabbitMQClientFactory = func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, credsProvider CredentialsProvider, hostname string, certPool *x509.CertPool) (RabbitMQClient, error) {
-	return generateRabbitholeClient(rmq, svc, credsProvider, hostname, certPool)
+var RabbitholeClientFactory RabbitMQClientFactory = func(connectionCreds ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (RabbitMQClient, error) {
+	return generateRabbitholeClient(connectionCreds, tlsEnabled, certPool)
 }
 
-// returns a http client for the given RabbitmqCluster
-func generateRabbitholeClient(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, credsProvider CredentialsProvider, hostname string, certPool *x509.CertPool) (rabbitmqClient RabbitMQClient, err error) {
-	endpoint, err := managementEndpoint(rmq, svc, hostname)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get endpoint from specified rabbitmqcluster: %w", err)
-	}
-
-	defaultUser, found := credsProvider.Data("username")
+// generateRabbitholeClient returns a http client for a given creds
+// if provided RabbitmqCluster is nil, generateRabbitholeClient uses username, passwords, and uri
+// information from connectionCreds to generate a rabbit client
+func generateRabbitholeClient(connectionCreds ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (rabbitmqClient RabbitMQClient, err error) {
+	defaultUser, found := connectionCreds.Data("username")
 	if !found {
-		return nil, errors.New("failed to retrieve username: key username missing from credentials")
+		return nil, keyMissingErr("username")
 	}
 
-	defaultUserPass, found := credsProvider.Data("password")
+	defaultUserPass, found := connectionCreds.Data("password")
 	if !found {
-		return nil, errors.New("failed to retrieve password: key password missing from credentials")
+		return nil, keyMissingErr("password")
 	}
 
-	if rmq.TLSEnabled() {
+	endpoint, found := connectionCreds.Data("uri")
+	if !found {
+		return nil, keyMissingErr("uri")
+	}
+
+	if tlsEnabled {
 		// create TLS config for https request
 		cfg := new(tls.Config)
 		cfg.RootCAs = certPool
 
 		transport := &http.Transport{TLSClientConfig: cfg}
-		rabbitmqClient, err = rabbithole.NewTLSClient(endpoint, string(defaultUser), string(defaultUserPass), transport)
+		rabbitmqClient, err = rabbithole.NewTLSClient(fmt.Sprintf("https://%s", string(endpoint)), string(defaultUser), string(defaultUserPass), transport)
 		if err != nil {
 			return nil, fmt.Errorf("failed to instantiate rabbit rabbitmqClient: %v", err)
 		}
 	} else {
-		rabbitmqClient, err = rabbithole.NewClient(endpoint, string(defaultUser), string(defaultUserPass))
+		rabbitmqClient, err = rabbithole.NewClient(fmt.Sprintf("http://%s", string(endpoint)), string(defaultUser), string(defaultUserPass))
 		if err != nil {
 			return nil, fmt.Errorf("failed to instantiate rabbit rabbitmqClient: %v", err)
 		}
@@ -90,35 +89,6 @@ func generateRabbitholeClient(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.
 	return rabbitmqClient, nil
 }
 
-func managementEndpoint(cluster *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, hostname string) (string, error) {
-	port := managementPort(svc)
-	if port == 0 {
-		return "", fmt.Errorf("failed to find 'management' or 'management-tls' from service %s", svc.Name)
-	}
-
-	return fmt.Sprintf("%s://%s:%d", managementScheme(cluster), hostname, port), nil
-}
-
-// returns RabbitMQ management scheme from given cluster
-func managementScheme(cluster *rabbitmqv1beta1.RabbitmqCluster) string {
-	if cluster.TLSEnabled() {
-		return "https"
-	} else {
-		return "http"
-	}
-}
-
-// returns RabbitMQ management port from given service
-// if both "management-tls" and "management" ports are present, returns the "management-tls" port
-func managementPort(svc *corev1.Service) int {
-	var httpPort int
-	for _, port := range svc.Spec.Ports {
-		if port.Name == "management-tls" {
-			return int(port.Port)
-		}
-		if port.Name == "management" {
-			httpPort = int(port.Port)
-		}
-	}
-	return httpPort
+func keyMissingErr(key string) error {
+	return errors.New(fmt.Sprintf("failed to retrieve %s: key %s missing from credentials", key, key))
 }

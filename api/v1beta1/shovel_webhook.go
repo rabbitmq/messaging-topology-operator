@@ -19,9 +19,10 @@ func (s *Shovel) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Validator = &Shovel{}
 
-// no validation on create
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+// either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (s *Shovel) ValidateCreate() error {
-	return nil
+	return s.Spec.RabbitmqClusterReference.ValidateOnCreate(s.GroupResource(), s.Name)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
@@ -42,7 +43,7 @@ func (s *Shovel) ValidateUpdate(old runtime.Object) error {
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
-	if s.Spec.RabbitmqClusterReference != oldShovel.Spec.RabbitmqClusterReference {
+	if !oldShovel.Spec.RabbitmqClusterReference.Matches(&s.Spec.RabbitmqClusterReference) {
 		return apierrors.NewForbidden(s.GroupResource(), s.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}

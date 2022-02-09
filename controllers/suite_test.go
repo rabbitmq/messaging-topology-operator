@@ -51,13 +51,13 @@ var (
 	ctx                       = context.Background()
 	fakeRabbitMQClient        *internalfakes.FakeRabbitMQClient
 	fakeRabbitMQClientError   error
-	fakeRabbitMQClientFactory = func(rmq *rabbitmqv1beta1.RabbitmqCluster, svc *corev1.Service, credsProvider internal.CredentialsProvider, hostname string, certPool *x509.CertPool) (internal.RabbitMQClient, error) {
+	fakeRabbitMQClientFactory = func(connectionCreds internal.ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (internal.RabbitMQClient, error) {
 		return fakeRabbitMQClient, fakeRabbitMQClientError
 	}
-	existingRabbitMQUsername = "abc123"
-	existingRabbitMQPassword = "foo1234"
-	fakeCredentialsProvider  *internalfakes.FakeCredentialsProvider
-	fakeRecorder             *record.FakeRecorder
+	existingRabbitMQUsername  = "abc123"
+	existingRabbitMQPassword  = "foo1234"
+	fakeConnectionCredentials *internalfakes.FakeConnectionCredentials
+	fakeRecorder              *record.FakeRecorder
 )
 
 var _ = BeforeSuite(func() {
@@ -87,10 +87,11 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
-	fakeCredentialsProvider = &internalfakes.FakeCredentialsProvider{}
+	fakeConnectionCredentials = &internalfakes.FakeConnectionCredentials{}
 
-	fakeCredentialsProvider.DataReturnsOnCall(0, []byte(existingRabbitMQUsername), true)
-	fakeCredentialsProvider.DataReturnsOnCall(1, []byte(existingRabbitMQPassword), true)
+	fakeConnectionCredentials.DataReturnsOnCall(0, []byte(existingRabbitMQUsername), true)
+	fakeConnectionCredentials.DataReturnsOnCall(1, []byte(existingRabbitMQPassword), true)
+	fakeConnectionCredentials.DataReturnsOnCall(2, []byte("example.com"), true)
 	fakeRecorder = record.NewFakeRecorder(128)
 
 	err = (&controllers.BindingReconciler{
@@ -195,7 +196,12 @@ var _ = BeforeSuite(func() {
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
 				{
+					Port: 15672,
+					Name: "management",
+				},
+				{
 					Port: 15671,
+					Name: "management-tls",
 				},
 			},
 		},
@@ -243,7 +249,12 @@ var _ = BeforeSuite(func() {
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
 				{
+					Port: 15672,
+					Name: "management",
+				},
+				{
 					Port: 15671,
+					Name: "management-tls",
 				},
 			},
 		},

@@ -16,9 +16,10 @@ func (f *Federation) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1beta1-federation,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=federations,versions=v1beta1,name=vfederation.kb.io,sideEffects=none,admissionReviewVersions=v1
 
-// no validation for create
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+// either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (f *Federation) ValidateCreate() error {
-	return nil
+	return f.Spec.RabbitmqClusterReference.ValidateOnCreate(f.GroupResource(), f.Name)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
@@ -39,7 +40,7 @@ func (f *Federation) ValidateUpdate(old runtime.Object) error {
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
-	if f.Spec.RabbitmqClusterReference != oldFederation.Spec.RabbitmqClusterReference {
+	if !oldFederation.Spec.RabbitmqClusterReference.Matches(&f.Spec.RabbitmqClusterReference) {
 		return apierrors.NewForbidden(f.GroupResource(), f.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}

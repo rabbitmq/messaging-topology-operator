@@ -21,6 +21,7 @@ func (p *Permission) SetupWebhookWithManager(mgr ctrl.Manager) error {
 var _ webhook.Validator = &Permission{}
 
 // ValidateCreate checks if only one of spec.user and spec.userReference is specified
+// either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (p *Permission) ValidateCreate() error {
 	var errorList field.ErrorList
 	if p.Spec.User == "" && p.Spec.UserReference == nil {
@@ -35,7 +36,7 @@ func (p *Permission) ValidateCreate() error {
 		return apierrors.NewInvalid(GroupVersion.WithKind("Permission").GroupKind(), p.Name, errorList)
 	}
 
-	return nil
+	return p.Spec.RabbitmqClusterReference.ValidateOnCreate(p.GroupResource(), p.Name)
 }
 
 // ValidateUpdate do not allow updates on spec.vhost, spec.user, spec.userReference, and spec.rabbitmqClusterReference
@@ -76,7 +77,7 @@ func (p *Permission) ValidateUpdate(old runtime.Object) error {
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
-	if p.Spec.RabbitmqClusterReference != oldPermission.Spec.RabbitmqClusterReference {
+	if !oldPermission.Spec.RabbitmqClusterReference.Matches(&p.Spec.RabbitmqClusterReference) {
 		return apierrors.NewForbidden(p.GroupResource(), p.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}

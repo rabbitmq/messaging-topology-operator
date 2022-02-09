@@ -34,7 +34,7 @@ func (s VaultSecretReader) ReadSecret(path string) (*vault.Secret, error) {
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . SecretStoreClient
 type SecretStoreClient interface {
-	ReadCredentials(path string) (CredentialsProvider, error)
+	ReadCredentials(path string) (string, string, error)
 }
 
 type VaultClient struct {
@@ -83,53 +83,48 @@ func InitializeClient() func() {
 	}
 }
 
-func (vc VaultClient) ReadCredentials(path string) (CredentialsProvider, error) {
+func (vc VaultClient) ReadCredentials(path string) (string, string, error) {
 	secret, err := vc.Reader.ReadSecret(path)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read Vault secret: %w", err)
+		return "", "", fmt.Errorf("unable to read Vault secret: %w", err)
 	}
 
 	if secret == nil {
-		return nil, errors.New("returned Vault secret is nil")
+		return "", "", errors.New("returned Vault secret is nil")
 	}
 
 	if secret != nil && secret.Warnings != nil && len(secret.Warnings) > 0 {
-		return nil, fmt.Errorf("warnings were returned from Vault: %v", secret.Warnings)
+		return "", "", fmt.Errorf("warnings were returned from Vault: %v", secret.Warnings)
 	}
 
 	if secret.Data == nil {
-		return nil, errors.New("returned Vault secret has a nil Data map")
+		return "", "", errors.New("returned Vault secret has a nil Data map")
 	}
 
 	if len(secret.Data) == 0 {
-		return nil, errors.New("returned Vault secret has an empty Data map")
+		return "", "", errors.New("returned Vault secret has an empty Data map")
 	}
 
 	if secret.Data["data"] == nil {
-		return nil, fmt.Errorf("returned Vault secret has a Data map that contains no value for key 'data'. Available keys are: %v", availableKeys(secret.Data))
+		return "", "", fmt.Errorf("returned Vault secret has a Data map that contains no value for key 'data'. Available keys are: %v", availableKeys(secret.Data))
 	}
 
 	data, ok := secret.Data["data"].(map[string]interface{})
 	if !ok {
-		return nil, fmt.Errorf("data type assertion failed for Vault secret of type: %T and value %#v read from path %s", secret.Data["data"], secret.Data["data"], path)
+		return "", "", fmt.Errorf("data type assertion failed for Vault secret of type: %T and value %#v read from path %s", secret.Data["data"], secret.Data["data"], path)
 	}
 
 	username, err := getValue("username", data)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get username from Vault secret: %w", err)
+		return "", "", fmt.Errorf("unable to get username from Vault secret: %w", err)
 	}
 
 	password, err := getValue("password", data)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get password from Vault secret: %w", err)
+		return "", "", fmt.Errorf("unable to get password from Vault secret: %w", err)
 	}
 
-	return ClusterCredentials{
-		data: map[string][]byte{
-			"username": []byte(username),
-			"password": []byte(password),
-		},
-	}, nil
+	return username, password, nil
 }
 
 func getValue(key string, data map[string]interface{}) (string, error) {

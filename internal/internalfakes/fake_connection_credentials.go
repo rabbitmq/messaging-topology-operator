@@ -7,7 +7,7 @@ import (
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 )
 
-type FakeCredentialsProvider struct {
+type FakeConnectionCredentials struct {
 	DataStub        func(string) ([]byte, bool)
 	dataMutex       sync.RWMutex
 	dataArgsForCall []struct {
@@ -25,7 +25,7 @@ type FakeCredentialsProvider struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeCredentialsProvider) Data(arg1 string) ([]byte, bool) {
+func (fake *FakeConnectionCredentials) Data(arg1 string) ([]byte, bool) {
 	fake.dataMutex.Lock()
 	ret, specificReturn := fake.dataReturnsOnCall[len(fake.dataArgsForCall)]
 	fake.dataArgsForCall = append(fake.dataArgsForCall, struct {
@@ -44,26 +44,26 @@ func (fake *FakeCredentialsProvider) Data(arg1 string) ([]byte, bool) {
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeCredentialsProvider) DataCallCount() int {
+func (fake *FakeConnectionCredentials) DataCallCount() int {
 	fake.dataMutex.RLock()
 	defer fake.dataMutex.RUnlock()
 	return len(fake.dataArgsForCall)
 }
 
-func (fake *FakeCredentialsProvider) DataCalls(stub func(string) ([]byte, bool)) {
+func (fake *FakeConnectionCredentials) DataCalls(stub func(string) ([]byte, bool)) {
 	fake.dataMutex.Lock()
 	defer fake.dataMutex.Unlock()
 	fake.DataStub = stub
 }
 
-func (fake *FakeCredentialsProvider) DataArgsForCall(i int) string {
+func (fake *FakeConnectionCredentials) DataArgsForCall(i int) string {
 	fake.dataMutex.RLock()
 	defer fake.dataMutex.RUnlock()
 	argsForCall := fake.dataArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeCredentialsProvider) DataReturns(result1 []byte, result2 bool) {
+func (fake *FakeConnectionCredentials) DataReturns(result1 []byte, result2 bool) {
 	fake.dataMutex.Lock()
 	defer fake.dataMutex.Unlock()
 	fake.DataStub = nil
@@ -73,7 +73,7 @@ func (fake *FakeCredentialsProvider) DataReturns(result1 []byte, result2 bool) {
 	}{result1, result2}
 }
 
-func (fake *FakeCredentialsProvider) DataReturnsOnCall(i int, result1 []byte, result2 bool) {
+func (fake *FakeConnectionCredentials) DataReturnsOnCall(i int, result1 []byte, result2 bool) {
 	fake.dataMutex.Lock()
 	defer fake.dataMutex.Unlock()
 	fake.DataStub = nil
@@ -89,7 +89,7 @@ func (fake *FakeCredentialsProvider) DataReturnsOnCall(i int, result1 []byte, re
 	}{result1, result2}
 }
 
-func (fake *FakeCredentialsProvider) Invocations() map[string][][]interface{} {
+func (fake *FakeConnectionCredentials) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.dataMutex.RLock()
@@ -101,7 +101,7 @@ func (fake *FakeCredentialsProvider) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeCredentialsProvider) recordInvocation(key string, args []interface{}) {
+func (fake *FakeConnectionCredentials) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -113,4 +113,4 @@ func (fake *FakeCredentialsProvider) recordInvocation(key string, args []interfa
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ internal.CredentialsProvider = new(FakeCredentialsProvider)
+var _ internal.ConnectionCredentials = new(FakeConnectionCredentials)

@@ -43,16 +43,6 @@ type QueueSpec struct {
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
 }
 
-type RabbitmqClusterReference struct {
-	// The name of the RabbitMQ cluster to reference.
-	// +kubebuilder:validation:Required
-	Name string `json:"name"`
-	// The namespace of the RabbitMQ cluster to reference.
-	// Defaults to the namespace of the requested resource if omitted.
-	// +kubebuilder:validation:Optional
-	Namespace string `json:"namespace"`
-}
-
 // QueueStatus defines the observed state of Queue
 type QueueStatus struct {
 	// observedGeneration is the most recent successful generation observed for this Queue. It corresponds to the

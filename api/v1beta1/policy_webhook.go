@@ -19,12 +19,13 @@ func (p *Policy) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Validator = &Policy{}
 
-// no validation on create
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+// either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (p *Policy) ValidateCreate() error {
-	return nil
+	return p.Spec.RabbitmqClusterReference.ValidateOnCreate(p.GroupResource(), p.Name)
 }
 
-// returns error type 'forbidden' for updates on policy name, vhost and rabbitmqClusterReference
+// ValidateUpdate returns error type 'forbidden' for updates on policy name, vhost and rabbitmqClusterReference
 func (p *Policy) ValidateUpdate(old runtime.Object) error {
 	oldPolicy, ok := old.(*Policy)
 	if !ok {
@@ -42,7 +43,7 @@ func (p *Policy) ValidateUpdate(old runtime.Object) error {
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
-	if p.Spec.RabbitmqClusterReference != oldPolicy.Spec.RabbitmqClusterReference {
+	if !oldPolicy.Spec.RabbitmqClusterReference.Matches(&p.Spec.RabbitmqClusterReference) {
 		return apierrors.NewForbidden(p.GroupResource(), p.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}

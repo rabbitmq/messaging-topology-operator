@@ -13,12 +13,14 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-logr/logr"
+	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"github.com/rabbitmq/messaging-topology-operator/internal/managedresource"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -55,7 +57,7 @@ func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
 
-	rmq, _, _, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, superStream.Spec.RabbitmqClusterReference, superStream.Namespace)
+	rmqClusterRef, err := r.getRabbitmqClusterReference(ctx, superStream.Spec.RabbitmqClusterReference, superStream.Namespace)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, superStream, &superStream.Status.Conditions, err)
 	}
@@ -103,10 +105,6 @@ func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		Scheme:      r.Scheme,
 	}
 
-	rmqClusterRef := &topology.RabbitmqClusterReference{
-		Name:      rmq.Name,
-		Namespace: rmq.Namespace,
-	}
 	builders := []managedresource.ResourceBuilder{managedResourceBuilder.SuperStreamExchange(superStream.Spec.Vhost, rmqClusterRef)}
 	for index, routingKey := range routingKeys {
 		builders = append(
@@ -158,6 +156,29 @@ func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	logger.Info("Finished reconciling")
 
 	return ctrl.Result{}, nil
+}
+
+func (r *SuperStreamReconciler) getRabbitmqClusterReference(ctx context.Context, rmq topology.RabbitmqClusterReference, requestNamespace string) (*topology.RabbitmqClusterReference, error) {
+	var namespace string
+	if rmq.Namespace == "" {
+		namespace = requestNamespace
+	} else {
+		namespace = rmq.Namespace
+	}
+
+	cluster := &rabbitmqv1beta1.RabbitmqCluster{}
+	if err := r.Get(ctx, types.NamespacedName{Name: rmq.Name, Namespace: namespace}, cluster); err != nil {
+		return nil, fmt.Errorf("failed to get cluster from reference: %s Error: %w", err, internal.NoSuchRabbitmqClusterError)
+	}
+
+	if !internal.AllowedNamespace(rmq, requestNamespace, cluster) {
+		return nil, internal.ResourceNotAllowedError
+	}
+
+	return &topology.RabbitmqClusterReference{
+		Name:      rmq.Name,
+		Namespace: namespace,
+	}, nil
 }
 
 func (r *SuperStreamReconciler) generateRoutingKeys(superStream *topologyv1alpha1.SuperStream) (routingKeys []string) {

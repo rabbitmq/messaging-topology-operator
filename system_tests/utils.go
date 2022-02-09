@@ -108,6 +108,14 @@ func getUsernameAndPassword(ctx context.Context, clientSet *kubernetes.Clientset
 }
 
 func managementEndpoint(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) (string, error) {
+	uri, err := managementURI(ctx, clientSet, namespace, name)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("http://%s", uri), nil
+}
+
+func managementURI(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) (string, error) {
 	nodeIp := kubernetesNodeIp(ctx, clientSet)
 	if nodeIp == "" {
 		return "", errors.New("failed to get kubernetes Node IP")
@@ -118,7 +126,7 @@ func managementEndpoint(ctx context.Context, clientSet *kubernetes.Clientset, na
 		return "", errors.New("failed to get NodePort for management")
 	}
 
-	return fmt.Sprintf("http://%s:%s", nodeIp, nodePort), nil
+	return fmt.Sprintf("%s:%s", nodeIp, nodePort), nil
 }
 
 func managementNodePort(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) string {

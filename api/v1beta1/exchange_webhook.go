@@ -19,9 +19,10 @@ func (r *Exchange) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Validator = &Exchange{}
 
-// no validation on create
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+// either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (e *Exchange) ValidateCreate() error {
-	return nil
+	return e.Spec.RabbitmqClusterReference.ValidateOnCreate(e.GroupResource(), e.Name)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
@@ -46,7 +47,7 @@ func (e *Exchange) ValidateUpdate(old runtime.Object) error {
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
-	if e.Spec.RabbitmqClusterReference != oldExchange.Spec.RabbitmqClusterReference {
+	if !oldExchange.Spec.RabbitmqClusterReference.Matches(&e.Spec.RabbitmqClusterReference) {
 		return apierrors.NewForbidden(e.GroupResource(), e.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}
