@@ -141,7 +141,7 @@ func readCredentialsFromKubernetesSecret(secret *corev1.Secret) (ConnectionCrede
 	}
 
 	uri := string(uBytes)
-	if string(uBytes[0:4]) != "http" {
+	if !strings.HasPrefix(uri, "http") {
 		uri = "http://" + uri // set scheme to http if not provided
 	}
 	var tlsEnabled bool
