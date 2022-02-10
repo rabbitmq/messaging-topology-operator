@@ -71,6 +71,20 @@ func MustHaveEnv(name string) string {
 	return value
 }
 
+func kubectlExec(namespace, podname, containerName string, args ...string) ([]byte, error) {
+	kubectlArgs := append([]string{
+		"-n",
+		namespace,
+		"exec",
+		podname,
+		"-c",
+		containerName,
+		"--",
+	}, args...)
+
+	return kubectl(kubectlArgs...)
+}
+
 func generateRabbitClient(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) (*rabbithole.Client, error) {
 	endpoint, err := managementEndpoint(ctx, clientSet, namespace, name)
 	if err != nil {

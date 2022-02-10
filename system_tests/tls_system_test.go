@@ -147,6 +147,17 @@ var _ = Describe("RabbitMQ Cluster with TLS enabled", func() {
 		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))
 		Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
 
+		Eventually(func() string {
+			output, err := kubectlExec(namespace,
+				targetCluster.ChildResourceName("server")+"-0",
+				"rabbitmq",
+				"rabbitmqctl",
+				"list_policies",
+			)
+			Expect(err).NotTo(HaveOccurred())
+			return string(output)
+		}, 30, 2).Should(ContainSubstring("policy-tls-test"))
+
 		By("successfully creating object when rabbitmqClusterReference.connectionSecret is set")
 		exchange = topology.Exchange{
 			ObjectMeta: metav1.ObjectMeta{
@@ -175,5 +186,16 @@ var _ = Describe("RabbitMQ Cluster with TLS enabled", func() {
 		Expect(string(readyCondition.Type)).To(Equal("Ready"))
 		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))
 		Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
+
+		Eventually(func() string {
+			output, err := kubectlExec(namespace,
+				targetCluster.ChildResourceName("server")+"-0",
+				"rabbitmq",
+				"rabbitmqctl",
+				"list_exchanges",
+			)
+			Expect(err).NotTo(HaveOccurred())
+			return string(output)
+		}, 30, 2).Should(ContainSubstring("tls-test"))
 	})
 })
