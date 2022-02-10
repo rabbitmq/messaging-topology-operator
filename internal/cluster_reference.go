@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
@@ -40,11 +41,7 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 		if err := c.Get(ctx, types.NamespacedName{Namespace: requestNamespace, Name: rmq.ConnectionSecret.Name}, secret); err != nil {
 			return nil, false, err
 		}
-		creds, err := readCredentialsFromKubernetesSecret(secret)
-		if err != nil {
-			return nil, false, fmt.Errorf("unable to retrieve information from Kubernetes secret %s: %w", secret.Name, err)
-		}
-		return creds, false, nil
+		return readCredentialsFromKubernetesSecret(secret)
 	}
 
 	var namespace string
@@ -101,7 +98,7 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 		return nil, false, err
 	}
 
-	endpoint, err := managementURI(svc)
+	endpoint, err := managementURI(svc, cluster.TLSEnabled())
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to get endpoint from specified rabbitmqcluster: %w", err)
 	}
@@ -133,18 +130,34 @@ func AllowedNamespace(rmq topology.RabbitmqClusterReference, requestNamespace st
 	return true
 }
 
-func readCredentialsFromKubernetesSecret(secret *corev1.Secret) (ConnectionCredentials, error) {
+func readCredentialsFromKubernetesSecret(secret *corev1.Secret) (ConnectionCredentials, bool, error) {
 	if secret == nil {
-		return nil, errors.New("unable to extract data from nil secret")
+		return nil, false, fmt.Errorf("unable to retrieve information from Kubernetes secret %s: %w", secret.Name, errors.New("nil secret"))
+	}
+
+	uBytes, found := secret.Data["uri"]
+	if !found {
+		return nil, false, keyMissingErr("uri")
+	}
+
+	uri := string(uBytes)
+	if !strings.HasPrefix(uri, "http") {
+		uri = "http://" + uri // set scheme to http if not provided
+	}
+	var tlsEnabled bool
+	if parsed, err := url.Parse(uri); err != nil {
+		return nil, false, err
+	} else if parsed.Scheme == "https" {
+		tlsEnabled = true
 	}
 
 	return ClusterCredentials{
 		data: map[string][]byte{
 			"username": secret.Data["username"],
 			"password": secret.Data["password"],
-			"uri":      secret.Data["uri"],
+			"uri":      []byte(uri),
 		},
-	}, nil
+	}, tlsEnabled, nil
 }
 
 func readUsernamePassword(secret *corev1.Secret) (string, string, error) {
@@ -155,13 +168,17 @@ func readUsernamePassword(secret *corev1.Secret) (string, string, error) {
 	return string(secret.Data["username"]), string(secret.Data["password"]), nil
 }
 
-func managementURI(svc *corev1.Service) (string, error) {
+func managementURI(svc *corev1.Service, tlsEnabled bool) (string, error) {
 	port := managementPort(svc)
 	if port == 0 {
 		return "", fmt.Errorf("failed to find 'management' or 'management-tls' from service %s", svc.Name)
 	}
 
-	return fmt.Sprintf("%s:%d", serviceDNSAddress(svc), port), nil
+	scheme := "http"
+	if tlsEnabled {
+		scheme = "https"
+	}
+	return fmt.Sprintf("%s://%s:%d", scheme, serviceDNSAddress(svc), port), nil
 }
 
 // serviceDNSAddress returns the cluster-local DNS entry associated

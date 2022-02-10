@@ -3,7 +3,6 @@ package internal_test
 import (
 	"crypto/x509"
 	"errors"
-	"fmt"
 	"github.com/rabbitmq/messaging-topology-operator/internal/internalfakes"
 	"io/ioutil"
 	"net/http"
@@ -47,9 +46,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			FakeConnectionCredentials = &internalfakes.FakeConnectionCredentials{}
 			FakeConnectionCredentials.DataReturnsOnCall(0, []byte(existingRabbitMQUsername), true)
 			FakeConnectionCredentials.DataReturnsOnCall(1, []byte(existingRabbitMQPassword), true)
-			FakeConnectionCredentials.DataReturnsOnCall(2, []byte(fmt.Sprintf("%s:%s",
-				fakeRabbitMQURL.Hostname(),
-				fakeRabbitMQURL.Port())), true)
+			FakeConnectionCredentials.DataReturnsOnCall(2, []byte(fakeRabbitMQURL.String()), true)
 
 			fakeRabbitMQServer.RouteToHandler("PUT", "/api/users/example-user", func(w http.ResponseWriter, req *http.Request) {
 				user, password, ok := req.BasicAuth()
@@ -219,7 +216,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			FakeConnectionCredentials = &internalfakes.FakeConnectionCredentials{}
 			FakeConnectionCredentials.DataReturnsOnCall(0, []byte(existingRabbitMQUsername), true)
 			FakeConnectionCredentials.DataReturnsOnCall(1, []byte(existingRabbitMQPassword), true)
-			FakeConnectionCredentials.DataReturnsOnCall(2, []byte(fmt.Sprintf("%s:%d", fakeRabbitMQURL.Hostname(), fakeRabbitMQPort)), true)
+			FakeConnectionCredentials.DataReturnsOnCall(2, []byte(fakeRabbitMQURL.String()), true)
 
 			fakeRabbitMQServer.RouteToHandler("PUT", "/api/users/example-user", func(w http.ResponseWriter, req *http.Request) {
 				user, password, ok := req.BasicAuth()

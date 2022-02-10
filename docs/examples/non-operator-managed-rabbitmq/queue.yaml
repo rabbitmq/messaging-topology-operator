@@ -7,7 +7,7 @@ type: Opaque
 stringData:
   username: a-user # an existing user
   password: a-secure-password
-  uri: my.rabbit:15672 # uri for the management api
+  uri: https://my.rabbit:15672 # uri for the management api; when scheme is not provided in uri, operator defalts to 'http'
 ---
 apiVersion: rabbitmq.com/v1beta1
 kind: Queue
