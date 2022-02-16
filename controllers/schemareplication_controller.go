@@ -48,7 +48,7 @@ func (r *SchemaReplicationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, replication.Spec.RabbitmqClusterReference, replication.Namespace)
+	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, replication.Spec.RabbitmqClusterReference, replication.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, replication, &replication.Status.Conditions, err)
 	}
@@ -159,6 +159,10 @@ func (r *SchemaReplicationReconciler) getUpstreamEndpoints(ctx context.Context, 
 	}
 
 	return endpoints, nil
+}
+
+func (r *SchemaReplicationReconciler) SetInternalDomainName(domainName string) {
+	r.KubernetesClusterDomain = domainName
 }
 
 func (r *SchemaReplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {

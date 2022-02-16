@@ -55,7 +55,7 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, binding.Spec.RabbitmqClusterReference, binding.Namespace)
+	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, binding.Spec.RabbitmqClusterReference, binding.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, binding, &binding.Status.Conditions, err)
 	}
@@ -205,6 +205,10 @@ func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topolog
 		}
 	}
 	return info, nil
+}
+
+func (r *BindingReconciler) SetInternalDomainName(clusterDomain string) {
+	r.KubernetesClusterDomain = clusterDomain
 }
 
 func (r *BindingReconciler) SetupWithManager(mgr ctrl.Manager) error {

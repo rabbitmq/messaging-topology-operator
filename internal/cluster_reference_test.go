@@ -2,6 +2,7 @@ package internal_test
 
 import (
 	"context"
+	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -84,7 +85,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 		})
 
 		It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
-			credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
+			credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(tlsEnabled).To(BeFalse())
@@ -112,7 +113,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			})
 
 			It("errors", func() {
-				_, _, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
+				_, _, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
 				Expect(err).To(MatchError("no status.defaultUser set"))
 			})
 		})
@@ -164,7 +165,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			})
 
 			JustBeforeEach(func() {
-				credsProv, tlsEnabled, err = internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
+				credsProv, tlsEnabled, err = internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
 			})
 
 			It("should not return an error", func() {
@@ -237,7 +238,10 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 		})
 
 		It("returns correct creds in connectionCredentials", func() {
-			credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace)
+			credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient,
+				topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
+				existingRabbitMQCluster.Namespace,
+				"")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(tlsEnabled).To(BeTrue())
@@ -274,7 +278,8 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 							Name: "rmq-connection-info",
 						},
 					},
-					namespace)
+					namespace,
+					"")
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(tlsEnabled).To(BeFalse())
@@ -310,7 +315,8 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 							Name: "rmq-connection-info",
 						},
 					},
-					namespace)
+					namespace,
+					"")
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(tlsEnabled).To(BeFalse())
@@ -346,7 +352,8 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 							Name: "rmq-connection-info",
 						},
 					},
-					namespace)
+					namespace,
+					"")
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(tlsEnabled).To(BeTrue())
@@ -356,6 +363,74 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 				Expect(string(returnedUser)).To(Equal("test-user"))
 				Expect(string(returnedPass)).To(Equal("test-password"))
 				Expect(string(returnedURI)).To(Equal("https://10.0.0.0:15671"))
+			})
+		})
+	})
+
+	Context("cluster domain", func() {
+		BeforeEach(func() {
+			existingRabbitMQCluster = new(rabbitmqv1beta1.RabbitmqCluster)
+			existingRabbitMQCluster.Name = "bunny"
+			existingRabbitMQCluster.Namespace = namespace
+			existingRabbitMQCluster.Status.Binding = &corev1.LocalObjectReference{
+				Name: "bunny-default-user-credentials",
+			}
+			existingRabbitMQCluster.Status.DefaultUser = &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
+				ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
+					Name:      "bunny",
+					Namespace: namespace,
+				}}
+
+			existingCredentialSecret = new(corev1.Secret)
+			existingCredentialSecret.Name = "bunny-default-user-credentials"
+			existingCredentialSecret.Namespace = namespace
+			existingCredentialSecret.Data = map[string][]byte{
+				"username": []byte(existingRabbitMQUsername),
+				"password": []byte(existingRabbitMQPassword),
+			}
+
+			existingService = new(corev1.Service)
+			existingService.Name = "bunny"
+			existingService.Namespace = namespace
+			existingService.Spec.ClusterIP = "1.2.3.4"
+			existingService.Spec.Ports = []corev1.ServicePort{
+				{
+					Name: "management",
+					Port: int32(15672),
+				}}
+
+			objs = []runtime.Object{existingRabbitMQCluster, existingCredentialSecret, existingService}
+		})
+
+		It("generates an address with cluster domain suffix", func() {
+			someDomain := ".example.com"
+
+			credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient,
+				topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
+				existingRabbitMQCluster.Namespace,
+				someDomain)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(tlsEnabled).To(BeFalse(), "expected TLS to not be enabled")
+			Expect(credsProvider).ToNot(BeNil())
+
+			uri, ok := credsProvider.Data("uri")
+			Expect(ok).To(BeTrue(), "expected Credentials Provider to contain a key 'uri'")
+			Expect(string(uri)).To(Equal(fmt.Sprintf("http://bunny.%s.svc.example.com:15672", namespace)))
+		})
+
+		When("the domain suffix is not present", func() {
+			It("generates the shortname", func() {
+				credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient,
+					topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
+					existingRabbitMQCluster.Namespace,
+					"")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(tlsEnabled).To(BeFalse(), "expected TLS to not be enabled")
+				Expect(credsProvider).ToNot(BeNil())
+
+				uri, ok := credsProvider.Data("uri")
+				Expect(ok).To(BeTrue(), "expected Credentials Provider to contain a key 'uri'")
+				Expect(string(uri)).To(Equal(fmt.Sprintf("http://bunny.%s.svc:15672", namespace)))
 			})
 		})
 	})

@@ -56,7 +56,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, queue.Spec.RabbitmqClusterReference, queue.Namespace)
+	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, queue.Spec.RabbitmqClusterReference, queue.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, queue, &queue.Status.Conditions, err)
 	}
@@ -150,6 +150,10 @@ func (r *QueueReconciler) deleteQueue(ctx context.Context, client internal.Rabbi
 	}
 	r.Recorder.Event(queue, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted queue")
 	return removeFinalizer(ctx, r.Client, queue)
+}
+
+func (r *QueueReconciler) SetInternalDomainName(domainName string) {
+	r.KubernetesClusterDomain = domainName
 }
 
 func (r *QueueReconciler) SetupWithManager(mgr ctrl.Manager) error {

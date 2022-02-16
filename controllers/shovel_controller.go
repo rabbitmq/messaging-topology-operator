@@ -46,7 +46,7 @@ func (r *ShovelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, shovel.Spec.RabbitmqClusterReference, shovel.Namespace)
+	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, shovel.Spec.RabbitmqClusterReference, shovel.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, shovel, &shovel.Status.Conditions, err)
 	}
@@ -158,6 +158,10 @@ func (r *ShovelReconciler) deleteShovel(ctx context.Context, client internal.Rab
 	}
 	r.Recorder.Event(shovel, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted shovel parameter")
 	return removeFinalizer(ctx, r.Client, shovel)
+}
+
+func (r *ShovelReconciler) SetInternalDomainName(domainName string) {
+	r.KubernetesClusterDomain = domainName
 }
 
 func (r *ShovelReconciler) SetupWithManager(mgr ctrl.Manager) error {

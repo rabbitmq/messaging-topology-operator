@@ -53,7 +53,7 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, exchange.Spec.RabbitmqClusterReference, exchange.Namespace)
+	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, exchange.Spec.RabbitmqClusterReference, exchange.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, exchange, &exchange.Status.Conditions, err)
 	}
@@ -145,6 +145,10 @@ func (r *ExchangeReconciler) deleteExchange(ctx context.Context, client internal
 	}
 	r.Recorder.Event(exchange, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted exchange")
 	return removeFinalizer(ctx, r.Client, exchange)
+}
+
+func (r *ExchangeReconciler) SetInternalDomainName(domainName string) {
+	r.KubernetesClusterDomain = domainName
 }
 
 func (r *ExchangeReconciler) SetupWithManager(mgr ctrl.Manager) error {

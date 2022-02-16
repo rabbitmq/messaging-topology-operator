@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"crypto/x509"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -41,6 +40,12 @@ const (
 	OperatorNamespaceEnvVar        = "OPERATOR_NAMESPACE"
 	EnableWebhooksEnvVar           = "ENABLE_WEBHOOKS"
 )
+
+type TopologyController interface {
+	Reconcile(context.Context, ctrl.Request) (ctrl.Result, error)
+	SetupWithManager(mgr ctrl.Manager) error
+	SetInternalDomainName(string)
+}
 
 func extractSystemCertPool(ctx context.Context, recorder record.EventRecorder, object runtime.Object) (*x509.CertPool, error) {
 	logger := ctrl.LoggerFrom(ctx)

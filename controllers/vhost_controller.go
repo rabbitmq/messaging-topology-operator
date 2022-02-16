@@ -28,6 +28,10 @@ type VhostReconciler struct {
 	KubernetesClusterDomain string
 }
 
+func (r *VhostReconciler) SetInternalDomainName(domainName string) {
+	r.KubernetesClusterDomain = domainName
+}
+
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=vhosts,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=vhosts/status,verbs=get;update;patch
 
@@ -44,7 +48,7 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, vhost.Spec.RabbitmqClusterReference, vhost.Namespace)
+	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, vhost.Spec.RabbitmqClusterReference, vhost.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, vhost, &vhost.Status.Conditions, err)
 	}

@@ -47,7 +47,7 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, permission.Spec.RabbitmqClusterReference, permission.Namespace)
+	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, permission.Spec.RabbitmqClusterReference, permission.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, permission, &permission.Status.Conditions, err)
 	}
@@ -174,6 +174,10 @@ func (r *PermissionReconciler) revokePermissions(ctx context.Context, client int
 	}
 	r.Recorder.Event(permission, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted permission")
 	return removeFinalizer(ctx, r.Client, permission)
+}
+
+func (r *PermissionReconciler) SetInternalDomainName(domainName string) {
+	r.KubernetesClusterDomain = domainName
 }
 
 func (r *PermissionReconciler) SetupWithManager(mgr ctrl.Manager) error {

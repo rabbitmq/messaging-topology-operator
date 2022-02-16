@@ -35,7 +35,7 @@ var (
 	ResourceNotAllowedError    = errors.New("Resource is not allowed to reference defined cluster reference. Check the namespace of the resource is allowed as part of the cluster's `rabbitmq.com/topology-allowed-namespaces` annotation")
 )
 
-func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string) (ConnectionCredentials, bool, error) {
+func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string, clusterDomain string) (ConnectionCredentials, bool, error) {
 	if rmq.ConnectionSecret != nil {
 		secret := &corev1.Secret{}
 		if err := c.Get(ctx, types.NamespacedName{Namespace: requestNamespace, Name: rmq.ConnectionSecret.Name}, secret); err != nil {
@@ -98,7 +98,7 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 		return nil, false, err
 	}
 
-	endpoint, err := managementURI(svc, cluster.TLSEnabled())
+	endpoint, err := managementURI(svc, cluster.TLSEnabled(), clusterDomain)
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to get endpoint from specified rabbitmqcluster: %w", err)
 	}
@@ -168,9 +168,20 @@ func readUsernamePassword(secret *corev1.Secret) (string, string, error) {
 	return string(secret.Data["username"]), string(secret.Data["password"]), nil
 }
 
-func managementURI(svc *corev1.Service, tlsEnabled bool) (string, error) {
-	port := managementPort(svc)
-	if port == 0 {
+func managementURI(svc *corev1.Service, tlsEnabled bool, clusterDomain string) (string, error) {
+	var managementUiPort int
+	for _, port := range svc.Spec.Ports {
+		if port.Name == "management-tls" {
+			managementUiPort = int(port.Port)
+			break
+		}
+		if port.Name == "management" {
+			managementUiPort = int(port.Port)
+			// Do not break here because we may still find 'management-tls' port
+		}
+	}
+
+	if managementUiPort == 0 {
 		return "", fmt.Errorf("failed to find 'management' or 'management-tls' from service %s", svc.Name)
 	}
 
@@ -178,29 +189,5 @@ func managementURI(svc *corev1.Service, tlsEnabled bool) (string, error) {
 	if tlsEnabled {
 		scheme = "https"
 	}
-	return fmt.Sprintf("%s://%s:%d", scheme, serviceDNSAddress(svc), port), nil
-}
-
-// serviceDNSAddress returns the cluster-local DNS entry associated
-// with the provided Service
-func serviceDNSAddress(svc *corev1.Service) string {
-	// NOTE: this does not use the `cluster.local` suffix, because that is not
-	// uniform across clusters. See the `clusterDomain` KubeletConfiguration
-	// value for how this can be changed for a cluster.
-	return fmt.Sprintf("%s.%s.svc", svc.Name, svc.Namespace)
-}
-
-// returns RabbitMQ management port from given service
-// if both "management-tls" and "management" ports are present, returns the "management-tls" port
-func managementPort(svc *corev1.Service) int {
-	var httpPort int
-	for _, port := range svc.Spec.Ports {
-		if port.Name == "management-tls" {
-			return int(port.Port)
-		}
-		if port.Name == "management" {
-			httpPort = int(port.Port)
-		}
-	}
-	return httpPort
+	return fmt.Sprintf("%s://%s.%s.svc%s:%d", scheme, svc.Name, svc.Namespace, clusterDomain, managementUiPort), nil
 }

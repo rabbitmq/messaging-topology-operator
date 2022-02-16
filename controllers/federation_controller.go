@@ -46,7 +46,7 @@ func (r *FederationReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, federation.Spec.RabbitmqClusterReference, federation.Namespace)
+	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, federation.Spec.RabbitmqClusterReference, federation.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, federation, &federation.Status.Conditions, err)
 	}
@@ -154,6 +154,10 @@ func (r *FederationReconciler) deleteFederation(ctx context.Context, client inte
 	}
 	r.Recorder.Event(federation, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted federation upstream parameter")
 	return removeFinalizer(ctx, r.Client, federation)
+}
+
+func (r *FederationReconciler) SetInternalDomainName(domainName string) {
+	r.KubernetesClusterDomain = domainName
 }
 
 func (r *FederationReconciler) SetupWithManager(mgr ctrl.Manager) error {

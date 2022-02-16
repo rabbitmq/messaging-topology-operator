@@ -50,7 +50,7 @@ func sanitizeClusterDomainInput(clusterDomain string) string {
 		return ""
 	}
 
-	match, _ := regexp.MatchString("^\\.?[a-zA-Z-]+(\\.[a-zA-Z-]+)*$", clusterDomain) // Allow-list expression
+	match, _ := regexp.MatchString("^\\.?[a-z]([-a-z0-9]*[a-z0-9])?(\\.[a-z]([-a-z0-9]*[a-z0-9])?)*$", clusterDomain) // Allow-list expression
 	if !match {
 		log.V(1).Info("Domain name value is invalid. Only alphanumeric characters, hyphens and dots are allowed.",
 			controllers.KubernetesInternalDomainEnvVar, clusterDomain)
