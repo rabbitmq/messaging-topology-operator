@@ -7,6 +7,7 @@ spec:
   source: test # an existing exchange
   destination: test # an existing queue or exchange
   destinationType: queue # can be 'queue' or 'exchange'
+  routingKey: "a-routing-key"
   rabbitmqClusterReference:
     name: test # rabbitmqCluster must exist in the same namespace as this resource
 # status:
