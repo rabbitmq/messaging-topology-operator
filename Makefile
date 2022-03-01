@@ -8,6 +8,10 @@ platform := $(shell uname | tr A-Z a-z)
 list:    ## list Makefile targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
+### Tools
+# Allows flexbility to use other build kits, like nerdctl
+BUILD_KIT ?= /usr/local/bin/docker
+
 define get_mod_code_generator
 echo "Only go get & mod k8s.io/code-generator, but do not install it"
 echo "⚠️  Keep it at the same version as captured in go.mod, otherwise we may end up with version inconsistencies"
@@ -30,6 +34,8 @@ export KUBEBUILDER_ASSETS = $(LOCAL_TESTBIN)/k8s/$(ENVTEST_K8S_VERSION)-$(platfo
 $(KUBEBUILDER_ASSETS):
 	setup-envtest --os $(platform) --arch $(ARCHITECTURE) --bin-dir $(LOCAL_TESTBIN) use $(ENVTEST_K8S_VERSION)
 
+### Targets
+
 .PHONY: unit-tests
 unit-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet manifests ## Run unit tests
 	ginkgo -r --randomizeAllSpecs api/ internal/
@@ -37,6 +43,9 @@ unit-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet manifests ## Ru
 .PHONY: integration-tests
 integration-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet manifests ## Run integration tests
 	ginkgo -r --randomizeAllSpecs controllers/
+
+just-integration-tests: $(KUBEBUILDER_ASSETS) vet
+	ginkgo -randomizeAllSpecs -r controllers/
 
 local-tests: unit-tests integration-tests ## Run all local tests (unit & integration)
 
@@ -82,7 +91,7 @@ deploy-dev: check-env-docker-credentials docker-build-dev manifests deploy-rbac 
 
 # Load operator image and deploy operator into current KinD cluster
 deploy-kind: manifests deploy-rbac
-	docker build --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .
+	$(BUILD_KIT) build --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .
 	kind load docker-image $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)
 	kustomize build config/default/overlays/kind | sed 's@((operator_docker_image))@"$(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)"@' | kubectl apply -f -
 
@@ -131,8 +140,8 @@ ifndef DOCKER_REGISTRY_SECRET
 endif
 
 docker-build-dev: check-env-docker-repo  git-commit-sha
-	docker build --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .
-	docker push $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)
+	$(BUILD_KIT) build --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .
+	$(BUILD_KIT) push $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)
 
 docker-registry-secret: check-env-docker-credentials operator-namespace
 	echo "creating registry secret and patching default service account"
@@ -172,8 +181,8 @@ generate-manifests:
 	kustomize build config/installation/cert-manager/ > releases/messaging-topology-operator-with-certmanager.yaml
 
 CERT_MANAGER_VERSION ?=v1.2.0
-cert-manager:
+cert-manager: ## Deploys Cert Manager from JetStack repo. Use CERT_MANAGER_VERSION to customise version e.g. v1.2.0
 	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cert-manager.yaml
 
-destroy-cert-manager:
+destroy-cert-manager: ## Deletes Cert Manager deployment created by 'make cert-manager'
 	kubectl delete -f https://github.com/jetstack/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cert-manager.yaml

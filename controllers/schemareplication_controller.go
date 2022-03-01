@@ -25,10 +25,11 @@ const schemaReplicationParameterName = "schema_definition_sync_upstream"
 // SchemaReplicationReconciler reconciles a SchemaReplication object
 type SchemaReplicationReconciler struct {
 	client.Client
-	Log                   logr.Logger
-	Scheme                *runtime.Scheme
-	Recorder              record.EventRecorder
-	RabbitmqClientFactory internal.RabbitMQClientFactory
+	Log                     logr.Logger
+	Scheme                  *runtime.Scheme
+	Recorder                record.EventRecorder
+	RabbitmqClientFactory   internal.RabbitMQClientFactory
+	KubernetesClusterDomain string
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=schemareplications,verbs=get;list;watch;create;update;patch;delete
@@ -47,7 +48,7 @@ func (r *SchemaReplicationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, replication.Spec.RabbitmqClusterReference, replication.Namespace)
+	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, replication.Spec.RabbitmqClusterReference, replication.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, replication, &replication.Status.Conditions, err)
 	}
@@ -158,6 +159,10 @@ func (r *SchemaReplicationReconciler) getUpstreamEndpoints(ctx context.Context, 
 	}
 
 	return endpoints, nil
+}
+
+func (r *SchemaReplicationReconciler) SetInternalDomainName(domainName string) {
+	r.KubernetesClusterDomain = domainName
 }
 
 func (r *SchemaReplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {

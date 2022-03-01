@@ -33,10 +33,11 @@ import (
 // SuperStreamReconciler reconciles a RabbitMQ Super Stream, and any resources it comprises of
 type SuperStreamReconciler struct {
 	client.Client
-	Log                   logr.Logger
-	Scheme                *runtime.Scheme
-	Recorder              record.EventRecorder
-	RabbitmqClientFactory internal.RabbitMQClientFactory
+	Log                      logr.Logger
+	Scheme                   *runtime.Scheme
+	Recorder                 record.EventRecorder
+	RabbitmqClientFactory    internal.RabbitMQClientFactory
+	KubernetesInternalDomain string
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=exchanges,verbs=get;create;update;patch;delete
@@ -194,6 +195,10 @@ func (r *SuperStreamReconciler) SetReconcileSuccess(ctx context.Context, superSt
 	return clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, superStream)
 	})
+}
+
+func (r *SuperStreamReconciler) SetInternalDomainName(domainName string) {
+	r.KubernetesInternalDomain = domainName
 }
 
 func (r *SuperStreamReconciler) SetupWithManager(mgr ctrl.Manager) error {

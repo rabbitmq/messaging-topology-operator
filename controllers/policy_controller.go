@@ -30,10 +30,11 @@ import (
 // PolicyReconciler reconciles a Policy object
 type PolicyReconciler struct {
 	client.Client
-	Log                   logr.Logger
-	Scheme                *runtime.Scheme
-	Recorder              record.EventRecorder
-	RabbitmqClientFactory internal.RabbitMQClientFactory
+	Log                     logr.Logger
+	Scheme                  *runtime.Scheme
+	Recorder                record.EventRecorder
+	RabbitmqClientFactory   internal.RabbitMQClientFactory
+	KubernetesClusterDomain string
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=policies,verbs=get;list;watch;create;update;patch;delete
@@ -53,7 +54,7 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, policy.Spec.RabbitmqClusterReference, policy.Namespace)
+	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, policy.Spec.RabbitmqClusterReference, policy.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, policy, &policy.Status.Conditions, err)
 	}
@@ -145,6 +146,10 @@ func (r *PolicyReconciler) deletePolicy(ctx context.Context, client internal.Rab
 	}
 	r.Recorder.Event(policy, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted policy")
 	return removeFinalizer(ctx, r.Client, policy)
+}
+
+func (r *PolicyReconciler) SetInternalDomainName(domainName string) {
+	r.KubernetesClusterDomain = domainName
 }
 
 func (r *PolicyReconciler) SetupWithManager(mgr ctrl.Manager) error {

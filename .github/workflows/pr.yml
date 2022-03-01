@@ -40,5 +40,5 @@ jobs:
         kind create cluster --image kindest/node:"$K8S_VERSION"
         make cert-manager
         make cluster-operator
-        DOCKER_REGISTRY_SERVER=local-server OPERATOR_IMAGE=local-operator make deploy-kind
-        make system-tests
+        DOCKER_REGISTRY_SERVER=local-server OPERATOR_IMAGE=local-operator make deploy-kind BUILD_KIT=docker
+        make system-tests BUILD_KIT=docker

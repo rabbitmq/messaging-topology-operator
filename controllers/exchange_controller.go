@@ -30,10 +30,11 @@ import (
 // ExchangeReconciler reconciles a Exchange object
 type ExchangeReconciler struct {
 	client.Client
-	Log                   logr.Logger
-	Scheme                *runtime.Scheme
-	Recorder              record.EventRecorder
-	RabbitmqClientFactory internal.RabbitMQClientFactory
+	Log                     logr.Logger
+	Scheme                  *runtime.Scheme
+	Recorder                record.EventRecorder
+	RabbitmqClientFactory   internal.RabbitMQClientFactory
+	KubernetesClusterDomain string
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=exchanges,verbs=get;list;watch;create;update;patch;delete
@@ -52,7 +53,7 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, exchange.Spec.RabbitmqClusterReference, exchange.Namespace)
+	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, exchange.Spec.RabbitmqClusterReference, exchange.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, exchange, &exchange.Status.Conditions, err)
 	}
@@ -144,6 +145,10 @@ func (r *ExchangeReconciler) deleteExchange(ctx context.Context, client internal
 	}
 	r.Recorder.Event(exchange, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted exchange")
 	return removeFinalizer(ctx, r.Client, exchange)
+}
+
+func (r *ExchangeReconciler) SetInternalDomainName(domainName string) {
+	r.KubernetesClusterDomain = domainName
 }
 
 func (r *ExchangeReconciler) SetupWithManager(mgr ctrl.Manager) error {

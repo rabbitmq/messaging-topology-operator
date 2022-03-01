@@ -11,7 +11,10 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
+	"regexp"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -42,6 +45,25 @@ func init() {
 	// +kubebuilder:scaffold:scheme
 }
 
+func sanitizeClusterDomainInput(clusterDomain string) string {
+	if len(clusterDomain) == 0 {
+		return ""
+	}
+
+	match, _ := regexp.MatchString("^\\.?[a-z]([-a-z0-9]*[a-z0-9])?(\\.[a-z]([-a-z0-9]*[a-z0-9])?)*$", clusterDomain) // Allow-list expression
+	if !match {
+		log.V(1).Info("Domain name value is invalid. Only alphanumeric characters, hyphens and dots are allowed.",
+			controllers.KubernetesInternalDomainEnvVar, clusterDomain)
+		return ""
+	}
+
+	if !strings.HasPrefix(clusterDomain, ".") {
+		return fmt.Sprintf(".%s", clusterDomain)
+	}
+
+	return clusterDomain
+}
+
 func main() {
 	var metricsAddr string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
@@ -53,11 +75,13 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	operatorNamespace := os.Getenv("OPERATOR_NAMESPACE")
+	operatorNamespace := os.Getenv(controllers.OperatorNamespaceEnvVar)
 	if operatorNamespace == "" {
 		log.Info("unable to find operator namespace")
 		os.Exit(1)
 	}
+
+	clusterDomain := sanitizeClusterDomainInput(os.Getenv(controllers.KubernetesInternalDomainEnvVar))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                  scheme,
@@ -72,101 +96,111 @@ func main() {
 	}
 
 	if err = (&controllers.QueueReconciler{
-		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName(controllers.QueueControllerName),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              mgr.GetEventRecorderFor(controllers.QueueControllerName),
-		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+		Client:                  mgr.GetClient(),
+		Log:                     ctrl.Log.WithName(controllers.QueueControllerName),
+		Scheme:                  mgr.GetScheme(),
+		Recorder:                mgr.GetEventRecorderFor(controllers.QueueControllerName),
+		RabbitmqClientFactory:   internal.RabbitholeClientFactory,
+		KubernetesClusterDomain: clusterDomain,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.QueueControllerName)
 		os.Exit(1)
 	}
 	if err = (&controllers.ExchangeReconciler{
-		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName(controllers.ExchangeControllerName),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              mgr.GetEventRecorderFor(controllers.ExchangeControllerName),
-		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+		Client:                  mgr.GetClient(),
+		Log:                     ctrl.Log.WithName(controllers.ExchangeControllerName),
+		Scheme:                  mgr.GetScheme(),
+		Recorder:                mgr.GetEventRecorderFor(controllers.ExchangeControllerName),
+		RabbitmqClientFactory:   internal.RabbitholeClientFactory,
+		KubernetesClusterDomain: clusterDomain,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.ExchangeControllerName)
 		os.Exit(1)
 	}
 	if err = (&controllers.BindingReconciler{
-		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName(controllers.BindingControllerName),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              mgr.GetEventRecorderFor(controllers.BindingControllerName),
-		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+		Client:                  mgr.GetClient(),
+		Log:                     ctrl.Log.WithName(controllers.BindingControllerName),
+		Scheme:                  mgr.GetScheme(),
+		Recorder:                mgr.GetEventRecorderFor(controllers.BindingControllerName),
+		RabbitmqClientFactory:   internal.RabbitholeClientFactory,
+		KubernetesClusterDomain: clusterDomain,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.BindingControllerName)
 		os.Exit(1)
 	}
 	if err = (&controllers.UserReconciler{
-		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName(controllers.UserControllerName),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              mgr.GetEventRecorderFor(controllers.UserControllerName),
-		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+		Client:                  mgr.GetClient(),
+		Log:                     ctrl.Log.WithName(controllers.UserControllerName),
+		Scheme:                  mgr.GetScheme(),
+		Recorder:                mgr.GetEventRecorderFor(controllers.UserControllerName),
+		RabbitmqClientFactory:   internal.RabbitholeClientFactory,
+		KubernetesClusterDomain: clusterDomain,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.UserControllerName)
 		os.Exit(1)
 	}
 	if err = (&controllers.VhostReconciler{
-		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName(controllers.VhostControllerName),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              mgr.GetEventRecorderFor(controllers.VhostControllerName),
-		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+		Client:                  mgr.GetClient(),
+		Log:                     ctrl.Log.WithName(controllers.VhostControllerName),
+		Scheme:                  mgr.GetScheme(),
+		Recorder:                mgr.GetEventRecorderFor(controllers.VhostControllerName),
+		RabbitmqClientFactory:   internal.RabbitholeClientFactory,
+		KubernetesClusterDomain: clusterDomain,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.VhostControllerName)
 		os.Exit(1)
 	}
 	if err = (&controllers.PolicyReconciler{
-		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName(controllers.PolicyControllerName),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              mgr.GetEventRecorderFor(controllers.PolicyControllerName),
-		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+		Client:                  mgr.GetClient(),
+		Log:                     ctrl.Log.WithName(controllers.PolicyControllerName),
+		Scheme:                  mgr.GetScheme(),
+		Recorder:                mgr.GetEventRecorderFor(controllers.PolicyControllerName),
+		RabbitmqClientFactory:   internal.RabbitholeClientFactory,
+		KubernetesClusterDomain: clusterDomain,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.PolicyControllerName)
 		os.Exit(1)
 	}
 	if err = (&controllers.PermissionReconciler{
-		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName(controllers.PermissionControllerName),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              mgr.GetEventRecorderFor(controllers.PermissionControllerName),
-		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+		Client:                  mgr.GetClient(),
+		Log:                     ctrl.Log.WithName(controllers.PermissionControllerName),
+		Scheme:                  mgr.GetScheme(),
+		Recorder:                mgr.GetEventRecorderFor(controllers.PermissionControllerName),
+		RabbitmqClientFactory:   internal.RabbitholeClientFactory,
+		KubernetesClusterDomain: clusterDomain,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.PermissionControllerName)
 		os.Exit(1)
 	}
 	if err = (&controllers.SchemaReplicationReconciler{
-		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName(controllers.SchemaReplicationControllerName),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              mgr.GetEventRecorderFor(controllers.SchemaReplicationControllerName),
-		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+		Client:                  mgr.GetClient(),
+		Log:                     ctrl.Log.WithName(controllers.SchemaReplicationControllerName),
+		Scheme:                  mgr.GetScheme(),
+		Recorder:                mgr.GetEventRecorderFor(controllers.SchemaReplicationControllerName),
+		RabbitmqClientFactory:   internal.RabbitholeClientFactory,
+		KubernetesClusterDomain: clusterDomain,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.SchemaReplicationControllerName)
 		os.Exit(1)
 	}
 	if err = (&controllers.FederationReconciler{
-		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName(controllers.FederationControllerName),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              mgr.GetEventRecorderFor(controllers.FederationControllerName),
-		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+		Client:                  mgr.GetClient(),
+		Log:                     ctrl.Log.WithName(controllers.FederationControllerName),
+		Scheme:                  mgr.GetScheme(),
+		Recorder:                mgr.GetEventRecorderFor(controllers.FederationControllerName),
+		RabbitmqClientFactory:   internal.RabbitholeClientFactory,
+		KubernetesClusterDomain: clusterDomain,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.FederationControllerName)
 		os.Exit(1)
 	}
 	if err = (&controllers.ShovelReconciler{
-		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName(controllers.ShovelControllerName),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              mgr.GetEventRecorderFor(controllers.ShovelControllerName),
-		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+		Client:                  mgr.GetClient(),
+		Log:                     ctrl.Log.WithName(controllers.ShovelControllerName),
+		Scheme:                  mgr.GetScheme(),
+		Recorder:                mgr.GetEventRecorderFor(controllers.ShovelControllerName),
+		RabbitmqClientFactory:   internal.RabbitholeClientFactory,
+		KubernetesClusterDomain: clusterDomain,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.ShovelControllerName)
 		os.Exit(1)
@@ -182,7 +216,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+	if os.Getenv(controllers.EnableWebhooksEnvVar) != "false" {
 		if err = (&topology.Binding{}).SetupWebhookWithManager(mgr); err != nil {
 			log.Error(err, "unable to create webhook", "webhook", "Binding")
 			os.Exit(1)

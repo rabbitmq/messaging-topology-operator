@@ -32,10 +32,11 @@ import (
 // BindingReconciler reconciles a Binding object
 type BindingReconciler struct {
 	client.Client
-	Log                   logr.Logger
-	Scheme                *runtime.Scheme
-	Recorder              record.EventRecorder
-	RabbitmqClientFactory internal.RabbitMQClientFactory
+	Log                     logr.Logger
+	Scheme                  *runtime.Scheme
+	Recorder                record.EventRecorder
+	RabbitmqClientFactory   internal.RabbitMQClientFactory
+	KubernetesClusterDomain string
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=bindings,verbs=get;list;watch;create;update;patch;delete
@@ -54,7 +55,7 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, binding.Spec.RabbitmqClusterReference, binding.Namespace)
+	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, binding.Spec.RabbitmqClusterReference, binding.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, binding, &binding.Status.Conditions, err)
 	}
@@ -204,6 +205,10 @@ func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topolog
 		}
 	}
 	return info, nil
+}
+
+func (r *BindingReconciler) SetInternalDomainName(clusterDomain string) {
+	r.KubernetesClusterDomain = clusterDomain
 }
 
 func (r *BindingReconciler) SetupWithManager(mgr ctrl.Manager) error {

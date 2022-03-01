@@ -13,6 +13,7 @@ import (
 	"context"
 	"crypto/x509"
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	topologyClient "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned"
 	"go/build"
 	"path/filepath"
 	"testing"
@@ -24,7 +25,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -47,17 +47,26 @@ func TestControllers(t *testing.T) {
 var (
 	testEnv                   *envtest.Environment
 	client                    runtimeClient.Client
-	clientSet                 *kubernetes.Clientset
+	clientSet                 *topologyClient.Clientset
 	ctx                       = context.Background()
 	fakeRabbitMQClient        *internalfakes.FakeRabbitMQClient
 	fakeRabbitMQClientError   error
 	fakeRabbitMQClientFactory = func(connectionCreds internal.ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (internal.RabbitMQClient, error) {
+		fakeRabbitMQClientFactoryArgsForCall = append(fakeRabbitMQClientFactoryArgsForCall, struct {
+			arg1 internal.ConnectionCredentials
+			arg2 bool
+			arg3 *x509.CertPool
+		}{connectionCreds, tlsEnabled, certPool})
 		return fakeRabbitMQClient, fakeRabbitMQClientError
 	}
-	existingRabbitMQUsername  = "abc123"
-	existingRabbitMQPassword  = "foo1234"
-	fakeConnectionCredentials *internalfakes.FakeConnectionCredentials
-	fakeRecorder              *record.FakeRecorder
+	// Shameless copy of what counterfeiter does for mocking
+	fakeRabbitMQClientFactoryArgsForCall []struct {
+		arg1 internal.ConnectionCredentials
+		arg2 bool
+		arg3 *x509.CertPool
+	}
+	fakeRecorder        *record.FakeRecorder
+	topologyControllers []controllers.TopologyController
 )
 
 var _ = BeforeSuite(func() {
@@ -79,98 +88,91 @@ var _ = BeforeSuite(func() {
 	Expect(topologyv1alpha1.AddToScheme(scheme.Scheme)).To(Succeed())
 	Expect(rabbitmqv1beta1.AddToScheme(scheme.Scheme)).To(Succeed())
 
-	clientSet, err = kubernetes.NewForConfig(cfg)
+	clientSet, err = topologyClient.NewForConfig(cfg)
 	Expect(err).NotTo(HaveOccurred())
 
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
-		Scheme: scheme.Scheme,
+		Scheme:             scheme.Scheme,
+		MetricsBindAddress: "0", // To avoid MacOS firewall pop-up every time you run this suite
 	})
 	Expect(err).ToNot(HaveOccurred())
 
-	fakeConnectionCredentials = &internalfakes.FakeConnectionCredentials{}
-
-	fakeConnectionCredentials.DataReturnsOnCall(0, []byte(existingRabbitMQUsername), true)
-	fakeConnectionCredentials.DataReturnsOnCall(1, []byte(existingRabbitMQPassword), true)
-	fakeConnectionCredentials.DataReturnsOnCall(2, []byte("example.com"), true)
 	fakeRecorder = record.NewFakeRecorder(128)
 
-	err = (&controllers.BindingReconciler{
-		Client:                mgr.GetClient(),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              fakeRecorder,
-		RabbitmqClientFactory: fakeRabbitMQClientFactory,
-	}).SetupWithManager(mgr)
-	Expect(err).ToNot(HaveOccurred())
-	err = (&controllers.ExchangeReconciler{
-		Client:                mgr.GetClient(),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              fakeRecorder,
-		RabbitmqClientFactory: fakeRabbitMQClientFactory,
-	}).SetupWithManager(mgr)
-	Expect(err).ToNot(HaveOccurred())
-	err = (&controllers.PermissionReconciler{
-		Client:                mgr.GetClient(),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              fakeRecorder,
-		RabbitmqClientFactory: fakeRabbitMQClientFactory,
-	}).SetupWithManager(mgr)
-	Expect(err).ToNot(HaveOccurred())
-	err = (&controllers.PolicyReconciler{
-		Client:                mgr.GetClient(),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              fakeRecorder,
-		RabbitmqClientFactory: fakeRabbitMQClientFactory,
-	}).SetupWithManager(mgr)
-	Expect(err).ToNot(HaveOccurred())
-	err = (&controllers.QueueReconciler{
-		Client:                mgr.GetClient(),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              fakeRecorder,
-		RabbitmqClientFactory: fakeRabbitMQClientFactory,
-	}).SetupWithManager(mgr)
-	Expect(err).ToNot(HaveOccurred())
-	err = (&controllers.UserReconciler{
-		Client:                mgr.GetClient(),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              fakeRecorder,
-		RabbitmqClientFactory: fakeRabbitMQClientFactory,
-	}).SetupWithManager(mgr)
-	Expect(err).ToNot(HaveOccurred())
-	err = (&controllers.VhostReconciler{
-		Client:                mgr.GetClient(),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              fakeRecorder,
-		RabbitmqClientFactory: fakeRabbitMQClientFactory,
-	}).SetupWithManager(mgr)
-	Expect(err).ToNot(HaveOccurred())
-	err = (&controllers.SchemaReplicationReconciler{
-		Client:                mgr.GetClient(),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              fakeRecorder,
-		RabbitmqClientFactory: fakeRabbitMQClientFactory,
-	}).SetupWithManager(mgr)
-	Expect(err).ToNot(HaveOccurred())
-	err = (&controllers.FederationReconciler{
-		Client:                mgr.GetClient(),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              fakeRecorder,
-		RabbitmqClientFactory: fakeRabbitMQClientFactory,
-	}).SetupWithManager(mgr)
-	Expect(err).ToNot(HaveOccurred())
-	err = (&controllers.ShovelReconciler{
-		Client:                mgr.GetClient(),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              fakeRecorder,
-		RabbitmqClientFactory: fakeRabbitMQClientFactory,
-	}).SetupWithManager(mgr)
-	Expect(err).ToNot(HaveOccurred())
-	err = (&controllers.SuperStreamReconciler{
-		Client:                mgr.GetClient(),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              fakeRecorder,
-		RabbitmqClientFactory: fakeRabbitMQClientFactory,
-	}).SetupWithManager(mgr)
-	Expect(err).ToNot(HaveOccurred())
+	// The order in which these are declared matters
+	// Keep it sync with the order in which 'topologyObjects' are declared in 'common_test.go`
+	topologyControllers = []controllers.TopologyController{
+		&controllers.BindingReconciler{
+			Client:                mgr.GetClient(),
+			Scheme:                mgr.GetScheme(),
+			Recorder:              fakeRecorder,
+			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+		},
+		&controllers.ExchangeReconciler{
+			Client:                mgr.GetClient(),
+			Scheme:                mgr.GetScheme(),
+			Recorder:              fakeRecorder,
+			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+		},
+		&controllers.PermissionReconciler{
+			Client:                mgr.GetClient(),
+			Scheme:                mgr.GetScheme(),
+			Recorder:              fakeRecorder,
+			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+		},
+		&controllers.PolicyReconciler{
+			Client:                mgr.GetClient(),
+			Scheme:                mgr.GetScheme(),
+			Recorder:              fakeRecorder,
+			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+		},
+		&controllers.QueueReconciler{
+			Client:                mgr.GetClient(),
+			Scheme:                mgr.GetScheme(),
+			Recorder:              fakeRecorder,
+			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+		},
+		&controllers.UserReconciler{
+			Client:                mgr.GetClient(),
+			Scheme:                mgr.GetScheme(),
+			Recorder:              fakeRecorder,
+			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+		},
+		&controllers.VhostReconciler{
+			Client:                mgr.GetClient(),
+			Scheme:                mgr.GetScheme(),
+			Recorder:              fakeRecorder,
+			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+		},
+		&controllers.SchemaReplicationReconciler{
+			Client:                mgr.GetClient(),
+			Scheme:                mgr.GetScheme(),
+			Recorder:              fakeRecorder,
+			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+		},
+		&controllers.FederationReconciler{
+			Client:                mgr.GetClient(),
+			Scheme:                mgr.GetScheme(),
+			Recorder:              fakeRecorder,
+			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+		},
+		&controllers.ShovelReconciler{
+			Client:                mgr.GetClient(),
+			Scheme:                mgr.GetScheme(),
+			Recorder:              fakeRecorder,
+			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+		},
+		&controllers.SuperStreamReconciler{
+			Client:                mgr.GetClient(),
+			Scheme:                mgr.GetScheme(),
+			Recorder:              fakeRecorder,
+			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+		},
+	}
+
+	for _, controller := range topologyControllers {
+		Expect(controller.SetupWithManager(mgr)).To(Succeed())
+	}
 
 	go func() {
 		err = mgr.Start(ctrl.SetupSignalHandler())
@@ -214,6 +216,11 @@ var _ = BeforeSuite(func() {
 			Namespace: "default",
 			Annotations: map[string]string{
 				"rabbitmq.com/topology-allowed-namespaces": "allowed",
+			},
+		},
+		Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
+			TLS: rabbitmqv1beta1.TLSSpec{
+				SecretName: "i-do-not-exist-but-its-fine",
 			},
 		},
 	}
@@ -412,6 +419,7 @@ var _ = BeforeSuite(func() {
 var _ = BeforeEach(func() {
 	fakeRabbitMQClient = &internalfakes.FakeRabbitMQClient{}
 	fakeRabbitMQClientError = nil
+	fakeRabbitMQClientFactoryArgsForCall = nil
 })
 
 var _ = AfterEach(func() {
@@ -432,4 +440,10 @@ func observedEvents() []string {
 		events = append(events, <-fakeRecorder.Events)
 	}
 	return events
+}
+
+func FakeRabbitMQClientFactoryArgsForCall(i int) (internal.ConnectionCredentials, bool, *x509.CertPool) {
+	// More shameless copy of counterfeiter code generation idea
+	argsForCall := fakeRabbitMQClientFactoryArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
