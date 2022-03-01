@@ -78,7 +78,12 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	// Check if the user has been marked for deletion
 	if !user.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info("Deleting")
-		return ctrl.Result{}, r.deleteUser(ctx, rabbitClient, user)
+		if user.Status.Username != "" {
+			return ctrl.Result{}, r.deleteUser(ctx, rabbitClient, user)
+		} else {
+			// Old function, kept for compatiblity
+			return ctrl.Result{}, r.deleteUserFromSecret(ctx, rabbitClient, user)
+		}
 	}
 
 	if err := addFinalizerIfNeeded(ctx, r.Client, user); err != nil {
@@ -93,13 +98,23 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	logger.Info("Start reconciling",
 		"spec", string(spec))
 
-	if user.Status.Credentials == nil {
-		logger.Info("User does not yet have a Credentials Secret; generating", "user", user.Name)
-		if err := r.declareCredentials(ctx, user); err != nil {
-			return ctrl.Result{}, err
+	if user.Status.Credentials == nil && user.Status.Username == "" {
+		username := ""
+		if user.Status.Credentials != nil && user.Status.Username == "" {
+			// Only run once for migration to set user.Status.Username on exsisting resources
+			logger.Info("User already have a Credentials Secret; importing", "user", user.Name)
+			secretName := user.Name + "-user-credentials"
+			if username, _, err = r.importCredentials(ctx, secretName, user.Namespace); err != nil {
+				return ctrl.Result{}, err
+			}
+		} else {
+			logger.Info("User does not yet have a Credentials Secret; generating", "user", user.Name)
+			if username, err = r.declareCredentials(ctx, user); err != nil {
+				return ctrl.Result{}, err
+			}
 		}
 
-		if err := r.setUserStatus(ctx, user); err != nil {
+		if err := r.setUserStatus(ctx, user, username); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
@@ -130,7 +145,7 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return ctrl.Result{}, nil
 }
 
-func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.User) error {
+func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.User) (string, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
 	username, password, err := r.generateCredentials(ctx, user)
@@ -138,7 +153,7 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.
 		msg := "failed to generate credentials"
 		r.Recorder.Event(user, corev1.EventTypeWarning, "CredentialGenerateFailure", msg)
 		logger.Error(err, msg)
-		return err
+		return "", err
 	}
 	logger.Info("Credentials generated for User", "user", user.Name, "generatedUsername", username)
 
@@ -177,12 +192,12 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.
 		msg := "failed to create/update credentials secret"
 		r.Recorder.Event(&credentialSecret, corev1.EventTypeWarning, string(operationResult), msg)
 		logger.Error(err, msg)
-		return err
+		return "", err
 	}
 
 	logger.Info("Successfully declared credentials secret", "secret", credentialSecret.Name, "namespace", credentialSecret.Namespace)
 	r.Recorder.Event(&credentialSecret, corev1.EventTypeNormal, "SuccessfulDeclare", "Successfully declared user")
-	return nil
+	return username, nil
 }
 
 func (r *UserReconciler) generateCredentials(ctx context.Context, user *topology.User) (string, string, error) {
@@ -237,13 +252,14 @@ func (r *UserReconciler) importCredentials(ctx context.Context, secretName, secr
 	return string(username), string(password), nil
 }
 
-func (r *UserReconciler) setUserStatus(ctx context.Context, user *topology.User) error {
+func (r *UserReconciler) setUserStatus(ctx context.Context, user *topology.User, username string) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	credentials := &corev1.LocalObjectReference{
 		Name: user.Name + "-user-credentials",
 	}
 	user.Status.Credentials = credentials
+	user.Status.Username = username
 	if err := r.Status().Update(ctx, user); err != nil {
 		msg := "Failed to update secret status credentials"
 		r.Recorder.Event(user, corev1.EventTypeWarning, "FailedStatusUpdate", msg)
@@ -299,7 +315,7 @@ func (r *UserReconciler) getUserCredentials(ctx context.Context, user *topology.
 	return credentials, nil
 }
 
-func (r *UserReconciler) deleteUser(ctx context.Context, client internal.RabbitMQClient, user *topology.User) error {
+func (r *UserReconciler) deleteUserFromSecret(ctx context.Context, client internal.RabbitMQClient, user *topology.User) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	credentials, err := r.getUserCredentials(ctx, user)
@@ -311,6 +327,22 @@ func (r *UserReconciler) deleteUser(ctx context.Context, client internal.RabbitM
 	}
 
 	err = validateResponseForDeletion(client.DeleteUser(string(credentials.Data["username"])))
+	if errors.Is(err, NotFound) {
+		logger.Info("cannot find user in rabbitmq server; already deleted", "user", user.Name)
+	} else if err != nil {
+		msg := "failed to delete user"
+		r.Recorder.Event(user, corev1.EventTypeWarning, "FailedDelete", msg)
+		logger.Error(err, msg, "user", user.Name)
+		return err
+	}
+	r.Recorder.Event(user, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted user")
+	return removeFinalizer(ctx, r.Client, user)
+}
+
+func (r *UserReconciler) deleteUser(ctx context.Context, client internal.RabbitMQClient, user *topology.User) error {
+	logger := ctrl.LoggerFrom(ctx)
+
+	err := validateResponseForDeletion(client.DeleteUser(user.Status.Username))
 	if errors.Is(err, NotFound) {
 		logger.Info("cannot find user in rabbitmq server; already deleted", "user", user.Name)
 	} else if err != nil {

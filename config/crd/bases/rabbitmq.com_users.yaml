@@ -140,6 +140,11 @@ spec:
                   which is updated on mutation by the API Server.
                 format: int64
                 type: integer
+              username:
+                description: Provide rabbitmq Username
+                type: string
+            required:
+            - username
             type: object
         type: object
     served: true

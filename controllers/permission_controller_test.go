@@ -32,6 +32,8 @@ var _ = Describe("permission-controller", func() {
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
 						Name: "example-rabbit",
 					},
+					User:  "example",
+					Vhost: "example",
 				},
 			}
 		})

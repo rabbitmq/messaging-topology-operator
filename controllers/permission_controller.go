@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	k8sApiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
@@ -58,20 +60,41 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return reconcile.Result{}, err
 	}
 
-	user := permission.Spec.User
+	user := &topology.User{}
+	username := permission.Spec.User
 	if permission.Spec.UserReference != nil {
-		if user, err = r.getUserFromReference(ctx, permission); err != nil {
+
+		if user, err = r.getUserFromReference(ctx, permission); err != nil &&
+			!k8sApiErrors.IsNotFound(err) && !permission.ObjectMeta.DeletionTimestamp.IsZero() {
+			// User not exist and not in deletion phase
 			return reconcile.Result{}, err
+		} else if user != nil {
+			// User exist
+			username = user.Status.Username
 		}
 	}
 
 	if !permission.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info("Deleting")
-		return ctrl.Result{}, r.revokePermissions(ctx, rabbitClient, permission, user)
+
+		if username == "" {
+			logger.Info("user already removed; no need to delete permission")
+		} else if err := r.revokePermissions(ctx, rabbitClient, permission, username); err != nil {
+			return ctrl.Result{}, err
+		}
+
+		r.Recorder.Event(permission, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted permission")
+		return ctrl.Result{}, removeFinalizer(ctx, r.Client, permission)
 	}
 
 	if err := addFinalizerIfNeeded(ctx, r.Client, permission); err != nil {
 		return ctrl.Result{}, err
+	}
+
+	if user != nil {
+		if err := controllerutil.SetControllerReference(user, permission, r.Scheme); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed setting controller reference: %v", err)
+		}
 	}
 
 	spec, err := json.Marshal(permission.Spec)
@@ -82,7 +105,7 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	logger.Info("Start reconciling",
 		"spec", string(spec))
 
-	if err := r.updatePermissions(ctx, rabbitClient, permission, user); err != nil {
+	if err := r.updatePermissions(ctx, rabbitClient, permission, username); err != nil {
 		// Set Condition 'Ready' to false with message
 		permission.Status.Conditions = []topology.Condition{
 			topology.NotReady(err.Error(), permission.Status.Conditions),
@@ -107,7 +130,7 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	return ctrl.Result{}, nil
 }
 
-func (r *PermissionReconciler) getUserFromReference(ctx context.Context, permission *topology.Permission) (string, error) {
+func (r *PermissionReconciler) getUserFromReference(ctx context.Context, permission *topology.Permission) (*topology.User, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
 	// get User from provided user reference
@@ -116,33 +139,18 @@ func (r *PermissionReconciler) getUserFromReference(ctx context.Context, permiss
 	if err := r.Get(ctx, types.NamespacedName{Name: permission.Spec.UserReference.Name, Namespace: permission.Namespace}, user); err != nil {
 		r.Recorder.Event(permission, corev1.EventTypeWarning, "FailedUpdate", failureMsg)
 		logger.Error(err, failureMsg, "userReference", permission.Spec.UserReference.Name)
-		return "", err
+		return nil, err
 	}
 
-	// get username from the credential secret from User status
-	if user.Status.Credentials == nil {
-		err := fmt.Errorf("this User does not have a credential secret set in its status")
+	// get username from User status
+	if user.Status.Username == "" {
+		err := fmt.Errorf("this User does not have an username set in its status")
 		r.Recorder.Event(permission, corev1.EventTypeWarning, "FailedUpdate", failureMsg)
 		logger.Error(err, failureMsg, "userReference", permission.Spec.UserReference.Name)
-		return "", err
+		return nil, err
 	}
 
-	secret := &corev1.Secret{}
-	if err := r.Get(ctx, types.NamespacedName{Name: user.Status.Credentials.Name, Namespace: user.Namespace}, secret); err != nil {
-		r.Recorder.Event(permission, corev1.EventTypeWarning, "FailedUpdate", failureMsg)
-		logger.Error(err, failureMsg, "userReference", permission.Spec.UserReference.Name)
-		return "", err
-	}
-
-	username, ok := secret.Data["username"]
-	if !ok {
-		err := fmt.Errorf("could not find username key")
-		r.Recorder.Event(permission, corev1.EventTypeWarning, "FailedUpdate", failureMsg)
-		logger.Error(err, failureMsg, "userReference", permission.Spec.UserReference.Name)
-		return "", nil
-	}
-
-	return string(username), nil
+	return user, nil
 }
 
 func (r *PermissionReconciler) updatePermissions(ctx context.Context, client internal.RabbitMQClient, permission *topology.Permission, user string) error {
@@ -172,8 +180,7 @@ func (r *PermissionReconciler) revokePermissions(ctx context.Context, client int
 		logger.Error(err, msg, "user", user, "vhost", permission.Spec.Vhost)
 		return err
 	}
-	r.Recorder.Event(permission, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted permission")
-	return removeFinalizer(ctx, r.Client, permission)
+	return nil
 }
 
 func (r *PermissionReconciler) SetInternalDomainName(domainName string) {

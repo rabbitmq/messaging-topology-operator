@@ -44,6 +44,8 @@ type UserStatus struct {
 	Conditions         []Condition `json:"conditions,omitempty"`
 	// Provides a reference to a Secret object containing the user credentials.
 	Credentials *corev1.LocalObjectReference `json:"credentials,omitempty"`
+	// Provide rabbitmq Username
+	Username string `json:"username"`
 }
 
 // UserTag defines the level of access to the management UI allocated to the user.
