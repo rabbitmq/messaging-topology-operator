@@ -76,6 +76,7 @@ func main() {
 
 	logger := zap.New(zap.UseFlagOptions(&opts))
 	ctrl.SetLogger(logger)
+	// https://github.com/kubernetes-sigs/controller-runtime/issues/1420#issuecomment-794525248
 	klog.SetLogger(logger.WithName("messaging-topology-operator"))
 
 	operatorNamespace := os.Getenv(controllers.OperatorNamespaceEnvVar)
