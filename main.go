@@ -12,6 +12,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"k8s.io/klog/v2"
 	"os"
 	"regexp"
 	"strings"
@@ -73,7 +74,10 @@ func main() {
 
 	flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	logger := zap.New(zap.UseFlagOptions(&opts))
+	ctrl.SetLogger(logger)
+	// https://github.com/kubernetes-sigs/controller-runtime/issues/1420#issuecomment-794525248
+	klog.SetLogger(logger.WithName("messaging-topology-operator"))
 
 	operatorNamespace := os.Getenv(controllers.OperatorNamespaceEnvVar)
 	if operatorNamespace == "" {
