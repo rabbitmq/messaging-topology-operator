@@ -60,7 +60,7 @@ type ShovelStatus struct {
 
 // +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=all
+// +kubebuilder:resource:categories=all;rabbitmq
 // +kubebuilder:subresource:status
 
 // Shovel is the Schema for the shovels API

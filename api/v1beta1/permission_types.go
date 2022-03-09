@@ -46,7 +46,7 @@ type PermissionStatus struct {
 
 // +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=all
+// +kubebuilder:resource:categories=all;rabbitmq
 // +kubebuilder:subresource:status
 
 // Permission is the Schema for the permissions API

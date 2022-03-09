@@ -53,7 +53,7 @@ type BindingStatus struct {
 
 // +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=all
+// +kubebuilder:resource:categories=all;rabbitmq
 // +kubebuilder:subresource:status
 
 // Binding is the Schema for the bindings API

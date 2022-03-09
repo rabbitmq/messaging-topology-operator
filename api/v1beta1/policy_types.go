@@ -49,7 +49,7 @@ type PolicyStatus struct {
 
 // +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=all
+// +kubebuilder:resource:categories=all;rabbitmq
 // +kubebuilder:subresource:status
 
 // Policy is the Schema for the policies API
