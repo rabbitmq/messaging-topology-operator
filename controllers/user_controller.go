@@ -98,15 +98,15 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	logger.Info("Start reconciling",
 		"spec", string(spec))
 
-	if user.Status.Credentials == nil && user.Status.Username == "" {
+	if user.Status.Credentials == nil || user.Status.Username == "" {
 		username := ""
 		if user.Status.Credentials != nil && user.Status.Username == "" {
 			// Only run once for migration to set user.Status.Username on exsisting resources
-			logger.Info("User already have a Credentials Secret; importing", "user", user.Name)
-			secretName := user.Name + "-user-credentials"
-			if username, _, err = r.importCredentials(ctx, secretName, user.Namespace); err != nil {
+			credentials, err := r.getUserCredentials(ctx, user)
+			if err != nil {
 				return ctrl.Result{}, err
 			}
+			username = string(credentials.Data["username"])
 		} else {
 			logger.Info("User does not yet have a Credentials Secret; generating", "user", user.Name)
 			if username, err = r.declareCredentials(ctx, user); err != nil {
