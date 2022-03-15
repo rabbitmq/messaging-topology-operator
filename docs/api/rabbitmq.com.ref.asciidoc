@@ -59,7 +59,7 @@ SuperStreamList contains a list of SuperStreams
 | *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
-| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha1-superstream[$$SuperStream$$]__ | 
+| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha1-superstream[$$SuperStream$$] array__ | 
 |===
 
 
@@ -98,7 +98,7 @@ SuperStreamStatus defines the observed state of SuperStream
 |===
 | Field | Description
 | *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this SuperStream. It corresponds to the SuperStream's generation, which is updated on mutation by the API Server.
-| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$]__ | 
+| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 | *`partitions`* __string array__ | Partitions are a list of the stream queue names which form the partitions of this SuperStream.
 |===
 
@@ -172,7 +172,7 @@ BindingList contains a list of Binding
 | *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
-| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-binding[$$Binding$$]__ | 
+| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-binding[$$Binding$$] array__ | 
 |===
 
 
@@ -298,7 +298,7 @@ ExchangeList contains a list of Exchange
 | *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
-| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-exchange[$$Exchange$$]__ | 
+| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-exchange[$$Exchange$$] array__ | 
 |===
 
 
@@ -339,7 +339,7 @@ ExchangeStatus defines the observed state of Exchange
 |===
 | Field | Description
 | *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Exchange. It corresponds to the Exchange's generation, which is updated on mutation by the API Server.
-| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$]__ | 
+| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
 
 
@@ -381,7 +381,7 @@ FederationList contains a list of Federation
 | *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
-| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federation[$$Federation$$]__ | 
+| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federation[$$Federation$$] array__ | 
 |===
 
 
@@ -428,7 +428,7 @@ FederationStatus defines the observed state of Federation
 |===
 | Field | Description
 | *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Federation. It corresponds to the Federation's generation, which is updated on mutation by the API Server.
-| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$]__ | 
+| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
 
 
@@ -470,7 +470,7 @@ PermissionList contains a list of Permission
 | *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
-| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-permission[$$Permission$$]__ | 
+| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-permission[$$Permission$$] array__ | 
 |===
 
 
@@ -509,7 +509,7 @@ PermissionStatus defines the observed state of Permission
 |===
 | Field | Description
 | *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Permission. It corresponds to the Permission's generation, which is updated on mutation by the API Server.
-| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$]__ | 
+| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
 
 
@@ -551,7 +551,7 @@ PolicyList contains a list of Policy
 | *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
-| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-policy[$$Policy$$]__ | 
+| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-policy[$$Policy$$] array__ | 
 |===
 
 
@@ -592,7 +592,7 @@ PolicyStatus defines the observed state of Policy
 |===
 | Field | Description
 | *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Policy. It corresponds to the Policy's generation, which is updated on mutation by the API Server.
-| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$]__ | 
+| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
 
 
@@ -634,7 +634,7 @@ QueueList contains a list of Queue
 | *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
-| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-queue[$$Queue$$]__ | 
+| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-queue[$$Queue$$] array__ | 
 |===
 
 
@@ -675,7 +675,7 @@ QueueStatus defines the observed state of Queue
 |===
 | Field | Description
 | *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Queue. It corresponds to the Queue's generation, which is updated on mutation by the API Server.
-| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$]__ | 
+| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
 
 
@@ -746,7 +746,7 @@ SchemaReplicationList contains a list of SchemaReplication
 | *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
-| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-schemareplication[$$SchemaReplication$$]__ | 
+| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-schemareplication[$$SchemaReplication$$] array__ | 
 |===
 
 
@@ -783,7 +783,7 @@ SchemaReplicationStatus defines the observed state of SchemaReplication
 |===
 | Field | Description
 | *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Queue. It corresponds to the Queue's generation, which is updated on mutation by the API Server.
-| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$]__ | 
+| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
 
 
@@ -825,7 +825,7 @@ ShovelList contains a list of Shovel
 | *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
-| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-shovel[$$Shovel$$]__ | 
+| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-shovel[$$Shovel$$] array__ | 
 |===
 
 
@@ -885,7 +885,7 @@ ShovelStatus defines the observed state of Shovel
 |===
 | Field | Description
 | *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Shovel. It corresponds to the Shovel's generation, which is updated on mutation by the API Server.
-| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$]__ | 
+| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
 
 
@@ -927,7 +927,7 @@ UserList contains a list of Users.
 | *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
-| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-user[$$User$$]__ | 
+| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-user[$$User$$] array__ | 
 |===
 
 
@@ -964,7 +964,7 @@ UserStatus defines the observed state of User.
 |===
 | Field | Description
 | *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this User. It corresponds to the User's generation, which is updated on mutation by the API Server.
-| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$]__ | 
+| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 | *`credentials`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Provides a reference to a Secret object containing the user credentials.
 |===
 
@@ -1019,7 +1019,7 @@ VhostList contains a list of Vhost
 | *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
-| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhost[$$Vhost$$]__ | 
+| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhost[$$Vhost$$] array__ | 
 |===
 
 
@@ -1076,7 +1076,7 @@ VhostStatus defines the observed state of Vhost
 |===
 | Field | Description
 | *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Vhost. It corresponds to the Vhost's generation, which is updated on mutation by the API Server.
-| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$]__ | 
+| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
 
 
