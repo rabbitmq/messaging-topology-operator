@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/cloudflare/cfssl v1.6.1
-	github.com/elastic/crd-ref-docs v0.0.7
+	github.com/elastic/crd-ref-docs v0.0.8
 	github.com/go-logr/logr v1.2.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/vault/api v1.4.1
@@ -18,6 +18,7 @@ require (
 	k8s.io/apimachinery v0.23.4
 	k8s.io/client-go v0.23.4
 	k8s.io/code-generator v0.23.4
+	k8s.io/klog/v2 v2.30.0
 	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65
 	k8s.io/utils v0.0.0-20211116205334-6203023598ed
 	sigs.k8s.io/controller-runtime v0.11.1
@@ -205,7 +206,6 @@ require (
 	k8s.io/apiextensions-apiserver v0.23.0 // indirect
 	k8s.io/component-base v0.23.0 // indirect
 	k8s.io/gengo v0.0.0-20210813121822-485abfe95c7c // indirect
-	k8s.io/klog/v2 v2.30.0 // indirect
 	sigs.k8s.io/json v0.0.0-20211020170558-c049b76a60c6 // indirect
 	sigs.k8s.io/kustomize/api v0.11.2 // indirect
 	sigs.k8s.io/kustomize/cmd/config v0.10.4 // indirect
