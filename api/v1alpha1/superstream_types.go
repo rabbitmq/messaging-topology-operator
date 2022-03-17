@@ -49,7 +49,7 @@ type SuperStreamStatus struct {
 
 // +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=all
+// +kubebuilder:resource:categories=all;rabbitmq
 // +kubebuilder:subresource:status
 
 // SuperStream is the Schema for the queues API

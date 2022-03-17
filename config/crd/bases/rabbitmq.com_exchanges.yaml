@@ -11,6 +11,7 @@ spec:
   names:
     categories:
     - all
+    - rabbitmq
     kind: Exchange
     listKind: ExchangeList
     plural: exchanges

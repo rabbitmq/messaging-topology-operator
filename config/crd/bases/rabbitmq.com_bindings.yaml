@@ -11,6 +11,7 @@ spec:
   names:
     categories:
     - all
+    - rabbitmq
     kind: Binding
     listKind: BindingList
     plural: bindings

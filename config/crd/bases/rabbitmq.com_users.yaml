@@ -11,6 +11,7 @@ spec:
   names:
     categories:
     - all
+    - rabbitmq
     kind: User
     listKind: UserList
     plural: users
