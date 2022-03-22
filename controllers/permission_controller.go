@@ -64,9 +64,7 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	username := permission.Spec.User
 	if permission.Spec.UserReference != nil {
 
-		if user, err = r.getUserFromReference(ctx, permission); err != nil &&
-			!k8sApiErrors.IsNotFound(err) && !permission.ObjectMeta.DeletionTimestamp.IsZero() {
-			// User not exist and not in deletion phase
+		if user, err = r.getUserFromReference(ctx, permission); err != nil {
 			return reconcile.Result{}, err
 		} else if user != nil {
 			// User exist
@@ -78,7 +76,9 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		logger.Info("Deleting")
 
 		if username == "" {
-			logger.Info("user already removed; no need to delete permission")
+			msg := "user already removed; no need to delete permission"
+			logger.Info(msg)
+			r.Recorder.Event(permission, corev1.EventTypeWarning, "UserNotExist", msg)
 		} else if err := r.revokePermissions(ctx, rabbitClient, permission, username); err != nil {
 			return ctrl.Result{}, err
 		}
@@ -87,13 +87,35 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, removeFinalizer(ctx, r.Client, permission)
 	}
 
+	// User not exist stop create or update operations
+	if username == "" {
+		msg := "failed create Permission, missing User"
+
+		permission.Status.Conditions = []topology.Condition{
+			topology.NotReady(msg, permission.Status.Conditions),
+		}
+		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
+			return r.Status().Update(ctx, permission)
+		}); writerErr != nil {
+			logger.Error(writerErr, failedStatusUpdate, "status", permission.Status)
+		}
+
+		r.Recorder.Event(permission, corev1.EventTypeWarning, "FailedCreateOrUpdate", msg)
+		logger.Error(err, msg)
+		return reconcile.Result{}, fmt.Errorf(msg)
+	}
+
 	if err := addFinalizerIfNeeded(ctx, r.Client, permission); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	if user != nil {
+	// user != nil, not working because user has always a name set
+	if user.Name != "" {
 		if err := controllerutil.SetControllerReference(user, permission, r.Scheme); err != nil {
-			return ctrl.Result{}, fmt.Errorf("failed setting controller reference: %v", err)
+			return ctrl.Result{}, fmt.Errorf("failed set controller reference: %v", err)
+		}
+		if err := r.Client.Update(ctx, permission); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to Update object with controller reference: %w", err)
 		}
 	}
 
@@ -136,7 +158,12 @@ func (r *PermissionReconciler) getUserFromReference(ctx context.Context, permiss
 	// get User from provided user reference
 	failureMsg := "failed to get User"
 	user := &topology.User{}
-	if err := r.Get(ctx, types.NamespacedName{Name: permission.Spec.UserReference.Name, Namespace: permission.Namespace}, user); err != nil {
+	err := r.Get(ctx, types.NamespacedName{Name: permission.Spec.UserReference.Name, Namespace: permission.Namespace}, user)
+
+	if err != nil && k8sApiErrors.IsNotFound(err) {
+		r.Recorder.Event(permission, corev1.EventTypeWarning, "NotExist", failureMsg)
+		return nil, nil
+	} else if err != nil {
 		r.Recorder.Event(permission, corev1.EventTypeWarning, "FailedUpdate", failureMsg)
 		logger.Error(err, failureMsg, "userReference", permission.Spec.UserReference.Name)
 		return nil, err

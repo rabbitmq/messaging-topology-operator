@@ -113,6 +113,7 @@ var _ = Describe("UserController", func() {
 						"Reason": Equal("SuccessfulCreateOrUpdate"),
 						"Status": Equal(corev1.ConditionTrue),
 					})))
+					Expect(user.Status.Username).Should(Not(BeEmpty()))
 				})
 				It("sets an owner reference and does not block owner deletion", func() {
 					user.Name = "test-owner-reference"
@@ -204,6 +205,35 @@ var _ = Describe("UserController", func() {
 						return apierrors.IsNotFound(err)
 					}, 5).Should(BeFalse())
 					Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete user"))
+				})
+			})
+
+			When("the RabbitMQ Client successfully deletes a user without secret", func() {
+				BeforeEach(func() {
+					userName = "delete-user-success-without-secret-user-credentials"
+					fakeRabbitMQClient.DeleteUserReturns(&http.Response{
+						Status:     "204 No Content",
+						StatusCode: http.StatusNoContent,
+					}, nil)
+				})
+
+				It("raises an event to indicate a successful deletion", func() {
+					Expect(client.Delete(ctx, &corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      user.Name + "-user-credentials",
+							Namespace: user.Namespace,
+						},
+					})).To(Succeed())
+					Expect(client.Delete(ctx, &user)).To(Succeed())
+					Eventually(func() bool {
+						err := client.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{})
+						return apierrors.IsNotFound(err)
+					}, 5).Should(BeTrue())
+
+					Expect(observedEvents()).To(SatisfyAll(
+						Not(ContainElement("Warning FailedDelete failed to delete user")),
+						ContainElement("Normal SuccessfulDelete successfully deleted user"),
+					))
 				})
 			})
 
