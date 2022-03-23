@@ -966,6 +966,7 @@ UserStatus defines the observed state of User.
 | *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this User. It corresponds to the User's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 | *`credentials`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Provides a reference to a Secret object containing the user credentials.
+| *`username`* __string__ | Provide rabbitmq Username
 |===
 
 
