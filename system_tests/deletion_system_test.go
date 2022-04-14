@@ -45,7 +45,7 @@ var _ = Describe("Deletion", func() {
 			},
 			Spec: topology.PolicySpec{
 				Name:    "policy-deletion-test",
-				Pattern: ".*",
+				Pattern: "not-match-queue",
 				ApplyTo: "queues",
 				Definition: &runtime.RawExtension{
 					Raw: []byte(`{"ha-mode":"all"}`),
