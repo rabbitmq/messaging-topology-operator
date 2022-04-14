@@ -26,6 +26,8 @@ var _ = Describe("Deletion", func() {
 
 	BeforeEach(func() {
 		targetCluster = basicTestRabbitmqCluster("to-be-deleted", namespace)
+		var DeletionGracePeriod int64 = 10
+		targetCluster.Spec.TerminationGracePeriodSeconds = &DeletionGracePeriod
 		setupTestRabbitmqCluster(k8sClient, targetCluster)
 		targetClusterRef := topology.RabbitmqClusterReference{Name: targetCluster.Name}
 		exchange = topology.Exchange{
@@ -45,7 +47,7 @@ var _ = Describe("Deletion", func() {
 			},
 			Spec: topology.PolicySpec{
 				Name:    "policy-deletion-test",
-				Pattern: "not-match-queue",
+				Pattern: ".*",
 				ApplyTo: "queues",
 				Definition: &runtime.RawExtension{
 					Raw: []byte(`{"ha-mode":"all"}`),
