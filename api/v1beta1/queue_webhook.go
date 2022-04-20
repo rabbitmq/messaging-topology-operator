@@ -22,6 +22,11 @@ var _ webhook.Validator = &Queue{}
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (q *Queue) ValidateCreate() error {
+	if q.Spec.Type == "quorum" && q.Spec.Durable == false {
+		return apierrors.NewForbidden(q.GroupResource(), q.Name,
+			field.Forbidden(field.NewPath("spec", "durable"),
+				"Quorum queues must have durable set to true"))
+	}
 	return q.Spec.RabbitmqClusterReference.ValidateOnCreate(q.GroupResource(), q.Name)
 }
 

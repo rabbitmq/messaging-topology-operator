@@ -39,6 +39,12 @@ var _ = Describe("queue webhook", func() {
 			notAllowedQ.Spec.RabbitmqClusterReference.ConnectionSecret = nil
 			Expect(apierrors.IsForbidden(notAllowedQ.ValidateCreate())).To(BeTrue())
 		})
+
+		It("does not allow non-durable quorum queues", func() {
+			notAllowedQ := queue.DeepCopy()
+			notAllowedQ.Spec.AutoDelete = false
+			Expect(apierrors.IsForbidden(notAllowedQ.ValidateCreate())).To(BeTrue(), "Expected 'forbidden' response for non-durable quorum queue")
+		})
 	})
 
 	Context("ValidateUpdate", func() {
