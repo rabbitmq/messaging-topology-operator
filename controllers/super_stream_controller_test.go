@@ -2,7 +2,11 @@ package controllers_test
 
 import (
 	"fmt"
-	. "github.com/onsi/ginkgo"
+	"net/http"
+	"strconv"
+	"time"
+
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
@@ -11,9 +15,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"net/http"
-	"strconv"
-	"time"
 )
 
 var _ = Describe("super-stream-controller", func() {
