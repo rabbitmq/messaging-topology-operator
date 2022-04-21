@@ -7,6 +7,7 @@ import (
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/pointer"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -26,6 +27,7 @@ var _ = Describe("Deletion", func() {
 
 	BeforeEach(func() {
 		targetCluster = basicTestRabbitmqCluster("to-be-deleted", namespace)
+		targetCluster.Spec.TerminationGracePeriodSeconds = pointer.Int64Ptr(10)
 		setupTestRabbitmqCluster(k8sClient, targetCluster)
 		targetClusterRef := topology.RabbitmqClusterReference{Name: targetCluster.Name}
 		exchange = topology.Exchange{
