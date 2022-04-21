@@ -38,19 +38,19 @@ $(KUBEBUILDER_ASSETS):
 
 .PHONY: unit-tests
 unit-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet manifests ## Run unit tests
-	ginkgo -r --randomizeAllSpecs api/ internal/
+	ginkgo -r --randomize-all api/ internal/
 
 .PHONY: integration-tests
 integration-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet manifests ## Run integration tests
-	ginkgo -r --randomizeAllSpecs controllers/
+	ginkgo -r --randomize-all controllers/
 
 just-integration-tests: $(KUBEBUILDER_ASSETS) vet
-	ginkgo -randomizeAllSpecs -r controllers/
+	ginkgo --randomize-all -r controllers/
 
 local-tests: unit-tests integration-tests ## Run all local tests (unit & integration)
 
 system-tests: ## run end-to-end tests against Kubernetes cluster defined in ~/.kube/config. Expects cluster operator and messaging topology operator to be installed in the cluster
-	NAMESPACE="rabbitmq-system" ginkgo -randomizeAllSpecs -r system_tests/
+	NAMESPACE="rabbitmq-system" ginkgo --randomize-all -r system_tests/
 
 # Build manager binary
 manager: generate fmt vet

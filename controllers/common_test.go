@@ -1,7 +1,9 @@
 package controllers_test
 
 import (
-	. "github.com/onsi/ginkgo"
+	"net/http"
+
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	topologyV1alpha "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
@@ -10,7 +12,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"net/http"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
