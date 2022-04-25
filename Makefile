@@ -23,13 +23,16 @@ install-tools:
 	@awk -F '"' '/_/ && !/k8s.io\/code-generator/ { system("go install " $$2) }' tools/tools.go
 	@$(get_mod_code_generator)
 
-ENVTEST_K8S_VERSION = 1.20.2
+ENVTEST_K8S_VERSION = 1.22.1
 ARCHITECTURE = amd64
 LOCAL_TESTBIN = $(CURDIR)/testbin
 # "Control plane binaries (etcd and kube-apiserver) are loaded by default from /usr/local/kubebuilder/bin.
 # This can be overridden by setting the KUBEBUILDER_ASSETS environment variable"
 # https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/envtest
 export KUBEBUILDER_ASSETS = $(LOCAL_TESTBIN)/k8s/$(ENVTEST_K8S_VERSION)-$(platform)-$(ARCHITECTURE)
+
+.PHONY: kubebuilder-assets
+kubebuilder-assets: $(KUBEBUILDER_ASSETS)
 
 $(KUBEBUILDER_ASSETS):
 	setup-envtest --os $(platform) --arch $(ARCHITECTURE) --bin-dir $(LOCAL_TESTBIN) use $(ENVTEST_K8S_VERSION)
