@@ -49,7 +49,8 @@ var (
 	testEnv                   *envtest.Environment
 	client                    runtimeClient.Client
 	clientSet                 *topologyClient.Clientset
-	ctx                       = context.Background()
+	ctx                       context.Context
+	cancel                    context.CancelFunc
 	fakeRabbitMQClient        *internalfakes.FakeRabbitMQClient
 	fakeRabbitMQClientError   error
 	fakeRabbitMQClientFactory = func(connectionCreds internal.ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (internal.RabbitMQClient, error) {
@@ -72,6 +73,9 @@ var (
 
 var _ = BeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.UseDevMode(true), zap.WriteTo(GinkgoWriter)))
+
+	ctx, cancel = context.WithCancel(ctrl.SetupSignalHandler())
+
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
@@ -176,7 +180,7 @@ var _ = BeforeSuite(func() {
 	}
 
 	go func() {
-		err = mgr.Start(ctrl.SetupSignalHandler())
+		err = mgr.Start(ctx)
 		Expect(err).ToNot(HaveOccurred())
 	}()
 
@@ -432,6 +436,7 @@ var _ = AfterEach(func() {
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
+	cancel()
 	Expect(testEnv.Stop()).To(Succeed())
 })
 
