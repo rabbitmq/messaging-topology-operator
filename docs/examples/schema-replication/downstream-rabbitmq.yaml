@@ -1,11 +1,9 @@
 apiVersion: rabbitmq.com/v1beta1
 kind: RabbitmqCluster
 metadata:
-  name: downstream
+  name: downstream-cluster
   namespace: downstream
 spec:
-  service:
-    type: LoadBalancer
   replicas: 1
   rabbitmq:
     additionalPlugins:
@@ -32,7 +30,7 @@ metadata:
   namespace: downstream
 spec:
   rabbitmqClusterReference:
-    name:  downstream # rabbitmqCluster must exist in the same namespace as this resource
+    name:  downstream-cluster # rabbitmqCluster must exist in the same namespace as this resource
   importCredentialsSecret:
     name: rabbitmq-replicator
 ---
@@ -44,7 +42,7 @@ metadata:
 spec:
   name: "rabbitmq_schema_definition_sync" # vhost name
   rabbitmqClusterReference:
-    name: downstream # rabbitmqCluster must exist in the same namespace as this resource
+    name: downstream-cluster # rabbitmqCluster must exist in the same namespace as this resource
 ---
 apiVersion: rabbitmq.com/v1beta1
 kind: Permission
@@ -60,7 +58,7 @@ spec:
     configure: ".*"
     read: ".*"
   rabbitmqClusterReference:
-    name: downstream  # rabbitmqCluster must exist in the same namespace as this resource
+    name: downstream-cluster  # rabbitmqCluster must exist in the same namespace as this resource
 ---
 apiVersion: rabbitmq.com/v1beta1
 kind: Permission
@@ -76,4 +74,4 @@ spec:
     configure: ".*"
     read: ".*"
   rabbitmqClusterReference:
-    name: downstream  # rabbitmqCluster must exist in the same namespace as this resource
+    name: downstream-cluster  # rabbitmqCluster must exist in the same namespace as this resource

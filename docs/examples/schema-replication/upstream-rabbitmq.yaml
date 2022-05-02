@@ -1,11 +1,9 @@
 apiVersion: rabbitmq.com/v1beta1
 kind: RabbitmqCluster
 metadata:
-  name: upstream
+  name: upstream-cluster
   namespace: upstream
 spec:
-  service:
-    type: LoadBalancer
   replicas: 1
   rabbitmq:
     additionalPlugins:
@@ -32,7 +30,7 @@ metadata:
   namespace: upstream
 spec:
   rabbitmqClusterReference:
-    name:  upstream # rabbitmqCluster must exist in the same namespace as this resource
+    name:  upstream-cluster # rabbitmqCluster must exist in the same namespace as this resource
   importCredentialsSecret:
     name: rabbitmq-replicator
 ---
@@ -50,5 +48,5 @@ spec:
     configure: ".*"
     read: ".*"
   rabbitmqClusterReference:
-    name: upstream  # rabbitmqCluster must exist in the same namespace as this resource
+    name: upstream-cluster  # rabbitmqCluster must exist in the same namespace as this resource
 

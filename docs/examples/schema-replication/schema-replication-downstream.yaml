@@ -4,9 +4,9 @@ metadata:
   name: downstream
   namespace: downstream
 spec:
-  endpoints: "upstream-cluster-ip:5672"
+  endpoints: "upstream-cluster.upstream.svc:5672"
   upstreamSecret:
     name: rabbitmq-replicator
   rabbitmqClusterReference:
-    name: downstream
+    name: downstream-cluster
 
