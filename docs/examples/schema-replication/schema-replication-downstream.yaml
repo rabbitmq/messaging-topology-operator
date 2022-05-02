@@ -1,0 +1,12 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: SchemaReplication
+metadata:
+  name: downstream
+  namespace: downstream
+spec:
+  endpoints: "upstream-cluster-ip:5672"
+  upstreamSecret:
+    name: rabbitmq-replicator
+  rabbitmqClusterReference:
+    name: downstream
+
