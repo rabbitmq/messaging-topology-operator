@@ -37,17 +37,6 @@ spec:
     name: rabbitmq-replicator
 ---
 apiVersion: rabbitmq.com/v1beta1
-kind: Vhost
-metadata:
-  name: default
-  namespace: upstream
-spec:
-  name: "/" 
-  tags: ["standby_replication"]
-  rabbitmqClusterReference:
-    name: upstream # rabbitmqCluster must exist in the same namespace as this resource
----
-apiVersion: rabbitmq.com/v1beta1
 kind: Permission
 metadata:
   name: rabbitmq-replicator.rabbitmq-schema-definition-sync.all
