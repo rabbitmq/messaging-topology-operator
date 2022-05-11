@@ -114,7 +114,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 
 			It("errors", func() {
 				_, _, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
-				Expect(err).To(MatchError("no status.defaultUser set"))
+				Expect(err).To(MatchError("RabbitmqCluster has no ServiceReference set in status.defaultUser"))
 			})
 		})
 
@@ -180,6 +180,35 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 				Expect(usernameBytes).To(Equal([]byte(existingRabbitMQUsername)))
 				Expect(passwordBytes).To(Equal([]byte(existingRabbitMQPassword)))
 				Expect(uriBytes).To(Equal([]byte("http://rmq.rabbitmq-system.svc:15672")))
+			})
+
+			When("RabbitmqCluster does not have status.defaultUser set", func() {
+				BeforeEach(func() {
+					*existingRabbitMQCluster = rabbitmqv1beta1.RabbitmqCluster{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "rmq-vault-incomplete-status",
+							Namespace: namespace,
+						},
+						Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
+							SecretBackend: rabbitmqv1beta1.SecretBackend{
+								Vault: &rabbitmqv1beta1.VaultSpec{
+									Role:            "sausage",
+									DefaultUserPath: "/some/path",
+								},
+							},
+						},
+					}
+					fakeSecretStoreClient = &internalfakes.FakeSecretStoreClient{}
+					fakeSecretStoreClient.ReadCredentialsReturns(existingRabbitMQUsername, existingRabbitMQPassword, nil)
+					internal.SecretStoreClientProvider = func() (internal.SecretStoreClient, error) {
+						return fakeSecretStoreClient, nil
+					}
+				})
+
+				It("errors", func() {
+					_, _, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
+					Expect(err).To(MatchError("RabbitmqCluster has no ServiceReference set in status.defaultUser"))
+				})
 			})
 		})
 	})
