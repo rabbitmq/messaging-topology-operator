@@ -39,6 +39,7 @@ const (
 	KubernetesInternalDomainEnvVar = "MESSAGING_DOMAIN_NAME"
 	OperatorNamespaceEnvVar        = "OPERATOR_NAMESPACE"
 	EnableWebhooksEnvVar           = "ENABLE_WEBHOOKS"
+	ControllerSyncPeriodEnvVar     = "SYNC_PERIOD"
 )
 
 type TopologyController interface {
