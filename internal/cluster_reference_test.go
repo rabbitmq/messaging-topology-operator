@@ -114,7 +114,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 
 			It("errors", func() {
 				_, _, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
-				Expect(err).To(MatchError("RabbitmqCluster has no ServiceReference set in status.defaultUser"))
+				Expect(err).To(MatchError(internal.NoServiceReferenceSetError))
 			})
 		})
 
@@ -207,7 +207,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 
 				It("errors", func() {
 					_, _, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
-					Expect(err).To(MatchError("RabbitmqCluster has no ServiceReference set in status.defaultUser"))
+					Expect(err).To(MatchError(internal.NoServiceReferenceSetError))
 				})
 			})
 		})

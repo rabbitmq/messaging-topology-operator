@@ -74,7 +74,7 @@ func InitializeClient() func() {
 		}
 
 		config := vault.DefaultConfig() // modify for more granular configuration
-		
+
 		if strings.HasPrefix(vaultURL, "https") {
 			systemCertPool, err := x509.SystemCertPool()
 			if err != nil {
