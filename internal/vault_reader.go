@@ -1,9 +1,12 @@
 package internal
 
 import (
+	"crypto/x509"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -63,7 +66,24 @@ func GetSecretStoreClient() (SecretStoreClient, error) {
 func InitializeClient() func() {
 	return func() {
 		// VAULT_ADDR environment variable will be the address that pod uses to communicate with Vault.
+		// returns error when not set
+		vaultURL := os.Getenv("VAULT_ADDR")
+		if vaultURL == "" {
+			SecretClientCreationError = fmt.Errorf("VAULT_ADDR environment variable not set; cannot initialize vault client")
+			return
+		}
+
 		config := vault.DefaultConfig() // modify for more granular configuration
+
+		if strings.HasPrefix(vaultURL, "https") {
+			systemCertPool, err := x509.SystemCertPool()
+			if err != nil {
+				SecretClientCreationError = fmt.Errorf("failed to retrieve system trusted certs: %w", err)
+				return
+			}
+			config.HttpClient.Transport.(*http.Transport).TLSClientConfig.RootCAs = systemCertPool
+		}
+
 		vaultClient, err := vault.NewClient(config)
 		if err != nil {
 			SecretClientCreationError = fmt.Errorf("unable to initialize Vault client: %w", err)

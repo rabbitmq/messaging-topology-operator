@@ -32,7 +32,8 @@ var SecretStoreClientProvider = GetSecretStoreClient
 
 var (
 	NoSuchRabbitmqClusterError = errors.New("RabbitmqCluster object does not exist")
-	ResourceNotAllowedError    = errors.New("Resource is not allowed to reference defined cluster reference. Check the namespace of the resource is allowed as part of the cluster's `rabbitmq.com/topology-allowed-namespaces` annotation")
+	ResourceNotAllowedError    = errors.New("resource is not allowed to reference defined cluster reference. Check the namespace of the resource is allowed as part of the cluster's `rabbitmq.com/topology-allowed-namespaces` annotation")
+	NoServiceReferenceSetError = errors.New("RabbitmqCluster has no ServiceReference set in status.defaultUser")
 )
 
 func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string, clusterDomain string) (ConnectionCredentials, bool, error) {
@@ -60,6 +61,10 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 		return nil, false, ResourceNotAllowedError
 	}
 
+	if cluster.Status.DefaultUser == nil || cluster.Status.DefaultUser.ServiceReference == nil {
+		return nil, false, NoServiceReferenceSetError
+	}
+
 	var user, pass string
 	if cluster.Spec.SecretBackend.Vault != nil && cluster.Spec.SecretBackend.Vault.DefaultUserPath != "" {
 		// ask the configured secure store for the credentials available at the path retrieved from the cluster resource
@@ -76,10 +81,6 @@ func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq top
 		// use credentials in namespace Kubernetes Secret
 		if cluster.Status.Binding == nil {
 			return nil, false, errors.New("no status.binding set")
-		}
-
-		if cluster.Status.DefaultUser == nil {
-			return nil, false, errors.New("no status.defaultUser set")
 		}
 
 		secret := &corev1.Secret{}
