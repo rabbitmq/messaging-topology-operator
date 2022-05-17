@@ -12,7 +12,7 @@ require (
 	github.com/michaelklishin/rabbit-hole/v2 v2.12.0
 	github.com/onsi/ginkgo/v2 v2.1.4
 	github.com/onsi/gomega v1.19.0
-	github.com/rabbitmq/cluster-operator v1.12.1
+	github.com/rabbitmq/cluster-operator v1.13.0
 	github.com/sclevine/yj v0.0.0-20200815061347-554173e71934
 	k8s.io/api v0.23.6
 	k8s.io/apimachinery v0.23.6
@@ -20,7 +20,7 @@ require (
 	k8s.io/code-generator v0.23.6
 	k8s.io/klog/v2 v2.60.1
 	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65
-	k8s.io/utils v0.0.0-20211116205334-6203023598ed
+	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
 	sigs.k8s.io/controller-runtime v0.11.2
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20220217024943-cfd92767d28e
 	sigs.k8s.io/controller-tools v0.8.0
