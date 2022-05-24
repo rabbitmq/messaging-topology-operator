@@ -1025,8 +1025,8 @@ github.com/prometheus/tsdb v0.7.1/go.mod h1:qhTCs0VvXwvX/y3TZrWD7rabWM+ijKTux40T
 github.com/pseudomuto/protoc-gen-doc v1.4.1/go.mod h1:exDTOVwqpp30eV/EDPFLZy3Pwr2sn6hBC1WIYH/UbIg=
 github.com/pseudomuto/protoc-gen-doc v1.5.0/go.mod h1:exDTOVwqpp30eV/EDPFLZy3Pwr2sn6hBC1WIYH/UbIg=
 github.com/pseudomuto/protokit v0.2.0/go.mod h1:2PdH30hxVHsup8KpBTOXTBeMVhJZVio3Q8ViKSAXT0Q=
-github.com/rabbitmq/cluster-operator v1.13.0 h1:sUbNab3dTB3ufTqNMOlMSgiF/KnhirBou4MeVqOm+lk=
-github.com/rabbitmq/cluster-operator v1.13.0/go.mod h1:fauJ0q72yNheyW30qraaCPr6shEcH5i1xBoGvTiVyws=
+github.com/rabbitmq/cluster-operator v1.13.1 h1:OvxS440P5Q5YdX2U8cDz9OI0qhuSuNcC18p8PQj1JDI=
+github.com/rabbitmq/cluster-operator v1.13.1/go.mod h1:fauJ0q72yNheyW30qraaCPr6shEcH5i1xBoGvTiVyws=
 github.com/rabbitmq/rabbitmq-stream-go-client v0.0.0-20210811090309-627299932bac/go.mod h1:dZtRwYizmzN1EwkcW7/CoN9rFbGSEA7i/889iakOJZE=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/remyoudompheng/bigfft v0.0.0-20170806203942-52369c62f446/go.mod h1:uYEyJGbgTkfkS4+E/PavXkNJcbFIpEtjt2B0KDQ5+9M=
