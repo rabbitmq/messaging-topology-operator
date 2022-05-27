@@ -2,9 +2,8 @@
 package internalfakes
 
 import (
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	"sync"
-
-	"github.com/rabbitmq/messaging-topology-operator/internal"
 )
 
 type FakeConnectionCredentials struct {
@@ -113,4 +112,4 @@ func (fake *FakeConnectionCredentials) recordInvocation(key string, args []inter
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ internal.ConnectionCredentials = new(FakeConnectionCredentials)
+var _ rabbitmqclient.ConnectionCredentials = new(FakeConnectionCredentials)

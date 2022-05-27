@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -28,7 +29,7 @@ type SchemaReplicationReconciler struct {
 	Log                     logr.Logger
 	Scheme                  *runtime.Scheme
 	Recorder                record.EventRecorder
-	RabbitmqClientFactory   internal.RabbitMQClientFactory
+	RabbitmqClientFactory   rabbitmqclient.Factory
 	KubernetesClusterDomain string
 }
 
@@ -48,7 +49,7 @@ func (r *SchemaReplicationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, replication.Spec.RabbitmqClusterReference, replication.Namespace, r.KubernetesClusterDomain)
+	credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, r.Client, replication.Spec.RabbitmqClusterReference, replication.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, replication, &replication.Status.Conditions, err)
 	}
@@ -101,7 +102,7 @@ func (r *SchemaReplicationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	return ctrl.Result{}, nil
 }
 
-func (r *SchemaReplicationReconciler) setSchemaReplicationUpstream(ctx context.Context, client internal.RabbitMQClient, replication *topology.SchemaReplication) error {
+func (r *SchemaReplicationReconciler) setSchemaReplicationUpstream(ctx context.Context, client rabbitmqclient.RabbitMQClient, replication *topology.SchemaReplication) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	endpoints, err := r.getUpstreamEndpoints(ctx, replication)
@@ -125,7 +126,7 @@ func (r *SchemaReplicationReconciler) setSchemaReplicationUpstream(ctx context.C
 	return nil
 }
 
-func (r *SchemaReplicationReconciler) deleteSchemaReplicationParameters(ctx context.Context, client internal.RabbitMQClient, replication *topology.SchemaReplication) error {
+func (r *SchemaReplicationReconciler) deleteSchemaReplicationParameters(ctx context.Context, client rabbitmqclient.RabbitMQClient, replication *topology.SchemaReplication) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	err := validateResponseForDeletion(client.DeleteGlobalParameter(schemaReplicationParameterName))

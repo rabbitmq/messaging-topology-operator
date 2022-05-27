@@ -1,4 +1,4 @@
-package internal
+package rabbitmqclient
 
 import (
 	"context"
@@ -36,7 +36,7 @@ var (
 	NoServiceReferenceSetError = errors.New("RabbitmqCluster has no ServiceReference set in status.defaultUser")
 )
 
-func ParseRabbitmqClusterReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string, clusterDomain string) (ConnectionCredentials, bool, error) {
+func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string, clusterDomain string) (ConnectionCredentials, bool, error) {
 	if rmq.ConnectionSecret != nil {
 		secret := &corev1.Secret{}
 		if err := c.Get(ctx, types.NamespacedName{Namespace: requestNamespace, Name: rmq.ConnectionSecret.Name}, secret); err != nil {

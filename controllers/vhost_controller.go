@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
@@ -24,7 +25,7 @@ type VhostReconciler struct {
 	Log                     logr.Logger
 	Scheme                  *runtime.Scheme
 	Recorder                record.EventRecorder
-	RabbitmqClientFactory   internal.RabbitMQClientFactory
+	RabbitmqClientFactory   rabbitmqclient.Factory
 	KubernetesClusterDomain string
 }
 
@@ -48,7 +49,7 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, vhost.Spec.RabbitmqClusterReference, vhost.Namespace, r.KubernetesClusterDomain)
+	credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, r.Client, vhost.Spec.RabbitmqClusterReference, vhost.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, vhost, &vhost.Status.Conditions, err)
 	}
@@ -102,7 +103,7 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	return ctrl.Result{}, nil
 }
 
-func (r *VhostReconciler) putVhost(ctx context.Context, client internal.RabbitMQClient, vhost *topology.Vhost) error {
+func (r *VhostReconciler) putVhost(ctx context.Context, client rabbitmqclient.RabbitMQClient, vhost *topology.Vhost) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	vhostSettings := internal.GenerateVhostSettings(vhost)
@@ -121,7 +122,7 @@ func (r *VhostReconciler) putVhost(ctx context.Context, client internal.RabbitMQ
 
 // deletes vhost from server
 // if server responds with '404' Not Found, it logs and does not requeue on error
-func (r *VhostReconciler) deleteVhost(ctx context.Context, client internal.RabbitMQClient, vhost *topology.Vhost) error {
+func (r *VhostReconciler) deleteVhost(ctx context.Context, client rabbitmqclient.RabbitMQClient, vhost *topology.Vhost) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	err := validateResponseForDeletion(client.DeleteVhost(vhost.Spec.Name))

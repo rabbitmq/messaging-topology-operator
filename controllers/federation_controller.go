@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -26,7 +27,7 @@ type FederationReconciler struct {
 	Log                     logr.Logger
 	Scheme                  *runtime.Scheme
 	Recorder                record.EventRecorder
-	RabbitmqClientFactory   internal.RabbitMQClientFactory
+	RabbitmqClientFactory   rabbitmqclient.Factory
 	KubernetesClusterDomain string
 }
 
@@ -46,7 +47,7 @@ func (r *FederationReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, federation.Spec.RabbitmqClusterReference, federation.Namespace, r.KubernetesClusterDomain)
+	credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, r.Client, federation.Spec.RabbitmqClusterReference, federation.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, federation, &federation.Status.Conditions, err)
 	}
@@ -99,7 +100,7 @@ func (r *FederationReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	return ctrl.Result{}, nil
 }
 
-func (r *FederationReconciler) setFederation(ctx context.Context, client internal.RabbitMQClient, federation *topology.Federation) error {
+func (r *FederationReconciler) setFederation(ctx context.Context, client rabbitmqclient.RabbitMQClient, federation *topology.Federation) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	uri, err := r.getUri(ctx, federation)
@@ -140,7 +141,7 @@ func (r *FederationReconciler) getUri(ctx context.Context, federation *topology.
 
 // deletes federation from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
-func (r *FederationReconciler) deleteFederation(ctx context.Context, client internal.RabbitMQClient, federation *topology.Federation) error {
+func (r *FederationReconciler) deleteFederation(ctx context.Context, client rabbitmqclient.RabbitMQClient, federation *topology.Federation) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	err := validateResponseForDeletion(client.DeleteFederationUpstream(federation.Spec.Vhost, federation.Spec.Name))

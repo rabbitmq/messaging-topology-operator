@@ -2,10 +2,10 @@
 package internalfakes
 
 import (
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	"sync"
 
 	"github.com/hashicorp/vault/api"
-	"github.com/rabbitmq/messaging-topology-operator/internal"
 )
 
 type FakeSecretReader struct {
@@ -114,4 +114,4 @@ func (fake *FakeSecretReader) recordInvocation(key string, args []interface{}) {
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ internal.SecretReader = new(FakeSecretReader)
+var _ rabbitmqclient.SecretReader = new(FakeSecretReader)

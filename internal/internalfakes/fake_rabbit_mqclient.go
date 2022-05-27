@@ -2,11 +2,11 @@
 package internalfakes
 
 import (
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	"net/http"
 	"sync"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
-	"github.com/rabbitmq/messaging-topology-operator/internal"
 )
 
 type FakeRabbitMQClient struct {
@@ -1830,4 +1830,4 @@ func (fake *FakeRabbitMQClient) recordInvocation(key string, args []interface{})
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ internal.RabbitMQClient = new(FakeRabbitMQClient)
+var _ rabbitmqclient.RabbitMQClient = new(FakeRabbitMQClient)

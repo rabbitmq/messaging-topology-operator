@@ -16,6 +16,7 @@ import (
 	"github.com/go-logr/logr"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -31,7 +32,7 @@ type QueueReconciler struct {
 	Log                     logr.Logger
 	Scheme                  *runtime.Scheme
 	Recorder                record.EventRecorder
-	RabbitmqClientFactory   internal.RabbitMQClientFactory
+	RabbitmqClientFactory   rabbitmqclient.Factory
 	KubernetesClusterDomain string
 }
 
@@ -56,7 +57,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, queue.Spec.RabbitmqClusterReference, queue.Namespace, r.KubernetesClusterDomain)
+	credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, r.Client, queue.Spec.RabbitmqClusterReference, queue.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, queue, &queue.Status.Conditions, err)
 	}
@@ -110,7 +111,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	return ctrl.Result{}, nil
 }
 
-func (r *QueueReconciler) declareQueue(ctx context.Context, client internal.RabbitMQClient, queue *topology.Queue) error {
+func (r *QueueReconciler) declareQueue(ctx context.Context, client rabbitmqclient.RabbitMQClient, queue *topology.Queue) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	queueSettings, err := internal.GenerateQueueSettings(queue)
@@ -136,7 +137,7 @@ func (r *QueueReconciler) declareQueue(ctx context.Context, client internal.Rabb
 // deletes queue from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
 // queues could be deleted manually or gone because of AutoDelete
-func (r *QueueReconciler) deleteQueue(ctx context.Context, client internal.RabbitMQClient, queue *topology.Queue) error {
+func (r *QueueReconciler) deleteQueue(ctx context.Context, client rabbitmqclient.RabbitMQClient, queue *topology.Queue) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	err := validateResponseForDeletion(client.DeleteQueue(queue.Spec.Vhost, queue.Spec.Name))

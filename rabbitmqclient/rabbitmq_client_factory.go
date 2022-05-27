@@ -7,7 +7,7 @@ This product is licensed to you under the Mozilla Public License 2.0 license (th
 This product may include a number of subcomponents with separate copyright notices and license terms. Your use of these subcomponents is subject to the terms and conditions of the subcomponent's license, as noted in the LICENSE file.
 */
 
-package internal
+package rabbitmqclient
 
 import (
 	"crypto/tls"
@@ -45,9 +45,9 @@ type RabbitMQClient interface {
 	DeleteShovel(vhost, shovel string) (res *http.Response, err error)
 }
 
-type RabbitMQClientFactory func(connectionCreds ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (RabbitMQClient, error)
+type Factory func(connectionCreds ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (RabbitMQClient, error)
 
-var RabbitholeClientFactory RabbitMQClientFactory = func(connectionCreds ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (RabbitMQClient, error) {
+var RabbitholeClientFactory Factory = func(connectionCreds ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (RabbitMQClient, error) {
 	return generateRabbitholeClient(connectionCreds, tlsEnabled, certPool)
 }
 

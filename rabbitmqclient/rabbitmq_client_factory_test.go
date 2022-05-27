@@ -1,9 +1,10 @@
-package internal_test
+package rabbitmqclient_test
 
 import (
 	"crypto/x509"
 	"errors"
 	"github.com/rabbitmq/messaging-topology-operator/internal/internalfakes"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -13,12 +14,11 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
-	"github.com/rabbitmq/messaging-topology-operator/internal"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("ParseRabbitmqClusterReference", func() {
+var _ = Describe("ParseReference", func() {
 	var (
 		existingRabbitMQUsername  = "abc123"
 		existingRabbitMQPassword  = "foo1234"
@@ -99,7 +99,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			})
 
 			It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
-				generatedClient, err := internal.RabbitholeClientFactory(FakeConnectionCredentials, false, certPool)
+				generatedClient, err := rabbitmqclient.RabbitholeClientFactory(FakeConnectionCredentials, false, certPool)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(generatedClient).NotTo(BeNil())
 
@@ -178,7 +178,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 
 			When("the CA that signed the certs is not trusted", func() {
 				It("generates a rabbithole client which fails to authenticate with the cluster", func() {
-					generatedClient, err := internal.RabbitholeClientFactory(FakeConnectionCredentials, true, certPool)
+					generatedClient, err := rabbitmqclient.RabbitholeClientFactory(FakeConnectionCredentials, true, certPool)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(generatedClient).NotTo(BeNil())
 
@@ -193,7 +193,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 					Expect(ok).To(BeTrue())
 				})
 				It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
-					generatedClient, err := internal.RabbitholeClientFactory(FakeConnectionCredentials, true, certPool)
+					generatedClient, err := rabbitmqclient.RabbitholeClientFactory(FakeConnectionCredentials, true, certPool)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(generatedClient).NotTo(BeNil())
 
@@ -228,7 +228,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 		})
 
 		It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
-			generatedClient, err := internal.RabbitholeClientFactory(FakeConnectionCredentials, false, certPool)
+			generatedClient, err := rabbitmqclient.RabbitholeClientFactory(FakeConnectionCredentials, false, certPool)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(generatedClient).NotTo(BeNil())
 

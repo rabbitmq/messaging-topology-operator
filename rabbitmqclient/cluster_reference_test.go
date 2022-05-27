@@ -1,14 +1,14 @@
-package internal_test
+package rabbitmqclient_test
 
 import (
 	"context"
 	"fmt"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"github.com/rabbitmq/messaging-topology-operator/internal/internalfakes"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,7 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-var _ = Describe("ParseRabbitmqClusterReference", func() {
+var _ = Describe("ParseReference", func() {
 	var (
 		objs                     []runtime.Object
 		fakeClient               client.Client
@@ -85,7 +85,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 		})
 
 		It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
-			credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
+			credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(tlsEnabled).To(BeFalse())
@@ -113,8 +113,8 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			})
 
 			It("errors", func() {
-				_, _, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
-				Expect(err).To(MatchError(internal.NoServiceReferenceSetError))
+				_, _, err := rabbitmqclient.ParseReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
+				Expect(err).To(MatchError(rabbitmqclient.NoServiceReferenceSetError))
 			})
 		})
 
@@ -122,7 +122,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			var (
 				err                   error
 				fakeSecretStoreClient *internalfakes.FakeSecretStoreClient
-				credsProv             internal.ConnectionCredentials
+				credsProv             rabbitmqclient.ConnectionCredentials
 				tlsEnabled            bool
 			)
 
@@ -155,17 +155,17 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 
 				fakeSecretStoreClient = &internalfakes.FakeSecretStoreClient{}
 				fakeSecretStoreClient.ReadCredentialsReturns(existingRabbitMQUsername, existingRabbitMQPassword, nil)
-				internal.SecretStoreClientProvider = func() (internal.SecretStoreClient, error) {
+				rabbitmqclient.SecretStoreClientProvider = func() (rabbitmqclient.SecretStoreClient, error) {
 					return fakeSecretStoreClient, nil
 				}
 			})
 
 			AfterEach(func() {
-				internal.SecretStoreClientProvider = internal.GetSecretStoreClient
+				rabbitmqclient.SecretStoreClientProvider = rabbitmqclient.GetSecretStoreClient
 			})
 
 			JustBeforeEach(func() {
-				credsProv, tlsEnabled, err = internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
+				credsProv, tlsEnabled, err = rabbitmqclient.ParseReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
 			})
 
 			It("should not return an error", func() {
@@ -200,14 +200,14 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 					}
 					fakeSecretStoreClient = &internalfakes.FakeSecretStoreClient{}
 					fakeSecretStoreClient.ReadCredentialsReturns(existingRabbitMQUsername, existingRabbitMQPassword, nil)
-					internal.SecretStoreClientProvider = func() (internal.SecretStoreClient, error) {
+					rabbitmqclient.SecretStoreClientProvider = func() (rabbitmqclient.SecretStoreClient, error) {
 						return fakeSecretStoreClient, nil
 					}
 				})
 
 				It("errors", func() {
-					_, _, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
-					Expect(err).To(MatchError(internal.NoServiceReferenceSetError))
+					_, _, err := rabbitmqclient.ParseReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
+					Expect(err).To(MatchError(rabbitmqclient.NoServiceReferenceSetError))
 				})
 			})
 		})
@@ -267,7 +267,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 		})
 
 		It("returns correct creds in connectionCredentials", func() {
-			credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient,
+			credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
 				topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
 				existingRabbitMQCluster.Namespace,
 				"")
@@ -301,7 +301,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			})
 
 			It("returns the expected connection information", func() {
-				credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient,
+				credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
 					topology.RabbitmqClusterReference{
 						ConnectionSecret: &corev1.LocalObjectReference{
 							Name: "rmq-connection-info",
@@ -338,7 +338,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			})
 
 			It("returns the expected connection information", func() {
-				credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient,
+				credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
 					topology.RabbitmqClusterReference{
 						ConnectionSecret: &corev1.LocalObjectReference{
 							Name: "rmq-connection-info",
@@ -375,7 +375,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 			})
 
 			It("returns the expected connection information", func() {
-				credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient,
+				credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
 					topology.RabbitmqClusterReference{
 						ConnectionSecret: &corev1.LocalObjectReference{
 							Name: "rmq-connection-info",
@@ -434,7 +434,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 		It("generates an address with cluster domain suffix", func() {
 			someDomain := ".example.com"
 
-			credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient,
+			credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
 				topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
 				existingRabbitMQCluster.Namespace,
 				someDomain)
@@ -449,7 +449,7 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 
 		When("the domain suffix is not present", func() {
 			It("generates the shortname", func() {
-				credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, fakeClient,
+				credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
 					topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
 					existingRabbitMQCluster.Namespace,
 					"")
@@ -468,13 +468,13 @@ var _ = Describe("ParseRabbitmqClusterReference", func() {
 var _ = Describe("AllowedNamespace", func() {
 	When("rabbitmqcluster reference namespace is an empty string", func() {
 		It("returns true", func() {
-			Expect(internal.AllowedNamespace(topology.RabbitmqClusterReference{Name: "a-name"}, "", nil)).To(BeTrue())
+			Expect(rabbitmqclient.AllowedNamespace(topology.RabbitmqClusterReference{Name: "a-name"}, "", nil)).To(BeTrue())
 		})
 	})
 
 	When("rabbitmqcluster reference namespace matches requested namespace", func() {
 		It("returns true", func() {
-			Expect(internal.AllowedNamespace(topology.RabbitmqClusterReference{Name: "a-name", Namespace: "a-ns"}, "a-ns", nil)).To(BeTrue())
+			Expect(rabbitmqclient.AllowedNamespace(topology.RabbitmqClusterReference{Name: "a-name", Namespace: "a-ns"}, "a-ns", nil)).To(BeTrue())
 		})
 	})
 
@@ -488,9 +488,9 @@ var _ = Describe("AllowedNamespace", func() {
 				},
 			}
 			ref := topology.RabbitmqClusterReference{Name: "a-name"}
-			Expect(internal.AllowedNamespace(ref, "test", cluster)).To(BeTrue())
-			Expect(internal.AllowedNamespace(ref, "test0", cluster)).To(BeTrue())
-			Expect(internal.AllowedNamespace(ref, "test1", cluster)).To(BeTrue())
+			Expect(rabbitmqclient.AllowedNamespace(ref, "test", cluster)).To(BeTrue())
+			Expect(rabbitmqclient.AllowedNamespace(ref, "test0", cluster)).To(BeTrue())
+			Expect(rabbitmqclient.AllowedNamespace(ref, "test1", cluster)).To(BeTrue())
 		})
 	})
 
@@ -504,7 +504,7 @@ var _ = Describe("AllowedNamespace", func() {
 				},
 			}
 			ref := topology.RabbitmqClusterReference{Name: "a-name"}
-			Expect(internal.AllowedNamespace(ref, "notThere", cluster)).To(BeTrue())
+			Expect(rabbitmqclient.AllowedNamespace(ref, "notThere", cluster)).To(BeTrue())
 		})
 	})
 
@@ -518,8 +518,8 @@ var _ = Describe("AllowedNamespace", func() {
 				},
 			}
 			ref := topology.RabbitmqClusterReference{Name: "a-name"}
-			Expect(internal.AllowedNamespace(ref, "anything", cluster)).To(BeTrue())
-			Expect(internal.AllowedNamespace(ref, "whatever", cluster)).To(BeTrue())
+			Expect(rabbitmqclient.AllowedNamespace(ref, "anything", cluster)).To(BeTrue())
+			Expect(rabbitmqclient.AllowedNamespace(ref, "whatever", cluster)).To(BeTrue())
 		})
 	})
 })

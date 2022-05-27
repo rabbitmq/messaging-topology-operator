@@ -12,6 +12,7 @@ package controllers_test
 import (
 	"context"
 	"crypto/x509"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	"go/build"
 	"path/filepath"
 	"testing"
@@ -36,7 +37,6 @@ import (
 
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
-	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"github.com/rabbitmq/messaging-topology-operator/internal/internalfakes"
 )
 
@@ -53,9 +53,9 @@ var (
 	cancel                    context.CancelFunc
 	fakeRabbitMQClient        *internalfakes.FakeRabbitMQClient
 	fakeRabbitMQClientError   error
-	fakeRabbitMQClientFactory = func(connectionCreds internal.ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (internal.RabbitMQClient, error) {
+	fakeRabbitMQClientFactory = func(connectionCreds rabbitmqclient.ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (rabbitmqclient.RabbitMQClient, error) {
 		fakeRabbitMQClientFactoryArgsForCall = append(fakeRabbitMQClientFactoryArgsForCall, struct {
-			arg1 internal.ConnectionCredentials
+			arg1 rabbitmqclient.ConnectionCredentials
 			arg2 bool
 			arg3 *x509.CertPool
 		}{connectionCreds, tlsEnabled, certPool})
@@ -63,7 +63,7 @@ var (
 	}
 	// Shameless copy of what counterfeiter does for mocking
 	fakeRabbitMQClientFactoryArgsForCall []struct {
-		arg1 internal.ConnectionCredentials
+		arg1 rabbitmqclient.ConnectionCredentials
 		arg2 bool
 		arg3 *x509.CertPool
 	}
@@ -448,7 +448,7 @@ func observedEvents() []string {
 	return events
 }
 
-func FakeRabbitMQClientFactoryArgsForCall(i int) (internal.ConnectionCredentials, bool, *x509.CertPool) {
+func FakeRabbitMQClientFactoryArgsForCall(i int) (rabbitmqclient.ConnectionCredentials, bool, *x509.CertPool) {
 	// More shameless copy of counterfeiter code generation idea
 	argsForCall := fakeRabbitMQClientFactoryArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3

@@ -12,6 +12,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	"k8s.io/klog/v2"
 	"os"
 	"regexp"
@@ -29,7 +30,6 @@ import (
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
-	"github.com/rabbitmq/messaging-topology-operator/internal"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -117,7 +117,7 @@ func main() {
 		Log:                     ctrl.Log.WithName(controllers.QueueControllerName),
 		Scheme:                  mgr.GetScheme(),
 		Recorder:                mgr.GetEventRecorderFor(controllers.QueueControllerName),
-		RabbitmqClientFactory:   internal.RabbitholeClientFactory,
+		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.QueueControllerName)
@@ -128,7 +128,7 @@ func main() {
 		Log:                     ctrl.Log.WithName(controllers.ExchangeControllerName),
 		Scheme:                  mgr.GetScheme(),
 		Recorder:                mgr.GetEventRecorderFor(controllers.ExchangeControllerName),
-		RabbitmqClientFactory:   internal.RabbitholeClientFactory,
+		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.ExchangeControllerName)
@@ -139,7 +139,7 @@ func main() {
 		Log:                     ctrl.Log.WithName(controllers.BindingControllerName),
 		Scheme:                  mgr.GetScheme(),
 		Recorder:                mgr.GetEventRecorderFor(controllers.BindingControllerName),
-		RabbitmqClientFactory:   internal.RabbitholeClientFactory,
+		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.BindingControllerName)
@@ -150,7 +150,7 @@ func main() {
 		Log:                     ctrl.Log.WithName(controllers.UserControllerName),
 		Scheme:                  mgr.GetScheme(),
 		Recorder:                mgr.GetEventRecorderFor(controllers.UserControllerName),
-		RabbitmqClientFactory:   internal.RabbitholeClientFactory,
+		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.UserControllerName)
@@ -161,7 +161,7 @@ func main() {
 		Log:                     ctrl.Log.WithName(controllers.VhostControllerName),
 		Scheme:                  mgr.GetScheme(),
 		Recorder:                mgr.GetEventRecorderFor(controllers.VhostControllerName),
-		RabbitmqClientFactory:   internal.RabbitholeClientFactory,
+		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.VhostControllerName)
@@ -172,7 +172,7 @@ func main() {
 		Log:                     ctrl.Log.WithName(controllers.PolicyControllerName),
 		Scheme:                  mgr.GetScheme(),
 		Recorder:                mgr.GetEventRecorderFor(controllers.PolicyControllerName),
-		RabbitmqClientFactory:   internal.RabbitholeClientFactory,
+		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.PolicyControllerName)
@@ -183,7 +183,7 @@ func main() {
 		Log:                     ctrl.Log.WithName(controllers.PermissionControllerName),
 		Scheme:                  mgr.GetScheme(),
 		Recorder:                mgr.GetEventRecorderFor(controllers.PermissionControllerName),
-		RabbitmqClientFactory:   internal.RabbitholeClientFactory,
+		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.PermissionControllerName)
@@ -194,7 +194,7 @@ func main() {
 		Log:                     ctrl.Log.WithName(controllers.SchemaReplicationControllerName),
 		Scheme:                  mgr.GetScheme(),
 		Recorder:                mgr.GetEventRecorderFor(controllers.SchemaReplicationControllerName),
-		RabbitmqClientFactory:   internal.RabbitholeClientFactory,
+		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.SchemaReplicationControllerName)
@@ -205,7 +205,7 @@ func main() {
 		Log:                     ctrl.Log.WithName(controllers.FederationControllerName),
 		Scheme:                  mgr.GetScheme(),
 		Recorder:                mgr.GetEventRecorderFor(controllers.FederationControllerName),
-		RabbitmqClientFactory:   internal.RabbitholeClientFactory,
+		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.FederationControllerName)
@@ -216,7 +216,7 @@ func main() {
 		Log:                     ctrl.Log.WithName(controllers.ShovelControllerName),
 		Scheme:                  mgr.GetScheme(),
 		Recorder:                mgr.GetEventRecorderFor(controllers.ShovelControllerName),
-		RabbitmqClientFactory:   internal.RabbitholeClientFactory,
+		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.ShovelControllerName)
@@ -227,7 +227,7 @@ func main() {
 		Log:                   ctrl.Log.WithName(controllers.SuperStreamControllerName),
 		Scheme:                mgr.GetScheme(),
 		Recorder:              mgr.GetEventRecorderFor(controllers.SuperStreamControllerName),
-		RabbitmqClientFactory: internal.RabbitholeClientFactory,
+		RabbitmqClientFactory: rabbitmqclient.RabbitholeClientFactory,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.SuperStreamControllerName)
 		os.Exit(1)

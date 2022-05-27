@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
@@ -33,7 +34,7 @@ type PolicyReconciler struct {
 	Log                     logr.Logger
 	Scheme                  *runtime.Scheme
 	Recorder                record.EventRecorder
-	RabbitmqClientFactory   internal.RabbitMQClientFactory
+	RabbitmqClientFactory   rabbitmqclient.Factory
 	KubernetesClusterDomain string
 }
 
@@ -54,7 +55,7 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, policy.Spec.RabbitmqClusterReference, policy.Namespace, r.KubernetesClusterDomain)
+	credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, r.Client, policy.Spec.RabbitmqClusterReference, policy.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, policy, &policy.Status.Conditions, err)
 	}
@@ -108,7 +109,7 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 }
 
 // creates or updates a given policy using rabbithole client.PutPolicy
-func (r *PolicyReconciler) putPolicy(ctx context.Context, client internal.RabbitMQClient, policy *topology.Policy) error {
+func (r *PolicyReconciler) putPolicy(ctx context.Context, client rabbitmqclient.RabbitMQClient, policy *topology.Policy) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	generatePolicy, err := internal.GeneratePolicy(policy)
@@ -132,7 +133,7 @@ func (r *PolicyReconciler) putPolicy(ctx context.Context, client internal.Rabbit
 
 // deletes policy from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
-func (r *PolicyReconciler) deletePolicy(ctx context.Context, client internal.RabbitMQClient, policy *topology.Policy) error {
+func (r *PolicyReconciler) deletePolicy(ctx context.Context, client rabbitmqclient.RabbitMQClient, policy *topology.Policy) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	err := validateResponseForDeletion(client.DeletePolicy(policy.Spec.Vhost, policy.Spec.Name))
