@@ -108,7 +108,7 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	return ctrl.Result{}, nil
 }
 
-func (r *BindingReconciler) declareBinding(ctx context.Context, client rabbitmqclient.RabbitMQClient, binding *topology.Binding) error {
+func (r *BindingReconciler) declareBinding(ctx context.Context, client rabbitmqclient.Client, binding *topology.Binding) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	info, err := internal.GenerateBindingInfo(binding)
@@ -135,7 +135,7 @@ func (r *BindingReconciler) declareBinding(ctx context.Context, client rabbitmqc
 // when server responds with '404' Not Found, it logs and does not requeue on error
 // if no binding argument is set, generating properties key by using internal.GeneratePropertiesKey
 // if binding arguments are set, list all bindings between source/destination to find the binding; if it failed to find corresponding binding, it assumes that the binding is already deleted and returns no error
-func (r *BindingReconciler) deleteBinding(ctx context.Context, client rabbitmqclient.RabbitMQClient, binding *topology.Binding) error {
+func (r *BindingReconciler) deleteBinding(ctx context.Context, client rabbitmqclient.Client, binding *topology.Binding) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	var info *rabbithole.BindingInfo
@@ -175,7 +175,7 @@ func (r *BindingReconciler) deleteBinding(ctx context.Context, client rabbitmqcl
 	return removeFinalizer(ctx, r.Client, binding)
 }
 
-func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topology.Binding, client rabbitmqclient.RabbitMQClient) (*rabbithole.BindingInfo, error) {
+func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topology.Binding, client rabbitmqclient.Client) (*rabbithole.BindingInfo, error) {
 	logger.Info("binding arguments set; listing bindings from server to complete deletion")
 	arguments := make(map[string]interface{})
 	if binding.Spec.Arguments != nil {

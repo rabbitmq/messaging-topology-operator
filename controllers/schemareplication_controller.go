@@ -102,7 +102,7 @@ func (r *SchemaReplicationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	return ctrl.Result{}, nil
 }
 
-func (r *SchemaReplicationReconciler) setSchemaReplicationUpstream(ctx context.Context, client rabbitmqclient.RabbitMQClient, replication *topology.SchemaReplication) error {
+func (r *SchemaReplicationReconciler) setSchemaReplicationUpstream(ctx context.Context, client rabbitmqclient.Client, replication *topology.SchemaReplication) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	endpoints, err := r.getUpstreamEndpoints(ctx, replication)
@@ -126,7 +126,7 @@ func (r *SchemaReplicationReconciler) setSchemaReplicationUpstream(ctx context.C
 	return nil
 }
 
-func (r *SchemaReplicationReconciler) deleteSchemaReplicationParameters(ctx context.Context, client rabbitmqclient.RabbitMQClient, replication *topology.SchemaReplication) error {
+func (r *SchemaReplicationReconciler) deleteSchemaReplicationParameters(ctx context.Context, client rabbitmqclient.Client, replication *topology.SchemaReplication) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	err := validateResponseForDeletion(client.DeleteGlobalParameter(schemaReplicationParameterName))

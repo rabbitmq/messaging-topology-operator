@@ -103,7 +103,7 @@ func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	return ctrl.Result{}, nil
 }
 
-func (r *VhostReconciler) putVhost(ctx context.Context, client rabbitmqclient.RabbitMQClient, vhost *topology.Vhost) error {
+func (r *VhostReconciler) putVhost(ctx context.Context, client rabbitmqclient.Client, vhost *topology.Vhost) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	vhostSettings := internal.GenerateVhostSettings(vhost)
@@ -122,7 +122,7 @@ func (r *VhostReconciler) putVhost(ctx context.Context, client rabbitmqclient.Ra
 
 // deletes vhost from server
 // if server responds with '404' Not Found, it logs and does not requeue on error
-func (r *VhostReconciler) deleteVhost(ctx context.Context, client rabbitmqclient.RabbitMQClient, vhost *topology.Vhost) error {
+func (r *VhostReconciler) deleteVhost(ctx context.Context, client rabbitmqclient.Client, vhost *topology.Vhost) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	err := validateResponseForDeletion(client.DeleteVhost(vhost.Spec.Name))

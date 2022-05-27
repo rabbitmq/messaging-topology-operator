@@ -107,7 +107,7 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	return ctrl.Result{}, nil
 }
 
-func (r *ExchangeReconciler) declareExchange(ctx context.Context, client rabbitmqclient.RabbitMQClient, exchange *topology.Exchange) error {
+func (r *ExchangeReconciler) declareExchange(ctx context.Context, client rabbitmqclient.Client, exchange *topology.Exchange) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	settings, err := internal.GenerateExchangeSettings(exchange)
@@ -132,7 +132,7 @@ func (r *ExchangeReconciler) declareExchange(ctx context.Context, client rabbitm
 
 // deletes exchange from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
-func (r *ExchangeReconciler) deleteExchange(ctx context.Context, client rabbitmqclient.RabbitMQClient, exchange *topology.Exchange) error {
+func (r *ExchangeReconciler) deleteExchange(ctx context.Context, client rabbitmqclient.Client, exchange *topology.Exchange) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	err := validateResponseForDeletion(client.DeleteExchange(exchange.Spec.Vhost, exchange.Spec.Name))

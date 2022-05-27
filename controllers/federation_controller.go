@@ -100,7 +100,7 @@ func (r *FederationReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	return ctrl.Result{}, nil
 }
 
-func (r *FederationReconciler) setFederation(ctx context.Context, client rabbitmqclient.RabbitMQClient, federation *topology.Federation) error {
+func (r *FederationReconciler) setFederation(ctx context.Context, client rabbitmqclient.Client, federation *topology.Federation) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	uri, err := r.getUri(ctx, federation)
@@ -141,7 +141,7 @@ func (r *FederationReconciler) getUri(ctx context.Context, federation *topology.
 
 // deletes federation from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
-func (r *FederationReconciler) deleteFederation(ctx context.Context, client rabbitmqclient.RabbitMQClient, federation *topology.Federation) error {
+func (r *FederationReconciler) deleteFederation(ctx context.Context, client rabbitmqclient.Client, federation *topology.Federation) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	err := validateResponseForDeletion(client.DeleteFederationUpstream(federation.Spec.Vhost, federation.Spec.Name))

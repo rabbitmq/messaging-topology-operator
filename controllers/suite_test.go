@@ -53,7 +53,7 @@ var (
 	cancel                    context.CancelFunc
 	fakeRabbitMQClient        *internalfakes.FakeRabbitMQClient
 	fakeRabbitMQClientError   error
-	fakeRabbitMQClientFactory = func(connectionCreds rabbitmqclient.ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (rabbitmqclient.RabbitMQClient, error) {
+	fakeRabbitMQClientFactory = func(connectionCreds rabbitmqclient.ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (rabbitmqclient.Client, error) {
 		fakeRabbitMQClientFactoryArgsForCall = append(fakeRabbitMQClientFactoryArgsForCall, struct {
 			arg1 rabbitmqclient.ConnectionCredentials
 			arg2 bool

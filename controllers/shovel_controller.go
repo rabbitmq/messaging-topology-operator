@@ -99,7 +99,7 @@ func (r *ShovelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	return ctrl.Result{}, nil
 }
 
-func (r *ShovelReconciler) declareShovel(ctx context.Context, client rabbitmqclient.RabbitMQClient, shovel *topology.Shovel) error {
+func (r *ShovelReconciler) declareShovel(ctx context.Context, client rabbitmqclient.Client, shovel *topology.Shovel) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	srcUri, destUri, err := r.getUris(ctx, shovel)
@@ -145,7 +145,7 @@ func (r *ShovelReconciler) getUris(ctx context.Context, shovel *topology.Shovel)
 
 // deletes shovel configuration from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
-func (r *ShovelReconciler) deleteShovel(ctx context.Context, client rabbitmqclient.RabbitMQClient, shovel *topology.Shovel) error {
+func (r *ShovelReconciler) deleteShovel(ctx context.Context, client rabbitmqclient.Client, shovel *topology.Shovel) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	err := validateResponseForDeletion(client.DeleteShovel(shovel.Spec.Vhost, shovel.Spec.Name))

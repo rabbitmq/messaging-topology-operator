@@ -109,7 +109,7 @@ func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 }
 
 // creates or updates a given policy using rabbithole client.PutPolicy
-func (r *PolicyReconciler) putPolicy(ctx context.Context, client rabbitmqclient.RabbitMQClient, policy *topology.Policy) error {
+func (r *PolicyReconciler) putPolicy(ctx context.Context, client rabbitmqclient.Client, policy *topology.Policy) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	generatePolicy, err := internal.GeneratePolicy(policy)
@@ -133,7 +133,7 @@ func (r *PolicyReconciler) putPolicy(ctx context.Context, client rabbitmqclient.
 
 // deletes policy from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
-func (r *PolicyReconciler) deletePolicy(ctx context.Context, client rabbitmqclient.RabbitMQClient, policy *topology.Policy) error {
+func (r *PolicyReconciler) deletePolicy(ctx context.Context, client rabbitmqclient.Client, policy *topology.Policy) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	err := validateResponseForDeletion(client.DeletePolicy(policy.Spec.Vhost, policy.Spec.Name))

@@ -111,7 +111,7 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	return ctrl.Result{}, nil
 }
 
-func (r *QueueReconciler) declareQueue(ctx context.Context, client rabbitmqclient.RabbitMQClient, queue *topology.Queue) error {
+func (r *QueueReconciler) declareQueue(ctx context.Context, client rabbitmqclient.Client, queue *topology.Queue) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	queueSettings, err := internal.GenerateQueueSettings(queue)
@@ -137,7 +137,7 @@ func (r *QueueReconciler) declareQueue(ctx context.Context, client rabbitmqclien
 // deletes queue from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
 // queues could be deleted manually or gone because of AutoDelete
-func (r *QueueReconciler) deleteQueue(ctx context.Context, client rabbitmqclient.RabbitMQClient, queue *topology.Queue) error {
+func (r *QueueReconciler) deleteQueue(ctx context.Context, client rabbitmqclient.Client, queue *topology.Queue) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	err := validateResponseForDeletion(client.DeleteQueue(queue.Spec.Vhost, queue.Spec.Name))

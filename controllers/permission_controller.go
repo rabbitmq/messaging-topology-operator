@@ -181,7 +181,7 @@ func (r *PermissionReconciler) getUserFromReference(ctx context.Context, permiss
 	return user, nil
 }
 
-func (r *PermissionReconciler) updatePermissions(ctx context.Context, client rabbitmqclient.RabbitMQClient, permission *topology.Permission, user string) error {
+func (r *PermissionReconciler) updatePermissions(ctx context.Context, client rabbitmqclient.Client, permission *topology.Permission, user string) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	if err := validateResponse(client.UpdatePermissionsIn(permission.Spec.Vhost, user, internal.GeneratePermissions(permission))); err != nil {
@@ -196,7 +196,7 @@ func (r *PermissionReconciler) updatePermissions(ctx context.Context, client rab
 	return nil
 }
 
-func (r *PermissionReconciler) revokePermissions(ctx context.Context, client rabbitmqclient.RabbitMQClient, permission *topology.Permission, user string) error {
+func (r *PermissionReconciler) revokePermissions(ctx context.Context, client rabbitmqclient.Client, permission *topology.Permission, user string) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	err := validateResponseForDeletion(client.ClearPermissionsIn(permission.Spec.Vhost, user))

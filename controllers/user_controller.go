@@ -272,7 +272,7 @@ func (r *UserReconciler) setUserStatus(ctx context.Context, user *topology.User,
 	return nil
 }
 
-func (r *UserReconciler) declareUser(ctx context.Context, client rabbitmqclient.RabbitMQClient, user *topology.User) error {
+func (r *UserReconciler) declareUser(ctx context.Context, client rabbitmqclient.Client, user *topology.User) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	credentials, err := r.getUserCredentials(ctx, user)
@@ -316,7 +316,7 @@ func (r *UserReconciler) getUserCredentials(ctx context.Context, user *topology.
 	return credentials, nil
 }
 
-func (r *UserReconciler) deleteUserFromSecret(ctx context.Context, client rabbitmqclient.RabbitMQClient, user *topology.User) error {
+func (r *UserReconciler) deleteUserFromSecret(ctx context.Context, client rabbitmqclient.Client, user *topology.User) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	credentials, err := r.getUserCredentials(ctx, user)
@@ -340,7 +340,7 @@ func (r *UserReconciler) deleteUserFromSecret(ctx context.Context, client rabbit
 	return removeFinalizer(ctx, r.Client, user)
 }
 
-func (r *UserReconciler) deleteUser(ctx context.Context, client rabbitmqclient.RabbitMQClient, user *topology.User) error {
+func (r *UserReconciler) deleteUser(ctx context.Context, client rabbitmqclient.Client, user *topology.User) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	err := validateResponseForDeletion(client.DeleteUser(user.Status.Username))

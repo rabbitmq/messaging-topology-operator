@@ -19,8 +19,8 @@ import (
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 )
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . RabbitMQClient
-type RabbitMQClient interface {
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . Client
+type Client interface {
 	PutUser(string, rabbithole.UserSettings) (*http.Response, error)
 	DeleteUser(string) (*http.Response, error)
 	DeclareBinding(string, rabbithole.BindingInfo) (*http.Response, error)
@@ -45,16 +45,16 @@ type RabbitMQClient interface {
 	DeleteShovel(vhost, shovel string) (res *http.Response, err error)
 }
 
-type Factory func(connectionCreds ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (RabbitMQClient, error)
+type Factory func(connectionCreds ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (Client, error)
 
-var RabbitholeClientFactory Factory = func(connectionCreds ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (RabbitMQClient, error) {
+var RabbitholeClientFactory Factory = func(connectionCreds ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (Client, error) {
 	return generateRabbitholeClient(connectionCreds, tlsEnabled, certPool)
 }
 
 // generateRabbitholeClient returns a http client for a given creds
 // if provided RabbitmqCluster is nil, generateRabbitholeClient uses username, passwords, and uri
 // information from connectionCreds to generate a rabbit client
-func generateRabbitholeClient(connectionCreds ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (rabbitmqClient RabbitMQClient, err error) {
+func generateRabbitholeClient(connectionCreds ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (rabbitmqClient Client, err error) {
 	defaultUser, found := connectionCreds.Data("username")
 	if !found {
 		return nil, keyMissingErr("username")
