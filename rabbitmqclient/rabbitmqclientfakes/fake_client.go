@@ -138,6 +138,20 @@ type FakeClient struct {
 		result1 *http.Response
 		result2 error
 	}
+	DeleteOperatorPolicyStub        func(string, string) (*http.Response, error)
+	deleteOperatorPolicyMutex       sync.RWMutex
+	deleteOperatorPolicyArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	deleteOperatorPolicyReturns struct {
+		result1 *http.Response
+		result2 error
+	}
+	deleteOperatorPolicyReturnsOnCall map[int]struct {
+		result1 *http.Response
+		result2 error
+	}
 	DeletePolicyStub        func(string, string) (*http.Response, error)
 	deletePolicyMutex       sync.RWMutex
 	deletePolicyArgsForCall []struct {
@@ -207,6 +221,19 @@ type FakeClient struct {
 		result1 *http.Response
 		result2 error
 	}
+	GetVhostStub        func(string) (*rabbithole.VhostInfo, error)
+	getVhostMutex       sync.RWMutex
+	getVhostArgsForCall []struct {
+		arg1 string
+	}
+	getVhostReturns struct {
+		result1 *rabbithole.VhostInfo
+		result2 error
+	}
+	getVhostReturnsOnCall map[int]struct {
+		result1 *rabbithole.VhostInfo
+		result2 error
+	}
 	ListExchangeBindingsBetweenStub        func(string, string, string) ([]rabbithole.BindingInfo, error)
 	listExchangeBindingsBetweenMutex       sync.RWMutex
 	listExchangeBindingsBetweenArgsForCall []struct {
@@ -263,6 +290,21 @@ type FakeClient struct {
 		result2 error
 	}
 	putGlobalParameterReturnsOnCall map[int]struct {
+		result1 *http.Response
+		result2 error
+	}
+	PutOperatorPolicyStub        func(string, string, rabbithole.OperatorPolicy) (*http.Response, error)
+	putOperatorPolicyMutex       sync.RWMutex
+	putOperatorPolicyArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 rabbithole.OperatorPolicy
+	}
+	putOperatorPolicyReturns struct {
+		result1 *http.Response
+		result2 error
+	}
+	putOperatorPolicyReturnsOnCall map[int]struct {
 		result1 *http.Response
 		result2 error
 	}
@@ -915,6 +957,71 @@ func (fake *FakeClient) DeleteGlobalParameterReturnsOnCall(i int, result1 *http.
 	}{result1, result2}
 }
 
+func (fake *FakeClient) DeleteOperatorPolicy(arg1 string, arg2 string) (*http.Response, error) {
+	fake.deleteOperatorPolicyMutex.Lock()
+	ret, specificReturn := fake.deleteOperatorPolicyReturnsOnCall[len(fake.deleteOperatorPolicyArgsForCall)]
+	fake.deleteOperatorPolicyArgsForCall = append(fake.deleteOperatorPolicyArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.DeleteOperatorPolicyStub
+	fakeReturns := fake.deleteOperatorPolicyReturns
+	fake.recordInvocation("DeleteOperatorPolicy", []interface{}{arg1, arg2})
+	fake.deleteOperatorPolicyMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) DeleteOperatorPolicyCallCount() int {
+	fake.deleteOperatorPolicyMutex.RLock()
+	defer fake.deleteOperatorPolicyMutex.RUnlock()
+	return len(fake.deleteOperatorPolicyArgsForCall)
+}
+
+func (fake *FakeClient) DeleteOperatorPolicyCalls(stub func(string, string) (*http.Response, error)) {
+	fake.deleteOperatorPolicyMutex.Lock()
+	defer fake.deleteOperatorPolicyMutex.Unlock()
+	fake.DeleteOperatorPolicyStub = stub
+}
+
+func (fake *FakeClient) DeleteOperatorPolicyArgsForCall(i int) (string, string) {
+	fake.deleteOperatorPolicyMutex.RLock()
+	defer fake.deleteOperatorPolicyMutex.RUnlock()
+	argsForCall := fake.deleteOperatorPolicyArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeClient) DeleteOperatorPolicyReturns(result1 *http.Response, result2 error) {
+	fake.deleteOperatorPolicyMutex.Lock()
+	defer fake.deleteOperatorPolicyMutex.Unlock()
+	fake.DeleteOperatorPolicyStub = nil
+	fake.deleteOperatorPolicyReturns = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) DeleteOperatorPolicyReturnsOnCall(i int, result1 *http.Response, result2 error) {
+	fake.deleteOperatorPolicyMutex.Lock()
+	defer fake.deleteOperatorPolicyMutex.Unlock()
+	fake.DeleteOperatorPolicyStub = nil
+	if fake.deleteOperatorPolicyReturnsOnCall == nil {
+		fake.deleteOperatorPolicyReturnsOnCall = make(map[int]struct {
+			result1 *http.Response
+			result2 error
+		})
+	}
+	fake.deleteOperatorPolicyReturnsOnCall[i] = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) DeletePolicy(arg1 string, arg2 string) (*http.Response, error) {
 	fake.deletePolicyMutex.Lock()
 	ret, specificReturn := fake.deletePolicyReturnsOnCall[len(fake.deletePolicyArgsForCall)]
@@ -1239,6 +1346,70 @@ func (fake *FakeClient) DeleteVhostReturnsOnCall(i int, result1 *http.Response, 
 	}{result1, result2}
 }
 
+func (fake *FakeClient) GetVhost(arg1 string) (*rabbithole.VhostInfo, error) {
+	fake.getVhostMutex.Lock()
+	ret, specificReturn := fake.getVhostReturnsOnCall[len(fake.getVhostArgsForCall)]
+	fake.getVhostArgsForCall = append(fake.getVhostArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.GetVhostStub
+	fakeReturns := fake.getVhostReturns
+	fake.recordInvocation("GetVhost", []interface{}{arg1})
+	fake.getVhostMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) GetVhostCallCount() int {
+	fake.getVhostMutex.RLock()
+	defer fake.getVhostMutex.RUnlock()
+	return len(fake.getVhostArgsForCall)
+}
+
+func (fake *FakeClient) GetVhostCalls(stub func(string) (*rabbithole.VhostInfo, error)) {
+	fake.getVhostMutex.Lock()
+	defer fake.getVhostMutex.Unlock()
+	fake.GetVhostStub = stub
+}
+
+func (fake *FakeClient) GetVhostArgsForCall(i int) string {
+	fake.getVhostMutex.RLock()
+	defer fake.getVhostMutex.RUnlock()
+	argsForCall := fake.getVhostArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeClient) GetVhostReturns(result1 *rabbithole.VhostInfo, result2 error) {
+	fake.getVhostMutex.Lock()
+	defer fake.getVhostMutex.Unlock()
+	fake.GetVhostStub = nil
+	fake.getVhostReturns = struct {
+		result1 *rabbithole.VhostInfo
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) GetVhostReturnsOnCall(i int, result1 *rabbithole.VhostInfo, result2 error) {
+	fake.getVhostMutex.Lock()
+	defer fake.getVhostMutex.Unlock()
+	fake.GetVhostStub = nil
+	if fake.getVhostReturnsOnCall == nil {
+		fake.getVhostReturnsOnCall = make(map[int]struct {
+			result1 *rabbithole.VhostInfo
+			result2 error
+		})
+	}
+	fake.getVhostReturnsOnCall[i] = struct {
+		result1 *rabbithole.VhostInfo
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) ListExchangeBindingsBetween(arg1 string, arg2 string, arg3 string) ([]rabbithole.BindingInfo, error) {
 	fake.listExchangeBindingsBetweenMutex.Lock()
 	ret, specificReturn := fake.listExchangeBindingsBetweenReturnsOnCall[len(fake.listExchangeBindingsBetweenArgsForCall)]
@@ -1497,6 +1668,72 @@ func (fake *FakeClient) PutGlobalParameterReturnsOnCall(i int, result1 *http.Res
 		})
 	}
 	fake.putGlobalParameterReturnsOnCall[i] = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) PutOperatorPolicy(arg1 string, arg2 string, arg3 rabbithole.OperatorPolicy) (*http.Response, error) {
+	fake.putOperatorPolicyMutex.Lock()
+	ret, specificReturn := fake.putOperatorPolicyReturnsOnCall[len(fake.putOperatorPolicyArgsForCall)]
+	fake.putOperatorPolicyArgsForCall = append(fake.putOperatorPolicyArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 rabbithole.OperatorPolicy
+	}{arg1, arg2, arg3})
+	stub := fake.PutOperatorPolicyStub
+	fakeReturns := fake.putOperatorPolicyReturns
+	fake.recordInvocation("PutOperatorPolicy", []interface{}{arg1, arg2, arg3})
+	fake.putOperatorPolicyMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) PutOperatorPolicyCallCount() int {
+	fake.putOperatorPolicyMutex.RLock()
+	defer fake.putOperatorPolicyMutex.RUnlock()
+	return len(fake.putOperatorPolicyArgsForCall)
+}
+
+func (fake *FakeClient) PutOperatorPolicyCalls(stub func(string, string, rabbithole.OperatorPolicy) (*http.Response, error)) {
+	fake.putOperatorPolicyMutex.Lock()
+	defer fake.putOperatorPolicyMutex.Unlock()
+	fake.PutOperatorPolicyStub = stub
+}
+
+func (fake *FakeClient) PutOperatorPolicyArgsForCall(i int) (string, string, rabbithole.OperatorPolicy) {
+	fake.putOperatorPolicyMutex.RLock()
+	defer fake.putOperatorPolicyMutex.RUnlock()
+	argsForCall := fake.putOperatorPolicyArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeClient) PutOperatorPolicyReturns(result1 *http.Response, result2 error) {
+	fake.putOperatorPolicyMutex.Lock()
+	defer fake.putOperatorPolicyMutex.Unlock()
+	fake.PutOperatorPolicyStub = nil
+	fake.putOperatorPolicyReturns = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) PutOperatorPolicyReturnsOnCall(i int, result1 *http.Response, result2 error) {
+	fake.putOperatorPolicyMutex.Lock()
+	defer fake.putOperatorPolicyMutex.Unlock()
+	fake.PutOperatorPolicyStub = nil
+	if fake.putOperatorPolicyReturnsOnCall == nil {
+		fake.putOperatorPolicyReturnsOnCall = make(map[int]struct {
+			result1 *http.Response
+			result2 error
+		})
+	}
+	fake.putOperatorPolicyReturnsOnCall[i] = struct {
 		result1 *http.Response
 		result2 error
 	}{result1, result2}
@@ -1785,6 +2022,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.deleteFederationUpstreamMutex.RUnlock()
 	fake.deleteGlobalParameterMutex.RLock()
 	defer fake.deleteGlobalParameterMutex.RUnlock()
+	fake.deleteOperatorPolicyMutex.RLock()
+	defer fake.deleteOperatorPolicyMutex.RUnlock()
 	fake.deletePolicyMutex.RLock()
 	defer fake.deletePolicyMutex.RUnlock()
 	fake.deleteQueueMutex.RLock()
@@ -1795,6 +2034,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.deleteUserMutex.RUnlock()
 	fake.deleteVhostMutex.RLock()
 	defer fake.deleteVhostMutex.RUnlock()
+	fake.getVhostMutex.RLock()
+	defer fake.getVhostMutex.RUnlock()
 	fake.listExchangeBindingsBetweenMutex.RLock()
 	defer fake.listExchangeBindingsBetweenMutex.RUnlock()
 	fake.listQueueBindingsBetweenMutex.RLock()
@@ -1803,6 +2044,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.putFederationUpstreamMutex.RUnlock()
 	fake.putGlobalParameterMutex.RLock()
 	defer fake.putGlobalParameterMutex.RUnlock()
+	fake.putOperatorPolicyMutex.RLock()
+	defer fake.putOperatorPolicyMutex.RUnlock()
 	fake.putPolicyMutex.RLock()
 	defer fake.putPolicyMutex.RUnlock()
 	fake.putUserMutex.RLock()

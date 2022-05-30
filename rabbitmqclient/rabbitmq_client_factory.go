@@ -43,6 +43,9 @@ type Client interface {
 	DeleteFederationUpstream(vhost, name string) (res *http.Response, err error)
 	DeclareShovel(vhost, shovel string, info rabbithole.ShovelDefinition) (res *http.Response, err error)
 	DeleteShovel(vhost, shovel string) (res *http.Response, err error)
+	GetVhost(vhost string) (rec *rabbithole.VhostInfo, err error)
+	PutOperatorPolicy(string, string, rabbithole.OperatorPolicy) (*http.Response, error)
+	DeleteOperatorPolicy(vhost, name string) (res *http.Response, err error)
 }
 
 type Factory func(connectionCreds ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (Client, error)

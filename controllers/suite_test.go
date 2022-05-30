@@ -13,6 +13,7 @@ import (
 	"context"
 	"crypto/x509"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient/rabbitmqclientfakes"
 	"go/build"
 	"path/filepath"
 	"testing"
@@ -37,7 +38,6 @@ import (
 
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
-	"github.com/rabbitmq/messaging-topology-operator/internal/internalfakes"
 )
 
 func TestControllers(t *testing.T) {
@@ -51,7 +51,7 @@ var (
 	clientSet                 *topologyClient.Clientset
 	ctx                       context.Context
 	cancel                    context.CancelFunc
-	fakeRabbitMQClient        *internalfakes.FakeRabbitMQClient
+	fakeRabbitMQClient        *rabbitmqclientfakes.FakeClient
 	fakeRabbitMQClientError   error
 	fakeRabbitMQClientFactory = func(connectionCreds rabbitmqclient.ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (rabbitmqclient.Client, error) {
 		fakeRabbitMQClientFactoryArgsForCall = append(fakeRabbitMQClientFactoryArgsForCall, struct {
@@ -422,7 +422,7 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = BeforeEach(func() {
-	fakeRabbitMQClient = &internalfakes.FakeRabbitMQClient{}
+	fakeRabbitMQClient = &rabbitmqclientfakes.FakeClient{}
 	fakeRabbitMQClientError = nil
 	fakeRabbitMQClientFactoryArgsForCall = nil
 })

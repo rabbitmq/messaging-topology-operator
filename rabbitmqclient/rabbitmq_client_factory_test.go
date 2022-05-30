@@ -3,8 +3,8 @@ package rabbitmqclient_test
 import (
 	"crypto/x509"
 	"errors"
-	"github.com/rabbitmq/messaging-topology-operator/internal/internalfakes"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient/rabbitmqclientfakes"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -23,7 +23,7 @@ var _ = Describe("ParseReference", func() {
 		existingRabbitMQUsername  = "abc123"
 		existingRabbitMQPassword  = "foo1234"
 		existingRabbitMQCluster   *rabbitmqv1beta1.RabbitmqCluster
-		FakeConnectionCredentials *internalfakes.FakeConnectionCredentials
+		FakeConnectionCredentials *rabbitmqclientfakes.FakeConnectionCredentials
 		existingService           *corev1.Service
 		fakeRabbitMQServer        *ghttp.Server
 		fakeRabbitMQURL           *url.URL
@@ -43,7 +43,7 @@ var _ = Describe("ParseReference", func() {
 
 	When("RabbitmqCluster is provided", func() {
 		JustBeforeEach(func() {
-			FakeConnectionCredentials = &internalfakes.FakeConnectionCredentials{}
+			FakeConnectionCredentials = &rabbitmqclientfakes.FakeConnectionCredentials{}
 			FakeConnectionCredentials.DataReturnsOnCall(0, []byte(existingRabbitMQUsername), true)
 			FakeConnectionCredentials.DataReturnsOnCall(1, []byte(existingRabbitMQPassword), true)
 			FakeConnectionCredentials.DataReturnsOnCall(2, []byte(fakeRabbitMQURL.String()), true)
@@ -213,7 +213,7 @@ var _ = Describe("ParseReference", func() {
 			fakeRabbitMQURL, fakeRabbitMQPort, err = mockRabbitMQURLPort(fakeRabbitMQServer)
 			Expect(err).NotTo(HaveOccurred())
 
-			FakeConnectionCredentials = &internalfakes.FakeConnectionCredentials{}
+			FakeConnectionCredentials = &rabbitmqclientfakes.FakeConnectionCredentials{}
 			FakeConnectionCredentials.DataReturnsOnCall(0, []byte(existingRabbitMQUsername), true)
 			FakeConnectionCredentials.DataReturnsOnCall(1, []byte(existingRabbitMQPassword), true)
 			FakeConnectionCredentials.DataReturnsOnCall(2, []byte(fakeRabbitMQURL.String()), true)

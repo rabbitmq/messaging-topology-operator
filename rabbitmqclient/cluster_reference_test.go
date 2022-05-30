@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient/rabbitmqclientfakes"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	"github.com/rabbitmq/messaging-topology-operator/internal/internalfakes"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -121,7 +121,7 @@ var _ = Describe("ParseReference", func() {
 		When("vault secret backend is declared on cluster spec", func() {
 			var (
 				err                   error
-				fakeSecretStoreClient *internalfakes.FakeSecretStoreClient
+				fakeSecretStoreClient *rabbitmqclientfakes.FakeSecretStoreClient
 				credsProv             rabbitmqclient.ConnectionCredentials
 				tlsEnabled            bool
 			)
@@ -153,7 +153,7 @@ var _ = Describe("ParseReference", func() {
 					},
 				}
 
-				fakeSecretStoreClient = &internalfakes.FakeSecretStoreClient{}
+				fakeSecretStoreClient = &rabbitmqclientfakes.FakeSecretStoreClient{}
 				fakeSecretStoreClient.ReadCredentialsReturns(existingRabbitMQUsername, existingRabbitMQPassword, nil)
 				rabbitmqclient.SecretStoreClientProvider = func() (rabbitmqclient.SecretStoreClient, error) {
 					return fakeSecretStoreClient, nil
@@ -198,7 +198,7 @@ var _ = Describe("ParseReference", func() {
 							},
 						},
 					}
-					fakeSecretStoreClient = &internalfakes.FakeSecretStoreClient{}
+					fakeSecretStoreClient = &rabbitmqclientfakes.FakeSecretStoreClient{}
 					fakeSecretStoreClient.ReadCredentialsReturns(existingRabbitMQUsername, existingRabbitMQPassword, nil)
 					rabbitmqclient.SecretStoreClientProvider = func() (rabbitmqclient.SecretStoreClient, error) {
 						return fakeSecretStoreClient, nil
