@@ -16,8 +16,8 @@ import (
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"github.com/rabbitmq/messaging-topology-operator/internal/managedresource"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -36,7 +36,7 @@ type SuperStreamReconciler struct {
 	Log                      logr.Logger
 	Scheme                   *runtime.Scheme
 	Recorder                 record.EventRecorder
-	RabbitmqClientFactory    internal.RabbitMQClientFactory
+	RabbitmqClientFactory    rabbitmqclient.Factory
 	KubernetesInternalDomain string
 }
 
@@ -169,11 +169,11 @@ func (r *SuperStreamReconciler) getRabbitmqClusterReference(ctx context.Context,
 
 	cluster := &rabbitmqv1beta1.RabbitmqCluster{}
 	if err := r.Get(ctx, types.NamespacedName{Name: rmq.Name, Namespace: namespace}, cluster); err != nil {
-		return nil, fmt.Errorf("failed to get cluster from reference: %s Error: %w", err, internal.NoSuchRabbitmqClusterError)
+		return nil, fmt.Errorf("failed to get cluster from reference: %s Error: %w", err, rabbitmqclient.NoSuchRabbitmqClusterError)
 	}
 
-	if !internal.AllowedNamespace(rmq, requestNamespace, cluster) {
-		return nil, internal.ResourceNotAllowedError
+	if !rabbitmqclient.AllowedNamespace(rmq, requestNamespace, cluster) {
+		return nil, rabbitmqclient.ResourceNotAllowedError
 	}
 
 	return &topology.RabbitmqClusterReference{

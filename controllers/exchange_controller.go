@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
@@ -33,7 +34,7 @@ type ExchangeReconciler struct {
 	Log                     logr.Logger
 	Scheme                  *runtime.Scheme
 	Recorder                record.EventRecorder
-	RabbitmqClientFactory   internal.RabbitMQClientFactory
+	RabbitmqClientFactory   rabbitmqclient.Factory
 	KubernetesClusterDomain string
 }
 
@@ -53,7 +54,7 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, exchange.Spec.RabbitmqClusterReference, exchange.Namespace, r.KubernetesClusterDomain)
+	credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, r.Client, exchange.Spec.RabbitmqClusterReference, exchange.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, exchange, &exchange.Status.Conditions, err)
 	}
@@ -106,7 +107,7 @@ func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	return ctrl.Result{}, nil
 }
 
-func (r *ExchangeReconciler) declareExchange(ctx context.Context, client internal.RabbitMQClient, exchange *topology.Exchange) error {
+func (r *ExchangeReconciler) declareExchange(ctx context.Context, client rabbitmqclient.Client, exchange *topology.Exchange) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	settings, err := internal.GenerateExchangeSettings(exchange)
@@ -131,7 +132,7 @@ func (r *ExchangeReconciler) declareExchange(ctx context.Context, client interna
 
 // deletes exchange from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
-func (r *ExchangeReconciler) deleteExchange(ctx context.Context, client internal.RabbitMQClient, exchange *topology.Exchange) error {
+func (r *ExchangeReconciler) deleteExchange(ctx context.Context, client rabbitmqclient.Client, exchange *topology.Exchange) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	err := validateResponseForDeletion(client.DeleteExchange(exchange.Spec.Vhost, exchange.Spec.Name))

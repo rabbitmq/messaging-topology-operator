@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	k8sApiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -29,7 +30,7 @@ type PermissionReconciler struct {
 	Log                     logr.Logger
 	Scheme                  *runtime.Scheme
 	Recorder                record.EventRecorder
-	RabbitmqClientFactory   internal.RabbitMQClientFactory
+	RabbitmqClientFactory   rabbitmqclient.Factory
 	KubernetesClusterDomain string
 }
 
@@ -49,7 +50,7 @@ func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, permission.Spec.RabbitmqClusterReference, permission.Namespace, r.KubernetesClusterDomain)
+	credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, r.Client, permission.Spec.RabbitmqClusterReference, permission.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, permission, &permission.Status.Conditions, err)
 	}
@@ -180,7 +181,7 @@ func (r *PermissionReconciler) getUserFromReference(ctx context.Context, permiss
 	return user, nil
 }
 
-func (r *PermissionReconciler) updatePermissions(ctx context.Context, client internal.RabbitMQClient, permission *topology.Permission, user string) error {
+func (r *PermissionReconciler) updatePermissions(ctx context.Context, client rabbitmqclient.Client, permission *topology.Permission, user string) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	if err := validateResponse(client.UpdatePermissionsIn(permission.Spec.Vhost, user, internal.GeneratePermissions(permission))); err != nil {
@@ -195,7 +196,7 @@ func (r *PermissionReconciler) updatePermissions(ctx context.Context, client int
 	return nil
 }
 
-func (r *PermissionReconciler) revokePermissions(ctx context.Context, client internal.RabbitMQClient, permission *topology.Permission, user string) error {
+func (r *PermissionReconciler) revokePermissions(ctx context.Context, client rabbitmqclient.Client, permission *topology.Permission, user string) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	err := validateResponseForDeletion(client.ClearPermissionsIn(permission.Spec.Vhost, user))

@@ -1,4 +1,4 @@
-package internal
+package rabbitmqclient
 
 import (
 	"crypto/x509"

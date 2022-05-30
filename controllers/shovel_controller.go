@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -26,7 +27,7 @@ type ShovelReconciler struct {
 	Log                     logr.Logger
 	Scheme                  *runtime.Scheme
 	Recorder                record.EventRecorder
-	RabbitmqClientFactory   internal.RabbitMQClientFactory
+	RabbitmqClientFactory   rabbitmqclient.Factory
 	KubernetesClusterDomain string
 }
 
@@ -46,7 +47,7 @@ func (r *ShovelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, shovel.Spec.RabbitmqClusterReference, shovel.Namespace, r.KubernetesClusterDomain)
+	credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, r.Client, shovel.Spec.RabbitmqClusterReference, shovel.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, shovel, &shovel.Status.Conditions, err)
 	}
@@ -98,7 +99,7 @@ func (r *ShovelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	return ctrl.Result{}, nil
 }
 
-func (r *ShovelReconciler) declareShovel(ctx context.Context, client internal.RabbitMQClient, shovel *topology.Shovel) error {
+func (r *ShovelReconciler) declareShovel(ctx context.Context, client rabbitmqclient.Client, shovel *topology.Shovel) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	srcUri, destUri, err := r.getUris(ctx, shovel)
@@ -144,7 +145,7 @@ func (r *ShovelReconciler) getUris(ctx context.Context, shovel *topology.Shovel)
 
 // deletes shovel configuration from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
-func (r *ShovelReconciler) deleteShovel(ctx context.Context, client internal.RabbitMQClient, shovel *topology.Shovel) error {
+func (r *ShovelReconciler) deleteShovel(ctx context.Context, client rabbitmqclient.Client, shovel *topology.Shovel) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	err := validateResponseForDeletion(client.DeleteShovel(shovel.Spec.Vhost, shovel.Spec.Name))

@@ -2,9 +2,8 @@
 package internalfakes
 
 import (
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	"sync"
-
-	"github.com/rabbitmq/messaging-topology-operator/internal"
 )
 
 type FakeSecretStoreClient struct {
@@ -118,4 +117,4 @@ func (fake *FakeSecretStoreClient) recordInvocation(key string, args []interface
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ internal.SecretStoreClient = new(FakeSecretStoreClient)
+var _ rabbitmqclient.SecretStoreClient = new(FakeSecretStoreClient)

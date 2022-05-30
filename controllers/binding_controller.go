@@ -15,6 +15,7 @@ import (
 	"errors"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
@@ -35,7 +36,7 @@ type BindingReconciler struct {
 	Log                     logr.Logger
 	Scheme                  *runtime.Scheme
 	Recorder                record.EventRecorder
-	RabbitmqClientFactory   internal.RabbitMQClientFactory
+	RabbitmqClientFactory   rabbitmqclient.Factory
 	KubernetesClusterDomain string
 }
 
@@ -55,7 +56,7 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := internal.ParseRabbitmqClusterReference(ctx, r.Client, binding.Spec.RabbitmqClusterReference, binding.Namespace, r.KubernetesClusterDomain)
+	credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, r.Client, binding.Spec.RabbitmqClusterReference, binding.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
 		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, binding, &binding.Status.Conditions, err)
 	}
@@ -107,7 +108,7 @@ func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	return ctrl.Result{}, nil
 }
 
-func (r *BindingReconciler) declareBinding(ctx context.Context, client internal.RabbitMQClient, binding *topology.Binding) error {
+func (r *BindingReconciler) declareBinding(ctx context.Context, client rabbitmqclient.Client, binding *topology.Binding) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	info, err := internal.GenerateBindingInfo(binding)
@@ -134,7 +135,7 @@ func (r *BindingReconciler) declareBinding(ctx context.Context, client internal.
 // when server responds with '404' Not Found, it logs and does not requeue on error
 // if no binding argument is set, generating properties key by using internal.GeneratePropertiesKey
 // if binding arguments are set, list all bindings between source/destination to find the binding; if it failed to find corresponding binding, it assumes that the binding is already deleted and returns no error
-func (r *BindingReconciler) deleteBinding(ctx context.Context, client internal.RabbitMQClient, binding *topology.Binding) error {
+func (r *BindingReconciler) deleteBinding(ctx context.Context, client rabbitmqclient.Client, binding *topology.Binding) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	var info *rabbithole.BindingInfo
@@ -174,7 +175,7 @@ func (r *BindingReconciler) deleteBinding(ctx context.Context, client internal.R
 	return removeFinalizer(ctx, r.Client, binding)
 }
 
-func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topology.Binding, client internal.RabbitMQClient) (*rabbithole.BindingInfo, error) {
+func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topology.Binding, client rabbitmqclient.Client) (*rabbithole.BindingInfo, error) {
 	logger.Info("binding arguments set; listing bindings from server to complete deletion")
 	arguments := make(map[string]interface{})
 	if binding.Spec.Arguments != nil {
