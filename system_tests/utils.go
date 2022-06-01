@@ -174,7 +174,7 @@ func kubernetesNodeIp(ctx context.Context, clientSet *kubernetes.Clientset) stri
 }
 
 func basicTestRabbitmqCluster(name, namespace string) *rabbitmqv1beta1.RabbitmqCluster {
-	return &rabbitmqv1beta1.RabbitmqCluster{
+	cluster := &rabbitmqv1beta1.RabbitmqCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -192,6 +192,41 @@ func basicTestRabbitmqCluster(name, namespace string) *rabbitmqv1beta1.RabbitmqC
 			},
 			Rabbitmq: rabbitmqv1beta1.RabbitmqClusterConfigurationSpec{
 				AdditionalPlugins: []rabbitmqv1beta1.Plugin{"rabbitmq_federation", "rabbitmq_shovel", "rabbitmq_stream"},
+			},
+		},
+	}
+
+	if os.Getenv("ENVIRONMENT") == "openshift" {
+		overrideSecurityContextForOpenshift(cluster)
+	}
+
+	if image := os.Getenv("RABBITMQ_IMAGE"); image != "" {
+		cluster.Spec.Image = image
+	}
+	if secret := os.Getenv("RABBITMQ_IMAGE_PULL_SECRET"); secret != "" {
+		cluster.Spec.ImagePullSecrets = []corev1.LocalObjectReference{
+			{Name: secret},
+		}
+	}
+
+	return cluster
+}
+
+func overrideSecurityContextForOpenshift(cluster *rabbitmqv1beta1.RabbitmqCluster) {
+
+	cluster.Spec.Override = rabbitmqv1beta1.RabbitmqClusterOverrideSpec{
+		StatefulSet: &rabbitmqv1beta1.StatefulSet{
+			Spec: &rabbitmqv1beta1.StatefulSetSpec{
+				Template: &rabbitmqv1beta1.PodTemplateSpec{
+					Spec: &corev1.PodSpec{
+						SecurityContext: &corev1.PodSecurityContext{},
+						Containers: []corev1.Container{
+							{
+								Name: "rabbitmq",
+							},
+						},
+					},
+				},
 			},
 		},
 	}
