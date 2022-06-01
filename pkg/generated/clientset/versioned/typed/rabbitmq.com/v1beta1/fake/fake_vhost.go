@@ -110,7 +110,7 @@ func (c *FakeVhosts) UpdateStatus(ctx context.Context, vhost *v1beta1.Vhost, opt
 // Delete takes name of the vhost and deletes it. Returns an error if one occurs.
 func (c *FakeVhosts) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(vhostsResource, c.ns, name), &v1beta1.Vhost{})
+		Invokes(testing.NewDeleteActionWithOptions(vhostsResource, c.ns, name, opts), &v1beta1.Vhost{})
 
 	return err
 }

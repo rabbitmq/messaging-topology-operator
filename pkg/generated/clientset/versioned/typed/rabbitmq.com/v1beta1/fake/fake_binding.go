@@ -110,7 +110,7 @@ func (c *FakeBindings) UpdateStatus(ctx context.Context, binding *v1beta1.Bindin
 // Delete takes name of the binding and deletes it. Returns an error if one occurs.
 func (c *FakeBindings) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(bindingsResource, c.ns, name), &v1beta1.Binding{})
+		Invokes(testing.NewDeleteActionWithOptions(bindingsResource, c.ns, name, opts), &v1beta1.Binding{})
 
 	return err
 }

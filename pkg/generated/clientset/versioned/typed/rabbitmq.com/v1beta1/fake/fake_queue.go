@@ -110,7 +110,7 @@ func (c *FakeQueues) UpdateStatus(ctx context.Context, queue *v1beta1.Queue, opt
 // Delete takes name of the queue and deletes it. Returns an error if one occurs.
 func (c *FakeQueues) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(queuesResource, c.ns, name), &v1beta1.Queue{})
+		Invokes(testing.NewDeleteActionWithOptions(queuesResource, c.ns, name, opts), &v1beta1.Queue{})
 
 	return err
 }
