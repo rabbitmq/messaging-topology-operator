@@ -3,6 +3,10 @@ package controllers_test
 import (
 	"bytes"
 	"errors"
+	"github.com/rabbitmq/messaging-topology-operator/controllers"
+	"github.com/rabbitmq/messaging-topology-operator/internal"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient/rabbitmqclientfakes"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -338,6 +342,64 @@ var _ = Describe("schema-replication-controller", func() {
 				"Reason": Equal("SuccessfulCreateOrUpdate"),
 				"Status": Equal(corev1.ConditionTrue),
 			})))
+		})
+	})
+
+	When("a schema replication uses vault as secretBackend", func() {
+		JustBeforeEach(func() {
+			replicationName = "vault"
+			replication = topology.SchemaReplication{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      replicationName,
+					Namespace: "default",
+				},
+				Spec: topology.SchemaReplicationSpec{
+					SecretBackend: topology.SecretBackend{Vault: &topology.VaultSpec{SecretPath: "rabbitmq"}},
+					Endpoints:     "test:12345",
+					RabbitmqClusterReference: topology.RabbitmqClusterReference{
+						Name:      "example-rabbit",
+						Namespace: "default",
+					},
+				},
+			}
+
+			fakeRabbitMQClient.PutGlobalParameterReturns(&http.Response{
+				Status:     "201 Created",
+				StatusCode: http.StatusCreated,
+			}, nil)
+		})
+
+		AfterEach(func() {
+			rabbitmqclient.SecretStoreClientProvider = rabbitmqclient.GetSecretStoreClient
+		})
+
+		It("set schema sync parameters with generated correct endpoints", func() {
+			fakeSecretStoreClient := &rabbitmqclientfakes.FakeSecretStoreClient{}
+			fakeSecretStoreClient.ReadCredentialsReturns("a-user-in-vault", "test", nil)
+			rabbitmqclient.SecretStoreClientProvider = func() (rabbitmqclient.SecretStoreClient, error) {
+				return fakeSecretStoreClient, nil
+			}
+
+			Expect(client.Create(ctx, &replication)).To(Succeed())
+			EventuallyWithOffset(1, func() []topology.Condition {
+				_ = client.Get(
+					ctx,
+					types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace},
+					&replication,
+				)
+
+				return replication.Status.Conditions
+			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":   Equal(topology.ConditionType("Ready")),
+				"Reason": Equal("SuccessfulCreateOrUpdate"),
+				"Status": Equal(corev1.ConditionTrue),
+			})))
+
+			parameter, endpoints := fakeRabbitMQClient.PutGlobalParameterArgsForCall(1)
+			Expect(parameter).To(Equal(controllers.SchemaReplicationParameterName))
+			Expect(endpoints.(internal.UpstreamEndpoints).Username).To(Equal("a-user-in-vault"))
+			Expect(endpoints.(internal.UpstreamEndpoints).Password).To(Equal("test"))
+			Expect(endpoints.(internal.UpstreamEndpoints).Endpoints).To(ConsistOf("test:12345"))
 		})
 	})
 })
