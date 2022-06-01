@@ -110,7 +110,7 @@ func (c *FakeSuperStreams) UpdateStatus(ctx context.Context, superStream *v1alph
 // Delete takes name of the superStream and deletes it. Returns an error if one occurs.
 func (c *FakeSuperStreams) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(superstreamsResource, c.ns, name), &v1alpha1.SuperStream{})
+		Invokes(testing.NewDeleteActionWithOptions(superstreamsResource, c.ns, name, opts), &v1alpha1.SuperStream{})
 
 	return err
 }

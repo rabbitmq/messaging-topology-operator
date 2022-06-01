@@ -110,7 +110,7 @@ func (c *FakeShovels) UpdateStatus(ctx context.Context, shovel *v1beta1.Shovel, 
 // Delete takes name of the shovel and deletes it. Returns an error if one occurs.
 func (c *FakeShovels) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(shovelsResource, c.ns, name), &v1beta1.Shovel{})
+		Invokes(testing.NewDeleteActionWithOptions(shovelsResource, c.ns, name, opts), &v1beta1.Shovel{})
 
 	return err
 }

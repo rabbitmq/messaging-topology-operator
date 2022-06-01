@@ -110,7 +110,7 @@ func (c *FakeExchanges) UpdateStatus(ctx context.Context, exchange *v1beta1.Exch
 // Delete takes name of the exchange and deletes it. Returns an error if one occurs.
 func (c *FakeExchanges) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(exchangesResource, c.ns, name), &v1beta1.Exchange{})
+		Invokes(testing.NewDeleteActionWithOptions(exchangesResource, c.ns, name, opts), &v1beta1.Exchange{})
 
 	return err
 }

@@ -110,7 +110,7 @@ func (c *FakeFederations) UpdateStatus(ctx context.Context, federation *v1beta1.
 // Delete takes name of the federation and deletes it. Returns an error if one occurs.
 func (c *FakeFederations) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(federationsResource, c.ns, name), &v1beta1.Federation{})
+		Invokes(testing.NewDeleteActionWithOptions(federationsResource, c.ns, name, opts), &v1beta1.Federation{})
 
 	return err
 }

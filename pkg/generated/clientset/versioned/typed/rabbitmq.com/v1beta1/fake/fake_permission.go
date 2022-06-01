@@ -110,7 +110,7 @@ func (c *FakePermissions) UpdateStatus(ctx context.Context, permission *v1beta1.
 // Delete takes name of the permission and deletes it. Returns an error if one occurs.
 func (c *FakePermissions) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(permissionsResource, c.ns, name), &v1beta1.Permission{})
+		Invokes(testing.NewDeleteActionWithOptions(permissionsResource, c.ns, name, opts), &v1beta1.Permission{})
 
 	return err
 }

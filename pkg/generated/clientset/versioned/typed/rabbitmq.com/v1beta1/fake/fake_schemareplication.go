@@ -110,7 +110,7 @@ func (c *FakeSchemaReplications) UpdateStatus(ctx context.Context, schemaReplica
 // Delete takes name of the schemaReplication and deletes it. Returns an error if one occurs.
 func (c *FakeSchemaReplications) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(schemareplicationsResource, c.ns, name), &v1beta1.SchemaReplication{})
+		Invokes(testing.NewDeleteActionWithOptions(schemareplicationsResource, c.ns, name, opts), &v1beta1.SchemaReplication{})
 
 	return err
 }
