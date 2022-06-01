@@ -533,6 +533,15 @@ var _ = Describe("VaultReader", func() {
 		})
 
 		When("VAULT_ADDR is not set", func() {
+			BeforeEach(func() {
+				vaultSpec = &rabbitmqv1beta1.VaultSpec{
+					DefaultUserPath: "a-path",
+				}
+				getSecretStoreClientTester = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (rabbitmqclient.SecretStoreClient, error) {
+					rabbitmqclient.InitializeClient()()
+					return rabbitmqclient.SecretClient, rabbitmqclient.SecretClientCreationError
+				}
+			})
 			It("returns an error", func() {
 				os.Unsetenv("VAULT_ADDR")
 				secretStoreClient, err = getSecretStoreClientTester(vaultSpec)
