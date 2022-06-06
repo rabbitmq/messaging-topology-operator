@@ -30,7 +30,7 @@ type VaultSecretReader struct {
 func (s VaultSecretReader) ReadSecret(path string) (*vault.Secret, error) {
 	secret, err := s.client.Logical().Read(path)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read Vault secret: %w", err)
+		return nil, err
 	}
 	return secret, nil
 }

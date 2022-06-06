@@ -381,13 +381,12 @@ var _ = Describe("schema-replication-controller", func() {
 			}
 
 			Expect(client.Create(ctx, &replication)).To(Succeed())
-			EventuallyWithOffset(1, func() []topology.Condition {
+			Eventually(func() []topology.Condition {
 				_ = client.Get(
 					ctx,
 					types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace},
 					&replication,
 				)
-
 				return replication.Status.Conditions
 			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(topology.ConditionType("Ready")),
