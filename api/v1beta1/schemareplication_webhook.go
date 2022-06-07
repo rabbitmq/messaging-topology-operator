@@ -56,7 +56,7 @@ func (s *SchemaReplication) validateSecret() error {
 				"do not provide both secretBackend.vault.secretPath and upstreamSecret"))
 	}
 
-	if s.Spec.UpstreamSecret == nil && s.Spec.SecretBackend.Vault == nil {
+	if (s.Spec.UpstreamSecret == nil || s.Spec.UpstreamSecret.Name == "") && (s.Spec.SecretBackend.Vault == nil || s.Spec.SecretBackend.Vault.SecretPath == "") {
 		return apierrors.NewForbidden(s.GroupResource(), s.Name,
 			field.Forbidden(field.NewPath("spec"),
 				"must provide either secretBackend.vault.secretPath or upstreamSecret"))

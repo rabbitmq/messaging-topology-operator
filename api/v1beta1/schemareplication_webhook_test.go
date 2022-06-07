@@ -47,6 +47,15 @@ var _ = Describe("schema-replication webhook", func() {
 			}
 			Expect(apierrors.IsForbidden(notAllowed.ValidateCreate())).To(BeTrue())
 		})
+
+		It("spec.upstreamSecret and spec.secretBackend.vault.userPath cannot both be not configured", func() {
+			notAllowed := replication.DeepCopy()
+			notAllowed.Spec.SecretBackend = SecretBackend{
+				Vault: &VaultSpec{},
+			}
+			notAllowed.Spec.UpstreamSecret.Name = ""
+			Expect(apierrors.IsForbidden(notAllowed.ValidateCreate())).To(BeTrue())
+		})
 	})
 
 	Context("ValidateUpdate", func() {
@@ -65,7 +74,27 @@ var _ = Describe("schema-replication webhook", func() {
 					SecretPath: "not-good",
 				},
 			}
-			Expect(apierrors.IsForbidden(updated.ValidateCreate())).To(BeTrue())
+			Expect(apierrors.IsForbidden(updated.ValidateUpdate(&replication))).To(BeTrue())
+		})
+
+		It("spec.upstreamSecret and spec.secretBackend.vault.userPath cannot both be not configured", func() {
+			updated := replication.DeepCopy()
+			updated.Spec.SecretBackend = SecretBackend{
+				Vault: &VaultSpec{},
+			}
+			updated.Spec.UpstreamSecret.Name = ""
+			Expect(apierrors.IsForbidden(updated.ValidateUpdate(&replication))).To(BeTrue())
+		})
+
+		It("allows update on spec.secretBackend.vault.userPath", func() {
+			updated := replication.DeepCopy()
+			updated.Spec.SecretBackend = SecretBackend{
+				Vault: &VaultSpec{
+					SecretPath: "a-new-path",
+				},
+			}
+			updated.Spec.UpstreamSecret.Name = ""
+			Expect(updated.ValidateUpdate(&replication)).To(Succeed())
 		})
 
 		It("allows updates on rabbitmqClusterReference.connectionSecret", func() {
