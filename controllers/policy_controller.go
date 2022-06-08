@@ -13,6 +13,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	corev1 "k8s.io/api/core/v1"
@@ -39,6 +40,7 @@ type PolicyReconciler struct {
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=policies,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=policies/finalizers,verbs=update
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=policies/status,verbs=get;update;patch
 
 func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {

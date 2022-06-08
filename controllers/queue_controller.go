@@ -13,6 +13,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+
 	"github.com/go-logr/logr"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
@@ -37,6 +38,7 @@ type QueueReconciler struct {
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=queues,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=queues/finalizers,verbs=update
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=queues/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=rabbitmqclusters,verbs=get;list;watch
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=rabbitmqclusters/status,verbs=get

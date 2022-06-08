@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	corev1 "k8s.io/api/core/v1"
@@ -34,6 +35,7 @@ type SchemaReplicationReconciler struct {
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=schemareplications,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=schemareplications/finalizers,verbs=update
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=schemareplications/status,verbs=get;update;patch
 
 func (r *SchemaReplicationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {

@@ -13,6 +13,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	corev1 "k8s.io/api/core/v1"
@@ -39,6 +40,7 @@ type ExchangeReconciler struct {
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=exchanges,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=exchanges/finalizers,verbs=update
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=exchanges/status,verbs=get;update;patch
 
 func (r *ExchangeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {

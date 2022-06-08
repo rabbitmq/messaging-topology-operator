@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	corev1 "k8s.io/api/core/v1"
@@ -34,6 +35,7 @@ func (r *VhostReconciler) SetInternalDomainName(domainName string) {
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=vhosts,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=vhosts/finalizers,verbs=update
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=vhosts/status,verbs=get;update;patch
 
 func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
