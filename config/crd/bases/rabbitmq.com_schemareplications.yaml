@@ -67,10 +67,29 @@ spec:
                       Defaults to the namespace of the requested resource if omitted.
                     type: string
                 type: object
+              secretBackend:
+                description: Secret backend configuration for the RabbitmqCluster.
+                  Enables to fetch default user credentials and certificates from
+                  K8s external secret stores.
+                properties:
+                  vault:
+                    properties:
+                      secretPath:
+                        description: Path in Vault to access a KV (Key-Value) secret
+                          with the fields username and password to be used for schema
+                          replication. For example "secret/data/rabbitmq/config".
+                          Optional; if not provided, username and password will come
+                          from spec.upstreamSecret. Have to set either secretBackend.vault.secretPath
+                          or spec.upstreamSecret, but not both.
+                        type: string
+                    type: object
+                type: object
               upstreamSecret:
                 description: Defines a Secret which contains credentials to be used
                   for schema replication. The Secret must contain the keys `username`
-                  and `password` in its Data field, or operator will error.
+                  and `password` in its Data field, or operator will error. Have to
+                  set either secretBackend.vault.secretPath or spec.upstreamSecret,
+                  but not both.
                 properties:
                   name:
                     description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names

@@ -22,13 +22,33 @@ type SchemaReplicationSpec struct {
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
 	// Defines a Secret which contains credentials to be used for schema replication.
 	// The Secret must contain the keys `username` and `password` in its Data field, or operator will error.
-	// +kubebuilder:validation:Required
+	// Have to set either secretBackend.vault.secretPath or spec.upstreamSecret, but not both.
+	// +kubebuilder:validation:Optional
 	UpstreamSecret *corev1.LocalObjectReference `json:"upstreamSecret,omitempty"`
 	// endpoints should be one or multiple endpoints separated by ','.
 	// Must provide either spec.endpoints or endpoints in spec.upstreamSecret.
 	// When endpoints are provided in both spec.endpoints and spec.upstreamSecret, spec.endpoints takes
 	// precedence.
 	Endpoints string `json:"endpoints,omitempty"`
+	// Secret backend configuration for the RabbitmqCluster.
+	// Enables to fetch default user credentials and certificates from K8s external secret stores.
+	SecretBackend SecretBackend `json:"secretBackend,omitempty"`
+}
+
+// SecretBackend configures a single secret backend.
+// Today, only Vault exists as supported secret backend.
+// Future secret backends could be Secrets Store CSI Driver.
+// If not configured, K8s Secrets will be used.
+type SecretBackend struct {
+	Vault *VaultSpec `json:"vault,omitempty"`
+}
+
+type VaultSpec struct {
+	// Path in Vault to access a KV (Key-Value) secret with the fields username and password to be used for schema replication.
+	// For example "secret/data/rabbitmq/config".
+	// Optional; if not provided, username and password will come from spec.upstreamSecret.
+	// Have to set either secretBackend.vault.secretPath or spec.upstreamSecret, but not both.
+	SecretPath string `json:"secretPath,omitempty"`
 }
 
 // SchemaReplicationStatus defines the observed state of SchemaReplication

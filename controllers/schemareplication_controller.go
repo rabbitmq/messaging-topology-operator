@@ -21,7 +21,7 @@ import (
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
 
-const schemaReplicationParameterName = "schema_definition_sync_upstream"
+const SchemaReplicationParameterName = "schema_definition_sync_upstream"
 
 // SchemaReplicationReconciler reconciles a SchemaReplication object
 type SchemaReplicationReconciler struct {
@@ -113,14 +113,14 @@ func (r *SchemaReplicationReconciler) setSchemaReplicationUpstream(ctx context.C
 		return err
 	}
 
-	if err := validateResponse(client.PutGlobalParameter(schemaReplicationParameterName, endpoints)); err != nil {
-		msg := fmt.Sprintf("failed to set '%s' global parameter", schemaReplicationParameterName)
+	if err := validateResponse(client.PutGlobalParameter(SchemaReplicationParameterName, endpoints)); err != nil {
+		msg := fmt.Sprintf("failed to set '%s' global parameter", SchemaReplicationParameterName)
 		r.Recorder.Event(replication, corev1.EventTypeWarning, "FailedUpdate", msg)
 		logger.Error(err, msg, "upstream secret", replication.Spec.UpstreamSecret)
 		return err
 	}
 
-	msg := fmt.Sprintf("successfully set '%s' global parameter", schemaReplicationParameterName)
+	msg := fmt.Sprintf("successfully set '%s' global parameter", SchemaReplicationParameterName)
 	logger.Info(msg)
 	r.Recorder.Event(replication, corev1.EventTypeNormal, "SuccessfulUpdate", msg)
 	return nil
@@ -129,29 +129,43 @@ func (r *SchemaReplicationReconciler) setSchemaReplicationUpstream(ctx context.C
 func (r *SchemaReplicationReconciler) deleteSchemaReplicationParameters(ctx context.Context, client rabbitmqclient.Client, replication *topology.SchemaReplication) error {
 	logger := ctrl.LoggerFrom(ctx)
 
-	err := validateResponseForDeletion(client.DeleteGlobalParameter(schemaReplicationParameterName))
+	err := validateResponseForDeletion(client.DeleteGlobalParameter(SchemaReplicationParameterName))
 	if errors.Is(err, NotFound) {
-		logger.Info("cannot find global parameter; no need to delete it", "parameter", schemaReplicationParameterName)
+		logger.Info("cannot find global parameter; no need to delete it", "parameter", SchemaReplicationParameterName)
 	} else if err != nil {
-		msg := fmt.Sprintf("failed to delete global parameter '%s'", schemaReplicationParameterName)
+		msg := fmt.Sprintf("failed to delete global parameter '%s'", SchemaReplicationParameterName)
 		r.Recorder.Event(replication, corev1.EventTypeWarning, "FailedDelete", msg)
 		logger.Error(err, msg)
 		return err
 	}
 
-	msg := fmt.Sprintf("successfully delete '%s' global parameter", schemaReplicationParameterName)
+	msg := fmt.Sprintf("successfully delete '%s' global parameter", SchemaReplicationParameterName)
 	logger.Info(msg)
 	r.Recorder.Event(replication, corev1.EventTypeNormal, "SuccessfulDelete", msg)
 	return removeFinalizer(ctx, r.Client, replication)
 }
 
 func (r *SchemaReplicationReconciler) getUpstreamEndpoints(ctx context.Context, replication *topology.SchemaReplication) (internal.UpstreamEndpoints, error) {
-	if replication.Spec.UpstreamSecret == nil {
-		return internal.UpstreamEndpoints{}, fmt.Errorf("no upstream secret provided")
-	}
 	secret := &corev1.Secret{}
-	if err := r.Get(ctx, types.NamespacedName{Name: replication.Spec.UpstreamSecret.Name, Namespace: replication.Namespace}, secret); err != nil {
-		return internal.UpstreamEndpoints{}, err
+	if replication.Spec.SecretBackend.Vault != nil && replication.Spec.SecretBackend.Vault.SecretPath != "" {
+		secretStoreClient, err := rabbitmqclient.SecretStoreClientProvider()
+		if err != nil {
+			return internal.UpstreamEndpoints{}, fmt.Errorf("unable to create a vault client connection to secret store: %w", err)
+		}
+
+		user, pass, err := secretStoreClient.ReadCredentials(replication.Spec.SecretBackend.Vault.SecretPath)
+		if err != nil {
+			return internal.UpstreamEndpoints{}, fmt.Errorf("unable to retrieve credentials from secret store: %w", err)
+		}
+		secret.Data = make(map[string][]byte)
+		secret.Data["username"] = []byte(user)
+		secret.Data["password"] = []byte(pass)
+	} else if replication.Spec.UpstreamSecret == nil {
+		return internal.UpstreamEndpoints{}, fmt.Errorf("no upstream secret or secretBackend provided")
+	} else {
+		if err := r.Get(ctx, types.NamespacedName{Name: replication.Spec.UpstreamSecret.Name, Namespace: replication.Namespace}, secret); err != nil {
+			return internal.UpstreamEndpoints{}, err
+		}
 	}
 
 	endpoints, err := internal.GenerateSchemaReplicationParameters(secret, replication.Spec.Endpoints)

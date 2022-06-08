@@ -19,13 +19,18 @@ func (s *SchemaReplication) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Validator = &SchemaReplication{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-// either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
+// either secretBackend.vault.secretPath or upstreamSecret must be provided but not both.
+// either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both.
 func (s *SchemaReplication) ValidateCreate() error {
+	if err := s.validateSecret(); err != nil {
+		return err
+	}
 	return s.Spec.RabbitmqClusterReference.ValidateOnCreate(s.GroupResource(), s.Name)
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
+// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
+// either secretBackend.vault.secretPath or upstreamSecret must be provided but not both.
 func (s *SchemaReplication) ValidateUpdate(old runtime.Object) error {
 	oldReplication, ok := old.(*SchemaReplication)
 	if !ok {
@@ -36,10 +41,25 @@ func (s *SchemaReplication) ValidateUpdate(old runtime.Object) error {
 		return apierrors.NewForbidden(s.GroupResource(), s.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), "update on rabbitmqClusterReference is forbidden"))
 	}
+	return s.validateSecret()
+}
+
+// ValidateDelete no validation on delete
+func (s *SchemaReplication) ValidateDelete() error {
 	return nil
 }
 
-// no validation on delete
-func (s *SchemaReplication) ValidateDelete() error {
+func (s *SchemaReplication) validateSecret() error {
+	if s.Spec.UpstreamSecret != nil && s.Spec.UpstreamSecret.Name != "" && s.Spec.SecretBackend.Vault != nil && s.Spec.SecretBackend.Vault.SecretPath != "" {
+		return apierrors.NewForbidden(s.GroupResource(), s.Name,
+			field.Forbidden(field.NewPath("spec"),
+				"do not provide both secretBackend.vault.secretPath and upstreamSecret"))
+	}
+
+	if (s.Spec.UpstreamSecret == nil || s.Spec.UpstreamSecret.Name == "") && (s.Spec.SecretBackend.Vault == nil || s.Spec.SecretBackend.Vault.SecretPath == "") {
+		return apierrors.NewForbidden(s.GroupResource(), s.Name,
+			field.Forbidden(field.NewPath("spec"),
+				"must provide either secretBackend.vault.secretPath or upstreamSecret"))
+	}
 	return nil
 }
