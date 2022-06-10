@@ -766,7 +766,7 @@ SchemaReplicationSpec defines the desired state of SchemaReplication
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that schema replication would be set for. Must be an existing cluster.
 | *`upstreamSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Defines a Secret which contains credentials to be used for schema replication. The Secret must contain the keys `username` and `password` in its Data field, or operator will error. Have to set either secretBackend.vault.secretPath or spec.upstreamSecret, but not both.
 | *`endpoints`* __string__ | endpoints should be one or multiple endpoints separated by ','. Must provide either spec.endpoints or endpoints in spec.upstreamSecret. When endpoints are provided in both spec.endpoints and spec.upstreamSecret, spec.endpoints takes precedence.
-| *`secretBackend`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-secretbackend[$$SecretBackend$$]__ | Secret backend configuration for the RabbitmqCluster. Enables to fetch default user credentials and certificates from K8s external secret stores.
+| *`secretBackend`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-secretbackend[$$SecretBackend$$]__ | Set to fetch user credentials from K8s external secret stores to be used for schema replication.
 |===
 
 
@@ -791,7 +791,7 @@ SchemaReplicationStatus defines the observed state of SchemaReplication
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-secretbackend"]
 ==== SecretBackend 
 
-SecretBackend configures a single secret backend. Today, only Vault exists as supported secret backend. Future secret backends could be Secrets Store CSI Driver. If not configured, K8s Secrets will be used.
+SecretBackend configures a single secret backend. Today, only Vault exists as supported secret backend.
 
 .Appears In:
 ****
@@ -1013,7 +1013,7 @@ UserTag defines the level of access to the management UI allocated to the user. 
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`secretPath`* __string__ | Path in Vault to access a KV (Key-Value) secret with the fields username and password to be used for schema replication. For example "secret/data/rabbitmq/config". Optional; if not provided, username and password will come from spec.upstreamSecret. Have to set either secretBackend.vault.secretPath or spec.upstreamSecret, but not both.
+| *`secretPath`* __string__ | Path in Vault to access a KV (Key-Value) secret with the fields username and password to be used for replication. For example "secret/data/rabbitmq/config". Optional; if not provided, username and password will come from upstreamSecret instead. Have to set either secretBackend.vault.secretPath or upstreamSecret, but not both.
 |===
 
 
