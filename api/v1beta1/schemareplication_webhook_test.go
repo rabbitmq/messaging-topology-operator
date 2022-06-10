@@ -97,7 +97,7 @@ var _ = Describe("schema-replication webhook", func() {
 			Expect(updated.ValidateUpdate(&replication)).To(Succeed())
 		})
 
-		It("allows updates on rabbitmqClusterReference.connectionSecret", func() {
+		It("does not allow updates on rabbitmqClusterReference.connectionSecret", func() {
 			connectionScr := SchemaReplication{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-replication",
