@@ -30,24 +30,21 @@ type SchemaReplicationSpec struct {
 	// When endpoints are provided in both spec.endpoints and spec.upstreamSecret, spec.endpoints takes
 	// precedence.
 	Endpoints string `json:"endpoints,omitempty"`
-	// Secret backend configuration for the RabbitmqCluster.
-	// Enables to fetch default user credentials and certificates from K8s external secret stores.
+	// Set to fetch user credentials from K8s external secret stores to be used for schema replication.
 	SecretBackend SecretBackend `json:"secretBackend,omitempty"`
 }
 
 // SecretBackend configures a single secret backend.
 // Today, only Vault exists as supported secret backend.
-// Future secret backends could be Secrets Store CSI Driver.
-// If not configured, K8s Secrets will be used.
 type SecretBackend struct {
 	Vault *VaultSpec `json:"vault,omitempty"`
 }
 
 type VaultSpec struct {
-	// Path in Vault to access a KV (Key-Value) secret with the fields username and password to be used for schema replication.
+	// Path in Vault to access a KV (Key-Value) secret with the fields username and password to be used for replication.
 	// For example "secret/data/rabbitmq/config".
-	// Optional; if not provided, username and password will come from spec.upstreamSecret.
-	// Have to set either secretBackend.vault.secretPath or spec.upstreamSecret, but not both.
+	// Optional; if not provided, username and password will come from upstreamSecret instead.
+	// Have to set either secretBackend.vault.secretPath or upstreamSecret, but not both.
 	SecretPath string `json:"secretPath,omitempty"`
 }
 

@@ -68,19 +68,18 @@ spec:
                     type: string
                 type: object
               secretBackend:
-                description: Secret backend configuration for the RabbitmqCluster.
-                  Enables to fetch default user credentials and certificates from
-                  K8s external secret stores.
+                description: Set to fetch user credentials from K8s external secret
+                  stores to be used for schema replication.
                 properties:
                   vault:
                     properties:
                       secretPath:
                         description: Path in Vault to access a KV (Key-Value) secret
-                          with the fields username and password to be used for schema
-                          replication. For example "secret/data/rabbitmq/config".
-                          Optional; if not provided, username and password will come
-                          from spec.upstreamSecret. Have to set either secretBackend.vault.secretPath
-                          or spec.upstreamSecret, but not both.
+                          with the fields username and password to be used for replication.
+                          For example "secret/data/rabbitmq/config". Optional; if
+                          not provided, username and password will come from upstreamSecret
+                          instead. Have to set either secretBackend.vault.secretPath
+                          or upstreamSecret, but not both.
                         type: string
                     type: object
                 type: object
