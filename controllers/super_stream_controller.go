@@ -12,6 +12,8 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strconv"
+
 	"github.com/go-logr/logr"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
@@ -27,7 +29,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"strconv"
 )
 
 // SuperStreamReconciler reconciles a RabbitMQ Super Stream, and any resources it comprises of
@@ -44,6 +45,7 @@ type SuperStreamReconciler struct {
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=queues,verbs=get;create;update;patch;delete
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=bindings,verbs=get;create;update;patch;delete
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=superstreams,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=superstreams/finalizers,verbs=update
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=superstreams/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=rabbitmqclusters,verbs=get;list;watch
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=rabbitmqclusters/status,verbs=get

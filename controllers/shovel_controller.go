@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	corev1 "k8s.io/api/core/v1"
@@ -32,6 +33,7 @@ type ShovelReconciler struct {
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=shovels,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=shovels/finalizers,verbs=update
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=shovels/status,verbs=get;update;patch
 
 func (r *ShovelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {

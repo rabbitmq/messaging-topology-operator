@@ -45,6 +45,12 @@ rules:
 - apiGroups:
   - rabbitmq.com
   resources:
+  - bindings/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - rabbitmq.com
+  resources:
   - bindings/status
   verbs:
   - get
@@ -62,6 +68,12 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - exchanges/finalizers
+  verbs:
+  - update
 - apiGroups:
   - rabbitmq.com
   resources:
@@ -85,6 +97,12 @@ rules:
 - apiGroups:
   - rabbitmq.com
   resources:
+  - federations/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - rabbitmq.com
+  resources:
   - federations/status
   verbs:
   - get
@@ -102,6 +120,12 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - permissions/finalizers
+  verbs:
+  - update
 - apiGroups:
   - rabbitmq.com
   resources:
@@ -125,6 +149,12 @@ rules:
 - apiGroups:
   - rabbitmq.com
   resources:
+  - policies/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - rabbitmq.com
+  resources:
   - policies/status
   verbs:
   - get
@@ -142,6 +172,12 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - queues/finalizers
+  verbs:
+  - update
 - apiGroups:
   - rabbitmq.com
   resources:
@@ -179,6 +215,12 @@ rules:
 - apiGroups:
   - rabbitmq.com
   resources:
+  - schemareplications/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - rabbitmq.com
+  resources:
   - schemareplications/status
   verbs:
   - get
@@ -196,6 +238,12 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - shovels/finalizers
+  verbs:
+  - update
 - apiGroups:
   - rabbitmq.com
   resources:
@@ -219,6 +267,12 @@ rules:
 - apiGroups:
   - rabbitmq.com
   resources:
+  - superstreams/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - rabbitmq.com
+  resources:
   - superstreams/status
   verbs:
   - get
@@ -239,6 +293,12 @@ rules:
 - apiGroups:
   - rabbitmq.com
   resources:
+  - users/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - rabbitmq.com
+  resources:
   - users/status
   verbs:
   - get
@@ -256,6 +316,12 @@ rules:
   - patch
   - update
   - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - vhosts/finalizers
+  verbs:
+  - update
 - apiGroups:
   - rabbitmq.com
   resources:

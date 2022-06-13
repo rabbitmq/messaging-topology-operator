@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	k8sApiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -35,6 +36,7 @@ type PermissionReconciler struct {
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=permissions,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=permissions/finalizers,verbs=update
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=permissions/status,verbs=get;update;patch
 
 func (r *PermissionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
