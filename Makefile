@@ -88,7 +88,7 @@ install: manifests
 uninstall: manifests
 	kustomize build config/crd | kubectl delete -f -
 
-deploy-manager:
+deploy-manager: cmctl
 	$(CMCTL) check api --wait=2m
 	kustomize build config/default/overlays/cert-manager/ | kubectl apply -f -
 
@@ -99,12 +99,12 @@ destroy:
 	kustomize build config/default/base | kubectl delete --ignore-not-found=true -f -
 
 # Deploy operator with local changes
-deploy-dev: check-env-docker-credentials docker-build-dev manifests deploy-rbac docker-registry-secret set-operator-image-repo
+deploy-dev: check-env-docker-credentials cmctl docker-build-dev manifests deploy-rbac docker-registry-secret set-operator-image-repo
 	$(CMCTL) check api --wait=2m
 	kustomize build config/default/overlays/dev | sed 's@((operator_docker_image))@"$(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)"@' | kubectl apply -f -
 
 # Load operator image and deploy operator into current KinD cluster
-deploy-kind: manifests deploy-rbac
+deploy-kind: manifests cmctl deploy-rbac
 	$(BUILD_KIT) build --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .
 	kind load docker-image $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)
 	$(CMCTL) check api --wait=2m
