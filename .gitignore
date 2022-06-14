@@ -6,4 +6,6 @@ cover.out
 tags
 releases/
 testbin/
+bin/
+tmp/
 *.iml

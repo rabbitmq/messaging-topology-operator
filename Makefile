@@ -26,6 +26,15 @@ install-tools:
 ENVTEST_K8S_VERSION = 1.22.1
 ARCHITECTURE = amd64
 LOCAL_TESTBIN = $(CURDIR)/testbin
+
+LOCAL_BIN := $(CURDIR)/bin
+$(LOCAL_BIN):
+	mkdir -p -v $(@)
+
+LOCAL_TMP := $(CURDIR)/tmp
+$(LOCAL_TMP):
+	mkdir -p -v $(@)
+
 # "Control plane binaries (etcd and kube-apiserver) are loaded by default from /usr/local/kubebuilder/bin.
 # This can be overridden by setting the KUBEBUILDER_ASSETS environment variable"
 # https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/envtest
@@ -80,6 +89,7 @@ uninstall: manifests
 	kustomize build config/crd | kubectl delete -f -
 
 deploy-manager:
+	$(CMCTL) check api --wait=2m
 	kustomize build config/default/overlays/cert-manager/ | kubectl apply -f -
 
 deploy: manifests deploy-rbac deploy-manager
@@ -90,12 +100,14 @@ destroy:
 
 # Deploy operator with local changes
 deploy-dev: check-env-docker-credentials docker-build-dev manifests deploy-rbac docker-registry-secret set-operator-image-repo
+	$(CMCTL) check api --wait=2m
 	kustomize build config/default/overlays/dev | sed 's@((operator_docker_image))@"$(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)"@' | kubectl apply -f -
 
 # Load operator image and deploy operator into current KinD cluster
 deploy-kind: manifests deploy-rbac
 	$(BUILD_KIT) build --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .
 	kind load docker-image $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)
+	$(CMCTL) check api --wait=2m
 	kustomize build config/default/overlays/kind | sed 's@((operator_docker_image))@"$(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)"@' | kubectl apply -f -
 
 deploy-rbac:
@@ -176,6 +188,9 @@ endif
 cluster-operator:
 	@kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/latest/download/cluster-operator.yml
 
+destroy-cluster-operator:
+	@kubectl delete -f https://github.com/rabbitmq/cluster-operator/releases/latest/download/cluster-operator.yml --ignore-not-found
+
 ## used in CI pipeline to create release artifact
 generate-manifests:
 	mkdir -p releases
@@ -183,7 +198,21 @@ generate-manifests:
 	sed '/CERTIFICATE_NAMESPACE.*CERTIFICATE_NAME/d' releases/messaging-topology-operator.bak > releases/messaging-topology-operator.yaml
 	kustomize build config/installation/cert-manager/ > releases/messaging-topology-operator-with-certmanager.yaml
 
-CERT_MANAGER_VERSION ?=v1.2.0
+################
+# Cert Manager #
+################
+
+CERT_MANAGER_VERSION ?= v1.7.0
+CERT_MANAGER_MANIFEST ?= https://github.com/jetstack/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cert-manager.yaml
+
+CMCTL = $(LOCAL_BIN)/cmctl
+.PHONY: cmctl
+cmctl: | $(CMCTL)
+$(CMCTL): | $(LOCAL_BIN) $(LOCAL_TMP)
+	curl -sSL -o $(LOCAL_TMP)/cmctl.tar.gz https://github.com/cert-manager/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cmctl-$(platform)-$(shell go env GOARCH).tar.gz
+	tar -C $(LOCAL_TMP) -xzf $(LOCAL_TMP)/cmctl.tar.gz
+	mv $(LOCAL_TMP)/cmctl $(CMCTL)
+
 cert-manager: ## Deploys Cert Manager from JetStack repo. Use CERT_MANAGER_VERSION to customise version e.g. v1.2.0
 	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cert-manager.yaml
 
