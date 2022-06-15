@@ -68,4 +68,4 @@ Please read [contribution guidelines](CONTRIBUTING.md) if you are interested in 
 
 ## Copyright
 
-Copyright 2021 VMware, Inc. All Rights Reserved.
+Copyright 2021-2022 VMware, Inc. All Rights Reserved.
