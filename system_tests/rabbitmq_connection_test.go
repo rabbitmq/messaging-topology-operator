@@ -64,7 +64,7 @@ var _ = Describe("RabbitMQ connection using provided connection secret", func() 
 			var err error
 			qInfo, err = rabbitClient.GetQueue("/", q.Name)
 			return err
-		}, 10, 2).Should(BeNil())
+		}, 20, 2).Should(BeNil())
 
 		Expect(qInfo.Name).To(Equal(q.Name))
 		Expect(qInfo.Vhost).To(Equal("/"))

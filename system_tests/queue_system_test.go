@@ -66,9 +66,12 @@ var _ = Describe("Queue Controller", func() {
 
 		By("updating status condition 'Ready'")
 		updatedQueue := topology.Queue{}
-		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: q.Name, Namespace: q.Namespace}, &updatedQueue)).To(Succeed())
 
-		Expect(updatedQueue.Status.Conditions).To(HaveLen(1))
+		Eventually(func() []topology.Condition {
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: q.Name, Namespace: q.Namespace}, &updatedQueue)).To(Succeed())
+			return updatedQueue.Status.Conditions
+		}, waitUpdatedStatusCondition, 2).Should(HaveLen(1), "Queue status condition should be present")
+
 		readyCondition := updatedQueue.Status.Conditions[0]
 		Expect(string(readyCondition.Type)).To(Equal("Ready"))
 		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))

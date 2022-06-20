@@ -141,7 +141,7 @@ var _ = Describe("RabbitMQ Cluster with TLS enabled", func() {
 		Eventually(func() []topology.Condition {
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &fetchedPolicy)).To(Succeed())
 			return fetchedPolicy.Status.Conditions
-		}, 10, 2).Should(HaveLen(1))
+		}, waitUpdatedStatusCondition, 2).Should(HaveLen(1), "policy status condition should be present")
 
 		readyCondition := fetchedPolicy.Status.Conditions[0]
 		Expect(string(readyCondition.Type)).To(Equal("Ready"))
