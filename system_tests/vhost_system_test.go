@@ -53,9 +53,12 @@ var _ = Describe("vhost", func() {
 
 		By("updating status condition 'Ready'")
 		updatedVhost := topology.Vhost{}
-		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace}, &updatedVhost)).To(Succeed())
 
-		Expect(updatedVhost.Status.Conditions).To(HaveLen(1))
+		Eventually(func() []topology.Condition {
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace}, &updatedVhost)).To(Succeed())
+			return updatedVhost.Status.Conditions
+		}, waitUpdatedStatusCondition, 2).Should(HaveLen(1), "Vhost status condition should be present")
+
 		readyCondition := updatedVhost.Status.Conditions[0]
 		Expect(string(readyCondition.Type)).To(Equal("Ready"))
 		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))

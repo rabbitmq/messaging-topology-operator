@@ -53,7 +53,7 @@ var _ = Describe("Exchange", func() {
 			var err error
 			exchangeInfo, err = rabbitClient.GetExchange(exchange.Spec.Vhost, exchange.Name)
 			return err
-		}, 10, 2).Should(BeNil())
+		}, waitUpdatedStatusCondition, 2).Should(BeNil())
 
 		Expect(*exchangeInfo).To(MatchFields(IgnoreExtras, Fields{
 			"Name":       Equal(exchange.Spec.Name),
@@ -66,9 +66,12 @@ var _ = Describe("Exchange", func() {
 
 		By("updating status condition 'Ready'")
 		fetched := topology.Exchange{}
-		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &fetched)).To(Succeed())
 
-		Expect(fetched.Status.Conditions).To(HaveLen(1))
+		Eventually(func() []topology.Condition {
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &fetched)).To(Succeed())
+			return fetched.Status.Conditions
+		}, 20, 2).Should(HaveLen(1), "Exchange status condition should be present")
+
 		readyCondition := fetched.Status.Conditions[0]
 		Expect(string(readyCondition.Type)).To(Equal("Ready"))
 		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))

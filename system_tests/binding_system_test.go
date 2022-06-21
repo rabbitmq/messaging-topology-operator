@@ -111,9 +111,12 @@ var _ = Describe("Binding", func() {
 
 		By("updating status condition 'Ready'")
 		updatedBinding := topology.Binding{}
-		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &updatedBinding)).To(Succeed())
 
-		Expect(updatedBinding.Status.Conditions).To(HaveLen(1))
+		Eventually(func() []topology.Condition {
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &updatedBinding)).To(Succeed())
+			return updatedBinding.Status.Conditions
+		}, waitUpdatedStatusCondition, 2).Should(HaveLen(1), "Binding status condition should be present")
+
 		readyCondition := updatedBinding.Status.Conditions[0]
 		Expect(string(readyCondition.Type)).To(Equal("Ready"))
 		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))

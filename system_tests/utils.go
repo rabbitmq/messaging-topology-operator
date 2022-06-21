@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -26,6 +27,9 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/pointer"
 )
+
+// Useful for small Openshift environment while updating status takes a long time
+const waitUpdatedStatusCondition = 20 * time.Second
 
 func createRestConfig() (*rest.Config, error) {
 	var config *rest.Config

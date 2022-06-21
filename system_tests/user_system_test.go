@@ -102,7 +102,11 @@ var _ = Describe("Users", func() {
 			updatedUser := topology.User{}
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &updatedUser)).To(Succeed())
 
-			Expect(updatedUser.Status.Conditions).To(HaveLen(1))
+			Eventually(func() []topology.Condition {
+				Expect(k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &updatedUser)).To(Succeed())
+				return updatedUser.Status.Conditions
+			}, waitUpdatedStatusCondition, 2).Should(HaveLen(1), "User status condition should be present")
+
 			readyCondition := updatedUser.Status.Conditions[0]
 			Expect(string(readyCondition.Type)).To(Equal("Ready"))
 			Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))
