@@ -80,9 +80,12 @@ var _ = Describe("schema replication", func() {
 
 		By("updating status condition 'Ready'")
 		updatedReplication := topology.SchemaReplication{}
-		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace}, &updatedReplication)).To(Succeed())
 
-		Expect(updatedReplication.Status.Conditions).To(HaveLen(1))
+		Eventually(func() []topology.Condition {
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace}, &updatedReplication)).To(Succeed())
+			return updatedReplication.Status.Conditions
+		}, waitUpdatedStatusCondition, 2).Should(HaveLen(1), "Schema Replication status condition should be present")
+
 		readyCondition := updatedReplication.Status.Conditions[0]
 		Expect(string(readyCondition.Type)).To(Equal("Ready"))
 		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))

@@ -86,9 +86,12 @@ var _ = Describe("Shovel", func() {
 
 		By("updating status condition 'Ready'")
 		updatedShovel := topology.Shovel{}
-		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: shovel.Name, Namespace: shovel.Namespace}, &updatedShovel)).To(Succeed())
 
-		Expect(updatedShovel.Status.Conditions).To(HaveLen(1))
+		Eventually(func() []topology.Condition {
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: shovel.Name, Namespace: shovel.Namespace}, &updatedShovel)).To(Succeed())
+			return updatedShovel.Status.Conditions
+		}, waitUpdatedStatusCondition, 2).Should(HaveLen(1), "Shovel status condition should be present")
+
 		readyCondition := updatedShovel.Status.Conditions[0]
 		Expect(string(readyCondition.Type)).To(Equal("Ready"))
 		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))

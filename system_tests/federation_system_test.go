@@ -81,7 +81,11 @@ var _ = Describe("federation", func() {
 		updatedFederation := topology.Federation{}
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: federation.Name, Namespace: federation.Namespace}, &updatedFederation)).To(Succeed())
 
-		Expect(updatedFederation.Status.Conditions).To(HaveLen(1))
+		Eventually(func() []topology.Condition {
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: federation.Name, Namespace: federation.Namespace}, &updatedFederation)).To(Succeed())
+			return updatedFederation.Status.Conditions
+		}, waitUpdatedStatusCondition, 2).Should(HaveLen(1), "Federation status condition should be present")
+
 		readyCondition := updatedFederation.Status.Conditions[0]
 		Expect(string(readyCondition.Type)).To(Equal("Ready"))
 		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))

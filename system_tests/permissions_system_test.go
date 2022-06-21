@@ -100,9 +100,12 @@ var _ = Describe("Permission", func() {
 
 		By("updating status condition 'Ready'")
 		updatedPermission := topology.Permission{}
-		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &updatedPermission)).To(Succeed())
 
-		Expect(updatedPermission.Status.Conditions).To(HaveLen(1))
+		Eventually(func() []topology.Condition {
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &updatedPermission)).To(Succeed())
+			return updatedPermission.Status.Conditions
+		}, waitUpdatedStatusCondition, 2).Should(HaveLen(1), "Permission status condition should be present")
+
 		readyCondition := updatedPermission.Status.Conditions[0]
 		Expect(string(readyCondition.Type)).To(Equal("Ready"))
 		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))

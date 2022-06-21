@@ -66,9 +66,12 @@ var _ = Describe("Policy", func() {
 
 		By("updating status condition 'Ready'")
 		updatedPolicy := topology.Policy{}
-		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &updatedPolicy)).To(Succeed())
 
-		Expect(updatedPolicy.Status.Conditions).To(HaveLen(1))
+		Eventually(func() []topology.Condition {
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &updatedPolicy)).To(Succeed())
+			return updatedPolicy.Status.Conditions
+		}, waitUpdatedStatusCondition, 2).Should(HaveLen(1), "Policy status condition should be present")
+
 		readyCondition := updatedPolicy.Status.Conditions[0]
 		Expect(string(readyCondition.Type)).To(Equal("Ready"))
 		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))
