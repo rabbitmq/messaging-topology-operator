@@ -12,11 +12,12 @@ package controllers_test
 import (
 	"context"
 	"crypto/x509"
-	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
-	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient/rabbitmqclientfakes"
 	"go/build"
 	"path/filepath"
 	"testing"
+
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient/rabbitmqclientfakes"
 
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	topologyClient "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned"
@@ -80,7 +81,7 @@ var _ = BeforeSuite(func() {
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "config", "crd", "bases"),
-			filepath.Join(build.Default.GOPATH, "pkg", "mod", "github.com", "rabbitmq", "cluster-operator@v1.13.1", "config", "crd", "bases"),
+			filepath.Join(build.Default.GOPATH, "pkg", "mod", "github.com", "rabbitmq", "cluster-operator@v1.14.0", "config", "crd", "bases"),
 		},
 	}
 

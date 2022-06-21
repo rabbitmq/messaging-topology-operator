@@ -16,6 +16,7 @@ import (
 	"k8s.io/klog/v2"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -26,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
+	"github.com/rabbitmq/cluster-operator/pkg/profiling"
 
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
@@ -110,6 +112,17 @@ func main() {
 	if err != nil {
 		log.Error(err, "unable to start manager")
 		os.Exit(1)
+	}
+
+	if enableDebugPprof, ok := os.LookupEnv("ENABLE_DEBUG_PPROF"); ok {
+		pprofEnabled, err := strconv.ParseBool(enableDebugPprof)
+		if err == nil && pprofEnabled {
+			mgr, err = profiling.AddDebugPprofEndpoints(mgr)
+			if err != nil {
+				log.Error(err, "unable to add debug endpoints to manager")
+				os.Exit(1)
+			}
+		}
 	}
 
 	if err = (&controllers.QueueReconciler{
