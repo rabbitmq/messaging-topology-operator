@@ -1,0 +1,16 @@
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: foo
+spec:
+  image: rabbitmq:3.10-management
+  persistence:
+    storage: 10Gi
+  rabbitmq: {}
+  replicas: 1
+  resources: {}
+  service:
+    type: ClusterIP
+  terminationGracePeriodSeconds: 30
+

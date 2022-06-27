@@ -103,6 +103,14 @@ deploy-dev: check-env-docker-credentials cmctl docker-build-dev manifests deploy
 	$(CMCTL) check api --wait=2m
 	kustomize build config/default/overlays/dev | sed 's@((operator_docker_image))@"$(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)"@' | kubectl apply -f -
 
+.PHONY: deploy-with-jaeger-sidecar
+deploy-with-jaeger-sidecar: check-env-docker-credentials cmctl
+	$(CMCTL) check api --wait=2m
+	kustomize build config/default/overlays/dev	\
+		| sed 's@((operator_docker_image))@"$(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)"@' \
+		| ytt -f- -f config/ytt-overlays/manager-jaeger-sidecar.yaml \
+		| kapp deploy --yes -f- -a messaging-topology-operator -n default
+
 # Load operator image and deploy operator into current KinD cluster
 deploy-kind: manifests cmctl deploy-rbac
 	$(BUILD_KIT) build --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .

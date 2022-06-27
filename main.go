@@ -10,9 +10,16 @@ This product may include a number of subcomponents with separate copyright notic
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	sdktrace "go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"k8s.io/klog/v2"
 	"os"
 	"regexp"
@@ -66,6 +73,31 @@ func sanitizeClusterDomainInput(clusterDomain string) string {
 	return clusterDomain
 }
 
+// newExporter returns a console exporter.
+func newExporter() (trace.SpanExporter, error) {
+	return jaeger.New(jaeger.WithAgentEndpoint(
+		jaeger.WithAgentHost("localhost"),
+		jaeger.WithAgentPort("6831"),
+	))
+}
+
+// newResource returns a sdktrace describing this application.
+func newResource() *sdktrace.Resource {
+	r, err := sdktrace.Merge(
+		sdktrace.Default(),
+		sdktrace.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String("rabbitmq-messaging-topology-operator"),
+			semconv.ServiceVersionKey.String("v1.8.0-dev.1"),
+			attribute.String("environment", "demo"),
+		),
+	)
+	if err != nil {
+		klog.Fatal(err)
+	}
+	return r
+}
+
 func main() {
 	var metricsAddr string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
@@ -79,6 +111,22 @@ func main() {
 	ctrl.SetLogger(logger)
 	// https://github.com/kubernetes-sigs/controller-runtime/issues/1420#issuecomment-794525248
 	klog.SetLogger(logger.WithName("messaging-topology-operator"))
+
+	exp, err := newExporter()
+	if err != nil {
+		klog.Fatal(err)
+	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithBatcher(exp),
+		trace.WithResource(newResource()),
+	)
+	defer func() {
+		if err := tp.Shutdown(context.Background()); err != nil {
+			klog.Fatal(err)
+		}
+	}()
+	otel.SetTracerProvider(tp)
 
 	operatorNamespace := os.Getenv(controllers.OperatorNamespaceEnvVar)
 	if operatorNamespace == "" {

@@ -13,6 +13,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 
 	"github.com/go-logr/logr"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
@@ -47,25 +50,45 @@ type QueueReconciler struct {
 
 func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
-
+	newCtx, span := otel.Tracer(tracerName).Start(ctx, "ReconcileQueue")
+	defer span.End()
+	//reconcileId, ok := newCtx.Value("reconcileID").(*string)
+	//if !ok {
+	//	panic("sad days")
+	//}
+	//span.SetAttributes(attribute.String("reconcileID", *reconcileId))
 	// fetched the queue and return if queue no longer exists
 	queue := &topology.Queue{}
-	if err := r.Get(ctx, req.NamespacedName, queue); err != nil {
+	if err := r.Get(newCtx, req.NamespacedName, queue); err != nil {
+		// May not be an actual error. Sometimes is expected to not found the Queue
+		//span.RecordError(err)
+		//span.SetStatus(codes.Error, err.Error())
 		return reconcile.Result{}, client.IgnoreNotFound(err)
 	}
+	span.SetAttributes(attribute.String("queue.name", queue.Spec.Name))
+	span.SetAttributes(attribute.String("queue.vhost", queue.Spec.Vhost))
+	span.SetAttributes(attribute.String("queue.type", queue.Spec.Type))
+	span.SetAttributes(attribute.Bool("queue.durable", queue.Spec.Durable))
+	span.SetAttributes(attribute.Stringer("queue.rabbitmqClusterRef", &queue.Spec.RabbitmqClusterReference))
 
-	systemCertPool, err := extractSystemCertPool(ctx, r.Recorder, queue)
+	systemCertPool, err := extractSystemCertPool(newCtx, r.Recorder, queue)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, r.Client, queue.Spec.RabbitmqClusterReference, queue.Namespace, r.KubernetesClusterDomain)
+	credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(newCtx, r.Client, queue.Spec.RabbitmqClusterReference, queue.Namespace, r.KubernetesClusterDomain)
 	if err != nil {
-		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, queue, &queue.Status.Conditions, err)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return handleRMQReferenceParseError(newCtx, r.Client, r.Recorder, queue, &queue.Status.Conditions, err)
 	}
 
 	rabbitClient, err := r.RabbitmqClientFactory(credsProvider, tlsEnabled, systemCertPool)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		logger.Error(err, failedGenerateRabbitClient)
 		return reconcile.Result{}, err
 	}
@@ -73,54 +96,67 @@ func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	// Check if the queue has been marked for deletion
 	if !queue.ObjectMeta.DeletionTimestamp.IsZero() {
 		logger.Info("Deleting")
-		return ctrl.Result{}, r.deleteQueue(ctx, rabbitClient, queue)
+		return ctrl.Result{}, r.deleteQueue(newCtx, rabbitClient, queue)
 	}
 
-	if err := addFinalizerIfNeeded(ctx, r.Client, queue); err != nil {
+	if err := addFinalizerIfNeeded(newCtx, r.Client, queue); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return ctrl.Result{}, err
 	}
 
 	queueSpec, err := json.Marshal(queue.Spec)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		logger.Error(err, failedMarshalSpec)
 	}
 
 	logger.Info("Start reconciling",
 		"spec", string(queueSpec))
 
-	if err := r.declareQueue(ctx, rabbitClient, queue); err != nil {
+	if err := r.declareQueue(newCtx, rabbitClient, queue); err != nil {
 		// Set Condition 'Ready' to false with message
 		queue.Status.Conditions = []topology.Condition{
 			topology.NotReady(err.Error(), queue.Status.Conditions),
 		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
-			return r.Status().Update(ctx, queue)
+			return r.Status().Update(newCtx, queue)
 		}); writerErr != nil {
 			logger.Error(writerErr, failedStatusUpdate, "status", queue.Status)
 		}
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return ctrl.Result{}, err
 	}
 
 	queue.Status.Conditions = []topology.Condition{topology.Ready(queue.Status.Conditions)}
 	queue.Status.ObservedGeneration = queue.GetGeneration()
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
-		return r.Status().Update(ctx, queue)
+		return r.Status().Update(newCtx, queue)
 	}); writerErr != nil {
 		logger.Error(writerErr, failedStatusUpdate, "status", queue.Status)
 	}
+
 	logger.Info("Finished reconciling")
+	span.SetStatus(codes.Ok, "Reconcile success")
 
 	return ctrl.Result{}, nil
 }
 
 func (r *QueueReconciler) declareQueue(ctx context.Context, client rabbitmqclient.Client, queue *topology.Queue) error {
 	logger := ctrl.LoggerFrom(ctx)
+	_, span := otel.Tracer(tracerName).Start(ctx, "declareQueue")
+	defer span.End()
 
 	queueSettings, err := internal.GenerateQueueSettings(queue)
 	if err != nil {
 		msg := "failed to generate queue settings"
 		r.Recorder.Event(queue, corev1.EventTypeWarning, "FailedDeclare", msg)
 		logger.Error(err, msg)
+		span.RecordError(err)
+		span.SetAttributes(attribute.String("message", msg))
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 
@@ -128,11 +164,15 @@ func (r *QueueReconciler) declareQueue(ctx context.Context, client rabbitmqclien
 		msg := "failed to declare queue"
 		r.Recorder.Event(queue, corev1.EventTypeWarning, "FailedDeclare", msg)
 		logger.Error(err, msg, "queue", queue.Spec.Name)
+		span.RecordError(err)
+		span.SetAttributes(attribute.String("message", msg))
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 
 	logger.Info("Successfully declared queue", "queue", queue.Spec.Name)
 	r.Recorder.Event(queue, corev1.EventTypeNormal, "SuccessfulDeclare", "Successfully declared queue")
+	span.SetAttributes(attribute.String("queue-name", queue.Spec.Name))
 	return nil
 }
 
@@ -141,6 +181,13 @@ func (r *QueueReconciler) declareQueue(ctx context.Context, client rabbitmqclien
 // queues could be deleted manually or gone because of AutoDelete
 func (r *QueueReconciler) deleteQueue(ctx context.Context, client rabbitmqclient.Client, queue *topology.Queue) error {
 	logger := ctrl.LoggerFrom(ctx)
+	newCtx, span := otel.Tracer(tracerName).Start(ctx, "deleteQueue")
+	defer span.End()
+	span.SetAttributes(attribute.String("queue.name", queue.Spec.Name))
+	span.SetAttributes(attribute.String("queue.vhost", queue.Spec.Vhost))
+	span.SetAttributes(attribute.String("queue.type", queue.Spec.Type))
+	span.SetAttributes(attribute.Bool("queue.durable", queue.Spec.Durable))
+	span.SetAttributes(attribute.Stringer("queue.rabbitmqClusterRef", &queue.Spec.RabbitmqClusterReference))
 
 	err := validateResponseForDeletion(client.DeleteQueue(queue.Spec.Vhost, queue.Spec.Name))
 	if errors.Is(err, NotFound) {
@@ -152,7 +199,7 @@ func (r *QueueReconciler) deleteQueue(ctx context.Context, client rabbitmqclient
 		return err
 	}
 	r.Recorder.Event(queue, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted queue")
-	return removeFinalizer(ctx, r.Client, queue)
+	return removeFinalizer(newCtx, r.Client, queue)
 }
 
 func (r *QueueReconciler) SetInternalDomainName(domainName string) {

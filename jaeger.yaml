@@ -1,0 +1,16 @@
+---
+apiVersion: jaegertracing.io/v1
+kind: Jaeger
+metadata:
+  name: my-jaeger
+spec:
+  strategy: allInOne # <1>
+  allInOne:
+    image: jaegertracing/all-in-one:1.34.1 # <2>
+  storage:
+    type: memory # <5>
+    options: # <6>
+      memory: # <7>
+        max-traces: 100000
+  ingress:
+    enabled: true # <8>

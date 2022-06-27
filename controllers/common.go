@@ -32,6 +32,7 @@ const (
 	FederationControllerName        = "federation-controller"
 	ShovelControllerName            = "shovel-controller"
 	SuperStreamControllerName       = "super-stream-controller"
+	tracerName                      = "rabbitmq-messaging-topology-operator"
 )
 
 // names for environment variables

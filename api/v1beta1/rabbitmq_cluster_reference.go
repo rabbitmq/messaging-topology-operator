@@ -1,6 +1,7 @@
 package v1beta1
 
 import (
+	"fmt"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -21,6 +22,18 @@ type RabbitmqClusterReference struct {
 	// Have to set either name or connectionSecret, but not both.
 	// +kubebuilder:validation:Optional
 	ConnectionSecret *corev1.LocalObjectReference `json:"connectionSecret,omitempty"`
+}
+
+/*
+Return the string representation of the RabbitmqCluster referenced.
+It returns empty string when ConnectionSecret is provided and Name + Namespace
+are empty strings. Otherwise, it returns a string as Name.Namespace
+*/
+func (r *RabbitmqClusterReference) String() string {
+	if len(r.Name) == 0 && len(r.Namespace) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%s.%s", r.Name, r.Namespace)
 }
 
 func (r *RabbitmqClusterReference) Matches(new *RabbitmqClusterReference) bool {
@@ -48,14 +61,14 @@ func (r *RabbitmqClusterReference) Matches(new *RabbitmqClusterReference) bool {
 
 // ValidateOnCreate validates RabbitmqClusterReference on resources create
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both; else it errors
-func (ref *RabbitmqClusterReference) ValidateOnCreate(groupResource schema.GroupResource, name string) error {
-	if ref.Name != "" && ref.ConnectionSecret != nil {
+func (r *RabbitmqClusterReference) ValidateOnCreate(groupResource schema.GroupResource, name string) error {
+	if r.Name != "" && r.ConnectionSecret != nil {
 		return apierrors.NewForbidden(groupResource, name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
 				"do not provide both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret"))
 	}
 
-	if ref.Name == "" && ref.ConnectionSecret == nil {
+	if r.Name == "" && r.ConnectionSecret == nil {
 		return apierrors.NewForbidden(groupResource, name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
 				"must provide either spec.rabbitmqClusterReference.name or spec.rabbitmqClusterReference.connectionSecret"))

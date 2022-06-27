@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 	"net/url"
 	"strings"
 
@@ -37,9 +39,12 @@ var (
 )
 
 func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string, clusterDomain string) (ConnectionCredentials, bool, error) {
+	newCtx, span := otel.Tracer("cluster-reference").Start(ctx, "ParseReference")
 	if rmq.ConnectionSecret != nil {
 		secret := &corev1.Secret{}
-		if err := c.Get(ctx, types.NamespacedName{Namespace: requestNamespace, Name: rmq.ConnectionSecret.Name}, secret); err != nil {
+		if err := c.Get(newCtx, types.NamespacedName{Namespace: requestNamespace, Name: rmq.ConnectionSecret.Name}, secret); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			return nil, false, err
 		}
 		return readCredentialsFromKubernetesSecret(secret)
@@ -53,11 +58,15 @@ func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqC
 	}
 
 	cluster := &rabbitmqv1beta1.RabbitmqCluster{}
-	if err := c.Get(ctx, types.NamespacedName{Name: rmq.Name, Namespace: namespace}, cluster); err != nil {
+	if err := c.Get(newCtx, types.NamespacedName{Name: rmq.Name, Namespace: namespace}, cluster); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, false, fmt.Errorf("failed to get cluster from reference: %s Error: %w", err, NoSuchRabbitmqClusterError)
 	}
 
 	if !AllowedNamespace(rmq, requestNamespace, cluster) {
+		span.RecordError(ResourceNotAllowedError)
+		span.SetStatus(codes.Error, ResourceNotAllowedError.Error())
 		return nil, false, ResourceNotAllowedError
 	}
 
@@ -84,7 +93,7 @@ func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqC
 		}
 
 		secret := &corev1.Secret{}
-		if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.Binding.Name}, secret); err != nil {
+		if err := c.Get(newCtx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.Binding.Name}, secret); err != nil {
 			return nil, false, err
 		}
 		var err error
@@ -95,7 +104,7 @@ func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqC
 	}
 
 	svc := &corev1.Service{}
-	if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.DefaultUser.ServiceReference.Name}, svc); err != nil {
+	if err := c.Get(newCtx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.DefaultUser.ServiceReference.Name}, svc); err != nil {
 		return nil, false, err
 	}
 
