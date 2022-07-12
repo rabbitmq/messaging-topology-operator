@@ -20,7 +20,7 @@ Topology Operator uses the first approach (Direct API).
 
 ## Vault-related configuration required
 
-The Vault server must have the version 2 key value secret engine and the 
+The Vault server must have the version 2 key value secret engine and the
 [Vault Kubernetes auth method](https://www.vaultproject.io/docs/auth/kubernetes)
 enabled.
 
