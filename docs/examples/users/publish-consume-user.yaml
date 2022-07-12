@@ -5,8 +5,8 @@ metadata:
   name: test-user-credentials
 type: Opaque
 stringData:
-  username: test-user
-  password: verysecurepw
+  username: test-user # Note that Messaging Topology Operator does not watch this secret. Updating this secret object won't update actual user credentials.
+  password: verysecurepw # As a workaround, you can add a label or annotation to the User object to trigger a Reconile loop and credentials will be updated.
 ---
 apiVersion: rabbitmq.com/v1beta1
 kind: User
