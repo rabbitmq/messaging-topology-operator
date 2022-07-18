@@ -16,7 +16,7 @@ require (
 	github.com/sclevine/yj v0.0.0-20200815061347-554173e71934
 	k8s.io/api v0.24.3
 	k8s.io/apimachinery v0.24.3
-	k8s.io/client-go v0.24.2
+	k8s.io/client-go v0.24.3
 	k8s.io/code-generator v0.24.3
 	k8s.io/klog/v2 v2.70.1
 	k8s.io/kube-openapi v0.0.0-20220614142933-1062c7ade5f8
