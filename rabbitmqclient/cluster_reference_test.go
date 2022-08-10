@@ -3,6 +3,7 @@ package rabbitmqclient_test
 import (
 	"context"
 	"fmt"
+
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient/rabbitmqclientfakes"
 
@@ -280,6 +281,76 @@ var _ = Describe("ParseReference", func() {
 			Expect(usernameBytes).To(Equal([]byte(existingRabbitMQUsername)))
 			Expect(passwordBytes).To(Equal([]byte(existingRabbitMQPassword)))
 			Expect(uriBytes).To(Equal([]byte("https://rmq.rabbitmq-system.svc:15671")))
+		})
+	})
+
+	When("the RabbitmqCluster is configured with management path_prefix", func() {
+		BeforeEach(func() {
+			existingRabbitMQCluster = &rabbitmqv1beta1.RabbitmqCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rmq",
+					Namespace: namespace,
+				},
+				Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
+					Rabbitmq: rabbitmqv1beta1.RabbitmqClusterConfigurationSpec{
+						AdditionalConfig: `
+							management.path_prefix = /my/prefix
+						`,
+					},
+				},
+				Status: rabbitmqv1beta1.RabbitmqClusterStatus{
+					Binding: &corev1.LocalObjectReference{
+						Name: "rmq-default-user-credentials",
+					},
+					DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
+						ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
+							Name:      "rmq",
+							Namespace: namespace,
+						},
+					},
+				},
+			}
+			existingCredentialSecret = &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rmq-default-user-credentials",
+					Namespace: namespace,
+				},
+				Data: map[string][]byte{
+					"username": []byte(existingRabbitMQUsername),
+					"password": []byte(existingRabbitMQPassword),
+				},
+			}
+			existingService = &corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rmq",
+					Namespace: namespace,
+				},
+				Spec: corev1.ServiceSpec{
+					ClusterIP: "1.2.3.4",
+					Ports: []corev1.ServicePort{
+						{
+							Name: "management-tls",
+							Port: int32(15671),
+						},
+					},
+				},
+			}
+			objs = []runtime.Object{existingRabbitMQCluster, existingCredentialSecret, existingService}
+		})
+
+		It("returns correct creds in connectionCredentials", func() {
+			credsProvider, _, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+				topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
+				existingRabbitMQCluster.Namespace,
+				"")
+			Expect(err).NotTo(HaveOccurred())
+
+			usernameBytes, _ := credsProvider.Data("username")
+			passwordBytes, _ := credsProvider.Data("password")
+			uriBytes, _ := credsProvider.Data("uri")
+			Expect(usernameBytes).To(Equal([]byte(existingRabbitMQUsername)))
+			Expect(passwordBytes).To(Equal([]byte(existingRabbitMQPassword)))
+			Expect(uriBytes).To(Equal([]byte("http://rmq.rabbitmq-system.svc:15671/my/prefix")))
 		})
 	})
 

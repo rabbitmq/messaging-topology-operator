@@ -9,6 +9,7 @@ import (
 
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	"gopkg.in/ini.v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -99,7 +100,12 @@ func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqC
 		return nil, false, err
 	}
 
-	endpoint, err := managementURI(svc, cluster.TLSEnabled(), clusterDomain)
+	additionalConfig, err := readClusterAdditionalConfig(cluster)
+	if err != nil {
+		return nil, false, fmt.Errorf("unable to parse additionconfig setting from the rabbitmqcluster resource: %w", err)
+	}
+
+	endpoint, err := managementURI(svc, cluster.TLSEnabled(), clusterDomain, additionalConfig["management.path_prefix"])
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to get endpoint from specified rabbitmqcluster: %w", err)
 	}
@@ -161,6 +167,18 @@ func readCredentialsFromKubernetesSecret(secret *corev1.Secret) (ConnectionCrede
 	}, tlsEnabled, nil
 }
 
+func readClusterAdditionalConfig(cluster *rabbitmqv1beta1.RabbitmqCluster) (additionalConfig map[string]string, err error) {
+	cfg, err := ini.Load([]byte(cluster.Spec.Rabbitmq.AdditionalConfig))
+	if err != nil {
+		return
+	}
+
+	// Additional config has only a default section
+	additionalConfig = cfg.Section("").KeysHash()
+
+	return
+}
+
 func readUsernamePassword(secret *corev1.Secret) (string, string, error) {
 	if secret == nil {
 		return "", "", errors.New("unable to extract data from nil secret")
@@ -169,7 +187,7 @@ func readUsernamePassword(secret *corev1.Secret) (string, string, error) {
 	return string(secret.Data["username"]), string(secret.Data["password"]), nil
 }
 
-func managementURI(svc *corev1.Service, tlsEnabled bool, clusterDomain string) (string, error) {
+func managementURI(svc *corev1.Service, tlsEnabled bool, clusterDomain string, pathPrefix string) (string, error) {
 	var managementUiPort int
 	for _, port := range svc.Spec.Ports {
 		if port.Name == "management-tls" {
@@ -190,5 +208,10 @@ func managementURI(svc *corev1.Service, tlsEnabled bool, clusterDomain string) (
 	if tlsEnabled {
 		scheme = "https"
 	}
-	return fmt.Sprintf("%s://%s.%s.svc%s:%d", scheme, svc.Name, svc.Namespace, clusterDomain, managementUiPort), nil
+	url := url.URL{
+		Scheme: scheme,
+		Host:   fmt.Sprintf("%s.%s.svc%s:%d", svc.Name, svc.Namespace, clusterDomain, managementUiPort),
+		Path:   pathPrefix,
+	}
+	return url.String(), nil
 }
