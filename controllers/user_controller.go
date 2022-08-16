@@ -84,7 +84,7 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		if user.Status.Username != "" {
 			return ctrl.Result{}, r.deleteUser(ctx, rabbitClient, user)
 		} else {
-			// Old function, kept for compatiblity
+			// Old function, kept for compatibility
 			return ctrl.Result{}, r.deleteUserFromSecret(ctx, rabbitClient, user)
 		}
 	}
