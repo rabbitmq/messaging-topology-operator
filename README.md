@@ -69,3 +69,5 @@ Please read [contribution guidelines](CONTRIBUTING.md) if you are interested in 
 ## Copyright
 
 Copyright 2021-2022 VMware, Inc. All Rights Reserved.
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/rabbitmq/messaging-topology-operator)](https://goreportcard.com/report/github.com/rabbitmq/messaging-topology-operator)
