@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -103,8 +104,12 @@ var _ = Describe("permission-controller", func() {
 					}, nil)
 				})
 
-				It("sets the status condition 'Ready' to 'true' ", func() {
+				It("works", func() {
 					Expect(client.Create(ctx, &permission)).To(Succeed())
+					By("setting the correct finalizer")
+					Eventually(komega.Object(&permission)).WithTimeout(2 * time.Second).Should(HaveField("ObjectMeta.Finalizers", ConsistOf("deletion.finalizers.permissions.rabbitmq.com")))
+
+					By("sets the status condition 'Ready' to 'true' ")
 					EventuallyWithOffset(1, func() []topology.Condition {
 						_ = client.Get(
 							ctx,
@@ -199,24 +204,6 @@ var _ = Describe("permission-controller", func() {
 					Expect(observedEvents).NotTo(ContainElement("Warning FailedDelete failed to delete permission"))
 					Expect(observedEvents).To(ContainElement("Normal SuccessfulDelete successfully deleted permission"))
 				})
-			})
-		})
-
-		Context("finalizer", func() {
-			BeforeEach(func() {
-				permissionName = "finalizer-with-username-test"
-			})
-
-			It("sets the correct deletion finalizer to the object", func() {
-				Expect(client.Create(ctx, &permission)).To(Succeed())
-				Eventually(func() []string {
-					var fetched topology.Permission
-					err := client.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &fetched)
-					if err != nil {
-						return []string{}
-					}
-					return fetched.ObjectMeta.Finalizers
-				}, 5).Should(ConsistOf("deletion.finalizers.permissions.rabbitmq.com"))
 			})
 		})
 	})

@@ -14,6 +14,7 @@ import (
 	"crypto/x509"
 	"go/build"
 	"path/filepath"
+	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"testing"
 
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
@@ -187,6 +188,9 @@ var _ = BeforeSuite(func() {
 
 	client = mgr.GetClient()
 	Expect(client).ToNot(BeNil())
+
+	komega.SetClient(client)
+	komega.SetContext(ctx)
 
 	rmqCreds := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
