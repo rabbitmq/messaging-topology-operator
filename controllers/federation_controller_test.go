@@ -169,7 +169,7 @@ var _ = Describe("federation-controller", func() {
 					err := client.Get(ctx, types.NamespacedName{Name: federation.Name, Namespace: federation.Namespace}, &topology.Federation{})
 					return apierrors.IsNotFound(err)
 				}, 5).Should(BeFalse())
-				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete federation upstream parameter"))
+				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete federation"))
 			})
 		})
 
@@ -185,7 +185,7 @@ var _ = Describe("federation-controller", func() {
 					err := client.Get(ctx, types.NamespacedName{Name: federation.Name, Namespace: federation.Namespace}, &topology.Federation{})
 					return apierrors.IsNotFound(err)
 				}, 5).Should(BeFalse())
-				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete federation upstream parameter"))
+				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete federation"))
 			})
 		})
 
@@ -205,8 +205,8 @@ var _ = Describe("federation-controller", func() {
 					return apierrors.IsNotFound(err)
 				}, 5).Should(BeTrue())
 				Expect(observedEvents()).To(SatisfyAll(
-					Not(ContainElement("Warning FailedDelete failed to delete federation upstream parameter")),
-					ContainElement("Normal SuccessfulDelete successfully deleted federation upstream parameter"),
+					Not(ContainElement("Warning FailedDelete failed to delete federation")),
+					ContainElement("Normal SuccessfulDelete successfully deleted federation"),
 				))
 			})
 		})

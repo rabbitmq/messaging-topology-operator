@@ -2,147 +2,39 @@ package controllers
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/tools/record"
-	clientretry "k8s.io/client-go/util/retry"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
 
-// VhostReconciler reconciles a Vhost object
-type VhostReconciler struct {
-	client.Client
-	Log                     logr.Logger
-	Scheme                  *runtime.Scheme
-	Recorder                record.EventRecorder
-	RabbitmqClientFactory   rabbitmqclient.Factory
-	KubernetesClusterDomain string
-}
-
-func (r *VhostReconciler) SetInternalDomainName(domainName string) {
-	r.KubernetesClusterDomain = domainName
-}
-
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=vhosts,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=vhosts/finalizers,verbs=update
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=vhosts/status,verbs=get;update;patch
 
-func (r *VhostReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := ctrl.LoggerFrom(ctx)
-
-	vhost := &topology.Vhost{}
-	if err := r.Get(ctx, req.NamespacedName, vhost); err != nil {
-		return reconcile.Result{}, client.IgnoreNotFound(err)
-	}
-
-	systemCertPool, err := extractSystemCertPool(ctx, r.Recorder, vhost)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, r.Client, vhost.Spec.RabbitmqClusterReference, vhost.Namespace, r.KubernetesClusterDomain)
-	if err != nil {
-		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, vhost, &vhost.Status.Conditions, err)
-	}
-
-	rabbitClient, err := r.RabbitmqClientFactory(credsProvider, tlsEnabled, systemCertPool)
-	if err != nil {
-		logger.Error(err, failedGenerateRabbitClient)
-		return reconcile.Result{}, err
-	}
-
-	// Check if the vhost has been marked for deletion
-	if !vhost.ObjectMeta.DeletionTimestamp.IsZero() {
-		logger.Info("Deleting")
-		return ctrl.Result{}, r.deleteVhost(ctx, rabbitClient, vhost)
-	}
-
-	if err := addFinalizerIfNeeded(ctx, r.Client, vhost); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	spec, err := json.Marshal(vhost.Spec)
-	if err != nil {
-		logger.Error(err, failedMarshalSpec)
-	}
-
-	logger.Info("Start reconciling",
-		"spec", string(spec))
-
-	if err := r.putVhost(ctx, rabbitClient, vhost); err != nil {
-		// Set Condition 'Ready' to false with message
-		vhost.Status.Conditions = []topology.Condition{
-			topology.NotReady(err.Error(), vhost.Status.Conditions),
-		}
-		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
-			return r.Status().Update(ctx, vhost)
-		}); writerErr != nil {
-			logger.Error(writerErr, failedStatusUpdate, "status", vhost.Status)
-		}
-		return ctrl.Result{}, err
-	}
-
-	vhost.Status.Conditions = []topology.Condition{topology.Ready(vhost.Status.Conditions)}
-	vhost.Status.ObservedGeneration = vhost.GetGeneration()
-	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
-		return r.Status().Update(ctx, vhost)
-	}); writerErr != nil {
-		logger.Error(writerErr, failedStatusUpdate, "status", vhost.Status)
-	}
-	logger.Info("Finished reconciling")
-
-	return ctrl.Result{}, nil
+type VhostReconciler struct {
+	client.Client
 }
 
-func (r *VhostReconciler) putVhost(ctx context.Context, client rabbitmqclient.Client, vhost *topology.Vhost) error {
-	logger := ctrl.LoggerFrom(ctx)
-
-	vhostSettings := internal.GenerateVhostSettings(vhost)
-
-	if err := validateResponse(client.PutVhost(vhost.Spec.Name, *vhostSettings)); err != nil {
-		msg := "failed to create vhost"
-		r.Recorder.Event(vhost, corev1.EventTypeWarning, "FailedCreate", msg)
-		logger.Error(err, msg, "vhost", vhost.Spec.Name)
-		return err
-	}
-
-	logger.Info("Successfully created vhost", "vhost", vhost.Spec.Name)
-	r.Recorder.Event(vhost, corev1.EventTypeNormal, "SuccessfulCreate", "Successfully created vhost")
-	return nil
+func (r *VhostReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+	vhost := obj.(*topology.Vhost)
+	return validateResponse(client.PutVhost(vhost.Spec.Name, *internal.GenerateVhostSettings(vhost)))
 }
 
 // deletes vhost from server
 // if server responds with '404' Not Found, it logs and does not requeue on error
-func (r *VhostReconciler) deleteVhost(ctx context.Context, client rabbitmqclient.Client, vhost *topology.Vhost) error {
+func (r *VhostReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
-
+	vhost := obj.(*topology.Vhost)
 	err := validateResponseForDeletion(client.DeleteVhost(vhost.Spec.Name))
 	if errors.Is(err, NotFound) {
 		logger.Info("cannot find vhost in rabbitmq server; already deleted", "vhost", vhost.Spec.Name)
 	} else if err != nil {
-		msg := "failed to delete vhost"
-		r.Recorder.Event(vhost, corev1.EventTypeWarning, "FailedDelete", msg)
-		logger.Error(err, msg, "vhost", vhost.Spec.Name)
 		return err
 	}
-
-	r.Recorder.Event(vhost, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted vhost")
-	return removeFinalizer(ctx, r.Client, vhost)
-}
-
-func (r *VhostReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&topology.Vhost{}).
-		Complete(r)
+	return nil
 }

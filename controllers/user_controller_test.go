@@ -259,7 +259,7 @@ var _ = Describe("UserController", func() {
 				}, 5).Should(BeTrue())
 
 				Expect(observedEvents()).To(SatisfyAll(
-					Not(ContainElement("Warning FailedDelete failed to delete user")),
+					Not(ContainElement("Warning FailedDelete failed to delete User")),
 					ContainElement("Normal SuccessfulDelete successfully deleted user"),
 				))
 			})

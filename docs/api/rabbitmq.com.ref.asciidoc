@@ -907,6 +907,8 @@ ShovelStatus defines the observed state of Shovel
 |===
 
 
+
+
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-user"]
 ==== User 
 

@@ -69,8 +69,9 @@ var (
 		arg2 bool
 		arg3 *x509.CertPool
 	}
-	fakeRecorder        *record.FakeRecorder
-	topologyControllers []controllers.TopologyController
+	fakeRecorder          *record.FakeRecorder
+	topologyReconcilers   []*controllers.TopologyReconciler
+	superStreamReconciler *controllers.SuperStreamReconciler
 )
 
 var _ = BeforeSuite(func() {
@@ -108,78 +109,101 @@ var _ = BeforeSuite(func() {
 
 	// The order in which these are declared matters
 	// Keep it sync with the order in which 'topologyObjects' are declared in 'common_test.go`
-	topologyControllers = []controllers.TopologyController{
-		&controllers.BindingReconciler{
+	topologyReconcilers = []*controllers.TopologyReconciler{
+		{
 			Client:                mgr.GetClient(),
+			Type:                  &topology.Binding{},
 			Scheme:                mgr.GetScheme(),
 			Recorder:              fakeRecorder,
 			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+			ReconcileFunc:         &controllers.BindingReconciler{},
 		},
-		&controllers.ExchangeReconciler{
+		{
 			Client:                mgr.GetClient(),
+			Type:                  &topology.Exchange{},
 			Scheme:                mgr.GetScheme(),
 			Recorder:              fakeRecorder,
 			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+			ReconcileFunc:         &controllers.ExchangeReconciler{},
 		},
-		&controllers.PermissionReconciler{
+		{
 			Client:                mgr.GetClient(),
+			Type:                  &topology.Permission{},
 			Scheme:                mgr.GetScheme(),
 			Recorder:              fakeRecorder,
 			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+			ReconcileFunc:         &controllers.PermissionReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()},
 		},
-		&controllers.PolicyReconciler{
+		{
 			Client:                mgr.GetClient(),
+			Type:                  &topology.Policy{},
 			Scheme:                mgr.GetScheme(),
 			Recorder:              fakeRecorder,
 			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+			ReconcileFunc:         &controllers.PolicyReconciler{},
 		},
-		&controllers.QueueReconciler{
+		{
 			Client:                mgr.GetClient(),
+			Type:                  &topology.Queue{},
 			Scheme:                mgr.GetScheme(),
 			Recorder:              fakeRecorder,
 			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+			ReconcileFunc:         &controllers.QueueReconciler{},
 		},
-		&controllers.UserReconciler{
+		{
 			Client:                mgr.GetClient(),
+			Type:                  &topology.User{},
 			Scheme:                mgr.GetScheme(),
 			Recorder:              fakeRecorder,
 			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+			ReconcileFunc:         &controllers.UserReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()},
 		},
-		&controllers.VhostReconciler{
+		{
 			Client:                mgr.GetClient(),
+			Type:                  &topology.Vhost{},
 			Scheme:                mgr.GetScheme(),
 			Recorder:              fakeRecorder,
 			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+			ReconcileFunc:         &controllers.VhostReconciler{Client: mgr.GetClient()},
 		},
-		&controllers.SchemaReplicationReconciler{
+		{
 			Client:                mgr.GetClient(),
+			Type:                  &topology.SchemaReplication{},
 			Scheme:                mgr.GetScheme(),
 			Recorder:              fakeRecorder,
 			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+			ReconcileFunc:         &controllers.SchemaReplicationReconciler{Client: mgr.GetClient()},
 		},
-		&controllers.FederationReconciler{
+		{
 			Client:                mgr.GetClient(),
+			Type:                  &topology.Federation{},
 			Scheme:                mgr.GetScheme(),
 			Recorder:              fakeRecorder,
 			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+			ReconcileFunc:         &controllers.FederationReconciler{Client: mgr.GetClient()},
 		},
-		&controllers.ShovelReconciler{
+		{
 			Client:                mgr.GetClient(),
+			Type:                  &topology.Shovel{},
 			Scheme:                mgr.GetScheme(),
 			Recorder:              fakeRecorder,
 			RabbitmqClientFactory: fakeRabbitMQClientFactory,
-		},
-		&controllers.SuperStreamReconciler{
-			Client:                mgr.GetClient(),
-			Scheme:                mgr.GetScheme(),
-			Recorder:              fakeRecorder,
-			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+			ReconcileFunc:         &controllers.ShovelReconciler{Client: mgr.GetClient()},
 		},
 	}
 
-	for _, controller := range topologyControllers {
+	for _, controller := range topologyReconcilers {
 		Expect(controller.SetupWithManager(mgr)).To(Succeed())
 	}
+
+	superStreamReconciler = &controllers.SuperStreamReconciler{
+		Client:                mgr.GetClient(),
+		Scheme:                mgr.GetScheme(),
+		Recorder:              fakeRecorder,
+		RabbitmqClientFactory: fakeRabbitMQClientFactory,
+	}
+
+	Expect(superStreamReconciler.SetupWithManager(mgr)).To(Succeed())
 
 	go func() {
 		err = mgr.Start(ctx)

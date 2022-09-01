@@ -15,7 +15,7 @@ import (
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("Controllers/Common", func() {
+var _ = Describe("SetInternalDomainName", func() {
 	var (
 		topologyObjects          []runtimeclient.Object
 		commonRabbitmqClusterRef = topology.RabbitmqClusterReference{
@@ -110,12 +110,13 @@ var _ = Describe("Controllers/Common", func() {
 	})
 
 	It("sets the domain name in the URI to connect to RabbitMQ", func() {
-		for _, controller := range topologyControllers {
+		for _, controller := range topologyReconcilers {
 			controller.SetInternalDomainName(".some-domain.com")
 		}
+		superStreamReconciler.SetInternalDomainName(".some-domain.com")
 
-		for i, _ := range topologyControllers {
-			Expect(client.Create(ctx, topologyObjects[i])).To(Succeed())
+		for i, obj := range topologyObjects {
+			Expect(client.Create(ctx, obj)).To(Succeed())
 
 			// Wait until the client factory is called
 			Eventually(func() int {
@@ -133,9 +134,13 @@ var _ = Describe("Controllers/Common", func() {
 
 	When("domain name is not set", func() {
 		It("uses internal short name", func() {
-			for i, controller := range topologyControllers {
+			for _, controller := range topologyReconcilers {
 				controller.SetInternalDomainName("")
-				Expect(client.Create(ctx, topologyObjects[i])).To(Succeed())
+			}
+			superStreamReconciler.SetInternalDomainName("")
+
+			for i, obj := range topologyObjects {
+				Expect(client.Create(ctx, obj)).To(Succeed())
 
 				// Wait until the client factory is called
 				Eventually(func() int {
@@ -153,9 +158,10 @@ var _ = Describe("Controllers/Common", func() {
 	})
 
 	AfterEach(func() {
-		for _, controller := range topologyControllers {
+		for _, controller := range topologyReconcilers {
 			controller.SetInternalDomainName("")
 		}
+		superStreamReconciler.SetInternalDomainName("")
 		for _, topologyObject := range topologyObjects {
 			Expect(client.Delete(ctx, topologyObject)).To(Succeed())
 			Eventually(func() bool {

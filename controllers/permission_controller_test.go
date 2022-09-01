@@ -370,7 +370,6 @@ var _ = Describe("permission-controller", func() {
 					}, 5).Should(BeTrue())
 					observedEvents := observedEvents()
 					Expect(observedEvents).NotTo(ContainElement("Warning FailedDelete failed to delete permission"))
-					Expect(observedEvents).To(ContainElement("Warning UserNotExist user already removed; no need to delete permission"))
 					Expect(observedEvents).To(ContainElement("Normal SuccessfulDelete successfully deleted permission"))
 				})
 			})

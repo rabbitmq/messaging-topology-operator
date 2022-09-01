@@ -13,133 +13,39 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 
+	"github.com/go-logr/logr"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/tools/record"
-	clientretry "k8s.io/client-go/util/retry"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
-
-// BindingReconciler reconciles a Binding object
-type BindingReconciler struct {
-	client.Client
-	Log                     logr.Logger
-	Scheme                  *runtime.Scheme
-	Recorder                record.EventRecorder
-	RabbitmqClientFactory   rabbitmqclient.Factory
-	KubernetesClusterDomain string
-}
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=bindings,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=bindings/finalizers,verbs=update
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=bindings/status,verbs=get;update;patch
 
-func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := ctrl.LoggerFrom(ctx)
+type BindingReconciler struct{}
 
-	binding := &topology.Binding{}
-	if err := r.Get(ctx, req.NamespacedName, binding); err != nil {
-		return reconcile.Result{}, client.IgnoreNotFound(err)
-	}
-
-	systemCertPool, err := extractSystemCertPool(ctx, r.Recorder, binding)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, r.Client, binding.Spec.RabbitmqClusterReference, binding.Namespace, r.KubernetesClusterDomain)
-	if err != nil {
-		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, binding, &binding.Status.Conditions, err)
-	}
-
-	rabbitClient, err := r.RabbitmqClientFactory(credsProvider, tlsEnabled, systemCertPool)
-	if err != nil {
-		logger.Error(err, failedGenerateRabbitClient)
-		return reconcile.Result{}, err
-	}
-
-	if !binding.ObjectMeta.DeletionTimestamp.IsZero() {
-		logger.Info("Deleting")
-		return ctrl.Result{}, r.deleteBinding(ctx, rabbitClient, binding)
-	}
-
-	if err := addFinalizerIfNeeded(ctx, r.Client, binding); err != nil {
-		return ctrl.Result{}, err
-	}
-	spec, err := json.Marshal(binding.Spec)
-	if err != nil {
-		logger.Error(err, failedMarshalSpec)
-	}
-
-	logger.Info("Start reconciling",
-		"spec", string(spec))
-
-	if err := r.declareBinding(ctx, rabbitClient, binding); err != nil {
-		// Set Condition 'Ready' to false with message
-		binding.Status.Conditions = []topology.Condition{
-			topology.NotReady(err.Error(), binding.Status.Conditions),
-		}
-		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
-			return r.Status().Update(ctx, binding)
-		}); writerErr != nil {
-			logger.Error(writerErr, failedStatusUpdate, "status", binding.Status)
-		}
-		return ctrl.Result{}, err
-	}
-
-	binding.Status.Conditions = []topology.Condition{topology.Ready(binding.Status.Conditions)}
-	binding.Status.ObservedGeneration = binding.GetGeneration()
-	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
-		return r.Status().Update(ctx, binding)
-	}); writerErr != nil {
-		logger.Error(writerErr, failedStatusUpdate, "status", binding.Status)
-	}
-	logger.Info("Finished reconciling")
-
-	return ctrl.Result{}, nil
-}
-
-func (r *BindingReconciler) declareBinding(ctx context.Context, client rabbitmqclient.Client, binding *topology.Binding) error {
-	logger := ctrl.LoggerFrom(ctx)
-
+func (r *BindingReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+	binding := obj.(*topology.Binding)
 	info, err := internal.GenerateBindingInfo(binding)
 	if err != nil {
-		msg := "failed to generate binding info"
-		r.Recorder.Event(binding, corev1.EventTypeWarning, "FailedDeclare", msg)
-		logger.Error(err, msg)
-		return err
+		return fmt.Errorf("failed to generate binding info: %w", err)
 	}
-
-	if err := validateResponse(client.DeclareBinding(binding.Spec.Vhost, *info)); err != nil {
-		msg := "failed to declare binding"
-		r.Recorder.Event(binding, corev1.EventTypeWarning, "FailedDeclare", msg)
-		logger.Error(err, msg)
-		return err
-	}
-
-	logger.Info("Successfully declared binding")
-	r.Recorder.Event(binding, corev1.EventTypeNormal, "SuccessfulDeclare", "Successfully declared binding")
-	return nil
+	return validateResponse(client.DeclareBinding(binding.Spec.Vhost, *info))
 }
 
 // deletes binding from rabbitmq server; bindings have no name; server needs BindingInfo to delete them
 // when server responds with '404' Not Found, it logs and does not requeue on error
 // if no binding argument is set, generating properties key by using internal.GeneratePropertiesKey
 // if binding arguments are set, list all bindings between source/destination to find the binding; if it failed to find corresponding binding, it assumes that the binding is already deleted and returns no error
-func (r *BindingReconciler) deleteBinding(ctx context.Context, client rabbitmqclient.Client, binding *topology.Binding) error {
+func (r *BindingReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
-
+	binding := obj.(*topology.Binding)
 	var info *rabbithole.BindingInfo
 	var err error
 	if binding.Spec.Arguments != nil {
@@ -149,15 +55,12 @@ func (r *BindingReconciler) deleteBinding(ctx context.Context, client rabbitmqcl
 		}
 		if info == nil {
 			logger.Info("cannot find the corresponding binding info in rabbitmq server; binding already deleted")
-			return removeFinalizer(ctx, r.Client, binding)
+			return nil
 		}
 	} else {
 		info, err = internal.GenerateBindingInfo(binding)
 		if err != nil {
-			msg := "failed to generate binding info"
-			r.Recorder.Event(binding, corev1.EventTypeWarning, "FailedDelete", msg)
-			logger.Error(err, msg)
-			return err
+			return fmt.Errorf("failed to generate binding info: %w", err)
 		}
 		info.PropertiesKey = internal.GeneratePropertiesKey(binding)
 	}
@@ -166,15 +69,10 @@ func (r *BindingReconciler) deleteBinding(ctx context.Context, client rabbitmqcl
 	if errors.Is(err, NotFound) {
 		logger.Info("cannot find binding in rabbitmq server; already deleted")
 	} else if err != nil {
-		msg := "failed to delete binding"
-		r.Recorder.Event(binding, corev1.EventTypeWarning, "FailedDelete", msg)
-		logger.Error(err, msg)
 		return err
 	}
 
-	logger.Info("Successfully deleted binding")
-	r.Recorder.Event(binding, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted binding")
-	return removeFinalizer(ctx, r.Client, binding)
+	return nil
 }
 
 func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topology.Binding, client rabbitmqclient.Client) (*rabbithole.BindingInfo, error) {
@@ -182,9 +80,7 @@ func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topolog
 	arguments := make(map[string]interface{})
 	if binding.Spec.Arguments != nil {
 		if err := json.Unmarshal(binding.Spec.Arguments.Raw, &arguments); err != nil {
-			msg := "failed to unmarshall binding arguments"
-			r.Recorder.Event(binding, corev1.EventTypeWarning, "FailedDelete", msg)
-			logger.Error(err, msg)
+			logger.Error(err, "failed to unmarshall binding arguments")
 			return nil, err
 		}
 	}
@@ -196,9 +92,7 @@ func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topolog
 		bindingInfos, err = client.ListExchangeBindingsBetween(binding.Spec.Vhost, binding.Spec.Source, binding.Spec.Destination)
 	}
 	if err != nil {
-		msg := "failed to list binding infos"
-		r.Recorder.Event(binding, corev1.EventTypeWarning, "FailedDelete", msg)
-		logger.Error(err, msg)
+		logger.Error(err, "failed to list binding infos")
 		return nil, err
 	}
 	var info *rabbithole.BindingInfo
@@ -208,14 +102,4 @@ func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topolog
 		}
 	}
 	return info, nil
-}
-
-func (r *BindingReconciler) SetInternalDomainName(clusterDomain string) {
-	r.KubernetesClusterDomain = clusterDomain
-}
-
-func (r *BindingReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&topology.Binding{}).
-		Complete(r)
 }
