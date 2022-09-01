@@ -88,6 +88,14 @@ func (s *Shovel) GroupResource() schema.GroupResource {
 	}
 }
 
+func (s *Shovel) RabbitReference() RabbitmqClusterReference {
+	return s.Spec.RabbitmqClusterReference
+}
+
+func (s *Shovel) SetStatusConditions(c []Condition) {
+	s.Status.Conditions = c
+}
+
 func init() {
 	SchemeBuilder.Register(&Shovel{}, &ShovelList{})
 }

@@ -75,6 +75,14 @@ func (f *Federation) GroupResource() schema.GroupResource {
 	}
 }
 
+func (f *Federation) RabbitReference() RabbitmqClusterReference {
+	return f.Spec.RabbitmqClusterReference
+}
+
+func (f *Federation) SetStatusConditions(c []Condition) {
+	f.Status.Conditions = c
+}
+
 func init() {
 	SchemeBuilder.Register(&Federation{}, &FederationList{})
 }

@@ -77,6 +77,14 @@ func (e *Exchange) GroupResource() schema.GroupResource {
 	}
 }
 
+func (e *Exchange) RabbitReference() RabbitmqClusterReference {
+	return e.Spec.RabbitmqClusterReference
+}
+
+func (e *Exchange) SetStatusConditions(c []Condition) {
+	e.Status.Conditions = c
+}
+
 func init() {
 	SchemeBuilder.Register(&Exchange{}, &ExchangeList{})
 }

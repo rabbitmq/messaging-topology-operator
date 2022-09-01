@@ -77,6 +77,14 @@ func (p *Policy) GroupResource() schema.GroupResource {
 	}
 }
 
+func (p *Policy) RabbitReference() RabbitmqClusterReference {
+	return p.Spec.RabbitmqClusterReference
+}
+
+func (p *Policy) SetStatusConditions(c []Condition) {
+	p.Status.Conditions = c
+}
+
 func init() {
 	SchemeBuilder.Register(&Policy{}, &PolicyList{})
 }

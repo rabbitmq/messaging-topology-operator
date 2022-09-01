@@ -65,6 +65,14 @@ func (v *Vhost) GroupResource() schema.GroupResource {
 	}
 }
 
+func (v *Vhost) RabbitReference() RabbitmqClusterReference {
+	return v.Spec.RabbitmqClusterReference
+}
+
+func (v *Vhost) SetStatusConditions(c []Condition) {
+	v.Status.Conditions = c
+}
+
 func init() {
 	SchemeBuilder.Register(&Vhost{}, &VhostList{})
 }

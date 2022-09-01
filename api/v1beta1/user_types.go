@@ -86,6 +86,14 @@ func (u *User) GroupResource() schema.GroupResource {
 	}
 }
 
+func (u *User) RabbitReference() RabbitmqClusterReference {
+	return u.Spec.RabbitmqClusterReference
+}
+
+func (u *User) SetStatusConditions(c []Condition) {
+	u.Status.Conditions = c
+}
+
 func init() {
 	SchemeBuilder.Register(&User{}, &UserList{})
 }
