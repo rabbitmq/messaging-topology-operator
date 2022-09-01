@@ -53,6 +53,7 @@ var (
 	clientSet                 *topologyClient.Clientset
 	ctx                       context.Context
 	cancel                    context.CancelFunc
+	mgr                       ctrl.Manager
 	fakeRabbitMQClient        *rabbitmqclientfakes.FakeClient
 	fakeRabbitMQClientError   error
 	fakeRabbitMQClientFactory = func(connectionCreds rabbitmqclient.ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (rabbitmqclient.Client, error) {
@@ -99,7 +100,7 @@ var _ = BeforeSuite(func() {
 	clientSet, err = topologyClient.NewForConfig(cfg)
 	Expect(err).NotTo(HaveOccurred())
 
-	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
+	mgr, err = ctrl.NewManager(cfg, ctrl.Options{
 		Scheme:             scheme.Scheme,
 		MetricsBindAddress: "0", // To avoid MacOS firewall pop-up every time you run this suite
 	})

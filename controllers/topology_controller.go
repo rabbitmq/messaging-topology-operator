@@ -207,10 +207,6 @@ func (r *TopologyReconciler) getTopLevelField(obj topology.TopologyResource, pat
 	return value.Addr().Interface()
 }
 
-func (r *TopologyReconciler) SetInternalDomainName(domainName string) {
-	r.KubernetesClusterDomain = domainName
-}
-
 func (r *TopologyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	if len(r.WatchTypes) == 0 {
 		return ctrl.NewControllerManagedBy(mgr).
