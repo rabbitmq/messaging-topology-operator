@@ -11,31 +11,14 @@ package controllers
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
+	"fmt"
 
-	"github.com/go-logr/logr"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/record"
-	clientretry "k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
-
-// QueueReconciler reconciles a RabbitMQ Queue
-type QueueReconciler struct {
-	client.Client
-	Log                     logr.Logger
-	Scheme                  *runtime.Scheme
-	Recorder                record.EventRecorder
-	RabbitmqClientFactory   rabbitmqclient.Factory
-	KubernetesClusterDomain string
-}
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=queues,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=queues/finalizers,verbs=update
@@ -45,122 +28,30 @@ type QueueReconciler struct {
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=events,verbs=get;create;patch
 
-func (r *QueueReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := ctrl.LoggerFrom(ctx)
+type QueueReconciler struct{}
 
-	// fetched the queue and return if queue no longer exists
-	queue := &topology.Queue{}
-	if err := r.Get(ctx, req.NamespacedName, queue); err != nil {
-		return reconcile.Result{}, client.IgnoreNotFound(err)
-	}
-
-	systemCertPool, err := extractSystemCertPool(ctx, r.Recorder, queue)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, r.Client, queue.Spec.RabbitmqClusterReference, queue.Namespace, r.KubernetesClusterDomain)
-	if err != nil {
-		return handleRMQReferenceParseError(ctx, r.Client, r.Recorder, queue, &queue.Status.Conditions, err)
-	}
-
-	rabbitClient, err := r.RabbitmqClientFactory(credsProvider, tlsEnabled, systemCertPool)
-	if err != nil {
-		logger.Error(err, failedGenerateRabbitClient)
-		return reconcile.Result{}, err
-	}
-
-	// Check if the queue has been marked for deletion
-	if !queue.ObjectMeta.DeletionTimestamp.IsZero() {
-		logger.Info("Deleting")
-		return ctrl.Result{}, r.deleteQueue(ctx, rabbitClient, queue)
-	}
-
-	if err := addFinalizerIfNeeded(ctx, r.Client, queue); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	queueSpec, err := json.Marshal(queue.Spec)
-	if err != nil {
-		logger.Error(err, failedMarshalSpec)
-	}
-
-	logger.Info("Start reconciling",
-		"spec", string(queueSpec))
-
-	if err := r.declareQueue(ctx, rabbitClient, queue); err != nil {
-		// Set Condition 'Ready' to false with message
-		queue.Status.Conditions = []topology.Condition{
-			topology.NotReady(err.Error(), queue.Status.Conditions),
-		}
-		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
-			return r.Status().Update(ctx, queue)
-		}); writerErr != nil {
-			logger.Error(writerErr, failedStatusUpdate, "status", queue.Status)
-		}
-		return ctrl.Result{}, err
-	}
-
-	queue.Status.Conditions = []topology.Condition{topology.Ready(queue.Status.Conditions)}
-	queue.Status.ObservedGeneration = queue.GetGeneration()
-	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
-		return r.Status().Update(ctx, queue)
-	}); writerErr != nil {
-		logger.Error(writerErr, failedStatusUpdate, "status", queue.Status)
-	}
-	logger.Info("Finished reconciling")
-
-	return ctrl.Result{}, nil
-}
-
-func (r *QueueReconciler) declareQueue(ctx context.Context, client rabbitmqclient.Client, queue *topology.Queue) error {
-	logger := ctrl.LoggerFrom(ctx)
-
+func (r *QueueReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+	queue := obj.(*topology.Queue)
 	queueSettings, err := internal.GenerateQueueSettings(queue)
 	if err != nil {
-		msg := "failed to generate queue settings"
-		r.Recorder.Event(queue, corev1.EventTypeWarning, "FailedDeclare", msg)
-		logger.Error(err, msg)
-		return err
+		return fmt.Errorf("failed to generate queue settings: %w", err)
 	}
-
-	if err := validateResponse(client.DeclareQueue(queue.Spec.Vhost, queue.Spec.Name, *queueSettings)); err != nil {
-		msg := "failed to declare queue"
-		r.Recorder.Event(queue, corev1.EventTypeWarning, "FailedDeclare", msg)
-		logger.Error(err, msg, "queue", queue.Spec.Name)
-		return err
-	}
-
-	logger.Info("Successfully declared queue", "queue", queue.Spec.Name)
-	r.Recorder.Event(queue, corev1.EventTypeNormal, "SuccessfulDeclare", "Successfully declared queue")
-	return nil
+	return validateResponse(client.DeclareQueue(queue.Spec.Vhost, queue.Spec.Name, *queueSettings))
 }
 
 // deletes queue from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
 // queues could be deleted manually or gone because of AutoDelete
-func (r *QueueReconciler) deleteQueue(ctx context.Context, client rabbitmqclient.Client, queue *topology.Queue) error {
+func (r *QueueReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
+	logger.Info("Deleting queues from ReconcilerFunc DeleteObj")
 
+	queue := obj.(*topology.Queue)
 	err := validateResponseForDeletion(client.DeleteQueue(queue.Spec.Vhost, queue.Spec.Name))
 	if errors.Is(err, NotFound) {
 		logger.Info("cannot find queue in rabbitmq server; already deleted", "queue", queue.Spec.Name)
 	} else if err != nil {
-		msg := "failed to delete queue"
-		r.Recorder.Event(queue, corev1.EventTypeWarning, "FailedDelete", msg)
-		logger.Error(err, msg, "queue", queue.Spec.Name)
 		return err
 	}
-	r.Recorder.Event(queue, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted queue")
-	return removeFinalizer(ctx, r.Client, queue)
-}
-
-func (r *QueueReconciler) SetInternalDomainName(domainName string) {
-	r.KubernetesClusterDomain = domainName
-}
-
-func (r *QueueReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&topology.Queue{}).
-		Complete(r)
+	return nil
 }

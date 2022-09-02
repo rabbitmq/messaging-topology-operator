@@ -125,5 +125,4 @@ func handleRMQReferenceParseError(ctx context.Context, client client.Client, eve
 	}
 	logger.Error(err, failedParseClusterRef)
 	return reconcile.Result{}, err
-
 }

@@ -81,6 +81,14 @@ func (b *Binding) GroupResource() schema.GroupResource {
 	}
 }
 
+func (b *Binding) RabbitReference() RabbitmqClusterReference {
+	return b.Spec.RabbitmqClusterReference
+}
+
+func (b *Binding) SetStatusConditions(c []Condition) {
+	b.Status.Conditions = c
+}
+
 func init() {
 	SchemeBuilder.Register(&Binding{}, &BindingList{})
 }

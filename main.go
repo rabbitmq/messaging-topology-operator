@@ -13,9 +13,11 @@ import (
 	"flag"
 	"fmt"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
 	"os"
 	"regexp"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
 	"strings"
 	"time"
@@ -125,116 +127,147 @@ func main() {
 		}
 	}
 
-	if err = (&controllers.QueueReconciler{
+	if err = (&controllers.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		Type:                    &topology.Queue{},
 		Log:                     ctrl.Log.WithName(controllers.QueueControllerName),
 		Scheme:                  mgr.GetScheme(),
 		Recorder:                mgr.GetEventRecorderFor(controllers.QueueControllerName),
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
+		ReconcileFunc:           &controllers.QueueReconciler{},
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.QueueControllerName)
 		os.Exit(1)
 	}
-	if err = (&controllers.ExchangeReconciler{
+
+	if err = (&controllers.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		Type:                    &topology.Exchange{},
 		Log:                     ctrl.Log.WithName(controllers.ExchangeControllerName),
 		Scheme:                  mgr.GetScheme(),
 		Recorder:                mgr.GetEventRecorderFor(controllers.ExchangeControllerName),
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
+		ReconcileFunc:           &controllers.ExchangeReconciler{},
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.ExchangeControllerName)
 		os.Exit(1)
 	}
-	if err = (&controllers.BindingReconciler{
+
+	if err = (&controllers.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		Type:                    &topology.Binding{},
 		Log:                     ctrl.Log.WithName(controllers.BindingControllerName),
 		Scheme:                  mgr.GetScheme(),
 		Recorder:                mgr.GetEventRecorderFor(controllers.BindingControllerName),
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
+		ReconcileFunc:           &controllers.BindingReconciler{},
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.BindingControllerName)
 		os.Exit(1)
 	}
-	if err = (&controllers.UserReconciler{
+
+	if err = (&controllers.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		Type:                    &topology.User{},
 		Log:                     ctrl.Log.WithName(controllers.UserControllerName),
 		Scheme:                  mgr.GetScheme(),
 		Recorder:                mgr.GetEventRecorderFor(controllers.UserControllerName),
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
+		WatchTypes:              []client.Object{&corev1.Secret{}},
+		ReconcileFunc:           &controllers.UserReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()},
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.UserControllerName)
 		os.Exit(1)
 	}
-	if err = (&controllers.VhostReconciler{
+
+	if err = (&controllers.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		Type:                    &topology.Vhost{},
 		Log:                     ctrl.Log.WithName(controllers.VhostControllerName),
 		Scheme:                  mgr.GetScheme(),
 		Recorder:                mgr.GetEventRecorderFor(controllers.VhostControllerName),
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
+		ReconcileFunc:           &controllers.VhostReconciler{Client: mgr.GetClient()},
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.VhostControllerName)
 		os.Exit(1)
 	}
-	if err = (&controllers.PolicyReconciler{
+
+	if err = (&controllers.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		Type:                    &topology.Policy{},
 		Log:                     ctrl.Log.WithName(controllers.PolicyControllerName),
 		Scheme:                  mgr.GetScheme(),
 		Recorder:                mgr.GetEventRecorderFor(controllers.PolicyControllerName),
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
+		ReconcileFunc:           &controllers.PolicyReconciler{},
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.PolicyControllerName)
 		os.Exit(1)
 	}
-	if err = (&controllers.PermissionReconciler{
+
+	if err = (&controllers.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		Type:                    &topology.Permission{},
 		Log:                     ctrl.Log.WithName(controllers.PermissionControllerName),
 		Scheme:                  mgr.GetScheme(),
 		Recorder:                mgr.GetEventRecorderFor(controllers.PermissionControllerName),
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
+		ReconcileFunc:           &controllers.PermissionReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()},
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.PermissionControllerName)
 		os.Exit(1)
 	}
-	if err = (&controllers.SchemaReplicationReconciler{
+
+	if err = (&controllers.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		Type:                    &topology.SchemaReplication{},
 		Log:                     ctrl.Log.WithName(controllers.SchemaReplicationControllerName),
 		Scheme:                  mgr.GetScheme(),
 		Recorder:                mgr.GetEventRecorderFor(controllers.SchemaReplicationControllerName),
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
+		ReconcileFunc:           &controllers.SchemaReplicationReconciler{Client: mgr.GetClient()},
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.SchemaReplicationControllerName)
 		os.Exit(1)
 	}
-	if err = (&controllers.FederationReconciler{
+
+	if err = (&controllers.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		Type:                    &topology.Federation{},
 		Log:                     ctrl.Log.WithName(controllers.FederationControllerName),
 		Scheme:                  mgr.GetScheme(),
 		Recorder:                mgr.GetEventRecorderFor(controllers.FederationControllerName),
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
+		ReconcileFunc:           &controllers.FederationReconciler{Client: mgr.GetClient()},
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.FederationControllerName)
 		os.Exit(1)
 	}
-	if err = (&controllers.ShovelReconciler{
+
+	if err = (&controllers.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		Type:                    &topology.Shovel{},
 		Log:                     ctrl.Log.WithName(controllers.ShovelControllerName),
 		Scheme:                  mgr.GetScheme(),
 		Recorder:                mgr.GetEventRecorderFor(controllers.ShovelControllerName),
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
+		ReconcileFunc:           &controllers.ShovelReconciler{Client: mgr.GetClient()},
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.ShovelControllerName)
 		os.Exit(1)
 	}
+
 	if err = (&controllers.SuperStreamReconciler{
 		Client:                mgr.GetClient(),
 		Log:                   ctrl.Log.WithName(controllers.SuperStreamControllerName),

@@ -74,6 +74,14 @@ func (p *Permission) GroupResource() schema.GroupResource {
 	}
 }
 
+func (p *Permission) RabbitReference() RabbitmqClusterReference {
+	return p.Spec.RabbitmqClusterReference
+}
+
+func (p *Permission) SetStatusConditions(c []Condition) {
+	p.Status.Conditions = c
+}
+
 func init() {
 	SchemeBuilder.Register(&Permission{}, &PermissionList{})
 }

@@ -80,13 +80,21 @@ type SchemaReplicationList struct {
 	Items           []SchemaReplication `json:"items"`
 }
 
-func init() {
-	SchemeBuilder.Register(&SchemaReplication{}, &SchemaReplicationList{})
-}
-
 func (s *SchemaReplication) GroupResource() schema.GroupResource {
 	return schema.GroupResource{
 		Group:    s.GroupVersionKind().Group,
 		Resource: s.GroupVersionKind().Kind,
 	}
+}
+
+func (s *SchemaReplication) RabbitReference() RabbitmqClusterReference {
+	return s.Spec.RabbitmqClusterReference
+}
+
+func (s *SchemaReplication) SetStatusConditions(c []Condition) {
+	s.Status.Conditions = c
+}
+
+func init() {
+	SchemeBuilder.Register(&SchemaReplication{}, &SchemaReplicationList{})
 }

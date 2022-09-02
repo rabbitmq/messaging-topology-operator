@@ -167,7 +167,7 @@ var _ = Describe("schema-replication-controller", func() {
 					err := client.Get(ctx, types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace}, &topology.SchemaReplication{})
 					return apierrors.IsNotFound(err)
 				}, 5).Should(BeFalse())
-				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete global parameter 'schema_definition_sync_upstream'"))
+				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete schemareplication"))
 			})
 		})
 
@@ -183,7 +183,7 @@ var _ = Describe("schema-replication-controller", func() {
 					err := client.Get(ctx, types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace}, &topology.SchemaReplication{})
 					return apierrors.IsNotFound(err)
 				}, 5).Should(BeFalse())
-				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete global parameter 'schema_definition_sync_upstream'"))
+				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete schemareplication"))
 			})
 		})
 
@@ -203,8 +203,8 @@ var _ = Describe("schema-replication-controller", func() {
 					return apierrors.IsNotFound(err)
 				}, 5).Should(BeTrue())
 				Expect(observedEvents()).To(SatisfyAll(
-					Not(ContainElement("Warning FailedDelete failed to delete global parameter 'schema_definition_sync_upstream'")),
-					ContainElement("Normal SuccessfulDelete successfully delete 'schema_definition_sync_upstream' global parameter"),
+					Not(ContainElement("Warning FailedDelete failed to deleted schemareplication")),
+					ContainElement("Normal SuccessfulDelete successfully deleted schemareplication"),
 				))
 			})
 		})
