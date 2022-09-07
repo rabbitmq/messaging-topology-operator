@@ -22,6 +22,7 @@ install-tools:
 	@echo "Install all tools..."
 	@awk -F '"' '/_/ && !/k8s.io\/code-generator/ { system("go install " $$2) }' tools/tools.go
 	@$(get_mod_code_generator)
+	go install golang.org/x/vuln/cmd/govulncheck@latest
 
 ENVTEST_K8S_VERSION = 1.22.1
 ARCHITECTURE = amd64
@@ -49,11 +50,11 @@ $(KUBEBUILDER_ASSETS):
 ### Targets
 
 .PHONY: unit-tests
-unit-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet manifests ## Run unit tests
+unit-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet vuln manifests ## Run unit tests
 	ginkgo -r --randomize-all api/ internal/ rabbitmqclient/
 
 .PHONY: integration-tests
-integration-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet manifests ## Run integration tests
+integration-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet vuln manifests ## Run integration tests
 	ginkgo -r --randomize-all controllers/
 
 just-integration-tests: $(KUBEBUILDER_ASSETS) vet
@@ -65,7 +66,7 @@ system-tests: ## run end-to-end tests against Kubernetes cluster defined in ~/.k
 	NAMESPACE="rabbitmq-system" ginkgo --randomize-all -r system_tests/
 
 # Build manager binary
-manager: generate fmt vet
+manager: generate fmt vet vuln
 	go build -o bin/manager main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
@@ -75,7 +76,7 @@ manager: generate fmt vet
 # https://github.com/telepresenceio/telepresence is one way to do this (just run
 # `telepresence connect` and services like `test-service.test-namespace.svc.cluster.local`
 # will resolve properly).
-run: generate fmt vet manifests just-run
+run: generate fmt vet vuln manifests just-run
 
 just-run: ## Just runs 'go run main.go' without regenerating any manifests or deploying RBACs
 	KUBE_CONFIG=${HOME}/.kube/config OPERATOR_NAMESPACE=rabbitmq-system ENABLE_WEBHOOKS=false go run ./main.go
@@ -133,6 +134,10 @@ fmt:
 # Run go vet against code
 vet:
 	go vet ./...
+
+# Run govulncheck
+vuln:
+	govulncheck ./...
 
 # Generate code & docs
 generate: install-tools api-reference
