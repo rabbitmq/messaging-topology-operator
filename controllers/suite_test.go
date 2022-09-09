@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"testing"
+	"time"
 
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient/rabbitmqclientfakes"
@@ -70,9 +71,10 @@ var (
 		arg2 bool
 		arg3 *x509.CertPool
 	}
-	fakeRecorder          *record.FakeRecorder
-	topologyReconcilers   []*controllers.TopologyReconciler
-	superStreamReconciler *controllers.SuperStreamReconciler
+	fakeRecorder              *record.FakeRecorder
+	topologyReconcilers       []*controllers.TopologyReconciler
+	superStreamReconciler     *controllers.SuperStreamReconciler
+	statusEventsUpdateTimeout = 10 * time.Second
 )
 
 var _ = BeforeSuite(func() {

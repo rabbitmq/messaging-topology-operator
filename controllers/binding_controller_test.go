@@ -56,7 +56,7 @@ var _ = Describe("bindingController", func() {
 					)
 
 					return binding.Status.Conditions
-				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 					"Type":    Equal(topology.ConditionType("Ready")),
 					"Reason":  Equal("FailedCreateOrUpdate"),
 					"Status":  Equal(corev1.ConditionFalse),
@@ -81,7 +81,7 @@ var _ = Describe("bindingController", func() {
 					)
 
 					return binding.Status.Conditions
-				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 					"Type":    Equal(topology.ConditionType("Ready")),
 					"Reason":  Equal("FailedCreateOrUpdate"),
 					"Status":  Equal(corev1.ConditionFalse),
@@ -113,7 +113,7 @@ var _ = Describe("bindingController", func() {
 					)
 
 					return binding.Status.Conditions
-				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(topology.ConditionType("Ready")),
 					"Reason": Equal("SuccessfulCreateOrUpdate"),
 					"Status": Equal(corev1.ConditionTrue),
@@ -137,7 +137,7 @@ var _ = Describe("bindingController", func() {
 				)
 
 				return binding.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(topology.ConditionType("Ready")),
 				"Reason": Equal("SuccessfulCreateOrUpdate"),
 				"Status": Equal(corev1.ConditionTrue),
@@ -159,7 +159,7 @@ var _ = Describe("bindingController", func() {
 				Consistently(func() bool {
 					err := client.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &topology.Binding{})
 					return apierrors.IsNotFound(err)
-				}, 5).Should(BeFalse())
+				}, statusEventsUpdateTimeout).Should(BeFalse())
 				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete binding"))
 			})
 		})
@@ -229,7 +229,7 @@ var _ = Describe("bindingController", func() {
 				)
 
 				return binding.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":    Equal(topology.ConditionType("Ready")),
 				"Reason":  Equal("FailedCreateOrUpdate"),
 				"Status":  Equal(corev1.ConditionFalse),
@@ -268,7 +268,7 @@ var _ = Describe("bindingController", func() {
 				)
 
 				return binding.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(topology.ConditionType("Ready")),
 				"Reason": Equal("SuccessfulCreateOrUpdate"),
 				"Status": Equal(corev1.ConditionTrue),
@@ -306,7 +306,7 @@ var _ = Describe("bindingController", func() {
 				)
 
 				return binding.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(topology.ConditionType("Ready")),
 				"Reason": Equal("SuccessfulCreateOrUpdate"),
 				"Status": Equal(corev1.ConditionTrue),

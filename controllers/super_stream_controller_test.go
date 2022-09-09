@@ -80,7 +80,7 @@ var _ = Describe("super-stream-controller", func() {
 								types.NamespacedName{Name: superStreamName + "-exchange", Namespace: "default"},
 								&exchange,
 							)
-						}, 10*time.Second, 1*time.Second).Should(Succeed())
+						}, statusEventsUpdateTimeout, 1*time.Second).Should(Succeed())
 						Expect(exchange.Spec).To(MatchFields(IgnoreExtras, Fields{
 							"Name":    Equal(superStreamName),
 							"Type":    Equal("direct"),
@@ -170,7 +170,7 @@ var _ = Describe("super-stream-controller", func() {
 							)
 
 							return superStream.Status.Conditions
-						}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+						}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 							"Type":   Equal(topology.ConditionType("Ready")),
 							"Reason": Equal("SuccessfulCreateOrUpdate"),
 							"Status": Equal(corev1.ConditionTrue),
@@ -188,7 +188,6 @@ var _ = Describe("super-stream-controller", func() {
 							types.NamespacedName{Name: superStreamName, Namespace: "default"},
 							&superStream,
 						)
-
 						return superStream.Status.Conditions
 					}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 						"Type":   Equal(topology.ConditionType("Ready")),
@@ -221,7 +220,7 @@ var _ = Describe("super-stream-controller", func() {
 								)
 
 								return superStream.Status.Conditions
-							}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+							}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 								"Type":   Equal(topology.ConditionType("Ready")),
 								"Reason": Equal("SuccessfulCreateOrUpdate"),
 								"Status": Equal(corev1.ConditionTrue),
@@ -268,7 +267,7 @@ var _ = Describe("super-stream-controller", func() {
 								)
 
 								return superStream.Status.Conditions
-							}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+							}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 								"Type":   Equal(topology.ConditionType("Ready")),
 								"Reason": Equal("SuccessfulCreateOrUpdate"),
 								"Status": Equal(corev1.ConditionTrue),
@@ -314,7 +313,7 @@ var _ = Describe("super-stream-controller", func() {
 								)
 
 								return superStream.Status.Conditions
-							}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+							}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 								"Type":   Equal(topology.ConditionType("Ready")),
 								"Reason": Equal("SuccessfulCreateOrUpdate"),
 								"Status": Equal(corev1.ConditionTrue),
@@ -361,7 +360,7 @@ var _ = Describe("super-stream-controller", func() {
 								)
 
 								return superStream.Status.Conditions
-							}, 5*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+							}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 								"Type":   Equal(topology.ConditionType("Ready")),
 								"Reason": Equal("FailedCreateOrUpdate"),
 								"Status": Equal(corev1.ConditionFalse),
@@ -452,7 +451,7 @@ var _ = Describe("super-stream-controller", func() {
 						)
 
 						return superStream.Status.Conditions
-					}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+					}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 						"Type":   Equal(topology.ConditionType("Ready")),
 						"Reason": Equal("SuccessfulCreateOrUpdate"),
 						"Status": Equal(corev1.ConditionTrue),
@@ -547,7 +546,7 @@ var _ = Describe("super-stream-controller", func() {
 								)
 
 								return superStream.Status.Conditions
-							}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+							}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 								"Type":   Equal(topology.ConditionType("Ready")),
 								"Reason": Equal("SuccessfulCreateOrUpdate"),
 								"Status": Equal(corev1.ConditionTrue),
@@ -577,7 +576,7 @@ var _ = Describe("super-stream-controller", func() {
 							)
 
 							return fetchedSuperStream.Status.Conditions
-						}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+						}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 							"Type":   Equal(topology.ConditionType("Ready")),
 							"Reason": Equal("SuccessfulCreateOrUpdate"),
 							"Status": Equal(corev1.ConditionTrue),
@@ -690,7 +689,7 @@ var _ = Describe("super-stream-controller", func() {
 						)
 
 						return fetchedSuperStream.Status.Conditions
-					}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+					}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 						"Type":    Equal(topology.ConditionType("Ready")),
 						"Reason":  Equal("FailedCreateOrUpdate"),
 						"Message": Equal("SuperStream mismatch failed to reconcile"),

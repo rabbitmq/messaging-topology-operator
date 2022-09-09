@@ -61,7 +61,7 @@ var _ = Describe("permission-controller", func() {
 						)
 
 						return permission.Status.Conditions
-					}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+					}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 						"Type":    Equal(topology.ConditionType("Ready")),
 						"Reason":  Equal("FailedCreateOrUpdate"),
 						"Status":  Equal(corev1.ConditionFalse),
@@ -86,7 +86,7 @@ var _ = Describe("permission-controller", func() {
 						)
 
 						return permission.Status.Conditions
-					}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+					}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 						"Type":    Equal(topology.ConditionType("Ready")),
 						"Reason":  Equal("FailedCreateOrUpdate"),
 						"Status":  Equal(corev1.ConditionFalse),
@@ -118,7 +118,7 @@ var _ = Describe("permission-controller", func() {
 						)
 
 						return permission.Status.Conditions
-					}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+					}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 						"Type":   Equal(topology.ConditionType("Ready")),
 						"Reason": Equal("SuccessfulCreateOrUpdate"),
 						"Status": Equal(corev1.ConditionTrue),
@@ -142,7 +142,7 @@ var _ = Describe("permission-controller", func() {
 					)
 
 					return permission.Status.Conditions
-				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(topology.ConditionType("Ready")),
 					"Reason": Equal("SuccessfulCreateOrUpdate"),
 					"Status": Equal(corev1.ConditionTrue),
@@ -164,7 +164,7 @@ var _ = Describe("permission-controller", func() {
 					Consistently(func() bool {
 						err := client.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &topology.Permission{})
 						return apierrors.IsNotFound(err)
-					}, 5).Should(BeFalse())
+					}, statusEventsUpdateTimeout).Should(BeFalse())
 					Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete permission"))
 				})
 			})
@@ -180,7 +180,7 @@ var _ = Describe("permission-controller", func() {
 					Consistently(func() bool {
 						err := client.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &topology.Permission{})
 						return apierrors.IsNotFound(err)
-					}, 5).Should(BeFalse())
+					}, statusEventsUpdateTimeout).Should(BeFalse())
 					Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete permission"))
 				})
 			})
@@ -199,7 +199,7 @@ var _ = Describe("permission-controller", func() {
 					Eventually(func() bool {
 						err := client.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &topology.Permission{})
 						return apierrors.IsNotFound(err)
-					}, 5).Should(BeTrue())
+					}, statusEventsUpdateTimeout).Should(BeTrue())
 					observedEvents := observedEvents()
 					Expect(observedEvents).NotTo(ContainElement("Warning FailedDelete failed to delete permission"))
 					Expect(observedEvents).To(ContainElement("Normal SuccessfulDelete successfully deleted permission"))
@@ -273,7 +273,7 @@ var _ = Describe("permission-controller", func() {
 						)
 
 						return permission.Status.Conditions
-					}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+					}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 						"Type":    Equal(topology.ConditionType("Ready")),
 						"Reason":  Equal("FailedCreateOrUpdate"),
 						"Message": Equal("failed create Permission, missing User"),
@@ -299,7 +299,7 @@ var _ = Describe("permission-controller", func() {
 						)
 
 						return permission.Status.Conditions
-					}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+					}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 						"Type":   Equal(topology.ConditionType("Ready")),
 						"Reason": Equal("SuccessfulCreateOrUpdate"),
 						"Status": Equal(corev1.ConditionTrue),
@@ -320,7 +320,7 @@ var _ = Describe("permission-controller", func() {
 					)
 
 					return permission.Status.Conditions
-				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(topology.ConditionType("Ready")),
 					"Reason": Equal("SuccessfulCreateOrUpdate"),
 					"Status": Equal(corev1.ConditionTrue),
@@ -344,7 +344,7 @@ var _ = Describe("permission-controller", func() {
 					Eventually(func() bool {
 						err := client.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &topology.Permission{})
 						return apierrors.IsNotFound(err)
-					}, 5).Should(BeTrue())
+					}, statusEventsUpdateTimeout).Should(BeTrue())
 					observedEvents := observedEvents()
 					Expect(observedEvents).NotTo(ContainElement("Warning FailedDelete failed to delete permission"))
 					Expect(observedEvents).To(ContainElement("Normal SuccessfulDelete successfully deleted permission"))
@@ -362,12 +362,12 @@ var _ = Describe("permission-controller", func() {
 					Eventually(func() bool {
 						err := client.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{})
 						return apierrors.IsNotFound(err)
-					}, 5).Should(BeTrue())
+					}, statusEventsUpdateTimeout).Should(BeTrue())
 					Expect(client.Delete(ctx, &permission)).To(Succeed())
 					Eventually(func() bool {
 						err := client.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &topology.Permission{})
 						return apierrors.IsNotFound(err)
-					}, 5).Should(BeTrue())
+					}, statusEventsUpdateTimeout).Should(BeTrue())
 					observedEvents := observedEvents()
 					Expect(observedEvents).NotTo(ContainElement("Warning FailedDelete failed to delete permission"))
 					Expect(observedEvents).To(ContainElement("Normal SuccessfulDelete successfully deleted permission"))
@@ -385,7 +385,7 @@ var _ = Describe("permission-controller", func() {
 					Eventually(func() bool {
 						err := client.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &topology.Permission{})
 						return apierrors.IsNotFound(err)
-					}, 5).Should(BeTrue())
+					}, statusEventsUpdateTimeout).Should(BeTrue())
 					observedEvents := observedEvents()
 					Expect(observedEvents).NotTo(ContainElement("Warning FailedDelete failed to delete permission"))
 					Expect(observedEvents).To(ContainElement("Normal SuccessfulDelete successfully deleted permission"))
@@ -442,7 +442,7 @@ var _ = Describe("permission-controller", func() {
 				)
 
 				return permission.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":    Equal(topology.ConditionType("Ready")),
 				"Reason":  Equal("FailedCreateOrUpdate"),
 				"Status":  Equal(corev1.ConditionFalse),
@@ -483,7 +483,7 @@ var _ = Describe("permission-controller", func() {
 				)
 
 				return permission.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(topology.ConditionType("Ready")),
 				"Reason": Equal("SuccessfulCreateOrUpdate"),
 				"Status": Equal(corev1.ConditionTrue),
@@ -523,7 +523,7 @@ var _ = Describe("permission-controller", func() {
 				)
 
 				return permission.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(topology.ConditionType("Ready")),
 				"Reason": Equal("SuccessfulCreateOrUpdate"),
 				"Status": Equal(corev1.ConditionTrue),

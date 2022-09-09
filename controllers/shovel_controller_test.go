@@ -59,7 +59,7 @@ var _ = Describe("shovel-controller", func() {
 					)
 
 					return shovel.Status.Conditions
-				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 					"Type":    Equal(topology.ConditionType("Ready")),
 					"Reason":  Equal("FailedCreateOrUpdate"),
 					"Status":  Equal(corev1.ConditionFalse),
@@ -84,7 +84,7 @@ var _ = Describe("shovel-controller", func() {
 					)
 
 					return shovel.Status.Conditions
-				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 					"Type":    Equal(topology.ConditionType("Ready")),
 					"Reason":  Equal("FailedCreateOrUpdate"),
 					"Status":  Equal(corev1.ConditionFalse),
@@ -116,7 +116,7 @@ var _ = Describe("shovel-controller", func() {
 					)
 
 					return shovel.Status.Conditions
-				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(topology.ConditionType("Ready")),
 					"Reason": Equal("SuccessfulCreateOrUpdate"),
 					"Status": Equal(corev1.ConditionTrue),
@@ -140,7 +140,7 @@ var _ = Describe("shovel-controller", func() {
 				)
 
 				return shovel.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(topology.ConditionType("Ready")),
 				"Reason": Equal("SuccessfulCreateOrUpdate"),
 				"Status": Equal(corev1.ConditionTrue),
@@ -162,7 +162,7 @@ var _ = Describe("shovel-controller", func() {
 				Consistently(func() bool {
 					err := client.Get(ctx, types.NamespacedName{Name: shovel.Name, Namespace: shovel.Namespace}, &topology.Shovel{})
 					return apierrors.IsNotFound(err)
-				}, 5).Should(BeFalse())
+				}, statusEventsUpdateTimeout).Should(BeFalse())
 				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete shovel"))
 			})
 		})
@@ -178,7 +178,7 @@ var _ = Describe("shovel-controller", func() {
 				Consistently(func() bool {
 					err := client.Get(ctx, types.NamespacedName{Name: shovel.Name, Namespace: shovel.Namespace}, &topology.Shovel{})
 					return apierrors.IsNotFound(err)
-				}, 5).Should(BeFalse())
+				}, statusEventsUpdateTimeout).Should(BeFalse())
 				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete shovel"))
 			})
 		})
@@ -197,7 +197,7 @@ var _ = Describe("shovel-controller", func() {
 				Eventually(func() bool {
 					err := client.Get(ctx, types.NamespacedName{Name: shovel.Name, Namespace: shovel.Namespace}, &topology.Shovel{})
 					return apierrors.IsNotFound(err)
-				}, 5).Should(BeTrue())
+				}, statusEventsUpdateTimeout).Should(BeTrue())
 				Expect(observedEvents()).To(SatisfyAll(
 					Not(ContainElement("Warning FailedDelete failed to delete shovel")),
 					ContainElement("Normal SuccessfulDelete successfully deleted shovel"),
@@ -235,7 +235,7 @@ var _ = Describe("shovel-controller", func() {
 				)
 
 				return shovel.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":    Equal(topology.ConditionType("Ready")),
 				"Reason":  Equal("FailedCreateOrUpdate"),
 				"Status":  Equal(corev1.ConditionFalse),
@@ -277,7 +277,7 @@ var _ = Describe("shovel-controller", func() {
 				)
 
 				return shovel.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(topology.ConditionType("Ready")),
 				"Reason": Equal("SuccessfulCreateOrUpdate"),
 				"Status": Equal(corev1.ConditionTrue),
@@ -318,7 +318,7 @@ var _ = Describe("shovel-controller", func() {
 				)
 
 				return shovel.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(topology.ConditionType("Ready")),
 				"Reason": Equal("SuccessfulCreateOrUpdate"),
 				"Status": Equal(corev1.ConditionTrue),

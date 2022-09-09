@@ -56,7 +56,7 @@ var _ = Describe("queue-controller", func() {
 					)
 
 					return queue.Status.Conditions
-				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 					"Type":    Equal(topology.ConditionType("Ready")),
 					"Reason":  Equal("FailedCreateOrUpdate"),
 					"Status":  Equal(corev1.ConditionFalse),
@@ -81,7 +81,7 @@ var _ = Describe("queue-controller", func() {
 					)
 
 					return queue.Status.Conditions
-				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 					"Type":    Equal(topology.ConditionType("Ready")),
 					"Reason":  Equal("FailedCreateOrUpdate"),
 					"Status":  Equal(corev1.ConditionFalse),
@@ -113,7 +113,7 @@ var _ = Describe("queue-controller", func() {
 					)
 
 					return queue.Status.Conditions
-				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(topology.ConditionType("Ready")),
 					"Reason": Equal("SuccessfulCreateOrUpdate"),
 					"Status": Equal(corev1.ConditionTrue),
@@ -137,7 +137,7 @@ var _ = Describe("queue-controller", func() {
 				)
 
 				return queue.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(topology.ConditionType("Ready")),
 				"Reason": Equal("SuccessfulCreateOrUpdate"),
 				"Status": Equal(corev1.ConditionTrue),
@@ -159,7 +159,7 @@ var _ = Describe("queue-controller", func() {
 				Consistently(func() bool {
 					err := client.Get(ctx, types.NamespacedName{Name: queue.Name, Namespace: queue.Namespace}, &topology.Queue{})
 					return apierrors.IsNotFound(err)
-				}, 5).Should(BeFalse())
+				}, statusEventsUpdateTimeout).Should(BeFalse())
 				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete queue"))
 			})
 		})
@@ -175,7 +175,7 @@ var _ = Describe("queue-controller", func() {
 				Consistently(func() bool {
 					err := client.Get(ctx, types.NamespacedName{Name: queue.Name, Namespace: queue.Namespace}, &topology.Queue{})
 					return apierrors.IsNotFound(err)
-				}, 5).Should(BeFalse())
+				}, statusEventsUpdateTimeout).Should(BeFalse())
 				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete queue"))
 			})
 		})
@@ -194,7 +194,7 @@ var _ = Describe("queue-controller", func() {
 				Eventually(func() bool {
 					err := client.Get(ctx, types.NamespacedName{Name: queue.Name, Namespace: queue.Namespace}, &topology.Queue{})
 					return apierrors.IsNotFound(err)
-				}, 5).Should(BeTrue())
+				}, statusEventsUpdateTimeout).Should(BeTrue())
 				Expect(observedEvents()).To(SatisfyAll(
 					Not(ContainElement("Warning FailedDelete failed to delete queue")),
 					ContainElement("Normal SuccessfulDelete successfully deleted queue"),
@@ -229,7 +229,7 @@ var _ = Describe("queue-controller", func() {
 				)
 
 				return queue.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":    Equal(topology.ConditionType("Ready")),
 				"Reason":  Equal("FailedCreateOrUpdate"),
 				"Status":  Equal(corev1.ConditionFalse),
@@ -268,7 +268,7 @@ var _ = Describe("queue-controller", func() {
 				)
 
 				return queue.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(topology.ConditionType("Ready")),
 				"Reason": Equal("SuccessfulCreateOrUpdate"),
 				"Status": Equal(corev1.ConditionTrue),
@@ -306,7 +306,7 @@ var _ = Describe("queue-controller", func() {
 				)
 
 				return queue.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(topology.ConditionType("Ready")),
 				"Reason": Equal("SuccessfulCreateOrUpdate"),
 				"Status": Equal(corev1.ConditionTrue),

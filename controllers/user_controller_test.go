@@ -55,7 +55,7 @@ var _ = Describe("UserController", func() {
 					)
 
 					return user.Status.Conditions
-				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 					"Type":    Equal(topology.ConditionType("Ready")),
 					"Reason":  Equal("FailedCreateOrUpdate"),
 					"Status":  Equal(corev1.ConditionFalse),
@@ -80,7 +80,7 @@ var _ = Describe("UserController", func() {
 					)
 
 					return user.Status.Conditions
-				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 					"Type":    Equal(topology.ConditionType("Ready")),
 					"Reason":  Equal("FailedCreateOrUpdate"),
 					"Status":  Equal(corev1.ConditionFalse),
@@ -112,7 +112,7 @@ var _ = Describe("UserController", func() {
 					)
 
 					return user.Status.Conditions
-				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(topology.ConditionType("Ready")),
 					"Reason": Equal("SuccessfulCreateOrUpdate"),
 					"Status": Equal(corev1.ConditionTrue),
@@ -131,7 +131,7 @@ var _ = Describe("UserController", func() {
 					)
 
 					return user.Status.Conditions
-				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(topology.ConditionType("Ready")),
 					"Reason": Equal("SuccessfulCreateOrUpdate"),
 					"Status": Equal(corev1.ConditionTrue),
@@ -170,7 +170,7 @@ var _ = Describe("UserController", func() {
 				)
 
 				return user.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(topology.ConditionType("Ready")),
 				"Reason": Equal("SuccessfulCreateOrUpdate"),
 				"Status": Equal(corev1.ConditionTrue),
@@ -192,7 +192,7 @@ var _ = Describe("UserController", func() {
 				Consistently(func() bool {
 					err := client.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{})
 					return apierrors.IsNotFound(err)
-				}, 5).Should(BeFalse())
+				}, statusEventsUpdateTimeout).Should(BeFalse())
 				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete user"))
 			})
 		})
@@ -208,7 +208,7 @@ var _ = Describe("UserController", func() {
 				Consistently(func() bool {
 					err := client.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{})
 					return apierrors.IsNotFound(err)
-				}, 5).Should(BeFalse())
+				}, statusEventsUpdateTimeout).Should(BeFalse())
 				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete user"))
 			})
 		})
@@ -233,7 +233,7 @@ var _ = Describe("UserController", func() {
 				Eventually(func() bool {
 					err := client.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{})
 					return apierrors.IsNotFound(err)
-				}, 5).Should(BeTrue())
+				}, statusEventsUpdateTimeout).Should(BeTrue())
 
 				Expect(observedEvents()).To(SatisfyAll(
 					Not(ContainElement("Warning FailedDelete failed to delete user")),
@@ -256,7 +256,7 @@ var _ = Describe("UserController", func() {
 				Eventually(func() bool {
 					err := client.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{})
 					return apierrors.IsNotFound(err)
-				}, 5).Should(BeTrue())
+				}, statusEventsUpdateTimeout).Should(BeTrue())
 
 				Expect(observedEvents()).To(SatisfyAll(
 					Not(ContainElement("Warning FailedDelete failed to delete User")),
@@ -292,7 +292,7 @@ var _ = Describe("UserController", func() {
 				)
 
 				return user.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":    Equal(topology.ConditionType("Ready")),
 				"Reason":  Equal("FailedCreateOrUpdate"),
 				"Status":  Equal(corev1.ConditionFalse),
@@ -331,7 +331,7 @@ var _ = Describe("UserController", func() {
 				)
 
 				return user.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(topology.ConditionType("Ready")),
 				"Reason": Equal("SuccessfulCreateOrUpdate"),
 				"Status": Equal(corev1.ConditionTrue),
@@ -369,7 +369,7 @@ var _ = Describe("UserController", func() {
 				)
 
 				return user.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(topology.ConditionType("Ready")),
 				"Reason": Equal("SuccessfulCreateOrUpdate"),
 				"Status": Equal(corev1.ConditionTrue),

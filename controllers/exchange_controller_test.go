@@ -56,7 +56,7 @@ var _ = Describe("exchange-controller", func() {
 					)
 
 					return exchange.Status.Conditions
-				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 					"Type":    Equal(topology.ConditionType("Ready")),
 					"Reason":  Equal("FailedCreateOrUpdate"),
 					"Status":  Equal(corev1.ConditionFalse),
@@ -81,7 +81,7 @@ var _ = Describe("exchange-controller", func() {
 					)
 
 					return exchange.Status.Conditions
-				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 					"Type":    Equal(topology.ConditionType("Ready")),
 					"Reason":  Equal("FailedCreateOrUpdate"),
 					"Status":  Equal(corev1.ConditionFalse),
@@ -113,7 +113,7 @@ var _ = Describe("exchange-controller", func() {
 					)
 
 					return exchange.Status.Conditions
-				}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(topology.ConditionType("Ready")),
 					"Reason": Equal("SuccessfulCreateOrUpdate"),
 					"Status": Equal(corev1.ConditionTrue),
@@ -139,7 +139,7 @@ var _ = Describe("exchange-controller", func() {
 					&exchange,
 				)
 				return exchange.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(topology.ConditionType("Ready")),
 				"Status": Equal(corev1.ConditionTrue),
 			})))
@@ -180,7 +180,7 @@ var _ = Describe("exchange-controller", func() {
 					&exchange,
 				)
 				return exchange.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ConsistOf(MatchFields(IgnoreExtras, Fields{
 				"Type":    Equal(topology.ConditionType("Ready")),
 				"Status":  Equal(corev1.ConditionFalse),
 				"Reason":  Equal("FailedCreateOrUpdate"),
@@ -205,7 +205,7 @@ var _ = Describe("exchange-controller", func() {
 				)
 
 				return exchange.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(topology.ConditionType("Ready")),
 				"Reason": Equal("SuccessfulCreateOrUpdate"),
 				"Status": Equal(corev1.ConditionTrue),
@@ -227,7 +227,7 @@ var _ = Describe("exchange-controller", func() {
 				Consistently(func() bool {
 					err := client.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &topology.Exchange{})
 					return apierrors.IsNotFound(err)
-				}, 5).Should(BeFalse())
+				}, statusEventsUpdateTimeout).Should(BeFalse())
 				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete exchange"))
 			})
 		})
@@ -243,7 +243,7 @@ var _ = Describe("exchange-controller", func() {
 				Consistently(func() bool {
 					err := client.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &topology.Exchange{})
 					return apierrors.IsNotFound(err)
-				}, 5).Should(BeFalse())
+				}, statusEventsUpdateTimeout).Should(BeFalse())
 				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete exchange"))
 			})
 		})
@@ -262,7 +262,7 @@ var _ = Describe("exchange-controller", func() {
 				Eventually(func() bool {
 					err := client.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &topology.Exchange{})
 					return apierrors.IsNotFound(err)
-				}, 5).Should(BeTrue())
+				}, statusEventsUpdateTimeout).Should(BeTrue())
 				Expect(observedEvents()).To(SatisfyAll(
 					Not(ContainElement("Warning FailedDelete failed to delete exchange")),
 					ContainElement("Normal SuccessfulDelete successfully deleted exchange"),
@@ -297,7 +297,7 @@ var _ = Describe("exchange-controller", func() {
 				)
 
 				return exchange.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":    Equal(topology.ConditionType("Ready")),
 				"Reason":  Equal("FailedCreateOrUpdate"),
 				"Status":  Equal(corev1.ConditionFalse),
@@ -336,7 +336,7 @@ var _ = Describe("exchange-controller", func() {
 				)
 
 				return exchange.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(topology.ConditionType("Ready")),
 				"Reason": Equal("SuccessfulCreateOrUpdate"),
 				"Status": Equal(corev1.ConditionTrue),
@@ -374,7 +374,7 @@ var _ = Describe("exchange-controller", func() {
 				)
 
 				return exchange.Status.Conditions
-			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
 				"Type":   Equal(topology.ConditionType("Ready")),
 				"Reason": Equal("SuccessfulCreateOrUpdate"),
 				"Status": Equal(corev1.ConditionTrue),
