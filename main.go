@@ -12,15 +12,18 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/klog/v2"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"os"
 	"regexp"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
 	"strings"
 	"time"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -32,6 +35,7 @@ import (
 	"github.com/rabbitmq/cluster-operator/pkg/profiling"
 
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
+	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
 	// +kubebuilder:scaffold:imports
@@ -48,6 +52,7 @@ func init() {
 
 	_ = topology.AddToScheme(scheme)
 	_ = topologyv1alpha1.AddToScheme(scheme)
+	utilruntime.Must(rabbitmqcomv1beta1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -268,6 +273,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = (&controllers.TopologyReconciler{
+		Client:                  mgr.GetClient(),
+		Type:                    &topology.TopicPermission{},
+		Log:                     ctrl.Log.WithName(controllers.TopicPermissionControllerName),
+		Scheme:                  mgr.GetScheme(),
+		Recorder:                mgr.GetEventRecorderFor(controllers.TopicPermissionControllerName),
+		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
+		KubernetesClusterDomain: clusterDomain,
+		ReconcileFunc:           &controllers.TopicPermissionReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()},
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", controllers.TopicPermissionControllerName)
+		os.Exit(1)
+	}
+
 	if err = (&controllers.SuperStreamReconciler{
 		Client:                mgr.GetClient(),
 		Log:                   ctrl.Log.WithName(controllers.SuperStreamControllerName),
@@ -324,7 +343,12 @@ func main() {
 			log.Error(err, "unable to create webhook", "webhook", "SuperStream")
 			os.Exit(1)
 		}
+		if err = (&topology.TopicPermission{}).SetupWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "TopicPermission")
+			os.Exit(1)
+		}
 	}
+
 	// +kubebuilder:scaffold:builder
 
 	log.Info("starting manager")

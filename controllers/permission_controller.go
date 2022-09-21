@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	k8sApiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -33,7 +32,7 @@ func (r *PermissionReconciler) DeclareFunc(ctx context.Context, client rabbitmqc
 	username := permission.Spec.User
 	if permission.Spec.UserReference != nil {
 		var err error
-		if user, err = r.getUserFromReference(ctx, permission); err != nil {
+		if user, err = getUsernameFromUser(ctx, r.Client, permission.Namespace, permission.Spec.UserReference.Name); err != nil {
 			return err
 		} else if user != nil {
 			// User exist
@@ -56,26 +55,24 @@ func (r *PermissionReconciler) DeclareFunc(ctx context.Context, client rabbitmqc
 	return validateResponse(client.UpdatePermissionsIn(permission.Spec.Vhost, username, internal.GeneratePermissions(permission)))
 }
 
-func (r *PermissionReconciler) getUserFromReference(ctx context.Context, permission *topology.Permission) (*topology.User, error) {
+func getUsernameFromUser(ctx context.Context, client client.Client, namespace, name string) (*topology.User, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
-	// get User from provided user reference
 	failureMsg := "failed to get User"
 	user := &topology.User{}
-	err := r.Get(ctx, types.NamespacedName{Name: permission.Spec.UserReference.Name, Namespace: permission.Namespace}, user)
-
+	err := client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, user)
 	if err != nil && k8sApiErrors.IsNotFound(err) {
 		logger.Error(fmt.Errorf("user doesn't exist"), failureMsg)
 		return nil, nil
 	} else if err != nil {
-		logger.Error(err, failureMsg, "userReference", permission.Spec.UserReference.Name)
+		logger.Error(err, failureMsg, "userReference", name)
 		return nil, err
 	}
 
 	// get username from User status
 	if user.Status.Username == "" {
 		err := fmt.Errorf("this User does not have an username set in its status")
-		logger.Error(err, failureMsg, "userReference", permission.Spec.UserReference.Name)
+		logger.Error(err, failureMsg, "userReference", name)
 		return nil, err
 	}
 	return user, nil
@@ -87,7 +84,7 @@ func (r *PermissionReconciler) DeleteFunc(ctx context.Context, client rabbitmqcl
 
 	username := permission.Spec.User
 	if permission.Spec.UserReference != nil {
-		if user, err := r.getUserFromReference(ctx, permission); err != nil {
+		if user, err := getUsernameFromUser(ctx, r.Client, permission.Namespace, permission.Spec.UserReference.Name); err != nil {
 			return err
 		} else if user != nil {
 			// User exist

@@ -195,6 +195,21 @@ type FakeClient struct {
 		result1 *http.Response
 		result2 error
 	}
+	DeleteTopicPermissionsInStub        func(string, string, string) (*http.Response, error)
+	deleteTopicPermissionsInMutex       sync.RWMutex
+	deleteTopicPermissionsInArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 string
+	}
+	deleteTopicPermissionsInReturns struct {
+		result1 *http.Response
+		result2 error
+	}
+	deleteTopicPermissionsInReturnsOnCall map[int]struct {
+		result1 *http.Response
+		result2 error
+	}
 	DeleteUserStub        func(string) (*http.Response, error)
 	deleteUserMutex       sync.RWMutex
 	deleteUserArgsForCall []struct {
@@ -363,6 +378,21 @@ type FakeClient struct {
 		result2 error
 	}
 	updatePermissionsInReturnsOnCall map[int]struct {
+		result1 *http.Response
+		result2 error
+	}
+	UpdateTopicPermissionsInStub        func(string, string, rabbithole.TopicPermissions) (*http.Response, error)
+	updateTopicPermissionsInMutex       sync.RWMutex
+	updateTopicPermissionsInArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 rabbithole.TopicPermissions
+	}
+	updateTopicPermissionsInReturns struct {
+		result1 *http.Response
+		result2 error
+	}
+	updateTopicPermissionsInReturnsOnCall map[int]struct {
 		result1 *http.Response
 		result2 error
 	}
@@ -1218,6 +1248,72 @@ func (fake *FakeClient) DeleteShovelReturnsOnCall(i int, result1 *http.Response,
 	}{result1, result2}
 }
 
+func (fake *FakeClient) DeleteTopicPermissionsIn(arg1 string, arg2 string, arg3 string) (*http.Response, error) {
+	fake.deleteTopicPermissionsInMutex.Lock()
+	ret, specificReturn := fake.deleteTopicPermissionsInReturnsOnCall[len(fake.deleteTopicPermissionsInArgsForCall)]
+	fake.deleteTopicPermissionsInArgsForCall = append(fake.deleteTopicPermissionsInArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 string
+	}{arg1, arg2, arg3})
+	stub := fake.DeleteTopicPermissionsInStub
+	fakeReturns := fake.deleteTopicPermissionsInReturns
+	fake.recordInvocation("DeleteTopicPermissionsIn", []interface{}{arg1, arg2, arg3})
+	fake.deleteTopicPermissionsInMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) DeleteTopicPermissionsInCallCount() int {
+	fake.deleteTopicPermissionsInMutex.RLock()
+	defer fake.deleteTopicPermissionsInMutex.RUnlock()
+	return len(fake.deleteTopicPermissionsInArgsForCall)
+}
+
+func (fake *FakeClient) DeleteTopicPermissionsInCalls(stub func(string, string, string) (*http.Response, error)) {
+	fake.deleteTopicPermissionsInMutex.Lock()
+	defer fake.deleteTopicPermissionsInMutex.Unlock()
+	fake.DeleteTopicPermissionsInStub = stub
+}
+
+func (fake *FakeClient) DeleteTopicPermissionsInArgsForCall(i int) (string, string, string) {
+	fake.deleteTopicPermissionsInMutex.RLock()
+	defer fake.deleteTopicPermissionsInMutex.RUnlock()
+	argsForCall := fake.deleteTopicPermissionsInArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeClient) DeleteTopicPermissionsInReturns(result1 *http.Response, result2 error) {
+	fake.deleteTopicPermissionsInMutex.Lock()
+	defer fake.deleteTopicPermissionsInMutex.Unlock()
+	fake.DeleteTopicPermissionsInStub = nil
+	fake.deleteTopicPermissionsInReturns = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) DeleteTopicPermissionsInReturnsOnCall(i int, result1 *http.Response, result2 error) {
+	fake.deleteTopicPermissionsInMutex.Lock()
+	defer fake.deleteTopicPermissionsInMutex.Unlock()
+	fake.DeleteTopicPermissionsInStub = nil
+	if fake.deleteTopicPermissionsInReturnsOnCall == nil {
+		fake.deleteTopicPermissionsInReturnsOnCall = make(map[int]struct {
+			result1 *http.Response
+			result2 error
+		})
+	}
+	fake.deleteTopicPermissionsInReturnsOnCall[i] = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) DeleteUser(arg1 string) (*http.Response, error) {
 	fake.deleteUserMutex.Lock()
 	ret, specificReturn := fake.deleteUserReturnsOnCall[len(fake.deleteUserArgsForCall)]
@@ -2001,6 +2097,72 @@ func (fake *FakeClient) UpdatePermissionsInReturnsOnCall(i int, result1 *http.Re
 	}{result1, result2}
 }
 
+func (fake *FakeClient) UpdateTopicPermissionsIn(arg1 string, arg2 string, arg3 rabbithole.TopicPermissions) (*http.Response, error) {
+	fake.updateTopicPermissionsInMutex.Lock()
+	ret, specificReturn := fake.updateTopicPermissionsInReturnsOnCall[len(fake.updateTopicPermissionsInArgsForCall)]
+	fake.updateTopicPermissionsInArgsForCall = append(fake.updateTopicPermissionsInArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 rabbithole.TopicPermissions
+	}{arg1, arg2, arg3})
+	stub := fake.UpdateTopicPermissionsInStub
+	fakeReturns := fake.updateTopicPermissionsInReturns
+	fake.recordInvocation("UpdateTopicPermissionsIn", []interface{}{arg1, arg2, arg3})
+	fake.updateTopicPermissionsInMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) UpdateTopicPermissionsInCallCount() int {
+	fake.updateTopicPermissionsInMutex.RLock()
+	defer fake.updateTopicPermissionsInMutex.RUnlock()
+	return len(fake.updateTopicPermissionsInArgsForCall)
+}
+
+func (fake *FakeClient) UpdateTopicPermissionsInCalls(stub func(string, string, rabbithole.TopicPermissions) (*http.Response, error)) {
+	fake.updateTopicPermissionsInMutex.Lock()
+	defer fake.updateTopicPermissionsInMutex.Unlock()
+	fake.UpdateTopicPermissionsInStub = stub
+}
+
+func (fake *FakeClient) UpdateTopicPermissionsInArgsForCall(i int) (string, string, rabbithole.TopicPermissions) {
+	fake.updateTopicPermissionsInMutex.RLock()
+	defer fake.updateTopicPermissionsInMutex.RUnlock()
+	argsForCall := fake.updateTopicPermissionsInArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeClient) UpdateTopicPermissionsInReturns(result1 *http.Response, result2 error) {
+	fake.updateTopicPermissionsInMutex.Lock()
+	defer fake.updateTopicPermissionsInMutex.Unlock()
+	fake.UpdateTopicPermissionsInStub = nil
+	fake.updateTopicPermissionsInReturns = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) UpdateTopicPermissionsInReturnsOnCall(i int, result1 *http.Response, result2 error) {
+	fake.updateTopicPermissionsInMutex.Lock()
+	defer fake.updateTopicPermissionsInMutex.Unlock()
+	fake.UpdateTopicPermissionsInStub = nil
+	if fake.updateTopicPermissionsInReturnsOnCall == nil {
+		fake.updateTopicPermissionsInReturnsOnCall = make(map[int]struct {
+			result1 *http.Response
+			result2 error
+		})
+	}
+	fake.updateTopicPermissionsInReturnsOnCall[i] = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -2030,6 +2192,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.deleteQueueMutex.RUnlock()
 	fake.deleteShovelMutex.RLock()
 	defer fake.deleteShovelMutex.RUnlock()
+	fake.deleteTopicPermissionsInMutex.RLock()
+	defer fake.deleteTopicPermissionsInMutex.RUnlock()
 	fake.deleteUserMutex.RLock()
 	defer fake.deleteUserMutex.RUnlock()
 	fake.deleteVhostMutex.RLock()
@@ -2054,6 +2218,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.putVhostMutex.RUnlock()
 	fake.updatePermissionsInMutex.RLock()
 	defer fake.updatePermissionsInMutex.RUnlock()
+	fake.updateTopicPermissionsInMutex.RLock()
+	defer fake.updateTopicPermissionsInMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

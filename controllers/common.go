@@ -23,6 +23,7 @@ const (
 	FederationControllerName        = "federation-controller"
 	ShovelControllerName            = "shovel-controller"
 	SuperStreamControllerName       = "super-stream-controller"
+	TopicPermissionControllerName   = "topic-permission-controller"
 )
 
 // names for environment variables

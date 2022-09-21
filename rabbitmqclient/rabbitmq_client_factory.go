@@ -46,6 +46,8 @@ type Client interface {
 	GetVhost(vhost string) (rec *rabbithole.VhostInfo, err error)
 	PutOperatorPolicy(string, string, rabbithole.OperatorPolicy) (*http.Response, error)
 	DeleteOperatorPolicy(vhost, name string) (res *http.Response, err error)
+	UpdateTopicPermissionsIn(vhost, username string, TopicPermissions rabbithole.TopicPermissions) (res *http.Response, err error)
+	DeleteTopicPermissionsIn(vhost, username string, exchange string) (res *http.Response, err error)
 }
 
 type Factory func(connectionCreds ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (Client, error)

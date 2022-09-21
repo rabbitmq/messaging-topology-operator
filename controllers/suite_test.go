@@ -14,9 +14,10 @@ import (
 	"crypto/x509"
 	"go/build"
 	"path/filepath"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"testing"
 	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient/rabbitmqclientfakes"
@@ -192,6 +193,14 @@ var _ = BeforeSuite(func() {
 			Recorder:              fakeRecorder,
 			RabbitmqClientFactory: fakeRabbitMQClientFactory,
 			ReconcileFunc:         &controllers.ShovelReconciler{Client: mgr.GetClient()},
+		},
+		{
+			Client:                mgr.GetClient(),
+			Type:                  &topology.TopicPermission{},
+			Scheme:                mgr.GetScheme(),
+			Recorder:              fakeRecorder,
+			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+			ReconcileFunc:         &controllers.TopicPermissionReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()},
 		},
 	}
 
