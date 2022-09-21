@@ -1,0 +1,20 @@
+# permissions for end users to view topicpermissions.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: topicpermission-viewer-role
+rules:
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - topicpermissions
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - topicpermissions/status
+  verbs:
+  - get

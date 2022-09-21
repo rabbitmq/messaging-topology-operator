@@ -8,8 +8,8 @@ This product may include a number of subcomponents with separate copyright notic
 */
 
 // Package v1alpha1 contains API Schema definitions for the rabbitmq.com v1alpha1 API group
-//+kubebuilder:object:generate=true
-//+groupName=rabbitmq.com
+// +kubebuilder:object:generate=true
+// +groupName=rabbitmq.com
 package v1alpha1
 
 import (
