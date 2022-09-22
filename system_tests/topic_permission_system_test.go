@@ -112,7 +112,7 @@ var _ = Describe("Topic Permission", func() {
 			var err error
 			fetchedPermissionInfo, err = rabbitClient.GetTopicPermissionsIn(topicPermission.Spec.Vhost, username)
 			return err
-		}, 20, 2).Should(Not(HaveOccurred()))
+		}, 30, 2).Should(Not(HaveOccurred()))
 		Expect(fetchedPermissionInfo).To(HaveLen(1))
 		Expect(fetchedPermissionInfo[0]).To(
 			MatchFields(IgnoreExtras, Fields{
