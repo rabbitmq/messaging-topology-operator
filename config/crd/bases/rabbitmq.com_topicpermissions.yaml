@@ -36,12 +36,12 @@ spec:
             description: TopicPermissionSpec defines the desired state of TopicPermission
             properties:
               permissions:
-                description: Permissions to grant to the user permissions to a topic
-                  exchangerequired property.
+                description: Permissions to grant to the user to a topic exchange;
+                  required property.
                 properties:
                   exchange:
                     description: Name of a topic exchange; required property; cannot
-                      be updated
+                      be updated.
                     type: string
                   read:
                     type: string
@@ -75,12 +75,12 @@ spec:
                 type: object
               user:
                 description: Name of an existing user; must provide user or userReference,
-                  else create/update will fail; cannot be updated
+                  else create/update will fail; cannot be updated.
                 type: string
               userReference:
                 description: Reference to an existing user.rabbitmq.com object; must
                   provide user or userReference, else create/update will fail; cannot
-                  be updated
+                  be updated.
                 properties:
                   name:
                     description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
@@ -90,7 +90,7 @@ spec:
                 x-kubernetes-map-type: atomic
               vhost:
                 description: Name of an existing vhost; required property; cannot
-                  be updated
+                  be updated.
                 type: string
             required:
             - permissions

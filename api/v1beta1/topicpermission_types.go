@@ -8,24 +8,24 @@ import (
 
 // TopicPermissionSpec defines the desired state of TopicPermission
 type TopicPermissionSpec struct {
-	// Name of an existing user; must provide user or userReference, else create/update will fail; cannot be updated
+	// Name of an existing user; must provide user or userReference, else create/update will fail; cannot be updated.
 	User string `json:"user,omitempty"`
-	// Reference to an existing user.rabbitmq.com object; must provide user or userReference, else create/update will fail; cannot be updated
+	// Reference to an existing user.rabbitmq.com object; must provide user or userReference, else create/update will fail; cannot be updated.
 	UserReference *corev1.LocalObjectReference `json:"userReference,omitempty"`
-	// Name of an existing vhost; required property; cannot be updated
+	// Name of an existing vhost; required property; cannot be updated.
 	// +kubebuilder:validation:Required
 	Vhost string `json:"vhost"`
-	// Permissions to grant to the user permissions to a topic exchangerequired property.
+	// Permissions to grant to the user to a topic exchange; required property.
 	// +kubebuilder:validation:Required
-	Permissions TopPermissionsConfig `json:"permissions"`
+	Permissions TopicPermissionConfig `json:"permissions"`
 	// Reference to the RabbitmqCluster that both the provided user and vhost are.
 	// Required property.
 	// +kubebuilder:validation:Required
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
 }
 
-type TopPermissionsConfig struct {
-	// Name of a topic exchange; required property; cannot be updated
+type TopicPermissionConfig struct {
+	// Name of a topic exchange; required property; cannot be updated.
 	// +kubebuilder:validation:Required
 	Exchange string `json:"exchange,omitempty"`
 	// +kubebuilder:validation:Optional

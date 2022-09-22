@@ -72,7 +72,7 @@ var _ = Describe("Topic Permission", func() {
 			Spec: topology.TopicPermissionSpec{
 				Vhost: "/",
 				User:  username,
-				Permissions: topology.TopPermissionsConfig{
+				Permissions: topology.TopicPermissionConfig{
 					Exchange: exchange.Spec.Name,
 					Read:     ".*",
 					Write:    ".*",

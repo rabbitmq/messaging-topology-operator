@@ -911,25 +911,6 @@ ShovelStatus defines the observed state of Shovel
 |===
 
 
-[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-toppermissionsconfig"]
-==== TopPermissionsConfig 
-
-
-
-.Appears In:
-****
-- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-topicpermissionspec[$$TopicPermissionSpec$$]
-****
-
-[cols="25a,75a", options="header"]
-|===
-| Field | Description
-| *`exchange`* __string__ | Name of a topic exchange; required property; cannot be updated
-| *`read`* __string__ | 
-| *`write`* __string__ | 
-|===
-
-
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-topicpermission"]
 ==== TopicPermission 
 
@@ -950,6 +931,25 @@ TopicPermission is the Schema for the topicpermissions API
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-topicpermissionspec[$$TopicPermissionSpec$$]__ | 
 | *`status`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-topicpermissionstatus[$$TopicPermissionStatus$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-topicpermissionconfig"]
+==== TopicPermissionConfig 
+
+
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-topicpermissionspec[$$TopicPermissionSpec$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`exchange`* __string__ | Name of a topic exchange; required property; cannot be updated.
+| *`read`* __string__ | 
+| *`write`* __string__ | 
 |===
 
 
@@ -985,10 +985,10 @@ TopicPermissionSpec defines the desired state of TopicPermission
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`user`* __string__ | Name of an existing user; must provide user or userReference, else create/update will fail; cannot be updated
-| *`userReference`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Reference to an existing user.rabbitmq.com object; must provide user or userReference, else create/update will fail; cannot be updated
-| *`vhost`* __string__ | Name of an existing vhost; required property; cannot be updated
-| *`permissions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-toppermissionsconfig[$$TopPermissionsConfig$$]__ | Permissions to grant to the user permissions to a topic exchangerequired property.
+| *`user`* __string__ | Name of an existing user; must provide user or userReference, else create/update will fail; cannot be updated.
+| *`userReference`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Reference to an existing user.rabbitmq.com object; must provide user or userReference, else create/update will fail; cannot be updated.
+| *`vhost`* __string__ | Name of an existing vhost; required property; cannot be updated.
+| *`permissions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-topicpermissionconfig[$$TopicPermissionConfig$$]__ | Permissions to grant to the user to a topic exchange; required property.
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that both the provided user and vhost are. Required property.
 |===
 

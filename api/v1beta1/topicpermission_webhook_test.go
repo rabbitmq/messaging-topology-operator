@@ -16,7 +16,7 @@ var _ = Describe("topic permission webhook", func() {
 		Spec: TopicPermissionSpec{
 			User:  "test-user",
 			Vhost: "/a-vhost",
-			Permissions: TopPermissionsConfig{
+			Permissions: TopicPermissionConfig{
 				Exchange: "a-exchange",
 				Read:     ".*",
 				Write:    ".*",

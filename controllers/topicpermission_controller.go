@@ -31,15 +31,12 @@ func (r *TopicPermissionReconciler) DeclareFunc(ctx context.Context, client rabb
 		if user, err = getUsernameFromUser(ctx, r.Client, permission.Namespace, permission.Spec.UserReference.Name); err != nil {
 			return err
 		} else if user != nil {
-			// User exist
 			username = user.Status.Username
 		}
 	}
 	if username == "" {
 		return fmt.Errorf("failed create Permission, missing User")
 	}
-
-	// user != nil, not working because user has always a name set
 	if user.Name != "" {
 		if err := controllerutil.SetControllerReference(user, permission, r.Scheme); err != nil {
 			return fmt.Errorf("failed set controller reference: %v", err)
@@ -54,17 +51,14 @@ func (r *TopicPermissionReconciler) DeclareFunc(ctx context.Context, client rabb
 func (r *TopicPermissionReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
 	permission := obj.(*topology.TopicPermission)
-
 	username := permission.Spec.User
 	if permission.Spec.UserReference != nil {
 		if user, err := getUsernameFromUser(ctx, r.Client, permission.Namespace, permission.Spec.UserReference.Name); err != nil {
 			return err
 		} else if user != nil {
-			// User exist
 			username = user.Status.Username
 		}
 	}
-
 	if username == "" {
 		logger.Info("user already removed; no need to delete topic permission")
 	} else if err := r.clearTopicPermission(ctx, client, permission, username); err != nil {

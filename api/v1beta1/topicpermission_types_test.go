@@ -24,7 +24,7 @@ var _ = Describe("TopicPermission", func() {
 			Spec: TopicPermissionSpec{
 				User:  "test",
 				Vhost: "/test",
-				Permissions: TopPermissionsConfig{
+				Permissions: TopicPermissionConfig{
 					Exchange: "some",
 					Read:     "^?",
 					Write:    ".*",
@@ -60,7 +60,7 @@ var _ = Describe("TopicPermission", func() {
 					Name: "a-created-user",
 				},
 				Vhost:       "/test",
-				Permissions: TopPermissionsConfig{},
+				Permissions: TopicPermissionConfig{},
 				RabbitmqClusterReference: RabbitmqClusterReference{
 					Name: "some-cluster",
 				},
