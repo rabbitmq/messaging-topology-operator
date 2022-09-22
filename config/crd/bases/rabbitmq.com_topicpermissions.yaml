@@ -40,6 +40,8 @@ spec:
                   exchangerequired property.
                 properties:
                   exchange:
+                    description: Name of a topic exchange; required property; cannot
+                      be updated
                     type: string
                   read:
                     type: string

@@ -25,7 +25,8 @@ type TopicPermissionSpec struct {
 }
 
 type TopPermissionsConfig struct {
-	// +kubebuilder:validation:Optional
+	// Name of a topic exchange; required property; cannot be updated
+	// +kubebuilder:validation:Required
 	Exchange string `json:"exchange,omitempty"`
 	// +kubebuilder:validation:Optional
 	Read string `json:"read,omitempty"`

@@ -924,7 +924,7 @@ ShovelStatus defines the observed state of Shovel
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`exchange`* __string__ | 
+| *`exchange`* __string__ | Name of a topic exchange; required property; cannot be updated
 | *`read`* __string__ | 
 | *`write`* __string__ | 
 |===

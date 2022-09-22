@@ -110,7 +110,7 @@ var _ = Describe("topic permission webhook", func() {
 			Expect(apierrors.IsForbidden(new.ValidateUpdate(&connectionScr))).To(BeTrue())
 		})
 
-		It("does not allow updates on permission.spec.permissions.exchange", func() {
+		It("does not allow updates on spec.permissions.exchange", func() {
 			newPermission := permission.DeepCopy()
 			newPermission.Spec.Permissions.Exchange = "a-different-exchange"
 			Expect(apierrors.IsForbidden(newPermission.ValidateUpdate(&permission))).To(BeTrue())

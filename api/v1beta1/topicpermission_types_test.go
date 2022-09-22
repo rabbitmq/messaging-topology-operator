@@ -15,37 +15,7 @@ var _ = Describe("TopicPermission", func() {
 		ctx       = context.Background()
 	)
 
-	It("creates a topic permission with no permission configured", func() {
-		permission := TopicPermission{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-permission-0",
-				Namespace: namespace,
-			},
-			Spec: TopicPermissionSpec{
-				User:        "test",
-				Vhost:       "/test",
-				Permissions: TopPermissionsConfig{},
-				RabbitmqClusterReference: RabbitmqClusterReference{
-					Name: "some-cluster",
-				},
-			},
-		}
-		Expect(k8sClient.Create(ctx, &permission)).To(Succeed())
-		fetchedTopicPermission := &TopicPermission{}
-		Expect(k8sClient.Get(ctx, types.NamespacedName{
-			Name:      permission.Name,
-			Namespace: permission.Namespace,
-		}, fetchedTopicPermission)).To(Succeed())
-		Expect(fetchedTopicPermission.Spec.User).To(Equal("test"))
-		Expect(fetchedTopicPermission.Spec.Vhost).To(Equal("/test"))
-		Expect(fetchedTopicPermission.Spec.RabbitmqClusterReference.Name).To(Equal("some-cluster"))
-
-		Expect(fetchedTopicPermission.Spec.Permissions.Exchange).To(Equal(""))
-		Expect(fetchedTopicPermission.Spec.Permissions.Write).To(Equal(""))
-		Expect(fetchedTopicPermission.Spec.Permissions.Read).To(Equal(""))
-	})
-
-	It("creates a topic permission with permissions all configured", func() {
+	It("creates a topic permission when username is provided", func() {
 		permission := TopicPermission{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-permission-1",
@@ -79,7 +49,7 @@ var _ = Describe("TopicPermission", func() {
 		Expect(fetchedTopicPermission.Spec.Permissions.Read).To(Equal("^?"))
 	})
 
-	It("creates a permission object with user reference provided", func() {
+	It("creates a permission object with user reference is provided", func() {
 		permission := TopicPermission{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "user-ref-permission",
