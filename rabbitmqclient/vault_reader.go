@@ -49,7 +49,6 @@ var (
 	ReadServiceAccountTokenFunc = ReadServiceAccountToken
 	ReadVaultClientSecretFunc   = ReadVaultClientSecret
 	LoginToVaultFunc            = LoginToVault
-	FirstLoginAttemptResultCh   = make(chan error, 1)
 )
 
 var (
@@ -90,8 +89,9 @@ func InitializeClient() func() {
 			return
 		}
 
-		go renewToken(vaultClient, FirstLoginAttemptResultCh)
-		err = <-FirstLoginAttemptResultCh
+		firstLoginAttemptResultCh := make(chan error, 1)
+		go renewToken(vaultClient, firstLoginAttemptResultCh)
+		err = <-firstLoginAttemptResultCh
 		if err != nil {
 			SecretClientCreationError = fmt.Errorf("unable to login to Vault: %w", err)
 			return

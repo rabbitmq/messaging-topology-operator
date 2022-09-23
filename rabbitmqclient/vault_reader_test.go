@@ -308,7 +308,6 @@ var _ = Describe("VaultReader", func() {
 			var vaultRoleUsedForLogin string
 
 			BeforeEach(func() {
-				rabbitmqclient.FirstLoginAttemptResultCh = make(chan error, 1)
 				rabbitmqclient.SecretClient = nil
 				rabbitmqclient.SecretClientCreationError = nil
 				vaultSpec = &rabbitmqv1beta1.VaultSpec{
@@ -364,7 +363,6 @@ var _ = Describe("VaultReader", func() {
 
 			BeforeEach(func() {
 				_ = os.Setenv("OPERATOR_VAULT_ROLE", operatorVaultRoleValue)
-				rabbitmqclient.FirstLoginAttemptResultCh = make(chan error, 1)
 				rabbitmqclient.SecretClient = nil
 				rabbitmqclient.SecretClientCreationError = nil
 				vaultSpec = &rabbitmqv1beta1.VaultSpec{
@@ -417,7 +415,6 @@ var _ = Describe("VaultReader", func() {
 
 		When("service account token is not in the expected place", func() {
 			BeforeEach(func() {
-				rabbitmqclient.FirstLoginAttemptResultCh = make(chan error, 1)
 				rabbitmqclient.SecretClient = nil
 				rabbitmqclient.SecretClientCreationError = nil
 				vaultSpec = &rabbitmqv1beta1.VaultSpec{
@@ -445,7 +442,6 @@ var _ = Describe("VaultReader", func() {
 
 		When("unable to log into vault to obtain client secret", func() {
 			BeforeEach(func() {
-				rabbitmqclient.FirstLoginAttemptResultCh = make(chan error, 1)
 				rabbitmqclient.SecretClient = nil
 				rabbitmqclient.SecretClientCreationError = nil
 				vaultSpec = &rabbitmqv1beta1.VaultSpec{
@@ -484,7 +480,6 @@ var _ = Describe("VaultReader", func() {
 
 		When("client secret obtained from vault", func() {
 			BeforeEach(func() {
-				rabbitmqclient.FirstLoginAttemptResultCh = make(chan error, 1)
 				rabbitmqclient.SecretClient = nil
 				rabbitmqclient.SecretClientCreationError = nil
 				vaultSpec = &rabbitmqv1beta1.VaultSpec{
