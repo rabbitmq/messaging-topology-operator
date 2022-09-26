@@ -89,7 +89,7 @@ var _ = Describe("Permission", func() {
 			var err error
 			fetchedPermissionInfo, err = rabbitClient.GetPermissionsIn(permission.Spec.Vhost, username)
 			return err
-		}, 20, 2).Should(Not(HaveOccurred()))
+		}, 30, 2).Should(Not(HaveOccurred()))
 		Expect(fetchedPermissionInfo).To(MatchFields(IgnoreExtras, Fields{
 			"Vhost":     Equal(permission.Spec.Vhost),
 			"User":      Equal(username),
