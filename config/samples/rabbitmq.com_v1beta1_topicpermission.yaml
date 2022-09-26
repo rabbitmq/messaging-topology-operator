@@ -1,7 +1,0 @@
-apiVersion: rabbitmq.com/v1beta1
-kind: TopicPermission
-metadata:
-  name: topicpermission-sample
-spec:
-  # Add fields here
-  foo: bar
