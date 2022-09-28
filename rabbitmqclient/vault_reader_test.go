@@ -9,7 +9,6 @@ import (
 	vault "github.com/hashicorp/vault/api"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 )
 
 var _ = Describe("VaultReader", func() {
@@ -297,8 +296,7 @@ var _ = Describe("VaultReader", func() {
 
 	Describe("Initialize secret store client", func() {
 		var (
-			vaultSpec                  *rabbitmqv1beta1.VaultSpec
-			getSecretStoreClientTester func(vaultSpec *rabbitmqv1beta1.VaultSpec) (rabbitmqclient.SecretStoreClient, error)
+			getSecretStoreClientTester func() (rabbitmqclient.SecretStoreClient, error)
 		)
 		BeforeEach(func() {
 			os.Setenv("VAULT_ADDR", "vault-address")
@@ -310,9 +308,6 @@ var _ = Describe("VaultReader", func() {
 			BeforeEach(func() {
 				rabbitmqclient.SecretClient = nil
 				rabbitmqclient.SecretClientCreationError = nil
-				vaultSpec = &rabbitmqv1beta1.VaultSpec{
-					Role: "cheese-and-ham",
-				}
 				rabbitmqclient.ReadServiceAccountTokenFunc = func() ([]byte, error) {
 					return []byte("token"), nil
 				}
@@ -331,7 +326,7 @@ var _ = Describe("VaultReader", func() {
 						},
 					}, nil
 				}
-				getSecretStoreClientTester = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (rabbitmqclient.SecretStoreClient, error) {
+				getSecretStoreClientTester = func() (rabbitmqclient.SecretStoreClient, error) {
 					rabbitmqclient.InitializeClient()()
 					return rabbitmqclient.SecretClient, rabbitmqclient.SecretClientCreationError
 				}
@@ -345,7 +340,7 @@ var _ = Describe("VaultReader", func() {
 			})
 
 			JustBeforeEach(func() {
-				secretStoreClient, err = getSecretStoreClientTester(vaultSpec)
+				secretStoreClient, err = getSecretStoreClientTester()
 			})
 
 			It("should not error", func() {
@@ -365,9 +360,6 @@ var _ = Describe("VaultReader", func() {
 				_ = os.Setenv("OPERATOR_VAULT_ROLE", operatorVaultRoleValue)
 				rabbitmqclient.SecretClient = nil
 				rabbitmqclient.SecretClientCreationError = nil
-				vaultSpec = &rabbitmqv1beta1.VaultSpec{
-					Role: "cheese-and-ham",
-				}
 				rabbitmqclient.ReadServiceAccountTokenFunc = func() ([]byte, error) {
 					return []byte("token"), nil
 				}
@@ -386,7 +378,7 @@ var _ = Describe("VaultReader", func() {
 						},
 					}, nil
 				}
-				getSecretStoreClientTester = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (rabbitmqclient.SecretStoreClient, error) {
+				getSecretStoreClientTester = func() (rabbitmqclient.SecretStoreClient, error) {
 					rabbitmqclient.InitializeClient()()
 					return rabbitmqclient.SecretClient, rabbitmqclient.SecretClientCreationError
 				}
@@ -401,7 +393,7 @@ var _ = Describe("VaultReader", func() {
 			})
 
 			JustBeforeEach(func() {
-				secretStoreClient, err = getSecretStoreClientTester(vaultSpec)
+				secretStoreClient, err = getSecretStoreClientTester()
 			})
 
 			It("should not error", func() {
@@ -417,17 +409,14 @@ var _ = Describe("VaultReader", func() {
 			BeforeEach(func() {
 				rabbitmqclient.SecretClient = nil
 				rabbitmqclient.SecretClientCreationError = nil
-				vaultSpec = &rabbitmqv1beta1.VaultSpec{
-					Role: "cheese-and-ham",
-				}
-				getSecretStoreClientTester = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (rabbitmqclient.SecretStoreClient, error) {
+				getSecretStoreClientTester = func() (rabbitmqclient.SecretStoreClient, error) {
 					rabbitmqclient.InitializeClient()()
 					return rabbitmqclient.SecretClient, rabbitmqclient.SecretClientCreationError
 				}
 			})
 
 			JustBeforeEach(func() {
-				secretStoreClient, err = getSecretStoreClientTester(vaultSpec)
+				secretStoreClient, err = getSecretStoreClientTester()
 			})
 
 			It("should return a nil secret store client", func() {
@@ -444,16 +433,13 @@ var _ = Describe("VaultReader", func() {
 			BeforeEach(func() {
 				rabbitmqclient.SecretClient = nil
 				rabbitmqclient.SecretClientCreationError = nil
-				vaultSpec = &rabbitmqv1beta1.VaultSpec{
-					Role: "cheese-and-ham",
-				}
 				rabbitmqclient.ReadServiceAccountTokenFunc = func() ([]byte, error) {
 					return []byte("token"), nil
 				}
 				rabbitmqclient.LoginToVaultFunc = func(vaultClient *vault.Client, authPath string, params map[string]interface{}) (*vault.Secret, error) {
 					return nil, errors.New("login failed (quickly!)")
 				}
-				getSecretStoreClientTester = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (rabbitmqclient.SecretStoreClient, error) {
+				getSecretStoreClientTester = func() (rabbitmqclient.SecretStoreClient, error) {
 					rabbitmqclient.InitializeClient()()
 					return rabbitmqclient.SecretClient, rabbitmqclient.SecretClientCreationError
 				}
@@ -465,7 +451,7 @@ var _ = Describe("VaultReader", func() {
 			})
 
 			JustBeforeEach(func() {
-				secretStoreClient, err = getSecretStoreClientTester(vaultSpec)
+				secretStoreClient, err = getSecretStoreClientTester()
 			})
 
 			It("should return a nil secret store client", func() {
@@ -482,9 +468,6 @@ var _ = Describe("VaultReader", func() {
 			BeforeEach(func() {
 				rabbitmqclient.SecretClient = nil
 				rabbitmqclient.SecretClientCreationError = nil
-				vaultSpec = &rabbitmqv1beta1.VaultSpec{
-					Role: "cheese-and-ham",
-				}
 				rabbitmqclient.ReadServiceAccountTokenFunc = func() ([]byte, error) {
 					return []byte("token"), nil
 				}
@@ -502,7 +485,7 @@ var _ = Describe("VaultReader", func() {
 						},
 					}, nil
 				}
-				getSecretStoreClientTester = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (rabbitmqclient.SecretStoreClient, error) {
+				getSecretStoreClientTester = func() (rabbitmqclient.SecretStoreClient, error) {
 					rabbitmqclient.InitializeClient()()
 					return rabbitmqclient.SecretClient, rabbitmqclient.SecretClientCreationError
 				}
@@ -515,7 +498,7 @@ var _ = Describe("VaultReader", func() {
 			})
 
 			JustBeforeEach(func() {
-				secretStoreClient, err = getSecretStoreClientTester(vaultSpec)
+				secretStoreClient, err = getSecretStoreClientTester()
 			})
 
 			It("should not error", func() {
@@ -529,17 +512,14 @@ var _ = Describe("VaultReader", func() {
 
 		When("VAULT_ADDR is not set", func() {
 			BeforeEach(func() {
-				vaultSpec = &rabbitmqv1beta1.VaultSpec{
-					DefaultUserPath: "a-path",
-				}
-				getSecretStoreClientTester = func(vaultSpec *rabbitmqv1beta1.VaultSpec) (rabbitmqclient.SecretStoreClient, error) {
+				getSecretStoreClientTester = func() (rabbitmqclient.SecretStoreClient, error) {
 					rabbitmqclient.InitializeClient()()
 					return rabbitmqclient.SecretClient, rabbitmqclient.SecretClientCreationError
 				}
 			})
 			It("returns an error", func() {
 				os.Unsetenv("VAULT_ADDR")
-				secretStoreClient, err = getSecretStoreClientTester(vaultSpec)
+				secretStoreClient, err = getSecretStoreClientTester()
 				Expect(err).To(MatchError("VAULT_ADDR environment variable not set; cannot initialize vault client"))
 			})
 		})
