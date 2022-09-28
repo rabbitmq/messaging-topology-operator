@@ -86,16 +86,16 @@ var _ = Describe("ParseReference", func() {
 		})
 
 		It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
-			credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
+			creds, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(tlsEnabled).To(BeFalse())
-			usernameBytes, _ := credsProvider.Data("username")
-			passwordBytes, _ := credsProvider.Data("password")
-			uriBytes, _ := credsProvider.Data("uri")
-			Expect(usernameBytes).To(Equal([]byte(existingRabbitMQUsername)))
-			Expect(passwordBytes).To(Equal([]byte(existingRabbitMQPassword)))
-			Expect(uriBytes).To(Equal([]byte("http://rmq.rabbitmq-system.svc:15672")))
+			usernameBytes, _ := creds["username"]
+			passwordBytes, _ := creds["password"]
+			uriBytes, _ := creds["uri"]
+			Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
+			Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
+			Expect(uriBytes).To(Equal("http://rmq.rabbitmq-system.svc:15672"))
 		})
 
 		When("RabbitmqCluster does not have status.defaultUser set", func() {
@@ -123,8 +123,8 @@ var _ = Describe("ParseReference", func() {
 			var (
 				err                   error
 				fakeSecretStoreClient *rabbitmqclientfakes.FakeSecretStoreClient
-				credsProv             rabbitmqclient.ConnectionCredentials
 				tlsEnabled            bool
+				creds                 map[string]string
 			)
 
 			BeforeEach(func() {
@@ -166,7 +166,7 @@ var _ = Describe("ParseReference", func() {
 			})
 
 			JustBeforeEach(func() {
-				credsProv, tlsEnabled, err = rabbitmqclient.ParseReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
+				creds, tlsEnabled, err = rabbitmqclient.ParseReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
 			})
 
 			It("should not return an error", func() {
@@ -175,12 +175,12 @@ var _ = Describe("ParseReference", func() {
 			})
 
 			It("should return the expected credentials", func() {
-				usernameBytes, _ := credsProv.Data("username")
-				passwordBytes, _ := credsProv.Data("password")
-				uriBytes, _ := credsProv.Data("uri")
-				Expect(usernameBytes).To(Equal([]byte(existingRabbitMQUsername)))
-				Expect(passwordBytes).To(Equal([]byte(existingRabbitMQPassword)))
-				Expect(uriBytes).To(Equal([]byte("http://rmq.rabbitmq-system.svc:15672")))
+				usernameBytes, _ := creds["username"]
+				passwordBytes, _ := creds["password"]
+				uriBytes, _ := creds["uri"]
+				Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
+				Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
+				Expect(uriBytes).To(Equal("http://rmq.rabbitmq-system.svc:15672"))
 			})
 
 			When("RabbitmqCluster does not have status.defaultUser set", func() {
@@ -268,19 +268,19 @@ var _ = Describe("ParseReference", func() {
 		})
 
 		It("returns correct creds in connectionCredentials", func() {
-			credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+			creds, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
 				topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
 				existingRabbitMQCluster.Namespace,
 				"")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(tlsEnabled).To(BeTrue())
-			usernameBytes, _ := credsProvider.Data("username")
-			passwordBytes, _ := credsProvider.Data("password")
-			uriBytes, _ := credsProvider.Data("uri")
-			Expect(usernameBytes).To(Equal([]byte(existingRabbitMQUsername)))
-			Expect(passwordBytes).To(Equal([]byte(existingRabbitMQPassword)))
-			Expect(uriBytes).To(Equal([]byte("https://rmq.rabbitmq-system.svc:15671")))
+			usernameBytes, _ := creds["username"]
+			passwordBytes, _ := creds["password"]
+			uriBytes, _ := creds["uri"]
+			Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
+			Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
+			Expect(uriBytes).To(Equal("https://rmq.rabbitmq-system.svc:15671"))
 		})
 	})
 
@@ -339,18 +339,18 @@ var _ = Describe("ParseReference", func() {
 		})
 
 		It("returns correct creds in connectionCredentials", func() {
-			credsProvider, _, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+			creds, _, err := rabbitmqclient.ParseReference(ctx, fakeClient,
 				topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
 				existingRabbitMQCluster.Namespace,
 				"")
 			Expect(err).NotTo(HaveOccurred())
 
-			usernameBytes, _ := credsProvider.Data("username")
-			passwordBytes, _ := credsProvider.Data("password")
-			uriBytes, _ := credsProvider.Data("uri")
-			Expect(usernameBytes).To(Equal([]byte(existingRabbitMQUsername)))
-			Expect(passwordBytes).To(Equal([]byte(existingRabbitMQPassword)))
-			Expect(uriBytes).To(Equal([]byte("http://rmq.rabbitmq-system.svc:15671/my/prefix")))
+			usernameBytes, _ := creds["username"]
+			passwordBytes, _ := creds["password"]
+			uriBytes, _ := creds["uri"]
+			Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
+			Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
+			Expect(uriBytes).To(Equal("http://rmq.rabbitmq-system.svc:15671/my/prefix"))
 		})
 	})
 
@@ -372,7 +372,7 @@ var _ = Describe("ParseReference", func() {
 			})
 
 			It("returns the expected connection information", func() {
-				credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+				creds, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
 					topology.RabbitmqClusterReference{
 						ConnectionSecret: &corev1.LocalObjectReference{
 							Name: "rmq-connection-info",
@@ -383,12 +383,12 @@ var _ = Describe("ParseReference", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(tlsEnabled).To(BeFalse())
-				returnedUser, _ := credsProvider.Data("username")
-				returnedPass, _ := credsProvider.Data("password")
-				returnedURI, _ := credsProvider.Data("uri")
-				Expect(string(returnedUser)).To(Equal("test-user"))
-				Expect(string(returnedPass)).To(Equal("test-password"))
-				Expect(string(returnedURI)).To(Equal("http://10.0.0.0:15672"))
+				returnedUser, _ := creds["username"]
+				returnedPass, _ := creds["password"]
+				returnedURI, _ := creds["uri"]
+				Expect(returnedUser).To(Equal("test-user"))
+				Expect(returnedPass).To(Equal("test-password"))
+				Expect(returnedURI).To(Equal("http://10.0.0.0:15672"))
 			})
 		})
 
@@ -409,7 +409,7 @@ var _ = Describe("ParseReference", func() {
 			})
 
 			It("returns the expected connection information", func() {
-				credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+				creds, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
 					topology.RabbitmqClusterReference{
 						ConnectionSecret: &corev1.LocalObjectReference{
 							Name: "rmq-connection-info",
@@ -420,12 +420,12 @@ var _ = Describe("ParseReference", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(tlsEnabled).To(BeFalse())
-				returnedUser, _ := credsProvider.Data("username")
-				returnedPass, _ := credsProvider.Data("password")
-				returnedURI, _ := credsProvider.Data("uri")
-				Expect(string(returnedUser)).To(Equal("test-user"))
-				Expect(string(returnedPass)).To(Equal("test-password"))
-				Expect(string(returnedURI)).To(Equal("http://10.0.0.0:15672"))
+				returnedUser, _ := creds["username"]
+				returnedPass, _ := creds["password"]
+				returnedURI, _ := creds["uri"]
+				Expect(returnedUser).To(Equal("test-user"))
+				Expect(returnedPass).To(Equal("test-password"))
+				Expect(returnedURI).To(Equal("http://10.0.0.0:15672"))
 			})
 		})
 
@@ -446,7 +446,7 @@ var _ = Describe("ParseReference", func() {
 			})
 
 			It("returns the expected connection information", func() {
-				credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+				creds, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
 					topology.RabbitmqClusterReference{
 						ConnectionSecret: &corev1.LocalObjectReference{
 							Name: "rmq-connection-info",
@@ -457,12 +457,12 @@ var _ = Describe("ParseReference", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(tlsEnabled).To(BeTrue())
-				returnedUser, _ := credsProvider.Data("username")
-				returnedPass, _ := credsProvider.Data("password")
-				returnedURI, _ := credsProvider.Data("uri")
-				Expect(string(returnedUser)).To(Equal("test-user"))
-				Expect(string(returnedPass)).To(Equal("test-password"))
-				Expect(string(returnedURI)).To(Equal("https://10.0.0.0:15671"))
+				returnedUser, _ := creds["username"]
+				returnedPass, _ := creds["password"]
+				returnedURI, _ := creds["uri"]
+				Expect(returnedUser).To(Equal("test-user"))
+				Expect(returnedPass).To(Equal("test-password"))
+				Expect(returnedURI).To(Equal("https://10.0.0.0:15671"))
 			})
 		})
 	})
@@ -505,17 +505,17 @@ var _ = Describe("ParseReference", func() {
 		It("generates an address with cluster domain suffix", func() {
 			someDomain := ".example.com"
 
-			credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+			creds, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
 				topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
 				existingRabbitMQCluster.Namespace,
 				someDomain)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(tlsEnabled).To(BeFalse(), "expected TLS to not be enabled")
-			Expect(credsProvider).ToNot(BeNil())
+			Expect(creds).ToNot(BeNil())
 
-			uri, ok := credsProvider.Data("uri")
+			uri, ok := creds["uri"]
 			Expect(ok).To(BeTrue(), "expected Credentials Provider to contain a key 'uri'")
-			Expect(string(uri)).To(Equal(fmt.Sprintf("http://bunny.%s.svc.example.com:15672", namespace)))
+			Expect(uri).To(Equal(fmt.Sprintf("http://bunny.%s.svc.example.com:15672", namespace)))
 		})
 
 		When("the domain suffix is not present", func() {
@@ -528,9 +528,9 @@ var _ = Describe("ParseReference", func() {
 				Expect(tlsEnabled).To(BeFalse(), "expected TLS to not be enabled")
 				Expect(credsProvider).ToNot(BeNil())
 
-				uri, ok := credsProvider.Data("uri")
+				uri, ok := credsProvider["uri"]
 				Expect(ok).To(BeTrue(), "expected Credentials Provider to contain a key 'uri'")
-				Expect(string(uri)).To(Equal(fmt.Sprintf("http://bunny.%s.svc:15672", namespace)))
+				Expect(uri).To(Equal(fmt.Sprintf("http://bunny.%s.svc:15672", namespace)))
 			})
 		})
 	})

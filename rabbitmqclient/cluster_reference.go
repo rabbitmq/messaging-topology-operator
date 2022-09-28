@@ -15,11 +15,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . ConnectionCredentials
-type ConnectionCredentials interface {
-	Data(key string) ([]byte, bool)
-}
-
 type ClusterCredentials struct {
 	data map[string][]byte
 }
@@ -37,7 +32,7 @@ var (
 	NoServiceReferenceSetError = errors.New("RabbitmqCluster has no ServiceReference set in status.defaultUser")
 )
 
-func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string, clusterDomain string) (ConnectionCredentials, bool, error) {
+func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string, clusterDomain string) (map[string]string, bool, error) {
 	if rmq.ConnectionSecret != nil {
 		secret := &corev1.Secret{}
 		if err := c.Get(ctx, types.NamespacedName{Namespace: requestNamespace, Name: rmq.ConnectionSecret.Name}, secret); err != nil {
@@ -110,12 +105,10 @@ func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqC
 		return nil, false, fmt.Errorf("failed to get endpoint from specified rabbitmqcluster: %w", err)
 	}
 
-	return ClusterCredentials{
-		data: map[string][]byte{
-			"username": []byte(user),
-			"password": []byte(pass),
-			"uri":      []byte(endpoint),
-		},
+	return map[string]string{
+		"username": user,
+		"password": pass,
+		"uri":      endpoint,
 	}, cluster.TLSEnabled(), nil
 }
 
@@ -137,7 +130,7 @@ func AllowedNamespace(rmq topology.RabbitmqClusterReference, requestNamespace st
 	return true
 }
 
-func readCredentialsFromKubernetesSecret(secret *corev1.Secret) (ConnectionCredentials, bool, error) {
+func readCredentialsFromKubernetesSecret(secret *corev1.Secret) (map[string]string, bool, error) {
 	if secret == nil {
 		return nil, false, fmt.Errorf("unable to retrieve information from Kubernetes secret %s: %w", secret.Name, errors.New("nil secret"))
 	}
@@ -158,12 +151,10 @@ func readCredentialsFromKubernetesSecret(secret *corev1.Secret) (ConnectionCrede
 		tlsEnabled = true
 	}
 
-	return ClusterCredentials{
-		data: map[string][]byte{
-			"username": secret.Data["username"],
-			"password": secret.Data["password"],
-			"uri":      []byte(uri),
-		},
+	return map[string]string{
+		"username": string(secret.Data["username"]),
+		"password": string(secret.Data["password"]),
+		"uri":      uri,
 	}, tlsEnabled, nil
 }
 
