@@ -51,7 +51,7 @@ var _ = Describe("TopologyReconciler", func() {
 			}, 5).Should(BeNumerically(">", 0))
 
 			credentials, _, _ := FakeRabbitMQClientFactoryArgsForCall(0)
-			uri, found := credentials.Data("uri")
+			uri, found := credentials["uri"]
 			Expect(found).To(BeTrue(), "expected to find key 'uri'")
 			Expect(uri).To(BeEquivalentTo("https://example-rabbit.default.svc.some-domain.com:15671"))
 		})
@@ -81,7 +81,7 @@ var _ = Describe("TopologyReconciler", func() {
 			}, 5).Should(BeNumerically(">", 0))
 
 			credentials, _, _ := FakeRabbitMQClientFactoryArgsForCall(0)
-			uri, found := credentials.Data("uri")
+			uri, found := credentials["uri"]
 			Expect(found).To(BeTrue(), "expected to find key 'uri'")
 			Expect(uri).To(BeEquivalentTo("https://example-rabbit.default.svc:15671"))
 		})

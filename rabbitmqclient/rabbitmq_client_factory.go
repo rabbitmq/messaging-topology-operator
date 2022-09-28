@@ -50,27 +50,27 @@ type Client interface {
 	DeleteTopicPermissionsIn(vhost, username string, exchange string) (res *http.Response, err error)
 }
 
-type Factory func(connectionCreds ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (Client, error)
+type Factory func(connectionCreds map[string]string, tlsEnabled bool, certPool *x509.CertPool) (Client, error)
 
-var RabbitholeClientFactory Factory = func(connectionCreds ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (Client, error) {
+var RabbitholeClientFactory Factory = func(connectionCreds map[string]string, tlsEnabled bool, certPool *x509.CertPool) (Client, error) {
 	return generateRabbitholeClient(connectionCreds, tlsEnabled, certPool)
 }
 
 // generateRabbitholeClient returns a http client for a given creds
 // if provided RabbitmqCluster is nil, generateRabbitholeClient uses username, passwords, and uri
 // information from connectionCreds to generate a rabbit client
-func generateRabbitholeClient(connectionCreds ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (rabbitmqClient Client, err error) {
-	defaultUser, found := connectionCreds.Data("username")
+func generateRabbitholeClient(connectionCreds map[string]string, tlsEnabled bool, certPool *x509.CertPool) (rabbitmqClient Client, err error) {
+	defaultUser, found := connectionCreds["username"]
 	if !found {
 		return nil, keyMissingErr("username")
 	}
 
-	defaultUserPass, found := connectionCreds.Data("password")
+	defaultUserPass, found := connectionCreds["password"]
 	if !found {
 		return nil, keyMissingErr("password")
 	}
 
-	uri, found := connectionCreds.Data("uri")
+	uri, found := connectionCreds["uri"]
 	if !found {
 		return nil, keyMissingErr("uri")
 	}

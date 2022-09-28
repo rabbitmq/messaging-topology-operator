@@ -58,9 +58,9 @@ var (
 	mgr                       ctrl.Manager
 	fakeRabbitMQClient        *rabbitmqclientfakes.FakeClient
 	fakeRabbitMQClientError   error
-	fakeRabbitMQClientFactory = func(connectionCreds rabbitmqclient.ConnectionCredentials, tlsEnabled bool, certPool *x509.CertPool) (rabbitmqclient.Client, error) {
+	fakeRabbitMQClientFactory = func(connectionCreds map[string]string, tlsEnabled bool, certPool *x509.CertPool) (rabbitmqclient.Client, error) {
 		fakeRabbitMQClientFactoryArgsForCall = append(fakeRabbitMQClientFactoryArgsForCall, struct {
-			arg1 rabbitmqclient.ConnectionCredentials
+			arg1 map[string]string
 			arg2 bool
 			arg3 *x509.CertPool
 		}{connectionCreds, tlsEnabled, certPool})
@@ -68,7 +68,7 @@ var (
 	}
 	// Shameless copy of what counterfeiter does for mocking
 	fakeRabbitMQClientFactoryArgsForCall []struct {
-		arg1 rabbitmqclient.ConnectionCredentials
+		arg1 map[string]string
 		arg2 bool
 		arg3 *x509.CertPool
 	}
@@ -489,7 +489,7 @@ func observedEvents() []string {
 	return events
 }
 
-func FakeRabbitMQClientFactoryArgsForCall(i int) (rabbitmqclient.ConnectionCredentials, bool, *x509.CertPool) {
+func FakeRabbitMQClientFactoryArgsForCall(i int) (map[string]string, bool, *x509.CertPool) {
 	// More shameless copy of counterfeiter code generation idea
 	argsForCall := fakeRabbitMQClientFactoryArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
