@@ -1,0 +1,25 @@
+# More on topic exchange and other exchange types, see: https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchange-topic.
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Exchange
+metadata:
+  name: some-topic
+spec:
+  name: topic-a # name of the exchange
+  type: topic # default to 'direct' if not provided
+  autoDelete: false
+  durable: true
+  rabbitmqClusterReference:
+    name: test # rabbitmqCluster must exist in the same namespace as this resource
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Exchange
+metadata:
+  name: another-topic
+spec:
+  name: topic-b # name of the exchange
+  type: topic # default to 'direct' if not provided
+  autoDelete: false
+  durable: true
+  rabbitmqClusterReference:
+    name: test # rabbitmqCluster must exist in the same namespace as this resource
