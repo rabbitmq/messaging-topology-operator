@@ -5,7 +5,7 @@ on:
     branches: [ main ]
 
 env:
-  GO_VERSION: '^1.19.1' # Require Go 1.19 and above, but lower than Go 2.0.0
+  GO_VERSION: '^1.19.2' # Require Go 1.19 and above, but lower than Go 2.0.0
 
 jobs:
 
