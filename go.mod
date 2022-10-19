@@ -7,7 +7,7 @@ require (
 	github.com/elastic/crd-ref-docs v0.0.8
 	github.com/go-logr/logr v1.2.3
 	github.com/google/uuid v1.3.0
-	github.com/hashicorp/vault/api v1.8.0
+	github.com/hashicorp/vault/api v1.8.1
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.5.0
 	github.com/michaelklishin/rabbit-hole/v2 v2.12.0
 	github.com/onsi/ginkgo/v2 v2.3.1
