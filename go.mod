@@ -10,8 +10,8 @@ require (
 	github.com/hashicorp/vault/api v1.8.0
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.5.0
 	github.com/michaelklishin/rabbit-hole/v2 v2.12.0
-	github.com/onsi/ginkgo/v2 v2.2.0
-	github.com/onsi/gomega v1.21.1
+	github.com/onsi/ginkgo/v2 v2.3.0
+	github.com/onsi/gomega v1.22.1
 	github.com/rabbitmq/cluster-operator v1.14.0
 	github.com/sclevine/yj v0.0.0-20200815061347-554173e71934
 	gopkg.in/ini.v1 v1.67.0
