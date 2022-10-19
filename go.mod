@@ -16,7 +16,7 @@ require (
 	github.com/sclevine/yj v0.0.0-20200815061347-554173e71934
 	gopkg.in/ini.v1 v1.67.0
 	k8s.io/api v0.25.2
-	k8s.io/apimachinery v0.25.2
+	k8s.io/apimachinery v0.25.3
 	k8s.io/client-go v0.25.2
 	k8s.io/code-generator v0.25.2
 	k8s.io/klog/v2 v2.80.1
