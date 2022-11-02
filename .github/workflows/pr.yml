@@ -15,11 +15,11 @@ jobs:
     container: us.gcr.io/cf-rabbitmq-for-k8s-bunny/rabbitmq-for-kubernetes-ci
     steps:
     - name: Install Go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
         go-version: ${{ env.GO_VERSION }}
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Unit tests
       run: make unit-tests
     - name: Integration tests
@@ -33,8 +33,8 @@ jobs:
         k8s: [v1.22.9, v1.24.1]
     steps:
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
-    - uses: actions/setup-go@v2
+      uses: actions/checkout@v3
+    - uses: actions/setup-go@v3
       with:
         go-version: ${{ env.GO_VERSION }}
     - name: System tests
