@@ -13,6 +13,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
@@ -52,6 +53,15 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.
 		logger.Error(err, "failed to generate credentials")
 		return "", err
 	}
+	// Password wasn't in the provided input secret we need to generate a random one
+	if password == "" {
+		password, err = internal.RandomEncodedString(24)
+		if err != nil {
+			return "", fmt.Errorf("failed to generate random password: %w", err)
+		}
+
+	}
+
 	logger.Info("Credentials generated for User", "user", user.Name, "generatedUsername", username)
 
 	credentialSecret := corev1.Secret{
@@ -133,7 +143,7 @@ func (r *UserReconciler) importCredentials(ctx context.Context, secretName, secr
 	}
 	password, ok := credentialsSecret.Data["password"]
 	if !ok {
-		return "", "", fmt.Errorf("could not find password key in credentials secret: %s", credentialsSecret.Name)
+		return string(username), "", nil
 	}
 
 	logger.Info("Retrieved credentials from Secret", "secretName", secretName, "retrievedUsername", string(username))
