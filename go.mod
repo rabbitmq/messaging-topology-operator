@@ -15,7 +15,7 @@ require (
 	github.com/rabbitmq/cluster-operator v1.14.0
 	github.com/sclevine/yj v0.0.0-20200815061347-554173e71934
 	gopkg.in/ini.v1 v1.67.0
-	k8s.io/api v0.25.3
+	k8s.io/api v0.25.4
 	k8s.io/apimachinery v0.25.4
 	k8s.io/client-go v0.25.3
 	k8s.io/code-generator v0.25.4
