@@ -12,6 +12,26 @@ list:    ## list Makefile targets
 # Allows flexbility to use other build kits, like nerdctl
 BUILD_KIT ?= /usr/local/bin/docker
 
+GIT_TAG ?= dirty-tag
+GIT_VERSION ?= $(shell git describe --tags --always --dirty)
+GIT_HASH ?= $(shell git rev-parse HEAD)
+DATE_FMT = +%Y-%m-%dT%H:%M:%SZ
+SOURCE_DATE_EPOCH ?= $(shell git log -1 --pretty=%ct)
+ifdef SOURCE_DATE_EPOCH
+    BUILD_DATE ?= $(shell date -u -d "@$(SOURCE_DATE_EPOCH)" "$(DATE_FMT)" 2>/dev/null || date -u -r "$(SOURCE_DATE_EPOCH)" "$(DATE_FMT)" 2>/dev/null || date -u "$(DATE_FMT)")
+else
+    BUILD_DATE ?= $(shell date "$(DATE_FMT)")
+endif
+GIT_TREESTATE = "clean"
+DIFF = $(shell git diff --quiet >/dev/null 2>&1; if [ $$? -eq 1 ]; then echo "1"; fi)
+ifeq ($(DIFF), 1)
+    GIT_TREESTATE = "dirty"
+endif
+LDFLAGS=-buildid= -X sigs.k8s.io/release-utils/version.gitVersion=$(GIT_VERSION) \
+        -X sigs.k8s.io/release-utils/version.gitCommit=$(GIT_HASH) \
+        -X sigs.k8s.io/release-utils/version.gitTreeState=$(GIT_TREESTATE) \
+        -X sigs.k8s.io/release-utils/version.buildDate=$(BUILD_DATE)
+
 define get_mod_code_generator
 echo "Only go get & mod k8s.io/code-generator, but do not install it"
 echo "⚠️  Keep it at the same version as captured in go.mod, otherwise we may end up with version inconsistencies"
@@ -67,7 +87,7 @@ system-tests: ## run end-to-end tests against Kubernetes cluster defined in ~/.k
 
 # Build manager binary
 manager: generate fmt vet vuln
-	go build -o bin/manager main.go
+	go build -trimpath -ldflags "$(LDFLAGS)" -o bin/manager main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 #
@@ -106,7 +126,7 @@ deploy-dev: check-env-docker-credentials cmctl docker-build-dev manifests deploy
 
 # Load operator image and deploy operator into current KinD cluster
 deploy-kind: manifests cmctl deploy-rbac
-	$(BUILD_KIT) build --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .
+	$(BUILD_KIT) build --build-arg=LDFLAGS="$(LDFLAGS)" --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .
 	kind load docker-image $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)
 	$(CMCTL) check api --wait=2m
 	kustomize build config/default/overlays/kind | sed 's@((operator_docker_image))@"$(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)"@' | kubectl apply -f -
@@ -160,7 +180,7 @@ ifndef DOCKER_REGISTRY_SECRET
 endif
 
 docker-build-dev: check-env-docker-repo  git-commit-sha
-	$(BUILD_KIT) build --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .
+	$(BUILD_KIT) build --build-arg=LDFLAGS="$(LDFLAGS)" --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .
 	$(BUILD_KIT) push $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)
 
 docker-registry-secret: check-env-docker-credentials operator-namespace

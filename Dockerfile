@@ -16,8 +16,9 @@ COPY controllers/ controllers/
 COPY internal/ internal/
 COPY rabbitmqclient/ rabbitmqclient/
 
+ARG LDFLAGS=""
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -tags timetzdata -o manager main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -tags timetzdata -trimpath -ldflags "$LDFLAGS" -o manager main.go
 
 # ---------------------------------------
 FROM alpine:latest as etc-builder

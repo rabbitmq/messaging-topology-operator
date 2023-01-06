@@ -12,7 +12,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"os"
 	"regexp"
 	"strconv"
@@ -26,10 +25,12 @@ import (
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/release-utils/version"
 
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 	"github.com/rabbitmq/cluster-operator/pkg/profiling"
@@ -77,7 +78,9 @@ func sanitizeClusterDomainInput(clusterDomain string) string {
 
 func main() {
 	var metricsAddr string
+
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
+	versionFlag := flag.Bool("version", false, "Show the current version information of the messaging-topology-operator.")
 
 	opts := zap.Options{}
 	opts.BindFlags(flag.CommandLine)
@@ -88,6 +91,14 @@ func main() {
 	ctrl.SetLogger(logger)
 	// https://github.com/kubernetes-sigs/controller-runtime/issues/1420#issuecomment-794525248
 	klog.SetLogger(logger.WithName("messaging-topology-operator"))
+
+	v := version.GetVersionInfo()
+	if *versionFlag {
+		fmt.Println(v.String())
+		os.Exit(0)
+	}
+
+	log.Info(fmt.Sprintf("version: %s, git commit: %s", v.GitVersion, v.GitCommit))
 
 	operatorNamespace := os.Getenv(controllers.OperatorNamespaceEnvVar)
 	if operatorNamespace == "" {
