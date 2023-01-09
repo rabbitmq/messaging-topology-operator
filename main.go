@@ -115,6 +115,21 @@ func main() {
 		log.Info(fmt.Sprintf("sync period set; all resources will be reconciled every: %s", syncPeriodDuration))
 	}
 
+	if leaseDuration := getEnvInDuration("LEASE_DURATION"); leaseDuration != 0 {
+		log.Info("manager configured with lease duration", "seconds", int(leaseDuration.Seconds()))
+		managerOpts.LeaseDuration = &leaseDuration
+	}
+
+	if renewDeadline := getEnvInDuration("RENEW_DEADLINE"); renewDeadline != 0 {
+		log.Info("manager configured with renew deadline", "seconds", int(renewDeadline.Seconds()))
+		managerOpts.RenewDeadline = &renewDeadline
+	}
+
+	if retryPeriod := getEnvInDuration("RETRY_PERIOD"); retryPeriod != 0 {
+		log.Info("manager configured with retry period", "seconds", int(retryPeriod.Seconds()))
+		managerOpts.RetryPeriod = &retryPeriod
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), managerOpts)
 	if err != nil {
 		log.Error(err, "unable to start manager")
@@ -356,4 +371,16 @@ func main() {
 		log.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func getEnvInDuration(envName string) time.Duration {
+	var durationInt int64
+	if durationStr := os.Getenv(envName); durationStr != "" {
+		var err error
+		if durationInt, err = strconv.ParseInt(durationStr, 10, 64); err != nil {
+			log.Error(err, fmt.Sprintf("unable to parse provided '%s'", envName))
+			os.Exit(1)
+		}
+	}
+	return time.Duration(durationInt) * time.Second
 }
