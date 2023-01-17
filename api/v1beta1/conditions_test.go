@@ -31,7 +31,7 @@ var _ = Describe("Conditions", func() {
 			c1 := Ready(nil)
 			Expect(c1.LastTransitionTime.IsZero()).To(BeFalse())
 			c2 := Ready([]Condition{
-				Condition{Type: "I'm some other type"},
+				{Type: "I'm some other type"},
 				c1,
 			})
 			Expect(c2.LastTransitionTime.Time).To(BeTemporally("==", c1.LastTransitionTime.Time))
