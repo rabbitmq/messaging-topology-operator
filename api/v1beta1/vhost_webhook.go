@@ -47,7 +47,6 @@ func (v *Vhost) ValidateUpdate(old runtime.Object) error {
 	return nil
 }
 
-// no validation on delete
 func (v *Vhost) ValidateDelete() error {
 	return nil
 }

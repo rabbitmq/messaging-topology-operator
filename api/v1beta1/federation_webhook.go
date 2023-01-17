@@ -47,7 +47,6 @@ func (f *Federation) ValidateUpdate(old runtime.Object) error {
 	return nil
 }
 
-// no validation on delete
 func (f *Federation) ValidateDelete() error {
 	return nil
 }

@@ -39,7 +39,7 @@ func (r *BindingReconciler) DeclareFunc(ctx context.Context, client rabbitmqclie
 	return validateResponse(client.DeclareBinding(binding.Spec.Vhost, *info))
 }
 
-// deletes binding from rabbitmq server; bindings have no name; server needs BindingInfo to delete them
+// DeleteFunc deletes binding from rabbitmq server; bindings have no name; server needs BindingInfo to delete them
 // when server responds with '404' Not Found, it logs and does not requeue on error
 // if no binding argument is set, generating properties key by using internal.GeneratePropertiesKey
 // if binding arguments are set, list all bindings between source/destination to find the binding; if it failed to find corresponding binding, it assumes that the binding is already deleted and returns no error

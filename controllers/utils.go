@@ -48,8 +48,8 @@ func validateResponse(res *http.Response, err error) error {
 	return nil
 }
 
-// return a custom error if status code is 404
-// used in all controllers when deleting objects from rabbitmq server
+// NotFound is a custom error
+// used in all controllers when deleting objects from rabbitmq server and status code is 404
 var NotFound = errors.New("not found")
 
 func validateResponseForDeletion(res *http.Response, err error) error {

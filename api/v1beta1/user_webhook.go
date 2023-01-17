@@ -40,7 +40,6 @@ func (u *User) ValidateUpdate(old runtime.Object) error {
 	return nil
 }
 
-// no validation on delete
 func (u *User) ValidateDelete() error {
 	return nil
 }

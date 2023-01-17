@@ -93,7 +93,6 @@ func (b *Binding) ValidateUpdate(old runtime.Object) error {
 	return apierrors.NewInvalid(GroupVersion.WithKind("Binding").GroupKind(), b.Name, allErrs)
 }
 
-// no validation logic on delete
 func (b *Binding) ValidateDelete() error {
 	return nil
 }

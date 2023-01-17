@@ -35,7 +35,7 @@ func (r *ExchangeReconciler) DeclareFunc(ctx context.Context, client rabbitmqcli
 	return validateResponse(client.DeclareExchange(exchange.Spec.Vhost, exchange.Spec.Name, *settings))
 }
 
-// deletes exchange from rabbitmq server
+// DeleteFunc deletes exchange from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
 func (r *ExchangeReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)

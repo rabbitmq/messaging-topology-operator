@@ -53,7 +53,7 @@ func (r *ShovelReconciler) getUris(ctx context.Context, shovel *topology.Shovel)
 	return string(srcUri), string(destUri), nil
 }
 
-// deletes shovel configuration from rabbitmq server
+// DeleteFunc deletes shovel configuration from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
 func (r *ShovelReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)

@@ -83,7 +83,6 @@ func (e *Exchange) ValidateUpdate(old runtime.Object) error {
 	return apierrors.NewInvalid(GroupVersion.WithKind("Exchange").GroupKind(), e.Name, allErrs)
 }
 
-// no validation on delete
 func (e *Exchange) ValidateDelete() error {
 	return nil
 }

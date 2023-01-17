@@ -50,7 +50,6 @@ func (s *Shovel) ValidateUpdate(old runtime.Object) error {
 	return nil
 }
 
-// no validation on delete
 func (s *Shovel) ValidateDelete() error {
 	return nil
 }

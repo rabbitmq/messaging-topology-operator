@@ -23,7 +23,7 @@ func CreateCertFile(offset int, fileName string) (string, *os.File) {
 	return path, file
 }
 
-// generate a pair of certificate and key, given a cacert
+// GenerateCertandKey generate a pair of certificate and key, given a cacert
 func GenerateCertandKey(offset int, hostname string, caCert, caKey []byte, certWriter, keyWriter io.Writer) {
 	caPriv, err := helpers.ParsePrivateKeyPEM(caKey)
 	ExpectWithOffset(offset, err).NotTo(HaveOccurred())

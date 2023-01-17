@@ -49,7 +49,7 @@ func (r *FederationReconciler) getUri(ctx context.Context, federation *topology.
 	return string(uri), nil
 }
 
-// deletes federation from rabbitmq server
+// DeleteFunc deletes federation from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
 func (r *FederationReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
