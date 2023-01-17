@@ -25,7 +25,7 @@ func (r *VhostReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient
 	return validateResponse(client.PutVhost(vhost.Spec.Name, *internal.GenerateVhostSettings(vhost)))
 }
 
-// deletes vhost from server
+// DeleteFunc deletes vhost from server
 // if server responds with '404' Not Found, it logs and does not requeue on error
 func (r *VhostReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)

@@ -88,7 +88,6 @@ func (q *Queue) ValidateUpdate(old runtime.Object) error {
 	return apierrors.NewInvalid(GroupVersion.WithKind("Queue").GroupKind(), q.Name, allErrs)
 }
 
-// no validation on delete
 func (q *Queue) ValidateDelete() error {
 	return nil
 }

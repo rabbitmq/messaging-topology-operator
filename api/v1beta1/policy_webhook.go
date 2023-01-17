@@ -50,7 +50,6 @@ func (p *Policy) ValidateUpdate(old runtime.Object) error {
 	return nil
 }
 
-// no validation on delete
 func (p *Policy) ValidateDelete() error {
 	return nil
 }

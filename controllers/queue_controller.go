@@ -39,7 +39,7 @@ func (r *QueueReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient
 	return validateResponse(client.DeclareQueue(queue.Spec.Vhost, queue.Spec.Name, *queueSettings))
 }
 
-// deletes queue from rabbitmq server
+// DeleteFunc deletes queue from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
 // queues could be deleted manually or gone because of AutoDelete
 func (r *QueueReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {

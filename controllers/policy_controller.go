@@ -26,7 +26,7 @@ import (
 
 type PolicyReconciler struct{}
 
-// creates or updates a given policy using rabbithole client.PutPolicy
+// DeclareFunc creates or updates a given policy using rabbithole client.PutPolicy
 func (r *PolicyReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
 	policy := obj.(*topology.Policy)
 	generatePolicy, err := internal.GeneratePolicy(policy)
@@ -36,7 +36,7 @@ func (r *PolicyReconciler) DeclareFunc(ctx context.Context, client rabbitmqclien
 	return validateResponse(client.PutPolicy(policy.Spec.Vhost, policy.Spec.Name, *generatePolicy))
 }
 
-// deletes policy from rabbitmq server
+// DeleteFunc deletes policy from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
 func (r *PolicyReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)

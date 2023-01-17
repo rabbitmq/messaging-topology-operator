@@ -255,25 +255,6 @@ func setupTestRabbitmqCluster(k8sClient client.Client, rabbitmqCluster *rabbitmq
 	Expect(k8sClient.Get(context.Background(), types.NamespacedName{Name: rabbitmqCluster.Name, Namespace: rabbitmqCluster.Namespace}, rabbitmqCluster)).To(Succeed())
 }
 
-func updateTestRabbitmqCluster(k8sClient client.Client, rabbitmqCluster *rabbitmqv1beta1.RabbitmqCluster) {
-	// update a RabbitmqCluster used for system tests
-	Expect(k8sClient.Update(context.Background(), rabbitmqCluster)).To(Succeed())
-	Eventually(func() string {
-		output, err := kubectl(
-			"-n",
-			rabbitmqCluster.Namespace,
-			"get",
-			"rabbitmqclusters",
-			rabbitmqCluster.Name,
-			"-ojsonpath='{.status.conditions[?(@.type==\"AllReplicasReady\")].status}'",
-		)
-		if err != nil {
-			Expect(string(output)).To(ContainSubstring("NotFound"))
-		}
-		return string(output)
-	}, 120, 10).Should(Equal("'True'"))
-}
-
 func createTLSSecret(secretName, secretNamespace, hostname string) (string, []byte, []byte) {
 	// create cert files
 	serverCertPath, serverCertFile := testutils.CreateCertFile(2, "server.crt")

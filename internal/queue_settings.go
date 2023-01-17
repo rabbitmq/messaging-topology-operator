@@ -16,7 +16,7 @@ import (
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
 
-// generates rabbithole.QueueSettings for a given Queue
+// GenerateQueueSettings generates rabbithole.QueueSettings for a given Queue
 // queue.Spec.Arguments (type k8s runtime.RawExtensions) is unmarshalled
 // Unmarshall stores float64, for JSON numbers
 // See: https://golang.org/pkg/encoding/json/#Unmarshal
