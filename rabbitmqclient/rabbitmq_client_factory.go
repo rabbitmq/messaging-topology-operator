@@ -81,12 +81,12 @@ func generateRabbitholeClient(connectionCreds map[string]string, tlsEnabled bool
 		cfg.RootCAs = certPool
 
 		transport := &http.Transport{TLSClientConfig: cfg}
-		rabbitmqClient, err = rabbithole.NewTLSClient(fmt.Sprintf("%s", uri), defaultUser, defaultUserPass, transport)
+		rabbitmqClient, err = rabbithole.NewTLSClient(uri, defaultUser, defaultUserPass, transport)
 		if err != nil {
 			return nil, fmt.Errorf("failed to instantiate rabbit rabbitmqClient: %v", err)
 		}
 	} else {
-		rabbitmqClient, err = rabbithole.NewClient(fmt.Sprintf("%s", uri), defaultUser, defaultUserPass)
+		rabbitmqClient, err = rabbithole.NewClient(uri, defaultUser, defaultUserPass)
 		if err != nil {
 			return nil, fmt.Errorf("failed to instantiate rabbit rabbitmqClient: %v", err)
 		}
