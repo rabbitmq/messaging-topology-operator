@@ -2,7 +2,6 @@ package system_tests
 
 import (
 	"context"
-
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -91,6 +90,9 @@ var _ = Describe("federation", func() {
 		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))
 		Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
 		Expect(readyCondition.LastTransitionTime).NotTo(Equal(metav1.Time{}))
+
+		By("setting correct finalizer")
+		Expect(updatedFederation.ObjectMeta.Finalizers).To(ConsistOf("deletion.finalizers.federations.rabbitmq.com"))
 
 		By("setting status.observedGeneration")
 		Expect(updatedFederation.Status.ObservedGeneration).To(Equal(updatedFederation.GetGeneration()))

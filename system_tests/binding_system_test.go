@@ -2,17 +2,15 @@ package system_tests
 
 import (
 	"context"
-
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gstruct"
 
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
@@ -122,6 +120,9 @@ var _ = Describe("Binding", func() {
 		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))
 		Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
 		Expect(readyCondition.LastTransitionTime).NotTo(Equal(metav1.Time{}))
+
+		By("setting correct finalizer")
+		Expect(updatedBinding.ObjectMeta.Finalizers).To(ConsistOf("deletion.finalizers.bindings.rabbitmq.com"))
 
 		By("setting status.observedGeneration")
 		Expect(updatedBinding.Status.ObservedGeneration).To(Equal(updatedBinding.GetGeneration()))

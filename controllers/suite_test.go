@@ -339,20 +339,6 @@ var _ = BeforeSuite(func() {
 	rmq.Status.SetConditions([]runtime.Object{})
 	Expect(client.Status().Update(ctx, &rmq)).To(Succeed())
 
-	allowedNamespace := corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "allowed",
-		},
-	}
-	Expect(client.Create(ctx, &allowedNamespace)).To(Succeed())
-
-	prohibitedNamespace := corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "prohibited",
-		},
-	}
-	Expect(client.Create(ctx, &prohibitedNamespace)).To(Succeed())
-
 	endpointsSecretBody := map[string][]byte{
 		"username":  []byte("a-random-user"),
 		"password":  []byte("a-random-password"),
@@ -370,26 +356,6 @@ var _ = BeforeSuite(func() {
 	}
 	Expect(client.Create(ctx, &endpointsSecret)).To(Succeed())
 
-	allowedEndpointsSecret := corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "endpoints-secret",
-			Namespace: "allowed",
-		},
-		Type: corev1.SecretTypeOpaque,
-		Data: endpointsSecretBody,
-	}
-	Expect(client.Create(ctx, &allowedEndpointsSecret)).To(Succeed())
-
-	prohibitedEndpointsSecret := corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "endpoints-secret",
-			Namespace: "prohibited",
-		},
-		Type: corev1.SecretTypeOpaque,
-		Data: endpointsSecretBody,
-	}
-	Expect(client.Create(ctx, &prohibitedEndpointsSecret)).To(Succeed())
-
 	federationUriSecretBody := map[string][]byte{
 		"uri": []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
 	}
@@ -404,26 +370,6 @@ var _ = BeforeSuite(func() {
 		Data: federationUriSecretBody,
 	}
 	Expect(client.Create(ctx, &federationUriSecret)).To(Succeed())
-
-	allowedFederationUriSecret := corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "federation-uri",
-			Namespace: "allowed",
-		},
-		Type: corev1.SecretTypeOpaque,
-		Data: federationUriSecretBody,
-	}
-	Expect(client.Create(ctx, &allowedFederationUriSecret)).To(Succeed())
-
-	prohibitedFederationUriSecret := corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "federation-uri",
-			Namespace: "prohibited",
-		},
-		Type: corev1.SecretTypeOpaque,
-		Data: federationUriSecretBody,
-	}
-	Expect(client.Create(ctx, &prohibitedFederationUriSecret)).To(Succeed())
 
 	shovelUriSecretBody := map[string][]byte{
 		"srcUri":  []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
@@ -440,26 +386,6 @@ var _ = BeforeSuite(func() {
 		Data: shovelUriSecretBody,
 	}
 	Expect(client.Create(ctx, &shovelUriSecret)).To(Succeed())
-
-	allowedShovelUriSecret := corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "shovel-uri-secret",
-			Namespace: "allowed",
-		},
-		Type: corev1.SecretTypeOpaque,
-		Data: shovelUriSecretBody,
-	}
-	Expect(client.Create(ctx, &allowedShovelUriSecret)).To(Succeed())
-
-	prohibitedShovelUriSecret := corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "shovel-uri-secret",
-			Namespace: "prohibited",
-		},
-		Type: corev1.SecretTypeOpaque,
-		Data: shovelUriSecretBody,
-	}
-	Expect(client.Create(ctx, &prohibitedShovelUriSecret)).To(Succeed())
 })
 
 var _ = BeforeEach(func() {

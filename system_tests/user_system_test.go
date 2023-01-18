@@ -2,7 +2,6 @@ package system_tests
 
 import (
 	"context"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -112,6 +111,9 @@ var _ = Describe("Users", func() {
 			Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))
 			Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
 			Expect(readyCondition.LastTransitionTime).NotTo(Equal(metav1.Time{}))
+
+			By("setting correct finalizer")
+			Expect(updatedUser.ObjectMeta.Finalizers).To(ConsistOf("deletion.finalizers.users.rabbitmq.com"))
 
 			By("setting status.observedGeneration")
 			Expect(updatedUser.Status.ObservedGeneration).To(Equal(updatedUser.GetGeneration()))
