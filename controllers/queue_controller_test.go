@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -89,37 +88,6 @@ var _ = Describe("queue-controller", func() {
 				})))
 			})
 		})
-
-		When("success", func() {
-			BeforeEach(func() {
-				queueName = "test-create-success"
-				fakeRabbitMQClient.DeclareQueueReturns(&http.Response{
-					Status:     "201 Created",
-					StatusCode: http.StatusCreated,
-				}, nil)
-			})
-
-			It("works", func() {
-				Expect(client.Create(ctx, &queue)).To(Succeed())
-				By("setting the correct finalizer")
-				Eventually(komega.Object(&queue)).WithTimeout(2 * time.Second).Should(HaveField("ObjectMeta.Finalizers", ConsistOf("deletion.finalizers.queues.rabbitmq.com")))
-
-				By("sets the status condition 'Ready' to 'true'")
-				EventuallyWithOffset(1, func() []topology.Condition {
-					_ = client.Get(
-						ctx,
-						types.NamespacedName{Name: queue.Name, Namespace: queue.Namespace},
-						&queue,
-					)
-
-					return queue.Status.Conditions
-				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(topology.ConditionType("Ready")),
-					"Reason": Equal("SuccessfulCreateOrUpdate"),
-					"Status": Equal(corev1.ConditionTrue),
-				})))
-			})
-		})
 	})
 
 	Context("deletion", func() {
@@ -178,139 +146,6 @@ var _ = Describe("queue-controller", func() {
 				}, statusEventsUpdateTimeout).Should(BeFalse())
 				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete queue"))
 			})
-		})
-
-		When("the RabbitMQ Client successfully deletes a queue", func() {
-			BeforeEach(func() {
-				queueName = "delete-queue-success"
-				fakeRabbitMQClient.DeleteQueueReturns(&http.Response{
-					Status:     "204 No Content",
-					StatusCode: http.StatusNoContent,
-				}, nil)
-			})
-
-			It("publishes a normal event", func() {
-				Expect(client.Delete(ctx, &queue)).To(Succeed())
-				Eventually(func() bool {
-					err := client.Get(ctx, types.NamespacedName{Name: queue.Name, Namespace: queue.Namespace}, &topology.Queue{})
-					return apierrors.IsNotFound(err)
-				}, statusEventsUpdateTimeout).Should(BeTrue())
-				Expect(observedEvents()).To(SatisfyAll(
-					Not(ContainElement("Warning FailedDelete failed to delete queue")),
-					ContainElement("Normal SuccessfulDelete successfully deleted queue"),
-				))
-			})
-		})
-	})
-
-	When("a queue references a cluster from a prohibited namespace", func() {
-		JustBeforeEach(func() {
-			queueName = "test-queue-prohibited"
-			queue = topology.Queue{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      queueName,
-					Namespace: "prohibited",
-				},
-				Spec: topology.QueueSpec{
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name:      "example-rabbit",
-						Namespace: "default",
-					},
-				},
-			}
-		})
-		It("should throw an error about a cluster being prohibited", func() {
-			Expect(client.Create(ctx, &queue)).To(Succeed())
-			EventuallyWithOffset(1, func() []topology.Condition {
-				_ = client.Get(
-					ctx,
-					types.NamespacedName{Name: queue.Name, Namespace: queue.Namespace},
-					&queue,
-				)
-
-				return queue.Status.Conditions
-			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Type":    Equal(topology.ConditionType("Ready")),
-				"Reason":  Equal("FailedCreateOrUpdate"),
-				"Status":  Equal(corev1.ConditionFalse),
-				"Message": ContainSubstring("not allowed to reference"),
-			})))
-		})
-	})
-
-	When("a queue references a cluster from an allowed namespace", func() {
-		JustBeforeEach(func() {
-			queueName = "test-queue-allowed"
-			queue = topology.Queue{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      queueName,
-					Namespace: "allowed",
-				},
-				Spec: topology.QueueSpec{
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name:      "example-rabbit",
-						Namespace: "default",
-					},
-				},
-			}
-			fakeRabbitMQClient.DeclareQueueReturns(&http.Response{
-				Status:     "201 Created",
-				StatusCode: http.StatusCreated,
-			}, nil)
-		})
-		It("should be created", func() {
-			Expect(client.Create(ctx, &queue)).To(Succeed())
-			EventuallyWithOffset(1, func() []topology.Condition {
-				_ = client.Get(
-					ctx,
-					types.NamespacedName{Name: queue.Name, Namespace: queue.Namespace},
-					&queue,
-				)
-
-				return queue.Status.Conditions
-			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Type":   Equal(topology.ConditionType("Ready")),
-				"Reason": Equal("SuccessfulCreateOrUpdate"),
-				"Status": Equal(corev1.ConditionTrue),
-			})))
-		})
-	})
-
-	When("a queue references a cluster that allows all namespaces", func() {
-		JustBeforeEach(func() {
-			queueName = "test-queue-allowed-when-allow-all"
-			queue = topology.Queue{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      queueName,
-					Namespace: "prohibited",
-				},
-				Spec: topology.QueueSpec{
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name:      "allow-all-rabbit",
-						Namespace: "default",
-					},
-				},
-			}
-			fakeRabbitMQClient.DeclareQueueReturns(&http.Response{
-				Status:     "201 Created",
-				StatusCode: http.StatusCreated,
-			}, nil)
-		})
-		It("should be created", func() {
-			Expect(client.Create(ctx, &queue)).To(Succeed())
-			EventuallyWithOffset(1, func() []topology.Condition {
-				_ = client.Get(
-					ctx,
-					types.NamespacedName{Name: queue.Name, Namespace: queue.Namespace},
-					&queue,
-				)
-
-				return queue.Status.Conditions
-			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Type":   Equal(topology.ConditionType("Ready")),
-				"Reason": Equal("SuccessfulCreateOrUpdate"),
-				"Status": Equal(corev1.ConditionTrue),
-			})))
 		})
 	})
 })

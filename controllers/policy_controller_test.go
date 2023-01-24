@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -94,37 +93,6 @@ var _ = Describe("policy-controller", func() {
 				})))
 			})
 		})
-
-		When("success", func() {
-			BeforeEach(func() {
-				policyName = "test-create-success"
-				fakeRabbitMQClient.PutPolicyReturns(&http.Response{
-					Status:     "201 Created",
-					StatusCode: http.StatusCreated,
-				}, nil)
-			})
-
-			It("works", func() {
-				Expect(client.Create(ctx, &policy)).To(Succeed())
-				By("setting the correct finalizer")
-				Eventually(komega.Object(&policy)).WithTimeout(2 * time.Second).Should(HaveField("ObjectMeta.Finalizers", ConsistOf("deletion.finalizers.policies.rabbitmq.com")))
-
-				By("sets the status condition 'Ready' to 'true' ")
-				EventuallyWithOffset(1, func() []topology.Condition {
-					_ = client.Get(
-						ctx,
-						types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace},
-						&policy,
-					)
-
-					return policy.Status.Conditions
-				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(topology.ConditionType("Ready")),
-					"Reason": Equal("SuccessfulCreateOrUpdate"),
-					"Status": Equal(corev1.ConditionTrue),
-				})))
-			})
-		})
 	})
 
 	Context("deletion", func() {
@@ -183,148 +151,6 @@ var _ = Describe("policy-controller", func() {
 				}, statusEventsUpdateTimeout).Should(BeFalse())
 				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete policy"))
 			})
-		})
-
-		When("the RabbitMQ Client successfully deletes a policy", func() {
-			BeforeEach(func() {
-				policyName = "delete-policy-success"
-				fakeRabbitMQClient.DeletePolicyReturns(&http.Response{
-					Status:     "204 No Content",
-					StatusCode: http.StatusNoContent,
-				}, nil)
-			})
-
-			It("publishes a normal event", func() {
-				Expect(client.Delete(ctx, &policy)).To(Succeed())
-				Eventually(func() bool {
-					err := client.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &topology.Policy{})
-					return apierrors.IsNotFound(err)
-				}, statusEventsUpdateTimeout).Should(BeTrue())
-				Expect(observedEvents()).To(SatisfyAll(
-					Not(ContainElement("Warning FailedDelete failed to delete policy")),
-					ContainElement("Normal SuccessfulDelete successfully deleted policy"),
-				))
-			})
-		})
-	})
-
-	When("a policy references a cluster from a prohibited namespace", func() {
-		JustBeforeEach(func() {
-			policyName = "test-policy-prohibited"
-			policy = topology.Policy{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      policyName,
-					Namespace: "prohibited",
-				},
-				Spec: topology.PolicySpec{
-					Definition: &runtime.RawExtension{
-						Raw: []byte(`{"key":"value"}`),
-					},
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name:      "example-rabbit",
-						Namespace: "default",
-					},
-				},
-			}
-		})
-		It("should throw an error about a cluster being prohibited", func() {
-			Expect(client.Create(ctx, &policy)).To(Succeed())
-			EventuallyWithOffset(1, func() []topology.Condition {
-				_ = client.Get(
-					ctx,
-					types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace},
-					&policy,
-				)
-
-				return policy.Status.Conditions
-			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Type":    Equal(topology.ConditionType("Ready")),
-				"Reason":  Equal("FailedCreateOrUpdate"),
-				"Status":  Equal(corev1.ConditionFalse),
-				"Message": ContainSubstring("not allowed to reference"),
-			})))
-		})
-	})
-
-	When("a policy references a cluster from an allowed namespace", func() {
-		JustBeforeEach(func() {
-			policyName = "test-policy-allowed"
-			policy = topology.Policy{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      policyName,
-					Namespace: "allowed",
-				},
-				Spec: topology.PolicySpec{
-					Definition: &runtime.RawExtension{
-						Raw: []byte(`{"key":"value"}`),
-					},
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name:      "example-rabbit",
-						Namespace: "default",
-					},
-				},
-			}
-			fakeRabbitMQClient.PutPolicyReturns(&http.Response{
-				Status:     "201 Created",
-				StatusCode: http.StatusCreated,
-			}, nil)
-		})
-		It("should be created", func() {
-			Expect(client.Create(ctx, &policy)).To(Succeed())
-			EventuallyWithOffset(1, func() []topology.Condition {
-				_ = client.Get(
-					ctx,
-					types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace},
-					&policy,
-				)
-
-				return policy.Status.Conditions
-			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Type":   Equal(topology.ConditionType("Ready")),
-				"Reason": Equal("SuccessfulCreateOrUpdate"),
-				"Status": Equal(corev1.ConditionTrue),
-			})))
-		})
-	})
-
-	When("a policy references a cluster that allows all namespaces", func() {
-		JustBeforeEach(func() {
-			policyName = "test-policy-allowed-when-allow-all"
-			policy = topology.Policy{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      policyName,
-					Namespace: "prohibited",
-				},
-				Spec: topology.PolicySpec{
-					Definition: &runtime.RawExtension{
-						Raw: []byte(`{"key":"value"}`),
-					},
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name:      "allow-all-rabbit",
-						Namespace: "default",
-					},
-				},
-			}
-			fakeRabbitMQClient.PutPolicyReturns(&http.Response{
-				Status:     "201 Created",
-				StatusCode: http.StatusCreated,
-			}, nil)
-		})
-		It("should be created", func() {
-			Expect(client.Create(ctx, &policy)).To(Succeed())
-			EventuallyWithOffset(1, func() []topology.Condition {
-				_ = client.Get(
-					ctx,
-					types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace},
-					&policy,
-				)
-
-				return policy.Status.Conditions
-			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Type":   Equal(topology.ConditionType("Ready")),
-				"Reason": Equal("SuccessfulCreateOrUpdate"),
-				"Status": Equal(corev1.ConditionTrue),
-			})))
 		})
 	})
 })

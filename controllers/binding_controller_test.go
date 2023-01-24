@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -89,37 +88,6 @@ var _ = Describe("bindingController", func() {
 				})))
 			})
 		})
-
-		Context("success", func() {
-			BeforeEach(func() {
-				bindingName = "test-binding-success"
-				fakeRabbitMQClient.DeclareBindingReturns(&http.Response{
-					Status:     "201 Created",
-					StatusCode: http.StatusCreated,
-				}, nil)
-			})
-
-			It("works", func() {
-				Expect(client.Create(ctx, &binding)).To(Succeed())
-				By("setting the correct finalizer")
-				Eventually(komega.Object(&binding)).WithTimeout(2 * time.Second).Should(HaveField("ObjectMeta.Finalizers", ConsistOf("deletion.finalizers.bindings.rabbitmq.com")))
-
-				By("sets the status condition 'Ready' to 'true'")
-				EventuallyWithOffset(1, func() []topology.Condition {
-					_ = client.Get(
-						ctx,
-						types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace},
-						&binding,
-					)
-
-					return binding.Status.Conditions
-				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(topology.ConditionType("Ready")),
-					"Reason": Equal("SuccessfulCreateOrUpdate"),
-					"Status": Equal(corev1.ConditionTrue),
-				})))
-			})
-		})
 	})
 
 	When("Deleting a binding", func() {
@@ -178,139 +146,6 @@ var _ = Describe("bindingController", func() {
 				}, 5).Should(BeFalse())
 				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete binding"))
 			})
-		})
-
-		When("the RabbitMQ Client successfully deletes a binding", func() {
-			BeforeEach(func() {
-				bindingName = "delete-binding-success"
-				fakeRabbitMQClient.DeleteBindingReturns(&http.Response{
-					Status:     "204 No Content",
-					StatusCode: http.StatusNoContent,
-				}, nil)
-			})
-
-			It("raises an event to indicate a successful deletion", func() {
-				Expect(client.Delete(ctx, &binding)).To(Succeed())
-				Eventually(func() bool {
-					err := client.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &topology.Binding{})
-					return apierrors.IsNotFound(err)
-				}, 5).Should(BeTrue())
-				Expect(observedEvents()).To(SatisfyAll(
-					Not(ContainElement("Warning FailedDelete failed to delete binding")),
-					ContainElement("Normal SuccessfulDelete successfully deleted binding"),
-				))
-			})
-		})
-	})
-
-	When("a binding references a cluster from a prohibited namespace", func() {
-		JustBeforeEach(func() {
-			bindingName = "test-binding-prohibited"
-			binding = topology.Binding{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      bindingName,
-					Namespace: "prohibited",
-				},
-				Spec: topology.BindingSpec{
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name:      "example-rabbit",
-						Namespace: "default",
-					},
-				},
-			}
-		})
-		It("should throw an error about a cluster being prohibited", func() {
-			Expect(client.Create(ctx, &binding)).To(Succeed())
-			EventuallyWithOffset(1, func() []topology.Condition {
-				_ = client.Get(
-					ctx,
-					types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace},
-					&binding,
-				)
-
-				return binding.Status.Conditions
-			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Type":    Equal(topology.ConditionType("Ready")),
-				"Reason":  Equal("FailedCreateOrUpdate"),
-				"Status":  Equal(corev1.ConditionFalse),
-				"Message": ContainSubstring("not allowed to reference"),
-			})))
-		})
-	})
-
-	When("a binding references a cluster from an allowed namespace", func() {
-		JustBeforeEach(func() {
-			bindingName = "test-binding-allowed"
-			binding = topology.Binding{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      bindingName,
-					Namespace: "allowed",
-				},
-				Spec: topology.BindingSpec{
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name:      "example-rabbit",
-						Namespace: "default",
-					},
-				},
-			}
-			fakeRabbitMQClient.DeclareBindingReturns(&http.Response{
-				Status:     "201 Created",
-				StatusCode: http.StatusCreated,
-			}, nil)
-		})
-		It("should be created", func() {
-			Expect(client.Create(ctx, &binding)).To(Succeed())
-			EventuallyWithOffset(1, func() []topology.Condition {
-				_ = client.Get(
-					ctx,
-					types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace},
-					&binding,
-				)
-
-				return binding.Status.Conditions
-			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Type":   Equal(topology.ConditionType("Ready")),
-				"Reason": Equal("SuccessfulCreateOrUpdate"),
-				"Status": Equal(corev1.ConditionTrue),
-			})))
-		})
-	})
-
-	When("a binding references a cluster that allows all namespaces", func() {
-		JustBeforeEach(func() {
-			bindingName = "test-binding-allowed-when-allow-all"
-			binding = topology.Binding{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      bindingName,
-					Namespace: "prohibited",
-				},
-				Spec: topology.BindingSpec{
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name:      "allow-all-rabbit",
-						Namespace: "default",
-					},
-				},
-			}
-			fakeRabbitMQClient.DeclareBindingReturns(&http.Response{
-				Status:     "201 Created",
-				StatusCode: http.StatusCreated,
-			}, nil)
-		})
-		It("should be created", func() {
-			Expect(client.Create(ctx, &binding)).To(Succeed())
-			EventuallyWithOffset(1, func() []topology.Condition {
-				_ = client.Get(
-					ctx,
-					types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace},
-					&binding,
-				)
-
-				return binding.Status.Conditions
-			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Type":   Equal(topology.ConditionType("Ready")),
-				"Reason": Equal("SuccessfulCreateOrUpdate"),
-				"Status": Equal(corev1.ConditionTrue),
-			})))
 		})
 	})
 })

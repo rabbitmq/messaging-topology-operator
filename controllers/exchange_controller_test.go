@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -86,37 +85,6 @@ var _ = Describe("exchange-controller", func() {
 					"Reason":  Equal("FailedCreateOrUpdate"),
 					"Status":  Equal(corev1.ConditionFalse),
 					"Message": ContainSubstring("a go failure"),
-				})))
-			})
-		})
-
-		When("success", func() {
-			BeforeEach(func() {
-				exchangeName = "test-create-success"
-				fakeRabbitMQClient.DeclareExchangeReturns(&http.Response{
-					Status:     "201 Created",
-					StatusCode: http.StatusCreated,
-				}, nil)
-			})
-
-			It("works", func() {
-				Expect(client.Create(ctx, &exchange)).To(Succeed())
-				By("setting the correct finalizer")
-				Eventually(komega.Object(&exchange)).WithTimeout(2 * time.Second).Should(HaveField("ObjectMeta.Finalizers", ConsistOf("deletion.finalizers.exchanges.rabbitmq.com")))
-
-				By("sets the status condition 'Ready' to 'true'")
-				EventuallyWithOffset(1, func() []topology.Condition {
-					_ = client.Get(
-						ctx,
-						types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace},
-						&exchange,
-					)
-
-					return exchange.Status.Conditions
-				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(topology.ConditionType("Ready")),
-					"Reason": Equal("SuccessfulCreateOrUpdate"),
-					"Status": Equal(corev1.ConditionTrue),
 				})))
 			})
 		})
@@ -246,139 +214,6 @@ var _ = Describe("exchange-controller", func() {
 				}, statusEventsUpdateTimeout).Should(BeFalse())
 				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete exchange"))
 			})
-		})
-
-		When("the RabbitMQ Client successfully deletes a exchange", func() {
-			BeforeEach(func() {
-				exchangeName = "delete-exchange-success"
-				fakeRabbitMQClient.DeleteExchangeReturns(&http.Response{
-					Status:     "204 No Content",
-					StatusCode: http.StatusNoContent,
-				}, nil)
-			})
-
-			It("publishes a normal event", func() {
-				Expect(client.Delete(ctx, &exchange)).To(Succeed())
-				Eventually(func() bool {
-					err := client.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &topology.Exchange{})
-					return apierrors.IsNotFound(err)
-				}, statusEventsUpdateTimeout).Should(BeTrue())
-				Expect(observedEvents()).To(SatisfyAll(
-					Not(ContainElement("Warning FailedDelete failed to delete exchange")),
-					ContainElement("Normal SuccessfulDelete successfully deleted exchange"),
-				))
-			})
-		})
-	})
-
-	When("an exchange references a cluster from a prohibited namespace", func() {
-		JustBeforeEach(func() {
-			exchangeName = "test-exchange-prohibited"
-			exchange = topology.Exchange{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      exchangeName,
-					Namespace: "prohibited",
-				},
-				Spec: topology.ExchangeSpec{
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name:      "example-rabbit",
-						Namespace: "default",
-					},
-				},
-			}
-		})
-		It("should throw an error about a cluster being prohibited", func() {
-			Expect(client.Create(ctx, &exchange)).To(Succeed())
-			EventuallyWithOffset(1, func() []topology.Condition {
-				_ = client.Get(
-					ctx,
-					types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace},
-					&exchange,
-				)
-
-				return exchange.Status.Conditions
-			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Type":    Equal(topology.ConditionType("Ready")),
-				"Reason":  Equal("FailedCreateOrUpdate"),
-				"Status":  Equal(corev1.ConditionFalse),
-				"Message": ContainSubstring("not allowed to reference"),
-			})))
-		})
-	})
-
-	When("an exchange references a cluster from an allowed namespace", func() {
-		JustBeforeEach(func() {
-			exchangeName = "test-exchange-allowed"
-			exchange = topology.Exchange{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      exchangeName,
-					Namespace: "allowed",
-				},
-				Spec: topology.ExchangeSpec{
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name:      "example-rabbit",
-						Namespace: "default",
-					},
-				},
-			}
-			fakeRabbitMQClient.DeclareExchangeReturns(&http.Response{
-				Status:     "201 Created",
-				StatusCode: http.StatusCreated,
-			}, nil)
-		})
-		It("should be created", func() {
-			Expect(client.Create(ctx, &exchange)).To(Succeed())
-			EventuallyWithOffset(1, func() []topology.Condition {
-				_ = client.Get(
-					ctx,
-					types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace},
-					&exchange,
-				)
-
-				return exchange.Status.Conditions
-			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Type":   Equal(topology.ConditionType("Ready")),
-				"Reason": Equal("SuccessfulCreateOrUpdate"),
-				"Status": Equal(corev1.ConditionTrue),
-			})))
-		})
-	})
-
-	When("an exchange references a cluster that allows all namespaces", func() {
-		JustBeforeEach(func() {
-			exchangeName = "test-exchange-allowed-when-allow-all"
-			exchange = topology.Exchange{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      exchangeName,
-					Namespace: "prohibited",
-				},
-				Spec: topology.ExchangeSpec{
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name:      "allow-all-rabbit",
-						Namespace: "default",
-					},
-				},
-			}
-			fakeRabbitMQClient.DeclareExchangeReturns(&http.Response{
-				Status:     "201 Created",
-				StatusCode: http.StatusCreated,
-			}, nil)
-		})
-		It("should be created", func() {
-			Expect(client.Create(ctx, &exchange)).To(Succeed())
-			EventuallyWithOffset(1, func() []topology.Condition {
-				_ = client.Get(
-					ctx,
-					types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace},
-					&exchange,
-				)
-
-				return exchange.Status.Conditions
-			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Type":   Equal(topology.ConditionType("Ready")),
-				"Reason": Equal("SuccessfulCreateOrUpdate"),
-				"Status": Equal(corev1.ConditionTrue),
-			})))
 		})
 	})
 })

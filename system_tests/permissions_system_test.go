@@ -2,7 +2,6 @@ package system_tests
 
 import (
 	"context"
-
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -111,6 +110,9 @@ var _ = Describe("Permission", func() {
 		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))
 		Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
 		Expect(readyCondition.LastTransitionTime).NotTo(Equal(metav1.Time{}))
+
+		By("setting correct finalizer")
+		Expect(updatedPermission.ObjectMeta.Finalizers).To(ConsistOf("deletion.finalizers.permissions.rabbitmq.com"))
 
 		By("setting status.observedGeneration")
 		Expect(updatedPermission.Status.ObservedGeneration).To(Equal(updatedPermission.GetGeneration()))

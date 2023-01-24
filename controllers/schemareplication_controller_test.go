@@ -9,7 +9,6 @@ import (
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient/rabbitmqclientfakes"
 	"io/ioutil"
 	"net/http"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -96,37 +95,6 @@ var _ = Describe("schema-replication-controller", func() {
 				})))
 			})
 		})
-
-		Context("success", func() {
-			BeforeEach(func() {
-				replicationName = "test-replication-success"
-				fakeRabbitMQClient.PutGlobalParameterReturns(&http.Response{
-					Status:     "201 Created",
-					StatusCode: http.StatusCreated,
-				}, nil)
-			})
-
-			It("works", func() {
-				Expect(client.Create(ctx, &replication)).To(Succeed())
-				By("setting the correct finalizer")
-				Eventually(komega.Object(&replication)).WithTimeout(2 * time.Second).Should(HaveField("ObjectMeta.Finalizers", ConsistOf("deletion.finalizers.schemareplications.rabbitmq.com")))
-
-				By("sets the status condition 'Ready' to 'true'")
-				EventuallyWithOffset(1, func() []topology.Condition {
-					_ = client.Get(
-						ctx,
-						types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace},
-						&replication,
-					)
-
-					return replication.Status.Conditions
-				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(topology.ConditionType("Ready")),
-					"Reason": Equal("SuccessfulCreateOrUpdate"),
-					"Status": Equal(corev1.ConditionTrue),
-				})))
-			})
-		})
 	})
 
 	When("deletion", func() {
@@ -185,148 +153,6 @@ var _ = Describe("schema-replication-controller", func() {
 				}, statusEventsUpdateTimeout).Should(BeFalse())
 				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete schemareplication"))
 			})
-		})
-
-		Context("success", func() {
-			BeforeEach(func() {
-				replicationName = "delete-replication-success"
-				fakeRabbitMQClient.DeleteGlobalParameterReturns(&http.Response{
-					Status:     "204 No Content",
-					StatusCode: http.StatusNoContent,
-				}, nil)
-			})
-
-			It("publishes a normal event", func() {
-				Expect(client.Delete(ctx, &replication)).To(Succeed())
-				Eventually(func() bool {
-					err := client.Get(ctx, types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace}, &topology.SchemaReplication{})
-					return apierrors.IsNotFound(err)
-				}, statusEventsUpdateTimeout).Should(BeTrue())
-				Expect(observedEvents()).To(SatisfyAll(
-					Not(ContainElement("Warning FailedDelete failed to deleted schemareplication")),
-					ContainElement("Normal SuccessfulDelete successfully deleted schemareplication"),
-				))
-			})
-		})
-	})
-
-	When("a schema replication references a cluster from a prohibited namespace", func() {
-		JustBeforeEach(func() {
-			replicationName = "test-replication-prohibited"
-			replication = topology.SchemaReplication{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      replicationName,
-					Namespace: "prohibited",
-				},
-				Spec: topology.SchemaReplicationSpec{
-					UpstreamSecret: &corev1.LocalObjectReference{
-						Name: "endpoints-secret", // created in 'BeforeSuite'
-					},
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name:      "example-rabbit",
-						Namespace: "default",
-					},
-				},
-			}
-		})
-		It("should throw an error about a cluster being prohibited", func() {
-			Expect(client.Create(ctx, &replication)).To(Succeed())
-			EventuallyWithOffset(1, func() []topology.Condition {
-				_ = client.Get(
-					ctx,
-					types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace},
-					&replication,
-				)
-
-				return replication.Status.Conditions
-			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Type":    Equal(topology.ConditionType("Ready")),
-				"Reason":  Equal("FailedCreateOrUpdate"),
-				"Status":  Equal(corev1.ConditionFalse),
-				"Message": ContainSubstring("not allowed to reference"),
-			})))
-		})
-	})
-
-	When("a schema replication references a cluster from an allowed namespace", func() {
-		JustBeforeEach(func() {
-			replicationName = "test-replication-allowed"
-			replication = topology.SchemaReplication{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      replicationName,
-					Namespace: "allowed",
-				},
-				Spec: topology.SchemaReplicationSpec{
-					UpstreamSecret: &corev1.LocalObjectReference{
-						Name: "endpoints-secret",
-					},
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name:      "example-rabbit",
-						Namespace: "default",
-					},
-				},
-			}
-			fakeRabbitMQClient.PutGlobalParameterReturns(&http.Response{
-				Status:     "201 Created",
-				StatusCode: http.StatusCreated,
-			}, nil)
-		})
-		It("should be created", func() {
-			Expect(client.Create(ctx, &replication)).To(Succeed())
-			EventuallyWithOffset(1, func() []topology.Condition {
-				_ = client.Get(
-					ctx,
-					types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace},
-					&replication,
-				)
-
-				return replication.Status.Conditions
-			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Type":   Equal(topology.ConditionType("Ready")),
-				"Reason": Equal("SuccessfulCreateOrUpdate"),
-				"Status": Equal(corev1.ConditionTrue),
-			})))
-		})
-	})
-
-	When("a schema replication references a cluster that allows all namespaces", func() {
-		JustBeforeEach(func() {
-			replicationName = "test-replication-allowed-when-allow-all"
-			replication = topology.SchemaReplication{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      replicationName,
-					Namespace: "prohibited",
-				},
-				Spec: topology.SchemaReplicationSpec{
-					UpstreamSecret: &corev1.LocalObjectReference{
-						Name: "endpoints-secret",
-					},
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name:      "allow-all-rabbit",
-						Namespace: "default",
-					},
-				},
-			}
-			fakeRabbitMQClient.PutGlobalParameterReturns(&http.Response{
-				Status:     "201 Created",
-				StatusCode: http.StatusCreated,
-			}, nil)
-		})
-		It("should be created", func() {
-			Expect(client.Create(ctx, &replication)).To(Succeed())
-			EventuallyWithOffset(1, func() []topology.Condition {
-				_ = client.Get(
-					ctx,
-					types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace},
-					&replication,
-				)
-
-				return replication.Status.Conditions
-			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Type":   Equal(topology.ConditionType("Ready")),
-				"Reason": Equal("SuccessfulCreateOrUpdate"),
-				"Status": Equal(corev1.ConditionTrue),
-			})))
 		})
 	})
 

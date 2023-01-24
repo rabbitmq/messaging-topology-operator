@@ -3,7 +3,6 @@ package rabbitmqclient_test
 import (
 	"context"
 	"fmt"
-
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient/rabbitmqclientfakes"
 
@@ -533,6 +532,142 @@ var _ = Describe("ParseReference", func() {
 				Expect(uri).To(Equal(fmt.Sprintf("http://bunny.%s.svc:15672", namespace)))
 			})
 		})
+	})
+
+	Context("namespace permissions", func() {
+		BeforeEach(func() {
+			existingRabbitMQCluster = &rabbitmqv1beta1.RabbitmqCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rmq",
+					Namespace: namespace,
+				},
+				Status: rabbitmqv1beta1.RabbitmqClusterStatus{
+					Binding: &corev1.LocalObjectReference{
+						Name: "rmq-default-user-credentials",
+					},
+					DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
+						ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
+							Name:      "rmq",
+							Namespace: namespace,
+						},
+					},
+				},
+			}
+			existingCredentialSecret = &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rmq-default-user-credentials",
+					Namespace: namespace,
+				},
+				Data: map[string][]byte{
+					"username": []byte(existingRabbitMQUsername),
+					"password": []byte(existingRabbitMQPassword),
+				},
+			}
+			existingService = &corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rmq",
+					Namespace: namespace,
+				},
+				Spec: corev1.ServiceSpec{
+					ClusterIP: "1.2.3.4",
+					Ports: []corev1.ServicePort{
+						{
+							Name: "management",
+							Port: int32(15672),
+						},
+					},
+				},
+			}
+		})
+
+		When("requested namespace is prohibited", func() {
+			BeforeEach(func() {
+				existingRabbitMQCluster.ObjectMeta.Annotations = map[string]string{}
+				objs = []runtime.Object{existingRabbitMQCluster, existingCredentialSecret, existingService}
+			})
+			It("should return an error about a cluster being prohibited", func() {
+				_, _, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+					topology.RabbitmqClusterReference{
+						Name:      existingRabbitMQCluster.Name,
+						Namespace: existingRabbitMQCluster.Namespace,
+					},
+					"prohibited-namespace",
+					"")
+				Expect(err).To(MatchError(rabbitmqclient.ResourceNotAllowedError))
+			})
+		})
+
+		When("there is a list of allowed namespaces", func() {
+			BeforeEach(func() {
+				existingRabbitMQCluster.ObjectMeta.Annotations = map[string]string{
+					"rabbitmq.com/topology-allowed-namespaces": "allowed1,allowed2",
+				}
+				objs = []runtime.Object{existingRabbitMQCluster, existingCredentialSecret, existingService}
+			})
+			When("requested namespace is allowed", func() {
+				It("works", func() {
+					_, _, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+						topology.RabbitmqClusterReference{
+							Name:      existingRabbitMQCluster.Name,
+							Namespace: existingRabbitMQCluster.Namespace,
+						},
+						"allowed1",
+						"")
+					Expect(err).NotTo(HaveOccurred())
+
+					_, _, err = rabbitmqclient.ParseReference(ctx, fakeClient,
+						topology.RabbitmqClusterReference{
+							Name:      existingRabbitMQCluster.Name,
+							Namespace: existingRabbitMQCluster.Namespace,
+						},
+						"allowed2",
+						"")
+					Expect(err).NotTo(HaveOccurred())
+				})
+			})
+			When("requested namespace is not allowed", func() {
+				It("returns error", func() {
+					_, _, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+						topology.RabbitmqClusterReference{
+							Name:      existingRabbitMQCluster.Name,
+							Namespace: existingRabbitMQCluster.Namespace,
+						},
+						"allowed3",
+						"")
+					Expect(err).To(MatchError(rabbitmqclient.ResourceNotAllowedError))
+				})
+			})
+		})
+
+		When("all namespaces are allowed", func() {
+			BeforeEach(func() {
+				existingRabbitMQCluster.ObjectMeta.Annotations = map[string]string{
+					"rabbitmq.com/topology-allowed-namespaces": "*",
+				}
+				objs = []runtime.Object{existingRabbitMQCluster, existingCredentialSecret, existingService}
+			})
+
+			It("works with any namespace", func() {
+				_, _, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+					topology.RabbitmqClusterReference{
+						Name:      existingRabbitMQCluster.Name,
+						Namespace: existingRabbitMQCluster.Namespace,
+					},
+					"any-namespace-will-be-fine",
+					"")
+				Expect(err).NotTo(HaveOccurred())
+
+				_, _, err = rabbitmqclient.ParseReference(ctx, fakeClient,
+					topology.RabbitmqClusterReference{
+						Name:      existingRabbitMQCluster.Name,
+						Namespace: existingRabbitMQCluster.Namespace,
+					},
+					"another-namespace",
+					"")
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
 	})
 })
 

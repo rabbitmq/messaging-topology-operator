@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -89,37 +88,6 @@ var _ = Describe("vhost-controller", func() {
 				})))
 			})
 		})
-
-		When("success", func() {
-			BeforeEach(func() {
-				vhostName = "test-create-success"
-				fakeRabbitMQClient.PutVhostReturns(&http.Response{
-					Status:     "201 Created",
-					StatusCode: http.StatusCreated,
-				}, nil)
-			})
-
-			It("works", func() {
-				Expect(client.Create(ctx, &vhost)).To(Succeed())
-				By("setting the correct finalizer")
-				Eventually(komega.Object(&vhost)).WithTimeout(2 * time.Second).Should(HaveField("ObjectMeta.Finalizers", ConsistOf("deletion.finalizers.vhosts.rabbitmq.com")))
-
-				By("sets the status condition 'Ready' to 'true'")
-				EventuallyWithOffset(1, func() []topology.Condition {
-					_ = client.Get(
-						ctx,
-						types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace},
-						&vhost,
-					)
-
-					return vhost.Status.Conditions
-				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(topology.ConditionType("Ready")),
-					"Reason": Equal("SuccessfulCreateOrUpdate"),
-					"Status": Equal(corev1.ConditionTrue),
-				})))
-			})
-		})
 	})
 
 	Context("deletion", func() {
@@ -178,139 +146,6 @@ var _ = Describe("vhost-controller", func() {
 				}, statusEventsUpdateTimeout).Should(BeFalse())
 				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete vhost"))
 			})
-		})
-
-		When("the RabbitMQ Client successfully deletes a vhost", func() {
-			BeforeEach(func() {
-				vhostName = "delete-vhost-success"
-				fakeRabbitMQClient.DeleteVhostReturns(&http.Response{
-					Status:     "204 No Content",
-					StatusCode: http.StatusNoContent,
-				}, nil)
-			})
-
-			It("publishes a normal event", func() {
-				Expect(client.Delete(ctx, &vhost)).To(Succeed())
-				Eventually(func() bool {
-					err := client.Get(ctx, types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace}, &topology.Vhost{})
-					return apierrors.IsNotFound(err)
-				}, statusEventsUpdateTimeout).Should(BeTrue())
-				Expect(observedEvents()).To(SatisfyAll(
-					Not(ContainElement("Warning FailedDelete failed to delete vhost")),
-					ContainElement("Normal SuccessfulDelete successfully deleted vhost"),
-				))
-			})
-		})
-	})
-
-	When("a vhost references a cluster from a prohibited namespace", func() {
-		JustBeforeEach(func() {
-			vhostName = "test-vhost-prohibited"
-			vhost = topology.Vhost{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      vhostName,
-					Namespace: "prohibited",
-				},
-				Spec: topology.VhostSpec{
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name:      "example-rabbit",
-						Namespace: "default",
-					},
-				},
-			}
-		})
-		It("should throw an error about a cluster being prohibited", func() {
-			Expect(client.Create(ctx, &vhost)).To(Succeed())
-			EventuallyWithOffset(1, func() []topology.Condition {
-				_ = client.Get(
-					ctx,
-					types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace},
-					&vhost,
-				)
-
-				return vhost.Status.Conditions
-			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Type":    Equal(topology.ConditionType("Ready")),
-				"Reason":  Equal("FailedCreateOrUpdate"),
-				"Status":  Equal(corev1.ConditionFalse),
-				"Message": ContainSubstring("not allowed to reference"),
-			})))
-		})
-	})
-
-	When("a vhost references a cluster from an allowed namespace", func() {
-		JustBeforeEach(func() {
-			vhostName = "test-vhost-allowed"
-			vhost = topology.Vhost{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      vhostName,
-					Namespace: "allowed",
-				},
-				Spec: topology.VhostSpec{
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name:      "example-rabbit",
-						Namespace: "default",
-					},
-				},
-			}
-			fakeRabbitMQClient.PutVhostReturns(&http.Response{
-				Status:     "201 Created",
-				StatusCode: http.StatusCreated,
-			}, nil)
-		})
-		It("should be created", func() {
-			Expect(client.Create(ctx, &vhost)).To(Succeed())
-			EventuallyWithOffset(1, func() []topology.Condition {
-				_ = client.Get(
-					ctx,
-					types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace},
-					&vhost,
-				)
-
-				return vhost.Status.Conditions
-			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Type":   Equal(topology.ConditionType("Ready")),
-				"Reason": Equal("SuccessfulCreateOrUpdate"),
-				"Status": Equal(corev1.ConditionTrue),
-			})))
-		})
-	})
-
-	When("a vhost references a cluster that allows all namespaces", func() {
-		JustBeforeEach(func() {
-			vhostName = "test-vhost-allowed-when-allow-all"
-			vhost = topology.Vhost{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      vhostName,
-					Namespace: "prohibited",
-				},
-				Spec: topology.VhostSpec{
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name:      "allow-all-rabbit",
-						Namespace: "default",
-					},
-				},
-			}
-			fakeRabbitMQClient.PutVhostReturns(&http.Response{
-				Status:     "201 Created",
-				StatusCode: http.StatusCreated,
-			}, nil)
-		})
-		It("should be created", func() {
-			Expect(client.Create(ctx, &vhost)).To(Succeed())
-			EventuallyWithOffset(1, func() []topology.Condition {
-				_ = client.Get(
-					ctx,
-					types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace},
-					&vhost,
-				)
-
-				return vhost.Status.Conditions
-			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-				"Type":   Equal(topology.ConditionType("Ready")),
-				"Reason": Equal("SuccessfulCreateOrUpdate"),
-				"Status": Equal(corev1.ConditionTrue),
-			})))
 		})
 	})
 })
