@@ -24,7 +24,7 @@ require (
 	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448
 	sigs.k8s.io/controller-runtime v0.14.2
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20220217024943-cfd92767d28e
-	sigs.k8s.io/controller-tools v0.11.1
+	sigs.k8s.io/controller-tools v0.11.2
 	sigs.k8s.io/kustomize/kustomize/v4 v4.5.7
 )
 
