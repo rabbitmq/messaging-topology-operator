@@ -7,7 +7,7 @@ require (
 	github.com/elastic/crd-ref-docs v0.0.8
 	github.com/go-logr/logr v1.2.3
 	github.com/google/uuid v1.3.0
-	github.com/hashicorp/vault/api v1.8.2
+	github.com/hashicorp/vault/api v1.8.3
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.5.0
 	github.com/michaelklishin/rabbit-hole/v2 v2.12.0
 	github.com/onsi/ginkgo/v2 v2.7.0
@@ -104,7 +104,7 @@ require (
 	github.com/hashicorp/go-version v1.2.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/hashicorp/vault/sdk v0.6.0 // indirect
+	github.com/hashicorp/vault/sdk v0.7.0 // indirect
 	github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb // indirect
 	github.com/huandu/xstrings v1.2.1 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
