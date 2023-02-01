@@ -1,16 +1,21 @@
-name: PR
-
 on:
+  push:
+    branches: [ "main", "github-actions" ]
+    paths-ignore:
+    - 'docs/**'
+    - '*.md'
+    - 'LICENSE.txt'
+    - 'PROJECT'
+    - 'hack/**'
   pull_request:
-    branches: [ main ]
+    branches: [ "main" ]
 
 env:
-  GO_VERSION: '^1.19' # Require Go 1.19 and above, but lower than Go 2.0.0
+  GO_VERSION: ~1.19 # Require Go 1.19 and above, but lower than Go 2.0.0
 
 jobs:
-
-  unit_tests:
-    name: unit tests
+  unit_integration_tests:
+    name: unit and integration tests
     runs-on: ubuntu-latest
     container: us.gcr.io/cf-rabbitmq-for-k8s-bunny/rabbitmq-for-kubernetes-ci
     steps:
@@ -26,9 +31,10 @@ jobs:
     - name: Integration tests
       run: make integration-tests
 
-  system_tests:
-    name: system tests
+  system_tests_kind:
+    name: System tests using KinD
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
     strategy:
       matrix:
         k8s: [v1.22.9, v1.24.1]
