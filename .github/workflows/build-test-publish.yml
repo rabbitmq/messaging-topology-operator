@@ -78,6 +78,43 @@ jobs:
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
+    - name: Build manifest
+      if: github.event_name != 'pull_request'
+      env:
+        RELEASE_VERSION: ${{ steps.meta.outputs.version }}
+      run: |
+        make install-tools
+        pushd config/installation
+        kustomize edit set image \
+        rabbitmqoperator/messaging-topology-operator-dev=rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}"
+        popd
+        pushd config/installation/cert-manager
+        kustomize edit set image \
+        rabbitmqoperator/messaging-topology-operator-dev=rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}"
+        popd
+        make generate-manifests
+    - name: Upload operator manifests
+      if: github.event_name != 'pull_request'
+      uses: actions/upload-artifact@v3
+      with:
+        name: operator-manifests
+        path: releases/messaging-topology-operator*.yaml
+        retention-days: 2
+        if-no-files-found: error
+    - name: Rename manifest for GCS
+      if: github.event_name != 'pull_request'
+      run: mv releases/messaging-topology-operator-with-certmanager.yaml messaging-topology-operator-with-certmanager-${{ steps.meta.outputs.version }}.yaml
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v1'
+      with:
+        workload_identity_provider: ${{ secrets.GCP_IDENTITY_PROVIDER }}
+        service_account: ${{ secrets.GCP_SA }}
+    - name: Upload manifests to GCS
+      if: github.event_name != 'pull_request'
+      uses: 'google-github-actions/upload-cloud-storage@v1'
+      with:
+        path: messaging-topology-operator-with-certmanager-${{ steps.meta.outputs.version }}.yaml
+        destination: operator-manifests-dev
 
   system_tests_kind:
     name: System tests using KinD
