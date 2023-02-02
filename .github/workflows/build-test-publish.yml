@@ -1,5 +1,6 @@
 on:
   push:
+    # branch 'github-actions' is added for fast feedback; will delete after migration work is done
     branches: [ "main", "github-actions" ]
     paths-ignore:
     - 'docs/**'
@@ -34,6 +35,7 @@ jobs:
   build_operator:
     runs-on: ubuntu-latest
     needs: unit_integration_tests
+    # we test on kinD only for PRs, no need to build/push an image
     if: ${{ github.event_name != 'pull_request' }}
     permissions:
       contents: 'write'
@@ -69,6 +71,8 @@ jobs:
       if: github.event_name != 'pull_request'
       uses: docker/login-action@v2
       with:
+        # github action secrets are saved in the repo
+        # see documentation on how to manage and access secrets: https://docs.github.com/en/actions/security-guides/encrypted-secrets
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
     - name: Build and push
@@ -104,6 +108,9 @@ jobs:
     - id: 'auth'
       uses: 'google-github-actions/auth@v1'
       with:
+        # using workload identity provider to authenticate with GCP
+        # workload identity provider configurations can be viewed in GCP console and gcloud cli
+        # doc: https://cloud.google.com/blog/products/identity-security/enabling-keyless-authentication-from-github-actions
         workload_identity_provider: ${{ secrets.GCP_IDENTITY_PROVIDER }}
         service_account: ${{ secrets.GCP_SA }}
     - name: Upload manifests to GCS
@@ -176,7 +183,7 @@ jobs:
     - name: Install operator from build
       run: |
         make destroy
-        kubectl apply -f messaging-topology-operator-with-certmanager.yml
+        kubectl apply -f messaging-topology-operator-with-certmanager.yaml
         kubectl --namespace=rabbitmq-system wait --for=condition=Available deployment/messaging-topology-operator
     - name: System tests
       run: |
