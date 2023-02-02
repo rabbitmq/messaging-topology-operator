@@ -34,6 +34,7 @@ jobs:
   build_operator:
     runs-on: ubuntu-latest
     needs: unit_integration_tests
+    if: ${{ github.event_name != 'pull_request' }}
     permissions:
       contents: 'write'
       id-token: 'write'
@@ -75,11 +76,9 @@ jobs:
       with:
         context: .
         platforms: linux/amd64, linux/arm64
-        push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
     - name: Build manifest
-      if: github.event_name != 'pull_request'
       env:
         RELEASE_VERSION: ${{ steps.meta.outputs.version }}
       run: |
@@ -94,7 +93,6 @@ jobs:
         popd
         make generate-manifests
     - name: Upload operator manifests
-      if: github.event_name != 'pull_request'
       uses: actions/upload-artifact@v3
       with:
         name: operator-manifests
@@ -102,7 +100,6 @@ jobs:
         retention-days: 2
         if-no-files-found: error
     - name: Rename manifest for GCS
-      if: github.event_name != 'pull_request'
       run: mv releases/messaging-topology-operator-with-certmanager.yaml messaging-topology-operator-with-certmanager-${{ steps.meta.outputs.version }}.yaml
     - id: 'auth'
       uses: 'google-github-actions/auth@v1'
@@ -110,7 +107,6 @@ jobs:
         workload_identity_provider: ${{ secrets.GCP_IDENTITY_PROVIDER }}
         service_account: ${{ secrets.GCP_SA }}
     - name: Upload manifests to GCS
-      if: github.event_name != 'pull_request'
       uses: 'google-github-actions/upload-cloud-storage@v1'
       with:
         path: messaging-topology-operator-with-certmanager-${{ steps.meta.outputs.version }}.yaml
