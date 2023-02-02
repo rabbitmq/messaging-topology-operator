@@ -19,12 +19,12 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
 
-  
+
       # Initialize environment and install Carvel toolsuite
       - uses: actions/checkout@v2
       - name: Initialize
         run: |
-          RELEASE_VERSION=${GITHUB_REF#refs/*/} 
+          RELEASE_VERSION=${GITHUB_REF#refs/*/}
           echo "RELEASE_VERSION=${RELEASE_VERSION:1}" >> $GITHUB_ENV
           git config --global user.name "DanielePalaia"
           git config --global user.email "dpalaia@vmware.com"
@@ -42,7 +42,7 @@ jobs:
           cp ./generators/cluster-service-version-generator-openshift.yml ./generators/cluster-service-version-generator.yml
           cp ./generators/annotations-openshift.yaml ./generators/annotations.yaml
           python3 generate-olm-package.py ./manifests_crds/messaging-topology-operator-with-certmanager.yaml ${{ env.RELEASE_VERSION }} ./../../OLM2/rabbitmq-messaging-topology-operator-openshift
-        
+
       # Create the PR to OperatorHUB
       - name: CreateOperatorHubPR
         env:
