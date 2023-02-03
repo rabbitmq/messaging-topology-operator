@@ -8,8 +8,6 @@ on:
     - 'LICENSE.txt'
     - 'PROJECT'
     - 'hack/**'
-  pull_request:
-    branches: [ "main" ]
 
 env:
   GO_VERSION: ~1.19 # Require Go 1.19 and above, but lower than Go 2.0.0
@@ -35,8 +33,6 @@ jobs:
   build_operator:
     runs-on: ubuntu-latest
     needs: unit_integration_tests
-    # we test on kinD only for PRs, no need to build/push an image
-    if: ${{ github.event_name != 'pull_request' }}
     permissions:
       contents: 'write'
       id-token: 'write'
@@ -79,6 +75,7 @@ jobs:
       uses: docker/build-push-action@v3
       with:
         context: .
+        push: true
         platforms: linux/amd64, linux/arm64
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
@@ -119,37 +116,10 @@ jobs:
         path: messaging-topology-operator-with-certmanager-${{ steps.meta.outputs.version }}.yaml
         destination: operator-manifests-dev
 
-  system_tests_kind:
-    name: System tests using KinD
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' }}
-    strategy:
-      matrix:
-        k8s: [v1.22.9, v1.24.1]
-    steps:
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
-    - uses: actions/setup-go@v3
-      with:
-        go-version: ${{ env.GO_VERSION }}
-        check-latest: true
-    - name: System tests
-      env:
-        K8S_VERSION: ${{ matrix.k8s }}
-      run: |
-        export GOPATH="$HOME/go"
-        export PATH="$PATH:$GOPATH/bin"
-        make install-tools cmctl
-        kind create cluster --image kindest/node:"$K8S_VERSION"
-        make cert-manager cluster-operator
-        DOCKER_REGISTRY_SERVER=local-server OPERATOR_IMAGE=local-operator make deploy-kind BUILD_KIT=docker
-        make system-tests BUILD_KIT=docker
-
   system_tests_gke:
     name: System tests using gke
     runs-on: ubuntu-latest
     container: us.gcr.io/cf-rabbitmq-for-k8s-bunny/rabbitmq-for-kubernetes-ci
-    if: ${{ github.event_name != 'pull_request' }}
     permissions:
       contents: 'write'
       id-token: 'write'
