@@ -51,9 +51,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@v4
       with:
-        # list of Docker images to use as base name for tags
-        images: |
-          rabbitmqoperator/messaging-topology-operator
+        images: rabbitmqoperator/messaging-topology-operator
         # generate Docker tags based on the following events/attributes
         tags: |
           type=edge
@@ -71,7 +69,8 @@ jobs:
       uses: docker/login-action@v2
       with:
         # github action secrets are saved in the repo
-        # see documentation on how to manage and access secrets: https://docs.github.com/en/actions/security-guides/encrypted-secrets
+        # see github documentation on how to manage and access action secrets
+        # https://docs.github.com/en/actions/security-guides/encrypted-secrets
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
     - name: Build and push
