@@ -10,6 +10,7 @@ on:
     - 'LICENSE.txt'
     - 'PROJECT'
     - 'hack/**'
+    tags: [ "v*" ]
 
 env:
   GO_VERSION: ~1.19 # Require Go 1.19 and above, but lower than Go 2.0.0
@@ -160,3 +161,33 @@ jobs:
     - name: System tests
       run: |
         make system-tests
+
+  release:
+    name: Release to GitHub Releases
+    runs-on: ubuntu-latest
+    # triggered by git tags, not pushes
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: system_tests_gke
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Get operator manifest
+      uses: actions/download-artifact@v3
+      with:
+        name: operator-manifests
+    - name: Get release header
+      uses: actions/download-artifact@v3
+      with:
+        name: release-header
+    - name: Release
+      uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          messaging-topology-operator.yml
+          messaging-topology-operator-with-certmanager.yml
+        generate_release_notes: true
+        draft: true
+        body_path: release-header.md
+        fail_on_unmatched_files: true
+
