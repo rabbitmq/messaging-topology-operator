@@ -2,8 +2,7 @@ name: Build, Test, Publish Image & Manifest
 
 on:
   push:
-    # branch 'github-actions' is added for fast feedback; will delete after migration work is done
-    branches: [ "main", "github-actions" ]
+    branches: [ "main"]
     paths-ignore:
     - 'docs/**'
     - '*.md'
