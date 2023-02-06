@@ -56,6 +56,11 @@ If your RabbitmqCluster is deployed with import definitions or provided default 
 the default user secret from `rabbitmqcluster.status.binding` may not be correct and Messaging Topology Operator will fail with authentication error.
 If your RabbitmqCluster is configured to serve management traffic over TLS, you may need to configure the Messaging Topology Operator to trust the CA that signed the server's certificates. For more information, see [this doc](https://www.rabbitmq.com/kubernetes/operator/tls-topology-operator.html).
 
+## Releasing
+
+To release a new version of the Messaging Topology Operator, create a versioned tag (e.g. `v1.2.3`) of the repo, and the release pipeline will
+generate a new draft release, alongside release artefacts.
+
 ## Contributing
 
 This project follows the typical GitHub pull request model. Before starting any work, please either comment on an [existing issue](https://github.com/rabbitmq/messaging-topology-operator/issues), or file a new one.
