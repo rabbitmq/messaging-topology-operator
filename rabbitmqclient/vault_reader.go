@@ -273,8 +273,8 @@ func manageTokenLifecycle(client *vault.Client, token *vault.Secret) error {
 			return nil
 
 		// Successfully completed renewal
-		case renewal := <-watcher.RenewCh():
-			logger.Info("Successfully renewed Vault token", "renewal info", renewal)
+		case <-watcher.RenewCh():
+			logger.Info("Successfully renewed Vault token")
 		}
 	}
 }
