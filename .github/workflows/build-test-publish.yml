@@ -1,0 +1,192 @@
+name: Build, Test, Publish Image & Manifest
+
+on:
+  push:
+    # branch 'github-actions' is added for fast feedback; will delete after migration work is done
+    branches: [ "main", "github-actions" ]
+    paths-ignore:
+    - 'docs/**'
+    - '*.md'
+    - 'LICENSE.txt'
+    - 'PROJECT'
+    - 'hack/**'
+    tags: [ "v*" ]
+
+env:
+  GO_VERSION: ~1.19 # Require Go 1.19 and above, but lower than Go 2.0.0
+
+jobs:
+  unit_integration_tests:
+    name: unit and integration tests
+    runs-on: ubuntu-latest
+    container: us.gcr.io/cf-rabbitmq-for-k8s-bunny/rabbitmq-for-kubernetes-ci
+    steps:
+    - name: Install Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        check-latest: true
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3
+    - name: Unit tests
+      run: make unit-tests
+    - name: Integration tests
+      run: make integration-tests
+
+  build_operator:
+    runs-on: ubuntu-latest
+    needs: unit_integration_tests
+    permissions:
+      contents: 'write'
+      id-token: 'write'
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Install Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        check-latest: true
+    - name: OCI Metadata
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+        images: rabbitmqoperator/messaging-topology-operator
+        # generate Docker tags based on the following events/attributes
+        tags: |
+          type=edge
+          type=sha
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    - name: Login to Docker Hub
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v2
+      with:
+        # github action secrets are saved in the repo
+        # see github documentation on how to manage and access action secrets
+        # https://docs.github.com/en/actions/security-guides/encrypted-secrets
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    - name: Build and push
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        push: true
+        platforms: linux/amd64, linux/arm64
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+    - name: Build manifest
+      env:
+        RELEASE_VERSION: ${{ steps.meta.outputs.version }}
+      run: |
+        make install-tools
+        pushd config/installation
+        kustomize edit set image \
+        rabbitmqoperator/messaging-topology-operator-dev=rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}"
+        popd
+        pushd config/installation/cert-manager
+        kustomize edit set image \
+        rabbitmqoperator/messaging-topology-operator-dev=rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}"
+        popd
+        make generate-manifests
+    - name: Upload operator manifests
+      uses: actions/upload-artifact@v3
+      with:
+        name: operator-manifests
+        path: releases/messaging-topology-operator*.yaml
+        retention-days: 2
+        if-no-files-found: error
+    - name: Rename manifest for GCS
+      run: mv releases/messaging-topology-operator-with-certmanager.yaml messaging-topology-operator-with-certmanager-${{ steps.meta.outputs.version }}.yaml
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v1'
+      with:
+        # using workload identity provider to authenticate with GCP
+        # workload identity provider configurations can be viewed in GCP console and gcloud cli
+        # doc: https://cloud.google.com/blog/products/identity-security/enabling-keyless-authentication-from-github-actions
+        workload_identity_provider: ${{ secrets.GCP_IDENTITY_PROVIDER }}
+        service_account: ${{ secrets.GCP_SA }}
+    - name: Upload manifests to GCS
+      uses: 'google-github-actions/upload-cloud-storage@v1'
+      with:
+        path: messaging-topology-operator-with-certmanager-${{ steps.meta.outputs.version }}.yaml
+        destination: operator-manifests-dev
+
+  system_tests_gke:
+    name: System tests using gke
+    runs-on: ubuntu-latest
+    container: us.gcr.io/cf-rabbitmq-for-k8s-bunny/rabbitmq-for-kubernetes-ci
+    permissions:
+      contents: 'write'
+      id-token: 'write'
+    needs: build_operator
+    steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3
+    - uses: actions/setup-go@v3
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        check-latest: true
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v1'
+      with:
+        workload_identity_provider: ${{ secrets.GCP_IDENTITY_PROVIDER }}
+        service_account: ${{ secrets.GCP_SA }}
+    - id: 'get-credentials'
+      uses: 'google-github-actions/get-gke-credentials@v1'
+      with:
+        cluster_name: messaging-topology-operator-ci
+        location: europe-west2-a
+    - name: Get operator manifest
+      uses: actions/download-artifact@v3
+      with:
+        name: operator-manifests
+    - name: Install cert-manager and cluster operator
+      run: |
+        make install-tools
+        make cert-manager
+        make cluster-operator
+    - name: Install operator from build
+      run: |
+        make destroy
+        kubectl apply -f messaging-topology-operator-with-certmanager.yaml
+        kubectl --namespace=rabbitmq-system wait --for=condition=Available deployment/messaging-topology-operator
+    - name: System tests
+      run: |
+        make system-tests
+
+  release:
+    name: Release to GitHub Releases
+    runs-on: ubuntu-latest
+    # triggered by git tags, not pushes
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: system_tests_gke
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Get operator manifest
+      uses: actions/download-artifact@v3
+      with:
+        name: operator-manifests
+    - name: Get release header
+      uses: actions/download-artifact@v3
+      with:
+        name: release-header
+    - name: Release
+      uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          messaging-topology-operator.yml
+          messaging-topology-operator-with-certmanager.yml
+        generate_release_notes: true
+        draft: true
+        body_path: release-header.md
+        fail_on_unmatched_files: true
+
