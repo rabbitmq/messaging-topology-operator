@@ -193,7 +193,7 @@ func (r *UserReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.
 
 	credentials, err := r.getUserCredentials(ctx, user)
 	if err != nil {
-		return fmt.Errorf("failed to retrieve user credentials secret from status; user.status: %v", user.Status)
+		return fmt.Errorf("failed to retrieve user credentials secret from status; error: %w", err)
 	}
 	logger.Info("Retrieved credentials for user", "user", user.Name, "credentials", credentials.Name)
 
