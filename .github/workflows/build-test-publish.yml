@@ -79,8 +79,8 @@ jobs:
         platforms: linux/amd64, linux/arm64
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-    - name: OCI Metadata for single-arch image
-      id: single-arch-meta
+    - name: OCI Metadata for amd64 image
+      id: single-arch-meta-amd64
       uses: docker/metadata-action@v4
       with:
         images: |
@@ -89,14 +89,32 @@ jobs:
           latest=false
         tags: |
           type=semver,pattern={{version}},type=sha,suffix=-amd64,latest=false
-    - name: Build and push single-arch image
+    - name: Build and push single-arch amd64 image
       uses: docker/build-push-action@v3
       with:
         context: .
         platforms: linux/amd64
         push: ${{ github.event_name != 'pull_request' }}
-        tags: ${{ steps.single-arch-meta.outputs.tags }}
-        labels: ${{ steps.single-arch-meta.outputs.labels }}
+        tags: ${{ steps.single-arch-meta-amd64.outputs.tags }}
+        labels: ${{ steps.single-arch-meta-amd64.outputs.labels }}
+    - name: OCI Metadata for arm64 image
+      id: single-arch-meta-arm64
+      uses: docker/metadata-action@v4
+      with:
+        images: |
+          rabbitmqoperator/messaging-topology-operator
+        flavor: |
+          latest=false
+        tags: |
+          type=semver,pattern={{version}},type=sha,suffix=-arm64,latest=false
+    - name: Build and push single-arch arm64 image
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        platforms: linux/arm64
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.single-arch-meta-arm64.outputs.tags }}
+        labels: ${{ steps.single-arch-meta-arm64.outputs.labels }}
     - name: Build manifest
       env:
         RELEASE_VERSION: ${{ steps.meta.outputs.version }}
