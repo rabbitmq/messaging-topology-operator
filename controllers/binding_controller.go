@@ -96,9 +96,9 @@ func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topolog
 		return nil, err
 	}
 	var info *rabbithole.BindingInfo
-	for _, b := range bindingInfos {
+	for i, b := range bindingInfos {
 		if binding.Spec.RoutingKey == b.RoutingKey && reflect.DeepEqual(b.Arguments, arguments) {
-			info = &b
+			info = &bindingInfos[i]
 		}
 	}
 	return info, nil
