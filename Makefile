@@ -106,7 +106,7 @@ deploy-dev: check-env-docker-credentials cmctl docker-build-dev manifests deploy
 
 # Load operator image and deploy operator into current KinD cluster
 deploy-kind: manifests cmctl deploy-rbac
-	$(BUILD_KIT) build --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .
+	$(BUILD_KIT) buildx build --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .
 	kind load docker-image $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)
 	$(CMCTL) check api --wait=2m
 	kustomize build config/default/overlays/kind | sed 's@((operator_docker_image))@"$(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)"@' | kubectl apply -f -
@@ -160,7 +160,7 @@ ifndef DOCKER_REGISTRY_SECRET
 endif
 
 docker-build-dev: check-env-docker-repo  git-commit-sha
-	$(BUILD_KIT) build --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .
+	$(BUILD_KIT) buildx build --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .
 	$(BUILD_KIT) push $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)
 
 docker-registry-secret: check-env-docker-credentials operator-namespace
