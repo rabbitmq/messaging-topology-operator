@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/cloudflare/cfssl v1.6.3
 	github.com/elastic/crd-ref-docs v0.0.8
-	github.com/go-logr/logr v1.2.3
+	github.com/go-logr/logr v1.2.4
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/vault/api v1.9.0
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.6.1
