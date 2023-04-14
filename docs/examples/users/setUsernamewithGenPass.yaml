@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: user-creds
+type: Opaque
+stringData:
+  username: test
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: User
+metadata:
+  name: set-username-gen-pass-example
+spec:
+  tags:
+  - management
+  rabbitmqClusterReference:
+    name: test # rabbitmqCluster must exist in the same namespace as this resource
+  importCredentialsSecret:
+    name: user-creds
