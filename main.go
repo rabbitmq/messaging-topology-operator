@@ -12,15 +12,17 @@ package main
 import (
 	"flag"
 	"fmt"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
@@ -95,6 +97,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	// If the environment variable is not set Getenv returns an empty string which ctrl.Options.Namespace takes to mean all namespaces should be watched
+	operatorScopeNamespace := os.Getenv("OPERATOR_SCOPE_NAMESPACE")
+
 	clusterDomain := sanitizeClusterDomainInput(os.Getenv(controllers.KubernetesInternalDomainEnvVar))
 
 	managerOpts := ctrl.Options{
@@ -103,6 +108,12 @@ func main() {
 		LeaderElection:          true,
 		LeaderElectionNamespace: operatorNamespace,
 		LeaderElectionID:        "messaging-topology-operator-leader-election",
+		Namespace:               operatorScopeNamespace,
+	}
+
+	if strings.Contains(operatorScopeNamespace, ",") {
+		managerOpts.Namespace = ""
+		managerOpts.NewCache = cache.MultiNamespacedCacheBuilder(strings.Split(operatorScopeNamespace, ","))
 	}
 
 	if syncPeriod := os.Getenv(controllers.ControllerSyncPeriodEnvVar); syncPeriod != "" {
