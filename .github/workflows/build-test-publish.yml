@@ -56,8 +56,6 @@ jobs:
           type=sha
           type=ref,event=pr
           type=semver,pattern={{version}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2
     - name: Set up Docker Buildx
@@ -88,7 +86,8 @@ jobs:
         flavor: |
           latest=false
         tags: |
-          type=semver,pattern={{version}},type=sha,suffix=-amd64,latest=false
+          type=semver,pattern={{version}},suffix=-amd64,latest=false
+          type=sha,suffix=-amd64,latest=false
     - name: Build and push single-arch amd64 image
       uses: docker/build-push-action@v3
       with:
@@ -106,7 +105,8 @@ jobs:
         flavor: |
           latest=false
         tags: |
-          type=semver,pattern={{version}},type=sha,suffix=-arm64,latest=false
+          type=semver,pattern={{version}},suffix=-arm64,latest=false
+          type=sha,suffix=-arm64,latest=false
     - name: Build and push single-arch arm64 image
       uses: docker/build-push-action@v3
       with:
