@@ -9,7 +9,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/vault/api v1.9.1
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.6.1
-	github.com/michaelklishin/rabbit-hole/v2 v2.13.0
+	github.com/michaelklishin/rabbit-hole/v2 v2.14.0
 	github.com/onsi/ginkgo/v2 v2.9.5
 	github.com/onsi/gomega v1.27.6
 	github.com/rabbitmq/cluster-operator v1.14.0
