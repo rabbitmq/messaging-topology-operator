@@ -6,6 +6,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 var _ = Describe("shovel webhook", func() {
@@ -25,12 +26,12 @@ var _ = Describe("shovel webhook", func() {
 			DestinationAddForwardHeaders:     true,
 			DestinationAddTimestampHeader:    true,
 			DestinationAddress:               "myQueue",
-			DestinationApplicationProperties: "a-property",
+			DestinationApplicationProperties: &runtime.RawExtension{Raw: []byte(`{"key": "a-property"}`)},
 			DestinationExchange:              "an-exchange",
 			DestinationExchangeKey:           "a-key",
-			DestinationProperties:            "a-property",
+			DestinationProperties:            &runtime.RawExtension{Raw: []byte(`{"key": "a-property"}`)},
 			DestinationProtocol:              "amqp091",
-			DestinationPublishProperties:     "a-property",
+			DestinationPublishProperties:     &runtime.RawExtension{Raw: []byte(`{"delivery_mode": 1}`)},
 			DestinationQueue:                 "a-queue",
 			PrefetchCount:                    10,
 			ReconnectDelay:                   10,
@@ -156,7 +157,7 @@ var _ = Describe("shovel webhook", func() {
 
 		It("allows updates on DestinationApplicationProperties", func() {
 			newShovel := shovel.DeepCopy()
-			newShovel.Spec.DestinationApplicationProperties = "new-property"
+			newShovel.Spec.DestinationApplicationProperties = &runtime.RawExtension{Raw: []byte(`{"key": "new"}`)}
 			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
 		})
 
@@ -174,7 +175,7 @@ var _ = Describe("shovel webhook", func() {
 
 		It("allows updates on DestinationProperties", func() {
 			newShovel := shovel.DeepCopy()
-			newShovel.Spec.DestinationProperties = "new"
+			newShovel.Spec.DestinationProperties = &runtime.RawExtension{Raw: []byte(`{"key": "new"}`)}
 			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
 		})
 		It("allows updates on DestinationProtocol", func() {
@@ -185,7 +186,7 @@ var _ = Describe("shovel webhook", func() {
 
 		It("allows updates on DestinationPublishProperties", func() {
 			newShovel := shovel.DeepCopy()
-			newShovel.Spec.DestinationPublishProperties = "new-property"
+			newShovel.Spec.DestinationPublishProperties = &runtime.RawExtension{Raw: []byte(`{"key": "new"}`)}
 			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
 		})
 

@@ -3,6 +3,7 @@ package v1beta1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -26,28 +27,34 @@ type ShovelSpec struct {
 	// +kubebuilder:validation:Required
 	UriSecret *corev1.LocalObjectReference `json:"uriSecret"`
 	// +kubebuilder:validation:Enum=on-confirm;on-publish;no-ack
-	AckMode                          string `json:"ackMode,omitempty"`
-	AddForwardHeaders                bool   `json:"addForwardHeaders,omitempty"`
-	DeleteAfter                      string `json:"deleteAfter,omitempty"`
-	DestinationAddForwardHeaders     bool   `json:"destAddForwardHeaders,omitempty"`
-	DestinationAddTimestampHeader    bool   `json:"destAddTimestampHeader,omitempty"`
-	DestinationAddress               string `json:"destAddress,omitempty"`
-	DestinationApplicationProperties string `json:"destApplicationProperties,omitempty"`
-	DestinationExchange              string `json:"destExchange,omitempty"`
-	DestinationExchangeKey           string `json:"destExchangeKey,omitempty"`
-	DestinationProperties            string `json:"destProperties,omitempty"`
-	DestinationProtocol              string `json:"destProtocol,omitempty"`
-	DestinationPublishProperties     string `json:"destPublishProperties,omitempty"`
-	DestinationQueue                 string `json:"destQueue,omitempty"`
-	PrefetchCount                    int    `json:"prefetchCount,omitempty"`
-	ReconnectDelay                   int    `json:"reconnectDelay,omitempty"`
-	SourceAddress                    string `json:"srcAddress,omitempty"`
-	SourceDeleteAfter                string `json:"srcDeleteAfter,omitempty"`
-	SourceExchange                   string `json:"srcExchange,omitempty"`
-	SourceExchangeKey                string `json:"srcExchangeKey,omitempty"`
-	SourcePrefetchCount              int    `json:"srcPrefetchCount,omitempty"`
-	SourceProtocol                   string `json:"srcProtocol,omitempty"`
-	SourceQueue                      string `json:"srcQueue,omitempty"`
+	AckMode                       string `json:"ackMode,omitempty"`
+	AddForwardHeaders             bool   `json:"addForwardHeaders,omitempty"`
+	DeleteAfter                   string `json:"deleteAfter,omitempty"`
+	DestinationAddForwardHeaders  bool   `json:"destAddForwardHeaders,omitempty"`
+	DestinationAddTimestampHeader bool   `json:"destAddTimestampHeader,omitempty"`
+	DestinationAddress            string `json:"destAddress,omitempty"`
+	DestinationExchange           string `json:"destExchange,omitempty"`
+	DestinationExchangeKey        string `json:"destExchangeKey,omitempty"`
+	DestinationProtocol           string `json:"destProtocol,omitempty"`
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:pruning:PreserveUnknownFields
+	DestinationApplicationProperties *runtime.RawExtension `json:"destApplicationProperties,omitempty"`
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:pruning:PreserveUnknownFields
+	DestinationProperties *runtime.RawExtension `json:"destProperties,omitempty"`
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:pruning:PreserveUnknownFields
+	DestinationPublishProperties *runtime.RawExtension `json:"destPublishProperties,omitempty"`
+	DestinationQueue             string                `json:"destQueue,omitempty"`
+	PrefetchCount                int                   `json:"prefetchCount,omitempty"`
+	ReconnectDelay               int                   `json:"reconnectDelay,omitempty"`
+	SourceAddress                string                `json:"srcAddress,omitempty"`
+	SourceDeleteAfter            string                `json:"srcDeleteAfter,omitempty"`
+	SourceExchange               string                `json:"srcExchange,omitempty"`
+	SourceExchangeKey            string                `json:"srcExchangeKey,omitempty"`
+	SourcePrefetchCount          int                   `json:"srcPrefetchCount,omitempty"`
+	SourceProtocol               string                `json:"srcProtocol,omitempty"`
+	SourceQueue                  string                `json:"srcQueue,omitempty"`
 }
 
 // ShovelStatus defines the observed state of Shovel

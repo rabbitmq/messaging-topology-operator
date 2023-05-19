@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -63,12 +64,12 @@ var _ = Describe("Shovel spec", func() {
 				DestinationAddForwardHeaders:     true,
 				DestinationAddTimestampHeader:    true,
 				DestinationAddress:               "myQueue",
-				DestinationApplicationProperties: "a-property",
+				DestinationApplicationProperties: &runtime.RawExtension{Raw: []byte(`{"key": "a-property"}`)},
 				DestinationExchange:              "an-exchange",
 				DestinationExchangeKey:           "a-key",
-				DestinationProperties:            "a-property",
+				DestinationProperties:            &runtime.RawExtension{Raw: []byte(`{"key": "a-property"}`)},
 				DestinationProtocol:              "amqp091",
-				DestinationPublishProperties:     "a-property",
+				DestinationPublishProperties:     &runtime.RawExtension{Raw: []byte(`{"delivery_mode": 1}`)},
 				DestinationQueue:                 "a-queue",
 				PrefetchCount:                    10,
 				ReconnectDelay:                   10,
@@ -98,10 +99,10 @@ var _ = Describe("Shovel spec", func() {
 		Expect(fetched.Spec.DestinationAddTimestampHeader).To(BeTrue())
 		Expect(fetched.Spec.DestinationAddForwardHeaders).To(BeTrue())
 		Expect(fetched.Spec.DestinationAddress).To(Equal("myQueue"))
-		Expect(fetched.Spec.DestinationApplicationProperties).To(Equal("a-property"))
+		Expect(fetched.Spec.DestinationApplicationProperties.Raw).To(Equal([]byte(`{"key":"a-property"}`)))
 		Expect(fetched.Spec.DestinationExchange).To(Equal("an-exchange"))
 		Expect(fetched.Spec.DestinationExchangeKey).To(Equal("a-key"))
-		Expect(fetched.Spec.DestinationProperties).To(Equal("a-property"))
+		Expect(fetched.Spec.DestinationProperties.Raw).To(Equal([]byte(`{"key":"a-property"}`)))
 		Expect(fetched.Spec.DestinationQueue).To(Equal("a-queue"))
 		Expect(fetched.Spec.PrefetchCount).To(Equal(10))
 		Expect(fetched.Spec.ReconnectDelay).To(Equal(10))

@@ -29,7 +29,11 @@ func (r *ShovelReconciler) DeclareFunc(ctx context.Context, client rabbitmqclien
 	if err != nil {
 		return fmt.Errorf("failed to parse shovel uri secret; secret name: %s, error: %w", shovel.Spec.UriSecret.Name, err)
 	}
-	return validateResponse(client.DeclareShovel(shovel.Spec.Vhost, shovel.Spec.Name, internal.GenerateShovelDefinition(shovel, srcUri, destUri)))
+	definition, err := internal.GenerateShovelDefinition(shovel, srcUri, destUri)
+	if err != nil {
+		return fmt.Errorf("failed to generate shovel definition: %w", err)
+	}
+	return validateResponse(client.DeclareShovel(shovel.Spec.Vhost, shovel.Spec.Name, *definition))
 }
 func (r *ShovelReconciler) getUris(ctx context.Context, shovel *topology.Shovel) (string, string, error) {
 	if shovel.Spec.UriSecret == nil {
