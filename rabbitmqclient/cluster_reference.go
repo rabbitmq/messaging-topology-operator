@@ -32,6 +32,8 @@ var (
 	NoServiceReferenceSetError = errors.New("RabbitmqCluster has no ServiceReference set in status.defaultUser")
 )
 
+var usePlainHTTP bool = false
+
 func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string, clusterDomain string) (map[string]string, bool, error) {
 	if rmq.ConnectionSecret != nil {
 		secret := &corev1.Secret{}
@@ -99,8 +101,8 @@ func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqC
 	if err != nil {
 		return nil, false, fmt.Errorf("unable to parse additionconfig setting from the rabbitmqcluster resource: %w", err)
 	}
-
-	endpoint, err := managementURI(svc, cluster.TLSEnabled(), clusterDomain, additionalConfig["management.path_prefix"])
+	useTLSForConnection := cluster.TLSEnabled() && !usePlainHTTP
+	endpoint, err := managementURI(svc, useTLSForConnection, clusterDomain, additionalConfig["management.path_prefix"])
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to get endpoint from specified rabbitmqcluster: %w", err)
 	}
@@ -109,7 +111,7 @@ func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqC
 		"username": user,
 		"password": pass,
 		"uri":      endpoint,
-	}, cluster.TLSEnabled(), nil
+	}, useTLSForConnection, nil
 }
 
 func AllowedNamespace(rmq topology.RabbitmqClusterReference, requestNamespace string, cluster *rabbitmqv1beta1.RabbitmqCluster) bool {
@@ -178,25 +180,28 @@ func readUsernamePassword(secret *corev1.Secret) (string, string, error) {
 	return string(secret.Data["username"]), string(secret.Data["password"]), nil
 }
 
-func managementURI(svc *corev1.Service, tlsEnabled bool, clusterDomain string, pathPrefix string) (string, error) {
+func managementURI(svc *corev1.Service, useTLSForConnection bool, clusterDomain string, pathPrefix string) (string, error) {
 	var managementUiPort int
+	var portName string
+
+	if useTLSForConnection {
+		portName = "management-tls"
+	} else {
+		portName = "management"
+	}
 	for _, port := range svc.Spec.Ports {
-		if port.Name == "management-tls" {
+		if port.Name == portName {
 			managementUiPort = int(port.Port)
 			break
-		}
-		if port.Name == "management" {
-			managementUiPort = int(port.Port)
-			// Do not break here because we may still find 'management-tls' port
 		}
 	}
 
 	if managementUiPort == 0 {
-		return "", fmt.Errorf("failed to find 'management' or 'management-tls' from service %s", svc.Name)
+		return "", fmt.Errorf("failed to find %s from service %s", portName, svc.Name)
 	}
 
 	scheme := "http"
-	if tlsEnabled {
+	if useTLSForConnection {
 		scheme = "https"
 	}
 	url := url.URL{

@@ -328,8 +328,8 @@ var _ = Describe("ParseReference", func() {
 					ClusterIP: "1.2.3.4",
 					Ports: []corev1.ServicePort{
 						{
-							Name: "management-tls",
-							Port: int32(15671),
+							Name: "management",
+							Port: int32(15672),
 						},
 					},
 				},
@@ -349,7 +349,7 @@ var _ = Describe("ParseReference", func() {
 			uriBytes, _ := creds["uri"]
 			Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
 			Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
-			Expect(uriBytes).To(Equal("http://rmq.rabbitmq-system.svc:15671/my/prefix"))
+			Expect(uriBytes).To(Equal("http://rmq.rabbitmq-system.svc:15672/my/prefix"))
 		})
 	})
 
