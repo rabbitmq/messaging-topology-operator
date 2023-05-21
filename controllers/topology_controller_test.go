@@ -86,4 +86,35 @@ var _ = Describe("TopologyReconciler", func() {
 			Expect(uri).To(BeEquivalentTo("https://example-rabbit.default.svc:15671"))
 		})
 	})
+
+	When("flag for plain HTTP connection is set", func() {
+		It("uses http for connection", func() {
+			Expect((&controllers.TopologyReconciler{
+				Client:                mgr.GetClient(),
+				Type:                  &topology.Queue{},
+				Scheme:                mgr.GetScheme(),
+				Recorder:              fakeRecorder,
+				RabbitmqClientFactory: fakeRabbitMQClientFactory,
+				ReconcileFunc:         &controllers.QueueReconciler{},
+				ConnectUsingPlainHTTP: true,
+			}).SetupWithManager(mgr)).To(Succeed())
+
+			queue := &topology.Queue{
+				ObjectMeta: metav1.ObjectMeta{Name: "cb-queue", Namespace: "default"},
+				Spec:       topology.QueueSpec{RabbitmqClusterReference: commonRabbitmqClusterRef},
+			}
+			fakeRabbitMQClient.DeclareQueueReturns(commonHttpCreatedResponse, nil)
+			fakeRabbitMQClient.DeleteQueueReturns(commonHttpDeletedResponse, nil)
+			Expect(client.Create(ctx, queue)).To(Succeed())
+
+			Eventually(func() int {
+				return len(fakeRabbitMQClientFactoryArgsForCall)
+			}, 5).Should(BeNumerically(">", 0))
+
+			credentials, _, _ := FakeRabbitMQClientFactoryArgsForCall(0)
+			uri, found := credentials["uri"]
+			Expect(found).To(BeTrue(), "expected to find key 'uri'")
+			Expect(uri).To(BeEquivalentTo("http://example-rabbit.default.svc:15672"))
+		})
+	})
 })

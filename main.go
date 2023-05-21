@@ -102,6 +102,8 @@ func main() {
 
 	clusterDomain := sanitizeClusterDomainInput(os.Getenv(controllers.KubernetesInternalDomainEnvVar))
 
+	usePlainHTTP := getBoolEnv(controllers.ConnectUsingPlainHTTPEnvVar)
+
 	managerOpts := ctrl.Options{
 		Scheme:                  scheme,
 		MetricsBindAddress:      metricsAddr,
@@ -167,6 +169,7 @@ func main() {
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
 		ReconcileFunc:           &controllers.QueueReconciler{},
+		ConnectUsingPlainHTTP:   usePlainHTTP,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.QueueControllerName)
 		os.Exit(1)
@@ -181,6 +184,7 @@ func main() {
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
 		ReconcileFunc:           &controllers.ExchangeReconciler{},
+		ConnectUsingPlainHTTP:   usePlainHTTP,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.ExchangeControllerName)
 		os.Exit(1)
@@ -195,6 +199,7 @@ func main() {
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
 		ReconcileFunc:           &controllers.BindingReconciler{},
+		ConnectUsingPlainHTTP:   usePlainHTTP,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.BindingControllerName)
 		os.Exit(1)
@@ -210,6 +215,7 @@ func main() {
 		KubernetesClusterDomain: clusterDomain,
 		WatchTypes:              []client.Object{&corev1.Secret{}},
 		ReconcileFunc:           &controllers.UserReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()},
+		ConnectUsingPlainHTTP:   usePlainHTTP,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.UserControllerName)
 		os.Exit(1)
@@ -224,6 +230,7 @@ func main() {
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
 		ReconcileFunc:           &controllers.VhostReconciler{Client: mgr.GetClient()},
+		ConnectUsingPlainHTTP:   usePlainHTTP,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.VhostControllerName)
 		os.Exit(1)
@@ -238,6 +245,7 @@ func main() {
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
 		ReconcileFunc:           &controllers.PolicyReconciler{},
+		ConnectUsingPlainHTTP:   usePlainHTTP,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.PolicyControllerName)
 		os.Exit(1)
@@ -252,6 +260,7 @@ func main() {
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
 		ReconcileFunc:           &controllers.PermissionReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()},
+		ConnectUsingPlainHTTP:   usePlainHTTP,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.PermissionControllerName)
 		os.Exit(1)
@@ -266,6 +275,7 @@ func main() {
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
 		ReconcileFunc:           &controllers.SchemaReplicationReconciler{Client: mgr.GetClient()},
+		ConnectUsingPlainHTTP:   usePlainHTTP,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.SchemaReplicationControllerName)
 		os.Exit(1)
@@ -280,6 +290,7 @@ func main() {
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
 		ReconcileFunc:           &controllers.FederationReconciler{Client: mgr.GetClient()},
+		ConnectUsingPlainHTTP:   usePlainHTTP,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.FederationControllerName)
 		os.Exit(1)
@@ -294,6 +305,7 @@ func main() {
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
 		ReconcileFunc:           &controllers.ShovelReconciler{Client: mgr.GetClient()},
+		ConnectUsingPlainHTTP:   usePlainHTTP,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.ShovelControllerName)
 		os.Exit(1)
@@ -308,6 +320,7 @@ func main() {
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
 		ReconcileFunc:           &controllers.TopicPermissionReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()},
+		ConnectUsingPlainHTTP:   usePlainHTTP,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.TopicPermissionControllerName)
 		os.Exit(1)
@@ -394,4 +407,16 @@ func getEnvInDuration(envName string) time.Duration {
 		}
 	}
 	return time.Duration(durationInt) * time.Second
+}
+
+func getBoolEnv(envNam string) bool {
+	var boolVar bool
+	if boolStr := os.Getenv(envNam); boolStr != "" {
+		var err error
+		if boolVar, err = strconv.ParseBool(boolStr); err != nil {
+			log.Error(err, fmt.Sprintf("unable to parse provided '%s'", envNam))
+			os.Exit(1)
+		}
+	}
+	return boolVar
 }

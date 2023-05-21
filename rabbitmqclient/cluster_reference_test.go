@@ -85,7 +85,7 @@ var _ = Describe("ParseReference", func() {
 		})
 
 		It("generates a rabbithole client which makes successful requests to the RabbitMQ Server", func() {
-			creds, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
+			creds, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "", false)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(tlsEnabled).To(BeFalse())
@@ -113,7 +113,7 @@ var _ = Describe("ParseReference", func() {
 			})
 
 			It("errors", func() {
-				_, _, err := rabbitmqclient.ParseReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
+				_, _, err := rabbitmqclient.ParseReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "", false)
 				Expect(err).To(MatchError(rabbitmqclient.NoServiceReferenceSetError))
 			})
 		})
@@ -165,7 +165,7 @@ var _ = Describe("ParseReference", func() {
 			})
 
 			JustBeforeEach(func() {
-				creds, tlsEnabled, err = rabbitmqclient.ParseReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
+				creds, tlsEnabled, err = rabbitmqclient.ParseReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "", false)
 			})
 
 			It("should not return an error", func() {
@@ -206,14 +206,14 @@ var _ = Describe("ParseReference", func() {
 				})
 
 				It("errors", func() {
-					_, _, err := rabbitmqclient.ParseReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "")
+					_, _, err := rabbitmqclient.ParseReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "", false)
 					Expect(err).To(MatchError(rabbitmqclient.NoServiceReferenceSetError))
 				})
 			})
 		})
 	})
 
-	When("the RabbitmqCluster is configured with TLS", func() {
+	When("the RabbitmqCluster is configured with only TLS", func() {
 		BeforeEach(func() {
 			existingRabbitMQCluster = &rabbitmqv1beta1.RabbitmqCluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -270,7 +270,8 @@ var _ = Describe("ParseReference", func() {
 			creds, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
 				topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
 				existingRabbitMQCluster.Namespace,
-				"")
+				"",
+				false)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(tlsEnabled).To(BeTrue())
@@ -280,6 +281,106 @@ var _ = Describe("ParseReference", func() {
 			Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
 			Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
 			Expect(uriBytes).To(Equal("https://rmq.rabbitmq-system.svc:15671"))
+		})
+	})
+
+	When("the RabbitmqCluster is configured with TLS and other listeners are enabled", func() {
+		BeforeEach(func() {
+			existingRabbitMQCluster = &rabbitmqv1beta1.RabbitmqCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rmq",
+					Namespace: namespace,
+				},
+				Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
+					TLS: rabbitmqv1beta1.TLSSpec{
+						SecretName:             "a-tls-secret",
+						DisableNonTLSListeners: false,
+					},
+				},
+				Status: rabbitmqv1beta1.RabbitmqClusterStatus{
+					Binding: &corev1.LocalObjectReference{
+						Name: "rmq-default-user-credentials",
+					},
+					DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
+						ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
+							Name:      "rmq",
+							Namespace: namespace,
+						},
+					},
+				},
+			}
+			existingCredentialSecret = &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rmq-default-user-credentials",
+					Namespace: namespace,
+				},
+				Data: map[string][]byte{
+					"username": []byte(existingRabbitMQUsername),
+					"password": []byte(existingRabbitMQPassword),
+				},
+			}
+			existingService = &corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rmq",
+					Namespace: namespace,
+				},
+				Spec: corev1.ServiceSpec{
+					ClusterIP: "1.2.3.4",
+					Ports: []corev1.ServicePort{
+						{
+							Name: "management-tls",
+							Port: int32(15671),
+						},
+						{
+							Name: "management",
+							Port: int32(15672),
+						},
+					},
+				},
+			}
+			objs = []runtime.Object{existingRabbitMQCluster, existingCredentialSecret, existingService}
+		})
+
+		Context("connectUsingHTTP flag is true", func() {
+			connectUsingHTTP := true
+
+			It("returns correct creds in connectionCredentials and connects using plain http", func() {
+				creds, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+					topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
+					existingRabbitMQCluster.Namespace,
+					"",
+					connectUsingHTTP)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(tlsEnabled).To(BeFalse())
+				usernameBytes, _ := creds["username"]
+				passwordBytes, _ := creds["password"]
+				uriBytes, _ := creds["uri"]
+				Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
+				Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
+				Expect(uriBytes).To(Equal("http://rmq.rabbitmq-system.svc:15672"))
+			})
+		})
+
+		Context("connectUsingHTTP flag is false", func() {
+			connectUsingHTTP := false
+
+			It("returns correct creds in connectionCredentials and connects using https", func() {
+				creds, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+					topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
+					existingRabbitMQCluster.Namespace,
+					"",
+					connectUsingHTTP)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(tlsEnabled).To(BeTrue())
+				usernameBytes, _ := creds["username"]
+				passwordBytes, _ := creds["password"]
+				uriBytes, _ := creds["uri"]
+				Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
+				Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
+				Expect(uriBytes).To(Equal("https://rmq.rabbitmq-system.svc:15671"))
+			})
 		})
 	})
 
@@ -341,7 +442,8 @@ var _ = Describe("ParseReference", func() {
 			creds, _, err := rabbitmqclient.ParseReference(ctx, fakeClient,
 				topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
 				existingRabbitMQCluster.Namespace,
-				"")
+				"",
+				false)
 			Expect(err).NotTo(HaveOccurred())
 
 			usernameBytes, _ := creds["username"]
@@ -378,7 +480,8 @@ var _ = Describe("ParseReference", func() {
 						},
 					},
 					namespace,
-					"")
+					"",
+					false)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(tlsEnabled).To(BeFalse())
@@ -415,7 +518,8 @@ var _ = Describe("ParseReference", func() {
 						},
 					},
 					namespace,
-					"")
+					"",
+					false)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(tlsEnabled).To(BeFalse())
@@ -452,7 +556,8 @@ var _ = Describe("ParseReference", func() {
 						},
 					},
 					namespace,
-					"")
+					"",
+					false)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(tlsEnabled).To(BeTrue())
@@ -507,7 +612,8 @@ var _ = Describe("ParseReference", func() {
 			creds, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
 				topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
 				existingRabbitMQCluster.Namespace,
-				someDomain)
+				someDomain,
+				false)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(tlsEnabled).To(BeFalse(), "expected TLS to not be enabled")
 			Expect(creds).ToNot(BeNil())
@@ -522,7 +628,8 @@ var _ = Describe("ParseReference", func() {
 				credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
 					topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
 					existingRabbitMQCluster.Namespace,
-					"")
+					"",
+					false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(tlsEnabled).To(BeFalse(), "expected TLS to not be enabled")
 				Expect(credsProvider).ToNot(BeNil())
@@ -592,7 +699,8 @@ var _ = Describe("ParseReference", func() {
 						Namespace: existingRabbitMQCluster.Namespace,
 					},
 					"prohibited-namespace",
-					"")
+					"",
+					false)
 				Expect(err).To(MatchError(rabbitmqclient.ResourceNotAllowedError))
 			})
 		})
@@ -612,7 +720,8 @@ var _ = Describe("ParseReference", func() {
 							Namespace: existingRabbitMQCluster.Namespace,
 						},
 						"allowed1",
-						"")
+						"",
+						false)
 					Expect(err).NotTo(HaveOccurred())
 
 					_, _, err = rabbitmqclient.ParseReference(ctx, fakeClient,
@@ -621,7 +730,8 @@ var _ = Describe("ParseReference", func() {
 							Namespace: existingRabbitMQCluster.Namespace,
 						},
 						"allowed2",
-						"")
+						"",
+						false)
 					Expect(err).NotTo(HaveOccurred())
 				})
 			})
@@ -633,7 +743,8 @@ var _ = Describe("ParseReference", func() {
 							Namespace: existingRabbitMQCluster.Namespace,
 						},
 						"allowed3",
-						"")
+						"",
+						false)
 					Expect(err).To(MatchError(rabbitmqclient.ResourceNotAllowedError))
 				})
 			})
@@ -654,7 +765,8 @@ var _ = Describe("ParseReference", func() {
 						Namespace: existingRabbitMQCluster.Namespace,
 					},
 					"any-namespace-will-be-fine",
-					"")
+					"",
+					false)
 				Expect(err).NotTo(HaveOccurred())
 
 				_, _, err = rabbitmqclient.ParseReference(ctx, fakeClient,
@@ -663,7 +775,8 @@ var _ = Describe("ParseReference", func() {
 						Namespace: existingRabbitMQCluster.Namespace,
 					},
 					"another-namespace",
-					"")
+					"",
+					false)
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})

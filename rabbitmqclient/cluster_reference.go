@@ -32,9 +32,7 @@ var (
 	NoServiceReferenceSetError = errors.New("RabbitmqCluster has no ServiceReference set in status.defaultUser")
 )
 
-var usePlainHTTP bool = false
-
-func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string, clusterDomain string) (map[string]string, bool, error) {
+func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string, clusterDomain string, connectUsingHTTP bool) (map[string]string, bool, error) {
 	if rmq.ConnectionSecret != nil {
 		secret := &corev1.Secret{}
 		if err := c.Get(ctx, types.NamespacedName{Namespace: requestNamespace, Name: rmq.ConnectionSecret.Name}, secret); err != nil {
@@ -101,7 +99,7 @@ func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqC
 	if err != nil {
 		return nil, false, fmt.Errorf("unable to parse additionconfig setting from the rabbitmqcluster resource: %w", err)
 	}
-	useTLSForConnection := cluster.TLSEnabled() && !usePlainHTTP
+	useTLSForConnection := cluster.TLSEnabled() && !connectUsingHTTP
 	endpoint, err := managementURI(svc, useTLSForConnection, clusterDomain, additionalConfig["management.path_prefix"])
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to get endpoint from specified rabbitmqcluster: %w", err)
