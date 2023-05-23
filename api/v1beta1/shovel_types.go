@@ -45,16 +45,22 @@ type ShovelSpec struct {
 	// +kubebuilder:validation:Type=object
 	// +kubebuilder:pruning:PreserveUnknownFields
 	DestinationPublishProperties *runtime.RawExtension `json:"destPublishProperties,omitempty"`
-	DestinationQueue             string                `json:"destQueue,omitempty"`
-	PrefetchCount                int                   `json:"prefetchCount,omitempty"`
-	ReconnectDelay               int                   `json:"reconnectDelay,omitempty"`
-	SourceAddress                string                `json:"srcAddress,omitempty"`
-	SourceDeleteAfter            string                `json:"srcDeleteAfter,omitempty"`
-	SourceExchange               string                `json:"srcExchange,omitempty"`
-	SourceExchangeKey            string                `json:"srcExchangeKey,omitempty"`
-	SourcePrefetchCount          int                   `json:"srcPrefetchCount,omitempty"`
-	SourceProtocol               string                `json:"srcProtocol,omitempty"`
-	SourceQueue                  string                `json:"srcQueue,omitempty"`
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:pruning:PreserveUnknownFields
+	DestinationMessageAnnotations *runtime.RawExtension `json:"destMessageAnnotations,omitempty"`
+	DestinationQueue              string                `json:"destQueue,omitempty"`
+	PrefetchCount                 int                   `json:"prefetchCount,omitempty"`
+	ReconnectDelay                int                   `json:"reconnectDelay,omitempty"`
+	SourceAddress                 string                `json:"srcAddress,omitempty"`
+	SourceDeleteAfter             string                `json:"srcDeleteAfter,omitempty"`
+	SourceExchange                string                `json:"srcExchange,omitempty"`
+	SourceExchangeKey             string                `json:"srcExchangeKey,omitempty"`
+	SourcePrefetchCount           int                   `json:"srcPrefetchCount,omitempty"`
+	SourceProtocol                string                `json:"srcProtocol,omitempty"`
+	SourceQueue                   string                `json:"srcQueue,omitempty"`
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:pruning:PreserveUnknownFields
+	SourceConsumerArgs *runtime.RawExtension `json:"srcConsumerArgs,omitempty"`
 }
 
 // ShovelStatus defines the observed state of Shovel

@@ -5,6 +5,7 @@ import (
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -43,12 +44,18 @@ var _ = Describe("Shovel", func() {
 				Namespace: namespace,
 			},
 			Spec: topology.ShovelSpec{
-				Name:             "my-upstream",
-				UriSecret:        &corev1.LocalObjectReference{Name: shovelSecret.Name},
-				DeleteAfter:      "never",
-				SourceQueue:      "a-queue",
+				Name:        "my-upstream",
+				UriSecret:   &corev1.LocalObjectReference{Name: shovelSecret.Name},
+				DeleteAfter: "never",
+				SourceQueue: "a-queue",
+				SourceConsumerArgs: &runtime.RawExtension{
+					Raw: []byte(`{"x-priority": 5}`),
+				},
 				DestinationQueue: "another-queue",
-				AckMode:          "no-ack",
+				DestinationPublishProperties: &runtime.RawExtension{
+					Raw: []byte(`{"delivery_mode": 2}`),
+				},
+				AckMode: "no-ack",
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: rmq.Name,
 				},
@@ -80,8 +87,10 @@ var _ = Describe("Shovel", func() {
 				"amqp://server-test-dest1"))
 		Expect(shovelInfo.Definition.DestinationQueue).To(Equal(shovel.Spec.DestinationQueue))
 		Expect(shovelInfo.Definition.SourceQueue).To(Equal(shovel.Spec.SourceQueue))
+		Expect(shovelInfo.Definition.SourceConsumerArgs).To(HaveKeyWithValue("x-priority", float64(5)))
 		Expect(shovelInfo.Definition.AckMode).To(Equal(shovel.Spec.AckMode))
 		Expect(string(shovelInfo.Definition.DeleteAfter)).To(Equal(shovel.Spec.DeleteAfter))
+		Expect(shovelInfo.Definition.DestinationPublishProperties).To(HaveKeyWithValue("delivery_mode", float64(2)))
 
 		By("updating status condition 'Ready'")
 		updatedShovel := topology.Shovel{}
@@ -109,7 +118,7 @@ var _ = Describe("Shovel", func() {
 		updateTest.Spec.Name = "a-new-shovel"
 		Expect(k8sClient.Update(ctx, &updateTest).Error()).To(ContainSubstring("spec.name: Forbidden: updates on name, vhost and rabbitmqClusterReference are all forbidden"))
 
-		By("updating shovel upstream parameters successfully")
+		By("updating shovel parameters successfully")
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: shovel.Name, Namespace: shovel.Namespace}, shovel)).To(Succeed())
 		shovel.Spec.PrefetchCount = 200
 		Expect(k8sClient.Update(ctx, shovel, &client.UpdateOptions{})).To(Succeed())

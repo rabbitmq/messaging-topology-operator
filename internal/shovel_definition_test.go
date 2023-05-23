@@ -121,6 +121,13 @@ var _ = Describe("GenerateShovelDefinition", func() {
 		Expect(definition.DestinationPublishProperties).To(HaveKeyWithValue("delivery_mode", float64(1)))
 	})
 
+	It("sets 'DestinationMessageAnnotations' correctly", func() {
+		shovel.Spec.DestinationMessageAnnotations = &runtime.RawExtension{Raw: []byte(`{"key": "an-annotation-value"}`)}
+		definition, err := GenerateShovelDefinition(shovel, "", "")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(definition.DestinationMessageAnnotations).To(HaveKeyWithValue("key", "an-annotation-value"))
+	})
+
 	It("sets 'DestinationQueue' correctly", func() {
 		shovel.Spec.DestinationQueue = "a-destination-queue"
 		definition, err := GenerateShovelDefinition(shovel, "", "")
@@ -189,5 +196,12 @@ var _ = Describe("GenerateShovelDefinition", func() {
 		definition, err := GenerateShovelDefinition(shovel, "", "")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(definition.SourceQueue).To(Equal("a-great-queue"))
+	})
+
+	It("sets 'SourceConsumerArgs' correctly", func() {
+		shovel.Spec.SourceConsumerArgs = &runtime.RawExtension{Raw: []byte(`{"x-cancel-on-ha-failover": true}`)}
+		definition, err := GenerateShovelDefinition(shovel, "", "")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(definition.SourceConsumerArgs).To(HaveKeyWithValue("x-cancel-on-ha-failover", true))
 	})
 })

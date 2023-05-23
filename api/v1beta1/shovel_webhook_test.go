@@ -32,6 +32,7 @@ var _ = Describe("shovel webhook", func() {
 			DestinationProperties:            &runtime.RawExtension{Raw: []byte(`{"key": "a-property"}`)},
 			DestinationProtocol:              "amqp091",
 			DestinationPublishProperties:     &runtime.RawExtension{Raw: []byte(`{"delivery_mode": 1}`)},
+			DestinationMessageAnnotations:    &runtime.RawExtension{Raw: []byte(`{"a-key": "an-annotation"}`)},
 			DestinationQueue:                 "a-queue",
 			PrefetchCount:                    10,
 			ReconnectDelay:                   10,
@@ -42,6 +43,7 @@ var _ = Describe("shovel webhook", func() {
 			SourcePrefetchCount:              10,
 			SourceProtocol:                   "amqp091",
 			SourceQueue:                      "a-queue",
+			SourceConsumerArgs:               &runtime.RawExtension{Raw: []byte(`{"x-priority": 1}`)},
 			RabbitmqClusterReference: RabbitmqClusterReference{
 				Name: "a-cluster",
 			},
@@ -190,6 +192,12 @@ var _ = Describe("shovel webhook", func() {
 			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
 		})
 
+		It("allows updates on DestinationMessageAnnotations", func() {
+			newShovel := shovel.DeepCopy()
+			newShovel.Spec.DestinationMessageAnnotations = &runtime.RawExtension{Raw: []byte(`{"key": "new-annotation"}`)}
+			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
+		})
+
 		It("allows updates on DestinationQueue", func() {
 			newShovel := shovel.DeepCopy()
 			newShovel.Spec.DestinationQueue = "another-queue"
@@ -247,6 +255,12 @@ var _ = Describe("shovel webhook", func() {
 		It("allows updates on SourceQueue", func() {
 			newShovel := shovel.DeepCopy()
 			newShovel.Spec.SourceQueue = "another-queue"
+			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
+		})
+
+		It("allows updates on SourceConsumerArgs", func() {
+			newShovel := shovel.DeepCopy()
+			newShovel.Spec.SourceConsumerArgs = &runtime.RawExtension{Raw: []byte(`{"x-priority": 10}`)}
 			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
 		})
 	})

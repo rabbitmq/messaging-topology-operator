@@ -898,6 +898,7 @@ ShovelSpec defines the desired state of Shovel For how to configure Shovel, see:
 | *`destApplicationProperties`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | 
 | *`destProperties`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | 
 | *`destPublishProperties`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | 
+| *`destMessageAnnotations`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | 
 | *`destQueue`* __string__ | 
 | *`prefetchCount`* __integer__ | 
 | *`reconnectDelay`* __integer__ | 
@@ -908,6 +909,7 @@ ShovelSpec defines the desired state of Shovel For how to configure Shovel, see:
 | *`srcPrefetchCount`* __integer__ | 
 | *`srcProtocol`* __string__ | 
 | *`srcQueue`* __string__ | 
+| *`srcConsumerArgs`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | 
 |===
 
 

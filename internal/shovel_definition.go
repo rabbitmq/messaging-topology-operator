@@ -9,6 +9,12 @@ import (
 )
 
 func GenerateShovelDefinition(s *topology.Shovel, srcUri, destUri string) (*rabbithole.ShovelDefinition, error) {
+	srcConArgs := make(map[string]interface{})
+	if s.Spec.SourceConsumerArgs != nil {
+		if err := json.Unmarshal(s.Spec.SourceConsumerArgs.Raw, &srcConArgs); err != nil {
+			return nil, fmt.Errorf("failed to unmarshall: %v", err)
+		}
+	}
 	appProperties := make(map[string]interface{})
 	if s.Spec.DestinationApplicationProperties != nil {
 		if err := json.Unmarshal(s.Spec.DestinationApplicationProperties.Raw, &appProperties); err != nil {
@@ -21,13 +27,19 @@ func GenerateShovelDefinition(s *topology.Shovel, srcUri, destUri string) (*rabb
 			return nil, fmt.Errorf("failed to unmarshall: %v", err)
 		}
 	}
-
 	destPubProperties := make(map[string]interface{})
 	if s.Spec.DestinationPublishProperties != nil {
 		if err := json.Unmarshal(s.Spec.DestinationPublishProperties.Raw, &destPubProperties); err != nil {
 			return nil, fmt.Errorf("failed to unmarshall: %v", err)
 		}
 	}
+	destMsgAnnotations := make(map[string]interface{})
+	if s.Spec.DestinationMessageAnnotations != nil {
+		if err := json.Unmarshal(s.Spec.DestinationMessageAnnotations.Raw, &destMsgAnnotations); err != nil {
+			return nil, fmt.Errorf("failed to unmarshall: %v", err)
+		}
+	}
+
 	return &rabbithole.ShovelDefinition{
 		SourceURI:                        strings.Split(srcUri, ","),
 		DestinationURI:                   strings.Split(destUri, ","),
@@ -44,6 +56,7 @@ func GenerateShovelDefinition(s *topology.Shovel, srcUri, destUri string) (*rabb
 		DestinationProtocol:              s.Spec.DestinationProtocol,
 		DestinationPublishProperties:     destPubProperties,
 		DestinationQueue:                 s.Spec.DestinationQueue,
+		DestinationMessageAnnotations:    destMsgAnnotations,
 		PrefetchCount:                    s.Spec.PrefetchCount,
 		ReconnectDelay:                   s.Spec.ReconnectDelay,
 		SourceAddress:                    s.Spec.SourceAddress,
@@ -53,5 +66,6 @@ func GenerateShovelDefinition(s *topology.Shovel, srcUri, destUri string) (*rabb
 		SourcePrefetchCount:              s.Spec.SourcePrefetchCount,
 		SourceProtocol:                   s.Spec.SourceProtocol,
 		SourceQueue:                      s.Spec.SourceQueue,
+		SourceConsumerArgs:               srcConArgs,
 	}, nil
 }
