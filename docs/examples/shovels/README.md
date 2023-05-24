@@ -25,4 +25,45 @@ This example includes (please create in order):
 After all topology objects are created, messages in 'source queue'
 will be moved into 'destination-queue'.
 
-Learn [more about RabbitMQ Dynamic Shovel](https://www.rabbitmq.com/shovel-dynamic.html).
+## Supported Protocols
+Shovel supports AMQP 0.9.1 and AMQP 1.0 protocol. Set `spec.srcProtocol` or `spec.destProtocol` to configure protocol that the plugin uses to connect to source and destination.
+Note that if protocol information is omitted Shovel plugin will default to AMQP 0.9.1.
+To use AMQP 1.0 protocol you have to set either source or destination protocol, or both, e.g.
+
+```yaml
+apiVersion: rabbitmq.com/v1beta1
+kind: Shovel
+spec:
+...
+  srcProtocol: amqp10
+  srcAddress: "/some-exchange" # required if srcProtocol is amqp10
+  destProtocol: amqp10
+  destAddress: "/some-exchange" # required if destProtocol is amqp10
+```
+
+Some configuration are protocol specific, e.g.:
+
+```yaml
+apiVersion: rabbitmq.com/v1beta1
+kind: Shovel
+spec:
+...
+  srcQueue: # amqp091
+  srcConsumerArgs: # amqp091
+  destQueue: # amqp091
+  srcExchange: # amqp091
+  srcExchangeKey: # amqp091
+  srcAddress: # amqp10; required if using AMQP 1.0 to connect to source
+
+  destQueue: # amqp091
+  destExchange: # amqp091
+  destExchangeKey: # amqp091
+  destPublishProperties: # amqp091
+  destAddress: # amqp10; required if using AMQP 1.0 to connect to destination
+  destApplicationProperties: # amqp10
+  destProperties: # amqp10
+  destMessageAnnotations: # amqp10
+```
+
+Learn [more about RabbitMQ Dynamic Shovel](https://www.rabbitmq.com/shovel-dy:wqa
+namic.html).

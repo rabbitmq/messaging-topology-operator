@@ -859,6 +859,11 @@ func (in *ShovelSpec) DeepCopyInto(out *ShovelSpec) {
 		*out = new(v1.LocalObjectReference)
 		**out = **in
 	}
+	if in.DestinationPublishProperties != nil {
+		in, out := &in.DestinationPublishProperties, &out.DestinationPublishProperties
+		*out = new(runtime.RawExtension)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.DestinationApplicationProperties != nil {
 		in, out := &in.DestinationApplicationProperties, &out.DestinationApplicationProperties
 		*out = new(runtime.RawExtension)
@@ -866,11 +871,6 @@ func (in *ShovelSpec) DeepCopyInto(out *ShovelSpec) {
 	}
 	if in.DestinationProperties != nil {
 		in, out := &in.DestinationProperties, &out.DestinationProperties
-		*out = new(runtime.RawExtension)
-		(*in).DeepCopyInto(*out)
-	}
-	if in.DestinationPublishProperties != nil {
-		in, out := &in.DestinationPublishProperties, &out.DestinationPublishProperties
 		*out = new(runtime.RawExtension)
 		(*in).DeepCopyInto(*out)
 	}

@@ -28,41 +28,56 @@ type ShovelSpec struct {
 	UriSecret *corev1.LocalObjectReference `json:"uriSecret"`
 	// +kubebuilder:validation:Enum=on-confirm;on-publish;no-ack
 	AckMode                       string `json:"ackMode,omitempty"`
+	PrefetchCount                 int    `json:"prefetchCount,omitempty"`
+	ReconnectDelay                int    `json:"reconnectDelay,omitempty"`
 	AddForwardHeaders             bool   `json:"addForwardHeaders,omitempty"`
 	DeleteAfter                   string `json:"deleteAfter,omitempty"`
+	SourceDeleteAfter             string `json:"srcDeleteAfter,omitempty"`
+	SourcePrefetchCount           int    `json:"srcPrefetchCount,omitempty"`
 	DestinationAddForwardHeaders  bool   `json:"destAddForwardHeaders,omitempty"`
 	DestinationAddTimestampHeader bool   `json:"destAddTimestampHeader,omitempty"`
-	DestinationAddress            string `json:"destAddress,omitempty"`
-	DestinationExchange           string `json:"destExchange,omitempty"`
-	DestinationExchangeKey        string `json:"destExchangeKey,omitempty"`
+
 	// +kubebuilder:validation:Enum=amqp091;amqp10
 	DestinationProtocol string `json:"destProtocol,omitempty"`
-	// +kubebuilder:validation:Type=object
-	// +kubebuilder:pruning:PreserveUnknownFields
-	DestinationApplicationProperties *runtime.RawExtension `json:"destApplicationProperties,omitempty"`
-	// +kubebuilder:validation:Type=object
-	// +kubebuilder:pruning:PreserveUnknownFields
-	DestinationProperties *runtime.RawExtension `json:"destProperties,omitempty"`
+	// amqp091 configuration
+	DestinationQueue string `json:"destQueue,omitempty"`
+	// amqp091 configuration
+	DestinationExchange string `json:"destExchange,omitempty"`
+	// amqp091 configuration
+	DestinationExchangeKey string `json:"destExchangeKey,omitempty"`
+	// amqp091 configuration
 	// +kubebuilder:validation:Type=object
 	// +kubebuilder:pruning:PreserveUnknownFields
 	DestinationPublishProperties *runtime.RawExtension `json:"destPublishProperties,omitempty"`
+	// amqp10 configuration; required if destProtocol is amqp10
+	DestinationAddress string `json:"destAddress,omitempty"`
+	// amqp10 configuration
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:pruning:PreserveUnknownFields
+	DestinationApplicationProperties *runtime.RawExtension `json:"destApplicationProperties,omitempty"`
+	// amqp10 configuration
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:pruning:PreserveUnknownFields
+	DestinationProperties *runtime.RawExtension `json:"destProperties,omitempty"`
+	// amqp10 configuration
 	// +kubebuilder:validation:Type=object
 	// +kubebuilder:pruning:PreserveUnknownFields
 	DestinationMessageAnnotations *runtime.RawExtension `json:"destMessageAnnotations,omitempty"`
-	DestinationQueue              string                `json:"destQueue,omitempty"`
-	PrefetchCount                 int                   `json:"prefetchCount,omitempty"`
-	ReconnectDelay                int                   `json:"reconnectDelay,omitempty"`
-	SourceAddress                 string                `json:"srcAddress,omitempty"`
-	SourceDeleteAfter             string                `json:"srcDeleteAfter,omitempty"`
-	SourceExchange                string                `json:"srcExchange,omitempty"`
-	SourceExchangeKey             string                `json:"srcExchangeKey,omitempty"`
-	SourcePrefetchCount           int                   `json:"srcPrefetchCount,omitempty"`
+
 	// +kubebuilder:validation:Enum=amqp091;amqp10
 	SourceProtocol string `json:"srcProtocol,omitempty"`
-	SourceQueue    string `json:"srcQueue,omitempty"`
+	// amqp091 configuration
+	SourceQueue string `json:"srcQueue,omitempty"`
+	// amqp091 configuration
+	SourceExchange string `json:"srcExchange,omitempty"`
+	// amqp091 configuration
+	SourceExchangeKey string `json:"srcExchangeKey,omitempty"`
+	// amqp091 configuration
 	// +kubebuilder:validation:Type=object
 	// +kubebuilder:pruning:PreserveUnknownFields
 	SourceConsumerArgs *runtime.RawExtension `json:"srcConsumerArgs,omitempty"`
+	// amqp10 configuration; required if srcProtocol is amqp10
+	SourceAddress string `json:"srcAddress,omitempty"`
 }
 
 // ShovelStatus defines the observed state of Shovel

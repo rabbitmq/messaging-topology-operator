@@ -887,29 +887,29 @@ ShovelSpec defines the desired state of Shovel For how to configure Shovel, see:
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that this Shovel will be created in. Required property.
 | *`uriSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Secret contains the AMQP URI(s) to configure Shovel destination and source. The Secret must contain the key `destUri` and `srcUri` or operator will error. Both fields should be one or multiple uris separated by ','. Required property.
 | *`ackMode`* __string__ | 
-| *`addForwardHeaders`* __boolean__ | 
-| *`deleteAfter`* __string__ | 
-| *`destAddForwardHeaders`* __boolean__ | 
-| *`destAddTimestampHeader`* __boolean__ | 
-| *`destAddress`* __string__ | 
-| *`destExchange`* __string__ | 
-| *`destExchangeKey`* __string__ | 
-| *`destProtocol`* __string__ | 
-| *`destApplicationProperties`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | 
-| *`destProperties`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | 
-| *`destPublishProperties`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | 
-| *`destMessageAnnotations`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | 
-| *`destQueue`* __string__ | 
 | *`prefetchCount`* __integer__ | 
 | *`reconnectDelay`* __integer__ | 
-| *`srcAddress`* __string__ | 
+| *`addForwardHeaders`* __boolean__ | 
+| *`deleteAfter`* __string__ | 
 | *`srcDeleteAfter`* __string__ | 
-| *`srcExchange`* __string__ | 
-| *`srcExchangeKey`* __string__ | 
 | *`srcPrefetchCount`* __integer__ | 
+| *`destAddForwardHeaders`* __boolean__ | 
+| *`destAddTimestampHeader`* __boolean__ | 
+| *`destProtocol`* __string__ | 
+| *`destQueue`* __string__ | amqp091 configuration
+| *`destExchange`* __string__ | amqp091 configuration
+| *`destExchangeKey`* __string__ | amqp091 configuration
+| *`destPublishProperties`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | amqp091 configuration
+| *`destAddress`* __string__ | amqp10 configuration; required if destProtocol is amqp10
+| *`destApplicationProperties`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | amqp10 configuration
+| *`destProperties`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | amqp10 configuration
+| *`destMessageAnnotations`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | amqp10 configuration
 | *`srcProtocol`* __string__ | 
-| *`srcQueue`* __string__ | 
-| *`srcConsumerArgs`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | 
+| *`srcQueue`* __string__ | amqp091 configuration
+| *`srcExchange`* __string__ | amqp091 configuration
+| *`srcExchangeKey`* __string__ | amqp091 configuration
+| *`srcConsumerArgs`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | amqp091 configuration
+| *`srcAddress`* __string__ | amqp10 configuration; required if srcProtocol is amqp10
 |===
 
 
