@@ -6,6 +6,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 var _ = Describe("shovel webhook", func() {
@@ -25,12 +26,13 @@ var _ = Describe("shovel webhook", func() {
 			DestinationAddForwardHeaders:     true,
 			DestinationAddTimestampHeader:    true,
 			DestinationAddress:               "myQueue",
-			DestinationApplicationProperties: "a-property",
+			DestinationApplicationProperties: &runtime.RawExtension{Raw: []byte(`{"key": "a-property"}`)},
 			DestinationExchange:              "an-exchange",
 			DestinationExchangeKey:           "a-key",
-			DestinationProperties:            "a-property",
+			DestinationProperties:            &runtime.RawExtension{Raw: []byte(`{"key": "a-property"}`)},
 			DestinationProtocol:              "amqp091",
-			DestinationPublishProperties:     "a-property",
+			DestinationPublishProperties:     &runtime.RawExtension{Raw: []byte(`{"delivery_mode": 1}`)},
+			DestinationMessageAnnotations:    &runtime.RawExtension{Raw: []byte(`{"a-key": "an-annotation"}`)},
 			DestinationQueue:                 "a-queue",
 			PrefetchCount:                    10,
 			ReconnectDelay:                   10,
@@ -41,6 +43,7 @@ var _ = Describe("shovel webhook", func() {
 			SourcePrefetchCount:              10,
 			SourceProtocol:                   "amqp091",
 			SourceQueue:                      "a-queue",
+			SourceConsumerArgs:               &runtime.RawExtension{Raw: []byte(`{"x-priority": 1}`)},
 			RabbitmqClusterReference: RabbitmqClusterReference{
 				Name: "a-cluster",
 			},
@@ -59,6 +62,20 @@ var _ = Describe("shovel webhook", func() {
 			notAllowed.Spec.RabbitmqClusterReference.Name = ""
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = nil
 			Expect(apierrors.IsForbidden(notAllowed.ValidateCreate())).To(BeTrue())
+		})
+
+		It("spec.srcAddress must be set if spec.srcProtocol is amqp10", func() {
+			notValid := shovel.DeepCopy()
+			notValid.Spec.SourceProtocol = "amqp10"
+			notValid.Spec.SourceAddress = ""
+			Expect(apierrors.IsInvalid(notValid.ValidateCreate())).To(BeTrue())
+		})
+
+		It("spec.destAddress must be set if spec.destProtocol is amqp10", func() {
+			notValid := shovel.DeepCopy()
+			notValid.Spec.DestinationProtocol = "amqp10"
+			notValid.Spec.DestinationAddress = ""
+			Expect(apierrors.IsInvalid(notValid.ValidateCreate())).To(BeTrue())
 		})
 	})
 
@@ -81,6 +98,20 @@ var _ = Describe("shovel webhook", func() {
 				Name: "another-cluster",
 			}
 			Expect(apierrors.IsForbidden(newShovel.ValidateUpdate(&shovel))).To(BeTrue())
+		})
+
+		It("spec.srcAddress must be set if spec.srcProtocol is amqp10", func() {
+			newShovel := shovel.DeepCopy()
+			newShovel.Spec.SourceProtocol = "amqp10"
+			newShovel.Spec.SourceAddress = ""
+			Expect(apierrors.IsInvalid(newShovel.ValidateUpdate(&shovel))).To(BeTrue())
+		})
+
+		It("spec.destAddress must be set if spec.destProtocol is amqp10", func() {
+			newShovel := shovel.DeepCopy()
+			newShovel.Spec.DestinationProtocol = "amqp10"
+			newShovel.Spec.DestinationAddress = ""
+			Expect(apierrors.IsInvalid(newShovel.ValidateUpdate(&shovel))).To(BeTrue())
 		})
 
 		It("does not allow updates on rabbitmqClusterReference.connectionSecret", func() {
@@ -156,7 +187,7 @@ var _ = Describe("shovel webhook", func() {
 
 		It("allows updates on DestinationApplicationProperties", func() {
 			newShovel := shovel.DeepCopy()
-			newShovel.Spec.DestinationApplicationProperties = "new-property"
+			newShovel.Spec.DestinationApplicationProperties = &runtime.RawExtension{Raw: []byte(`{"key": "new"}`)}
 			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
 		})
 
@@ -174,9 +205,10 @@ var _ = Describe("shovel webhook", func() {
 
 		It("allows updates on DestinationProperties", func() {
 			newShovel := shovel.DeepCopy()
-			newShovel.Spec.DestinationProperties = "new"
+			newShovel.Spec.DestinationProperties = &runtime.RawExtension{Raw: []byte(`{"key": "new"}`)}
 			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
 		})
+
 		It("allows updates on DestinationProtocol", func() {
 			newShovel := shovel.DeepCopy()
 			newShovel.Spec.DestinationProtocol = "new"
@@ -185,7 +217,13 @@ var _ = Describe("shovel webhook", func() {
 
 		It("allows updates on DestinationPublishProperties", func() {
 			newShovel := shovel.DeepCopy()
-			newShovel.Spec.DestinationPublishProperties = "new-property"
+			newShovel.Spec.DestinationPublishProperties = &runtime.RawExtension{Raw: []byte(`{"key": "new"}`)}
+			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
+		})
+
+		It("allows updates on DestinationMessageAnnotations", func() {
+			newShovel := shovel.DeepCopy()
+			newShovel.Spec.DestinationMessageAnnotations = &runtime.RawExtension{Raw: []byte(`{"key": "new-annotation"}`)}
 			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
 		})
 
@@ -246,6 +284,12 @@ var _ = Describe("shovel webhook", func() {
 		It("allows updates on SourceQueue", func() {
 			newShovel := shovel.DeepCopy()
 			newShovel.Spec.SourceQueue = "another-queue"
+			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
+		})
+
+		It("allows updates on SourceConsumerArgs", func() {
+			newShovel := shovel.DeepCopy()
+			newShovel.Spec.SourceConsumerArgs = &runtime.RawExtension{Raw: []byte(`{"x-priority": 10}`)}
 			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
 		})
 	})

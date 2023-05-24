@@ -36,7 +36,8 @@ SuperStream is the Schema for the queues API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1alpha1`
 | *`kind`* __string__ | `SuperStream`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha1-superstreamspec[$$SuperStreamSpec$$]__ | 
@@ -56,7 +57,8 @@ SuperStreamList contains a list of SuperStreams
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1alpha1`
 | *`kind`* __string__ | `SuperStreamList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha1-superstream[$$SuperStream$$] array__ | 
@@ -151,7 +153,8 @@ Binding is the Schema for the bindings API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Binding`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-bindingspec[$$BindingSpec$$]__ | 
@@ -171,7 +174,8 @@ BindingList contains a list of Binding
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `BindingList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-binding[$$Binding$$] array__ | 
@@ -278,7 +282,8 @@ Exchange is the Schema for the exchanges API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Exchange`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-exchangespec[$$ExchangeSpec$$]__ | 
@@ -298,7 +303,8 @@ ExchangeList contains a list of Exchange
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `ExchangeList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-exchange[$$Exchange$$] array__ | 
@@ -361,7 +367,8 @@ Federation is the Schema for the federations API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Federation`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federationspec[$$FederationSpec$$]__ | 
@@ -381,7 +388,8 @@ FederationList contains a list of Federation
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `FederationList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federation[$$Federation$$] array__ | 
@@ -450,7 +458,8 @@ Permission is the Schema for the permissions API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Permission`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-permissionspec[$$PermissionSpec$$]__ | 
@@ -470,7 +479,8 @@ PermissionList contains a list of Permission
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `PermissionList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-permission[$$Permission$$] array__ | 
@@ -531,7 +541,8 @@ Policy is the Schema for the policies API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Policy`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-policyspec[$$PolicySpec$$]__ | 
@@ -551,7 +562,8 @@ PolicyList contains a list of Policy
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `PolicyList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-policy[$$Policy$$] array__ | 
@@ -614,7 +626,8 @@ Queue is the Schema for the queues API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Queue`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-queuespec[$$QueueSpec$$]__ | 
@@ -634,7 +647,8 @@ QueueList contains a list of Queue
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `QueueList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-queue[$$Queue$$] array__ | 
@@ -727,7 +741,8 @@ SchemaReplication is the Schema for the schemareplications API This feature requ
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `SchemaReplication`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-schemareplicationspec[$$SchemaReplicationSpec$$]__ | 
@@ -747,7 +762,8 @@ SchemaReplicationList contains a list of SchemaReplication
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `SchemaReplicationList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-schemareplication[$$SchemaReplication$$] array__ | 
@@ -824,7 +840,8 @@ Shovel is the Schema for the shovels API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Shovel`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-shovelspec[$$ShovelSpec$$]__ | 
@@ -844,7 +861,8 @@ ShovelList contains a list of Shovel
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `ShovelList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-shovel[$$Shovel$$] array__ | 
@@ -874,12 +892,13 @@ ShovelSpec defines the desired state of Shovel For how to configure Shovel, see:
 | *`destAddForwardHeaders`* __boolean__ | 
 | *`destAddTimestampHeader`* __boolean__ | 
 | *`destAddress`* __string__ | 
-| *`destApplicationProperties`* __string__ | 
 | *`destExchange`* __string__ | 
 | *`destExchangeKey`* __string__ | 
-| *`destProperties`* __string__ | 
 | *`destProtocol`* __string__ | 
-| *`destPublishProperties`* __string__ | 
+| *`destApplicationProperties`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | 
+| *`destProperties`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | 
+| *`destPublishProperties`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | 
+| *`destMessageAnnotations`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | 
 | *`destQueue`* __string__ | 
 | *`prefetchCount`* __integer__ | 
 | *`reconnectDelay`* __integer__ | 
@@ -890,6 +909,7 @@ ShovelSpec defines the desired state of Shovel For how to configure Shovel, see:
 | *`srcPrefetchCount`* __integer__ | 
 | *`srcProtocol`* __string__ | 
 | *`srcQueue`* __string__ | 
+| *`srcConsumerArgs`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | 
 |===
 
 
@@ -926,7 +946,8 @@ TopicPermission is the Schema for the topicpermissions API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `TopicPermission`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-topicpermissionspec[$$TopicPermissionSpec$$]__ | 
@@ -965,7 +986,8 @@ TopicPermissionList contains a list of TopicPermission
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `TopicPermissionList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-topicpermission[$$TopicPermission$$] array__ | 
@@ -1028,7 +1050,8 @@ User is the Schema for the users API.
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `User`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-userspec[$$UserSpec$$]__ | Spec configures the desired state of the User object.
@@ -1048,7 +1071,8 @@ UserList contains a list of Users.
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `UserList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-user[$$User$$] array__ | 
@@ -1138,7 +1162,8 @@ Vhost is the Schema for the vhosts API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Vhost`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhostspec[$$VhostSpec$$]__ | 
@@ -1158,7 +1183,8 @@ VhostList contains a list of Vhost
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `VhostList`
-| *`TypeMeta`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#typemeta-v1-meta[$$TypeMeta$$]__ | 
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhost[$$Vhost$$] array__ | 

@@ -1,13 +1,46 @@
 package internal
 
 import (
+	"encoding/json"
+	"fmt"
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"strings"
 )
 
-func GenerateShovelDefinition(s *topology.Shovel, srcUri, destUri string) rabbithole.ShovelDefinition {
-	return rabbithole.ShovelDefinition{
+func GenerateShovelDefinition(s *topology.Shovel, srcUri, destUri string) (*rabbithole.ShovelDefinition, error) {
+	srcConArgs := make(map[string]interface{})
+	if s.Spec.SourceConsumerArgs != nil {
+		if err := json.Unmarshal(s.Spec.SourceConsumerArgs.Raw, &srcConArgs); err != nil {
+			return nil, fmt.Errorf("failed to unmarshall source consumer args: %v", err)
+		}
+	}
+	appProperties := make(map[string]interface{})
+	if s.Spec.DestinationApplicationProperties != nil {
+		if err := json.Unmarshal(s.Spec.DestinationApplicationProperties.Raw, &appProperties); err != nil {
+			return nil, fmt.Errorf("failed to unmarshall destination application properties: %v", err)
+		}
+	}
+	destProperties := make(map[string]interface{})
+	if s.Spec.DestinationProperties != nil {
+		if err := json.Unmarshal(s.Spec.DestinationProperties.Raw, &destProperties); err != nil {
+			return nil, fmt.Errorf("failed to unmarshall destination properties: %v", err)
+		}
+	}
+	destPubProperties := make(map[string]interface{})
+	if s.Spec.DestinationPublishProperties != nil {
+		if err := json.Unmarshal(s.Spec.DestinationPublishProperties.Raw, &destPubProperties); err != nil {
+			return nil, fmt.Errorf("failed to unmarshall destination publish properties: %v", err)
+		}
+	}
+	destMsgAnnotations := make(map[string]interface{})
+	if s.Spec.DestinationMessageAnnotations != nil {
+		if err := json.Unmarshal(s.Spec.DestinationMessageAnnotations.Raw, &destMsgAnnotations); err != nil {
+			return nil, fmt.Errorf("failed to unmarshall destination message annotations: %v", err)
+		}
+	}
+
+	return &rabbithole.ShovelDefinition{
 		SourceURI:                        strings.Split(srcUri, ","),
 		DestinationURI:                   strings.Split(destUri, ","),
 		AckMode:                          s.Spec.AckMode,
@@ -16,13 +49,14 @@ func GenerateShovelDefinition(s *topology.Shovel, srcUri, destUri string) rabbit
 		DestinationAddForwardHeaders:     s.Spec.DestinationAddForwardHeaders,
 		DestinationAddTimestampHeader:    s.Spec.DestinationAddTimestampHeader,
 		DestinationAddress:               s.Spec.DestinationAddress,
-		DestinationApplicationProperties: s.Spec.DestinationApplicationProperties,
+		DestinationApplicationProperties: appProperties,
 		DestinationExchange:              s.Spec.DestinationExchange,
 		DestinationExchangeKey:           s.Spec.DestinationExchangeKey,
-		DestinationProperties:            s.Spec.DestinationProperties,
+		DestinationProperties:            destProperties,
 		DestinationProtocol:              s.Spec.DestinationProtocol,
-		DestinationPublishProperties:     s.Spec.DestinationPublishProperties,
+		DestinationPublishProperties:     destPubProperties,
 		DestinationQueue:                 s.Spec.DestinationQueue,
+		DestinationMessageAnnotations:    destMsgAnnotations,
 		PrefetchCount:                    s.Spec.PrefetchCount,
 		ReconnectDelay:                   s.Spec.ReconnectDelay,
 		SourceAddress:                    s.Spec.SourceAddress,
@@ -32,6 +66,6 @@ func GenerateShovelDefinition(s *topology.Shovel, srcUri, destUri string) rabbit
 		SourcePrefetchCount:              s.Spec.SourcePrefetchCount,
 		SourceProtocol:                   s.Spec.SourceProtocol,
 		SourceQueue:                      s.Spec.SourceQueue,
-	}
-
+		SourceConsumerArgs:               srcConArgs,
+	}, nil
 }

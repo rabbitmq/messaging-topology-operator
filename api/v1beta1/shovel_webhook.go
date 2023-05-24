@@ -22,6 +22,9 @@ var _ webhook.Validator = &Shovel{}
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (s *Shovel) ValidateCreate() error {
+	if err := s.amqp10Validate(); err != nil {
+		return err
+	}
 	return s.Spec.RabbitmqClusterReference.ValidateOnCreate(s.GroupResource(), s.Name)
 }
 
@@ -30,6 +33,10 @@ func (s *Shovel) ValidateUpdate(old runtime.Object) error {
 	oldShovel, ok := old.(*Shovel)
 	if !ok {
 		return apierrors.NewBadRequest(fmt.Sprintf("expected a shovel but got a %T", oldShovel))
+	}
+
+	if err := s.amqp10Validate(); err != nil {
+		return err
 	}
 
 	detailMsg := "updates on name, vhost and rabbitmqClusterReference are all forbidden"
@@ -51,5 +58,20 @@ func (s *Shovel) ValidateUpdate(old runtime.Object) error {
 }
 
 func (s *Shovel) ValidateDelete() error {
+	return nil
+}
+
+func (s *Shovel) amqp10Validate() error {
+	var errorList field.ErrorList
+	if s.Spec.SourceProtocol == "amqp10" && s.Spec.SourceAddress == "" {
+		errorList = append(errorList, field.Required(field.NewPath("spec", "srcAddress"),
+			"must specify spec.srcAddress when spec.srcProtocol is amqp10"))
+		return apierrors.NewInvalid(GroupVersion.WithKind("Shovel").GroupKind(), s.Name, errorList)
+	}
+	if s.Spec.DestinationProtocol == "amqp10" && s.Spec.DestinationAddress == "" {
+		errorList = append(errorList, field.Required(field.NewPath("spec", "destAddress"),
+			"must specify spec.destAddress when spec.destProtocol is amqp10"))
+		return apierrors.NewInvalid(GroupVersion.WithKind("Shovel").GroupKind(), s.Name, errorList)
+	}
 	return nil
 }

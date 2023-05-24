@@ -3,8 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.11.3
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.11.4
   name: shovels.rabbitmq.com
 spec:
   group: rabbitmq.com
@@ -56,17 +55,26 @@ spec:
               destAddress:
                 type: string
               destApplicationProperties:
-                type: string
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
               destExchange:
                 type: string
               destExchangeKey:
                 type: string
+              destMessageAnnotations:
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
               destProperties:
-                type: string
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
               destProtocol:
+                enum:
+                - amqp091
+                - amqp10
                 type: string
               destPublishProperties:
-                type: string
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
               destQueue:
                 type: string
               name:
@@ -103,6 +111,9 @@ spec:
                 type: integer
               srcAddress:
                 type: string
+              srcConsumerArgs:
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
               srcDeleteAfter:
                 type: string
               srcExchange:
@@ -112,6 +123,9 @@ spec:
               srcPrefetchCount:
                 type: integer
               srcProtocol:
+                enum:
+                - amqp091
+                - amqp10
                 type: string
               srcQueue:
                 type: string
