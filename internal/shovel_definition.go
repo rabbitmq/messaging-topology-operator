@@ -12,31 +12,31 @@ func GenerateShovelDefinition(s *topology.Shovel, srcUri, destUri string) (*rabb
 	srcConArgs := make(map[string]interface{})
 	if s.Spec.SourceConsumerArgs != nil {
 		if err := json.Unmarshal(s.Spec.SourceConsumerArgs.Raw, &srcConArgs); err != nil {
-			return nil, fmt.Errorf("failed to unmarshall: %v", err)
+			return nil, fmt.Errorf("failed to unmarshall source consumer args: %v", err)
 		}
 	}
 	appProperties := make(map[string]interface{})
 	if s.Spec.DestinationApplicationProperties != nil {
 		if err := json.Unmarshal(s.Spec.DestinationApplicationProperties.Raw, &appProperties); err != nil {
-			return nil, fmt.Errorf("failed to unmarshall: %v", err)
+			return nil, fmt.Errorf("failed to unmarshall destination application properties: %v", err)
 		}
 	}
 	destProperties := make(map[string]interface{})
 	if s.Spec.DestinationProperties != nil {
 		if err := json.Unmarshal(s.Spec.DestinationProperties.Raw, &destProperties); err != nil {
-			return nil, fmt.Errorf("failed to unmarshall: %v", err)
+			return nil, fmt.Errorf("failed to unmarshall destination properties: %v", err)
 		}
 	}
 	destPubProperties := make(map[string]interface{})
 	if s.Spec.DestinationPublishProperties != nil {
 		if err := json.Unmarshal(s.Spec.DestinationPublishProperties.Raw, &destPubProperties); err != nil {
-			return nil, fmt.Errorf("failed to unmarshall: %v", err)
+			return nil, fmt.Errorf("failed to unmarshall destination publish properties: %v", err)
 		}
 	}
 	destMsgAnnotations := make(map[string]interface{})
 	if s.Spec.DestinationMessageAnnotations != nil {
 		if err := json.Unmarshal(s.Spec.DestinationMessageAnnotations.Raw, &destMsgAnnotations); err != nil {
-			return nil, fmt.Errorf("failed to unmarshall: %v", err)
+			return nil, fmt.Errorf("failed to unmarshall destination message annotations: %v", err)
 		}
 	}
 

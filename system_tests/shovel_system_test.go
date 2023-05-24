@@ -43,9 +43,9 @@ var _ = Describe("Shovel", func() {
 				Namespace: namespace,
 			},
 			Spec: topology.ShovelSpec{
-				UriSecret:   &corev1.LocalObjectReference{Name: shovelSecret.Name},
+				UriSecret:         &corev1.LocalObjectReference{Name: shovelSecret.Name},
 				SourceDeleteAfter: "never",
-				AckMode: "no-ack",
+				AckMode:           "no-ack",
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: rmq.Name,
 				},
@@ -66,7 +66,7 @@ var _ = Describe("Shovel", func() {
 		shovel.Spec.DestinationPublishProperties = &runtime.RawExtension{Raw: []byte(`{"delivery_mode": 2}`)}
 
 		By("declaring shovel successfully")
-		shovelInfo := declareShovelandAssertCommonProperties(ctx, shovel)
+		shovelInfo := declareAssertShovelCommonProperties(ctx, shovel)
 
 		Expect(shovelInfo.Definition.DestinationQueue).To(Equal(shovel.Spec.DestinationQueue))
 		Expect(shovelInfo.Definition.SourceQueue).To(Equal(shovel.Spec.SourceQueue))
@@ -112,7 +112,7 @@ var _ = Describe("Shovel", func() {
 
 		By("deleting shovel configuration on deletion")
 		Expect(k8sClient.Delete(ctx, shovel)).To(Succeed())
-		assertShovelConfigDeleted(shovel)
+		assertShovelDeleted(shovel)
 	})
 
 	It("works with a shovel using amqp10 protocol", func() {
@@ -129,7 +129,7 @@ var _ = Describe("Shovel", func() {
 		shovel.Spec.DestinationAddTimestampHeader = true
 
 		By("declaring shovel successfully")
-		shovelInfo := declareShovelandAssertCommonProperties(ctx, shovel)
+		shovelInfo := declareAssertShovelCommonProperties(ctx, shovel)
 
 		Expect(shovelInfo.Definition.SourceProtocol).To(Equal("amqp10"))
 		Expect(shovelInfo.Definition.DestinationProtocol).To(Equal("amqp10"))
@@ -143,11 +143,11 @@ var _ = Describe("Shovel", func() {
 
 		By("deleting shovel configuration on deletion")
 		Expect(k8sClient.Delete(ctx, shovel)).To(Succeed())
-		assertShovelConfigDeleted(shovel)
+		assertShovelDeleted(shovel)
 	})
 })
 
-func declareShovelandAssertCommonProperties(ctx context.Context, shovel *topology.Shovel) *rabbithole.ShovelInfo {
+func declareAssertShovelCommonProperties(ctx context.Context, shovel *topology.Shovel) *rabbithole.ShovelInfo {
 	Expect(k8sClient.Create(ctx, shovel, &client.CreateOptions{})).To(Succeed())
 	var shovelInfo *rabbithole.ShovelInfo
 	Eventually(func() error {
@@ -169,7 +169,7 @@ func declareShovelandAssertCommonProperties(ctx context.Context, shovel *topolog
 	return shovelInfo
 }
 
-func assertShovelConfigDeleted(shovel *topology.Shovel) {
+func assertShovelDeleted(shovel *topology.Shovel) {
 	var err error
 	Eventually(func() error {
 		_, err = rabbitClient.GetShovel("/", shovel.Spec.Name)

@@ -118,6 +118,7 @@ var _ = Describe("GenerateShovelDefinition", func() {
 		shovel.Spec.DestinationPublishProperties = &runtime.RawExtension{Raw: []byte(`{"delivery_mode": 1}`)}
 		definition, err := GenerateShovelDefinition(shovel, "", "")
 		Expect(err).NotTo(HaveOccurred())
+		// Unmarshall stores float64 for JSON numbers
 		Expect(definition.DestinationPublishProperties).To(HaveKeyWithValue("delivery_mode", float64(1)))
 	})
 

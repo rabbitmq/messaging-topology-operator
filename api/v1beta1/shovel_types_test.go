@@ -65,6 +65,7 @@ var _ = Describe("Shovel spec", func() {
 				DestinationAddTimestampHeader:    true,
 				DestinationAddress:               "myQueue",
 				DestinationApplicationProperties: &runtime.RawExtension{Raw: []byte(`{"key": "a-property"}`)},
+				DestinationMessageAnnotations:    &runtime.RawExtension{Raw: []byte(`{"key": "a-property"}`)},
 				DestinationExchange:              "an-exchange",
 				DestinationExchangeKey:           "a-key",
 				DestinationProperties:            &runtime.RawExtension{Raw: []byte(`{"key": "a-property"}`)},
@@ -80,6 +81,7 @@ var _ = Describe("Shovel spec", func() {
 				SourcePrefetchCount:              10,
 				SourceProtocol:                   "amqp091",
 				SourceQueue:                      "a-queue",
+				SourceConsumerArgs:               &runtime.RawExtension{Raw: []byte(`{"arg": "arg-value"}`)},
 			}}
 		Expect(k8sClient.Create(ctx, &shovel)).To(Succeed())
 		fetched := &Shovel{}
@@ -103,6 +105,7 @@ var _ = Describe("Shovel spec", func() {
 		Expect(fetched.Spec.DestinationExchange).To(Equal("an-exchange"))
 		Expect(fetched.Spec.DestinationExchangeKey).To(Equal("a-key"))
 		Expect(fetched.Spec.DestinationProperties.Raw).To(Equal([]byte(`{"key":"a-property"}`)))
+		Expect(fetched.Spec.DestinationMessageAnnotations.Raw).To(Equal([]byte(`{"key":"a-property"}`)))
 		Expect(fetched.Spec.DestinationQueue).To(Equal("a-queue"))
 		Expect(fetched.Spec.PrefetchCount).To(Equal(10))
 		Expect(fetched.Spec.ReconnectDelay).To(Equal(10))
@@ -114,6 +117,7 @@ var _ = Describe("Shovel spec", func() {
 		Expect(fetched.Spec.SourcePrefetchCount).To(Equal(10))
 		Expect(fetched.Spec.SourceProtocol).To(Equal("amqp091"))
 		Expect(fetched.Spec.SourceQueue).To(Equal("a-queue"))
+		Expect(fetched.Spec.SourceConsumerArgs.Raw).To(Equal([]byte(`{"arg":"arg-value"}`)))
 	})
 
 	When("creating a shovel with an invalid 'AckMode' value", func() {
@@ -135,6 +139,50 @@ var _ = Describe("Shovel spec", func() {
 				}}
 			Expect(k8sClient.Create(ctx, &shovel)).To(HaveOccurred())
 			Expect(k8sClient.Create(ctx, &shovel)).To(MatchError(`Shovel.rabbitmq.com "an-invalid-ackmode" is invalid: spec.ackMode: Unsupported value: "an-invalid-ackmode": supported values: "on-confirm", "on-publish", "no-ack"`))
+		})
+	})
+
+	When("creating a shovel with unsupported protocol", func() {
+		It("fails with validation errors", func() {
+			shovel := Shovel{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "an-invalid-destprotocol",
+					Namespace: namespace,
+				},
+				Spec: ShovelSpec{
+					Name: "an-invalid-destprotocol",
+					RabbitmqClusterReference: RabbitmqClusterReference{
+						Name: "some-cluster",
+					},
+					UriSecret: &corev1.LocalObjectReference{
+						Name: "a-secret",
+					},
+					SourceProtocol:      "amqp091",
+					DestinationProtocol: "stomp",
+				}}
+			Expect(k8sClient.Create(ctx, &shovel)).To(HaveOccurred())
+			Expect(k8sClient.Create(ctx, &shovel)).To(MatchError(`Shovel.rabbitmq.com "an-invalid-destprotocol" is invalid: spec.destProtocol: Unsupported value: "stomp": supported values: "amqp091", "amqp10"`))
+		})
+
+		It("fails with validation errors", func() {
+			shovel := Shovel{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "an-invalid-srcprotocol",
+					Namespace: namespace,
+				},
+				Spec: ShovelSpec{
+					Name: "an-invalid-srcprotocol",
+					RabbitmqClusterReference: RabbitmqClusterReference{
+						Name: "some-cluster",
+					},
+					UriSecret: &corev1.LocalObjectReference{
+						Name: "a-secret",
+					},
+					SourceProtocol:      "mqtt",
+					DestinationProtocol: "amqp10",
+				}}
+			Expect(k8sClient.Create(ctx, &shovel)).To(HaveOccurred())
+			Expect(k8sClient.Create(ctx, &shovel)).To(MatchError(`Shovel.rabbitmq.com "an-invalid-srcprotocol" is invalid: spec.srcProtocol: Unsupported value: "mqtt": supported values: "amqp091", "amqp10"`))
 		})
 	})
 })

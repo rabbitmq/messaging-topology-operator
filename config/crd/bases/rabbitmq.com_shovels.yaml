@@ -68,6 +68,9 @@ spec:
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
               destProtocol:
+                enum:
+                - amqp091
+                - amqp10
                 type: string
               destPublishProperties:
                 type: object
@@ -120,6 +123,9 @@ spec:
               srcPrefetchCount:
                 type: integer
               srcProtocol:
+                enum:
+                - amqp091
+                - amqp10
                 type: string
               srcQueue:
                 type: string

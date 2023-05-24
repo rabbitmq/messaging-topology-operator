@@ -35,7 +35,8 @@ type ShovelSpec struct {
 	DestinationAddress            string `json:"destAddress,omitempty"`
 	DestinationExchange           string `json:"destExchange,omitempty"`
 	DestinationExchangeKey        string `json:"destExchangeKey,omitempty"`
-	DestinationProtocol           string `json:"destProtocol,omitempty"`
+	// +kubebuilder:validation:Enum=amqp091;amqp10
+	DestinationProtocol string `json:"destProtocol,omitempty"`
 	// +kubebuilder:validation:Type=object
 	// +kubebuilder:pruning:PreserveUnknownFields
 	DestinationApplicationProperties *runtime.RawExtension `json:"destApplicationProperties,omitempty"`
@@ -56,8 +57,9 @@ type ShovelSpec struct {
 	SourceExchange                string                `json:"srcExchange,omitempty"`
 	SourceExchangeKey             string                `json:"srcExchangeKey,omitempty"`
 	SourcePrefetchCount           int                   `json:"srcPrefetchCount,omitempty"`
-	SourceProtocol                string                `json:"srcProtocol,omitempty"`
-	SourceQueue                   string                `json:"srcQueue,omitempty"`
+	// +kubebuilder:validation:Enum=amqp091;amqp10
+	SourceProtocol string `json:"srcProtocol,omitempty"`
+	SourceQueue    string `json:"srcQueue,omitempty"`
 	// +kubebuilder:validation:Type=object
 	// +kubebuilder:pruning:PreserveUnknownFields
 	SourceConsumerArgs *runtime.RawExtension `json:"srcConsumerArgs,omitempty"`
