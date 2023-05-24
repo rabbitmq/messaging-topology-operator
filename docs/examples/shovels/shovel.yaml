@@ -9,6 +9,10 @@ spec:
   uriSecret:
     name: shovel-secret
   srcQueue: "source-queue"
+  srcConsumerArgs: # optional consume arguments
+    x-priority: 10
   destQueue: "destination-queue"
+  destPublishProperties: # optional map of properties to overwrite when shovelling messages
+    delivery_mode: 2
   rabbitmqClusterReference:
     name: example-rabbit
