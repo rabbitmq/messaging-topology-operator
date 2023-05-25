@@ -28,8 +28,9 @@ var _ = Describe("vhost", func() {
 				Namespace: namespace,
 			},
 			Spec: topology.VhostSpec{
-				Name: "test",
-				Tags: []string{"multi_dc_replication"},
+				Name:             "test",
+				Tags:             []string{"multi_dc_replication"},
+				DefaultQueueType: "stream",
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: rmq.Name,
 				},
@@ -49,6 +50,7 @@ var _ = Describe("vhost", func() {
 		Expect(fetched.Tracing).To(BeFalse())
 		Expect(fetched.Tags).To(HaveLen(1))
 		Expect(fetched.Tags[0]).To(Equal("multi_dc_replication"))
+		Expect(fetched.DefaultQueueType).To(Equal("stream"))
 
 		By("updating status condition 'Ready'")
 		updatedVhost := topology.Vhost{}
@@ -75,6 +77,17 @@ var _ = Describe("vhost", func() {
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace}, &updateTest)).To(Succeed())
 		updateTest.Spec.Name = "new-name"
 		Expect(k8sClient.Update(ctx, &updateTest).Error()).To(ContainSubstring("spec.name: Forbidden: updates on name and rabbitmqClusterReference are all forbidden"))
+
+		By("updating vhosts configuration")
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace}, vhost)).To(Succeed())
+		vhost.Spec.Tracing = false
+		Expect(k8sClient.Update(ctx, vhost, &client.UpdateOptions{})).To(Succeed())
+		Eventually(func() bool {
+			var err error
+			fetched, err = rabbitClient.GetVhost(vhost.Spec.Name)
+			Expect(err).NotTo(HaveOccurred())
+			return fetched.Tracing
+		}, 30, 2).Should(BeFalse())
 
 		By("deleting a vhost")
 		Expect(k8sClient.Delete(ctx, vhost)).To(Succeed())

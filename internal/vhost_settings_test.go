@@ -32,4 +32,10 @@ var _ = Describe("GenerateVhostSettings", func() {
 		settings := internal.GenerateVhostSettings(v)
 		Expect(settings.Tags).To(ConsistOf("tag1", "tag2", "multi_dc_replication"))
 	})
+
+	It("sets default queue type according to vhost.spec.defaultQueueType", func() {
+		v.Spec.DefaultQueueType = "stream"
+		settings := internal.GenerateVhostSettings(v)
+		Expect(settings.DefaultQueueType).To(Equal("stream"))
+	})
 })
