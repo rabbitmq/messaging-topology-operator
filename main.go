@@ -399,7 +399,7 @@ func main() {
 
 func getEnvInDuration(envName string) time.Duration {
 	var durationInt int64
-	if durationStr := os.Getenv(envName); durationStr != "" {
+	if durationStr, ok := os.LookupEnv(envName); ok {
 		var err error
 		if durationInt, err = strconv.ParseInt(durationStr, 10, 64); err != nil {
 			log.Error(err, fmt.Sprintf("unable to parse provided '%s'", envName))
@@ -409,12 +409,12 @@ func getEnvInDuration(envName string) time.Duration {
 	return time.Duration(durationInt) * time.Second
 }
 
-func getBoolEnv(envNam string) bool {
+func getBoolEnv(envName string) bool {
 	var boolVar bool
-	if boolStr := os.Getenv(envNam); boolStr != "" {
+	if boolStr, ok := os.LookupEnv(envName); ok {
 		var err error
 		if boolVar, err = strconv.ParseBool(boolStr); err != nil {
-			log.Error(err, fmt.Sprintf("unable to parse provided '%s'", envNam))
+			log.Error(err, fmt.Sprintf("unable to parse provided '%s'", envName))
 			os.Exit(1)
 		}
 	}
