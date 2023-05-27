@@ -266,22 +266,25 @@ var _ = Describe("ParseReference", func() {
 			objs = []runtime.Object{existingRabbitMQCluster, existingCredentialSecret, existingService}
 		})
 
-		It("returns correct creds in connectionCredentials", func() {
-			creds, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
-				topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
-				existingRabbitMQCluster.Namespace,
-				"",
-				false)
-			Expect(err).NotTo(HaveOccurred())
+		DescribeTable("returns correct creds in connectionCredentials",
+			func(connectUsingHTTP, expectedTLSEnabled bool, expectedUri string) {
+				creds, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+					topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
+					existingRabbitMQCluster.Namespace,
+					"",
+					connectUsingHTTP)
+				Expect(err).NotTo(HaveOccurred())
+				usernameBytes, _ := creds["username"]
+				passwordBytes, _ := creds["password"]
+				uriBytes, _ := creds["uri"]
+				Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
+				Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
+				Expect(uriBytes).To(Equal(expectedUri))
 
-			Expect(tlsEnabled).To(BeTrue())
-			usernameBytes, _ := creds["username"]
-			passwordBytes, _ := creds["password"]
-			uriBytes, _ := creds["uri"]
-			Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
-			Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
-			Expect(uriBytes).To(Equal("https://rmq.rabbitmq-system.svc:15671"))
-		})
+				Expect(tlsEnabled).To(Equal(expectedTLSEnabled))
+			},
+			Entry("When connectingUsingHTTP is false", false, true, "https://rmq.rabbitmq-system.svc:15671"),
+		)
 	})
 
 	When("the RabbitmqCluster is configured with TLS and other listeners are enabled", func() {
@@ -341,47 +344,26 @@ var _ = Describe("ParseReference", func() {
 			objs = []runtime.Object{existingRabbitMQCluster, existingCredentialSecret, existingService}
 		})
 
-		Context("connectUsingHTTP flag is true", func() {
-			connectUsingHTTP := true
-
-			It("returns correct creds in connectionCredentials and connects using plain http", func() {
+		DescribeTable("returns correct creds in connectionCredentials",
+			func(connectUsingHTTP, expectedTLSEnabled bool, expectedUri string) {
 				creds, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
 					topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
 					existingRabbitMQCluster.Namespace,
 					"",
 					connectUsingHTTP)
 				Expect(err).NotTo(HaveOccurred())
-
-				Expect(tlsEnabled).To(BeFalse())
 				usernameBytes, _ := creds["username"]
 				passwordBytes, _ := creds["password"]
 				uriBytes, _ := creds["uri"]
 				Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
 				Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
-				Expect(uriBytes).To(Equal("http://rmq.rabbitmq-system.svc:15672"))
-			})
-		})
+				Expect(uriBytes).To(Equal(expectedUri))
 
-		Context("connectUsingHTTP flag is false", func() {
-			connectUsingHTTP := false
-
-			It("returns correct creds in connectionCredentials and connects using https", func() {
-				creds, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
-					topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
-					existingRabbitMQCluster.Namespace,
-					"",
-					connectUsingHTTP)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(tlsEnabled).To(BeTrue())
-				usernameBytes, _ := creds["username"]
-				passwordBytes, _ := creds["password"]
-				uriBytes, _ := creds["uri"]
-				Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
-				Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
-				Expect(uriBytes).To(Equal("https://rmq.rabbitmq-system.svc:15671"))
-			})
-		})
+				Expect(tlsEnabled).To(Equal(expectedTLSEnabled))
+			},
+			Entry("When connectingUsingHTTP is true", true, false, "http://rmq.rabbitmq-system.svc:15672"),
+			Entry("When connectingUsingHTTP is false", false, true, "https://rmq.rabbitmq-system.svc:15671"),
+		)
 	})
 
 	When("the RabbitmqCluster is configured with management path_prefix", func() {
