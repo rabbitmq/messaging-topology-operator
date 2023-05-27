@@ -99,7 +99,7 @@ func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqC
 	if err != nil {
 		return nil, false, fmt.Errorf("unable to parse additionconfig setting from the rabbitmqcluster resource: %w", err)
 	}
-	useTLSForConnection := cluster.TLSEnabled() && !connectUsingHTTP
+	useTLSForConnection := cluster.TLSEnabled() && (!connectUsingHTTP || cluster.DisableNonTLSListeners())
 	endpoint, err := managementURI(svc, useTLSForConnection, clusterDomain, additionalConfig["management.path_prefix"])
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to get endpoint from specified rabbitmqcluster: %w", err)

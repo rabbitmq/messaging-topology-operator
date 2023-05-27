@@ -283,6 +283,7 @@ var _ = Describe("ParseReference", func() {
 
 				Expect(tlsEnabled).To(Equal(expectedTLSEnabled))
 			},
+			Entry("When connectingUsingHTTP is true", true, true, "https://rmq.rabbitmq-system.svc:15671"),
 			Entry("When connectingUsingHTTP is false", false, true, "https://rmq.rabbitmq-system.svc:15671"),
 		)
 	})
