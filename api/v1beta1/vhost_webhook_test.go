@@ -15,8 +15,9 @@ var _ = Describe("vhost webhook", func() {
 			Name: "test-vhost",
 		},
 		Spec: VhostSpec{
-			Name:    "test",
-			Tracing: false,
+			Name:             "test",
+			Tracing:          false,
+			DefaultQueueType: "classic",
 			RabbitmqClusterReference: RabbitmqClusterReference{
 				Name: "a-cluster",
 			},
@@ -82,6 +83,12 @@ var _ = Describe("vhost webhook", func() {
 		It("allows updates on vhost.spec.tags", func() {
 			newVhost := vhost.DeepCopy()
 			newVhost.Spec.Tags = []string{"new-tag"}
+			Expect(newVhost.ValidateUpdate(&vhost)).To(Succeed())
+		})
+
+		It("allows updates on vhost.spec.defaultQueueType", func() {
+			newVhost := vhost.DeepCopy()
+			newVhost.Spec.DefaultQueueType = "quorum"
 			Expect(newVhost.ValidateUpdate(&vhost)).To(Succeed())
 		})
 	})

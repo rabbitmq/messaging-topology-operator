@@ -99,4 +99,39 @@ var _ = Describe("Vhost", func() {
 			Name: "random-cluster",
 		}))
 	})
+
+	Context("Default queue types", func() {
+		var qTypeVhost = &Vhost{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "some-vhost",
+				Namespace: namespace,
+			},
+			Spec: VhostSpec{
+				Name: "some-vhost",
+				RabbitmqClusterReference: RabbitmqClusterReference{
+					Name: "random-cluster",
+				},
+			},
+		}
+		It("creates a vhost with default queue type configured", func() {
+			qTypeVhost.Spec.DefaultQueueType = "stream"
+			Expect(k8sClient.Create(ctx, qTypeVhost)).To(Succeed())
+
+			fetched := &Vhost{}
+			Expect(k8sClient.Get(ctx, types.NamespacedName{
+				Name:      qTypeVhost.Name,
+				Namespace: qTypeVhost.Namespace,
+			}, fetched)).To(Succeed())
+			Expect(fetched.Spec.DefaultQueueType).To(Equal("stream"))
+			Expect(fetched.Spec.RabbitmqClusterReference).To(Equal(RabbitmqClusterReference{
+				Name: "random-cluster",
+			}))
+		})
+
+		It("fails when default queue type is invalid", func() {
+			qTypeVhost.Spec.DefaultQueueType = "aqueuetype"
+			Expect(k8sClient.Create(ctx, qTypeVhost)).To(HaveOccurred())
+			Expect(k8sClient.Create(ctx, qTypeVhost)).To(MatchError(`Vhost.rabbitmq.com "some-vhost" is invalid: spec.defaultQueueType: Unsupported value: "aqueuetype": supported values: "quorum", "classic", "stream"`))
+		})
+	})
 })

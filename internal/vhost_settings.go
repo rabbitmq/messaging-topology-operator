@@ -16,7 +16,8 @@ import (
 
 func GenerateVhostSettings(v *topology.Vhost) *rabbithole.VhostSettings {
 	return &rabbithole.VhostSettings{
-		Tracing: v.Spec.Tracing,
-		Tags:    v.Spec.Tags,
+		Tracing:          v.Spec.Tracing,
+		Tags:             v.Spec.Tags,
+		DefaultQueueType: v.Spec.DefaultQueueType,
 	}
 }
