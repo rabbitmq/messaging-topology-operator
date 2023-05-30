@@ -32,4 +32,5 @@ const (
 	OperatorNamespaceEnvVar        = "OPERATOR_NAMESPACE"
 	EnableWebhooksEnvVar           = "ENABLE_WEBHOOKS"
 	ControllerSyncPeriodEnvVar     = "SYNC_PERIOD"
+	ConnectUsingPlainHTTPEnvVar    = "CONNECT_USING_PLAIN_HTTP"
 )

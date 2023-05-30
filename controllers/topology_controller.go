@@ -33,6 +33,7 @@ type TopologyReconciler struct {
 	Recorder                record.EventRecorder
 	RabbitmqClientFactory   rabbitmqclient.Factory
 	KubernetesClusterDomain string
+	ConnectUsingPlainHTTP   bool
 }
 
 func (r *TopologyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -48,7 +49,7 @@ func (r *TopologyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, r.Client, obj.RabbitReference(), obj.GetNamespace(), r.KubernetesClusterDomain)
+	credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, r.Client, obj.RabbitReference(), obj.GetNamespace(), r.KubernetesClusterDomain, r.ConnectUsingPlainHTTP)
 	if err != nil {
 		return r.handleRMQReferenceParseError(ctx, obj, err)
 	}
