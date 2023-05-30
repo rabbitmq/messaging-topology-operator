@@ -25,14 +25,14 @@ var _ = Describe("user webhook", func() {
 		It("does not allow both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret be configured", func() {
 			notAllowed := user.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = &corev1.LocalObjectReference{Name: "some-secret"}
-			Expect(apierrors.IsForbidden(notAllowed.ValidateCreate())).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(notAllowed.ValidateCreate()))).To(BeTrue())
 		})
 
 		It("spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret cannot both be empty", func() {
 			notAllowed := user.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.Name = ""
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			Expect(apierrors.IsForbidden(notAllowed.ValidateCreate())).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(notAllowed.ValidateCreate()))).To(BeTrue())
 		})
 	})
 
@@ -42,7 +42,7 @@ var _ = Describe("user webhook", func() {
 			newUser.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
 				Name: "newUser-cluster",
 			}
-			Expect(apierrors.IsForbidden(newUser.ValidateUpdate(&user))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(newUser.ValidateUpdate(&user)))).To(BeTrue())
 		})
 
 		It("does not allow updates on rabbitmqClusterReference.connectionSecret", func() {
@@ -62,13 +62,13 @@ var _ = Describe("user webhook", func() {
 			new := connectionScr.DeepCopy()
 			new.Spec.RabbitmqClusterReference.Name = "a-name"
 			new.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			Expect(apierrors.IsForbidden(new.ValidateUpdate(&connectionScr))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(new.ValidateUpdate(&connectionScr)))).To(BeTrue())
 		})
 
 		It("allows update on tags", func() {
 			newUser := user.DeepCopy()
 			newUser.Spec.Tags = []UserTag{"monitoring"}
-			Expect(newUser.ValidateUpdate(&user)).To(Succeed())
+			Expect(ignoreNilWarning(newUser.ValidateUpdate(&user))).To(Succeed())
 		})
 	})
 })

@@ -54,28 +54,28 @@ var _ = Describe("shovel webhook", func() {
 		It("does not allow both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret be configured", func() {
 			notAllowed := shovel.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = &corev1.LocalObjectReference{Name: "some-secret"}
-			Expect(apierrors.IsForbidden(notAllowed.ValidateCreate())).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(notAllowed.ValidateCreate()))).To(BeTrue())
 		})
 
 		It("spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret cannot both be empty", func() {
 			notAllowed := shovel.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.Name = ""
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			Expect(apierrors.IsForbidden(notAllowed.ValidateCreate())).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(notAllowed.ValidateCreate()))).To(BeTrue())
 		})
 
 		It("spec.srcAddress must be set if spec.srcProtocol is amqp10", func() {
 			notValid := shovel.DeepCopy()
 			notValid.Spec.SourceProtocol = "amqp10"
 			notValid.Spec.SourceAddress = ""
-			Expect(apierrors.IsInvalid(notValid.ValidateCreate())).To(BeTrue())
+			Expect(apierrors.IsInvalid(ignoreNilWarning(notValid.ValidateCreate()))).To(BeTrue())
 		})
 
 		It("spec.destAddress must be set if spec.destProtocol is amqp10", func() {
 			notValid := shovel.DeepCopy()
 			notValid.Spec.DestinationProtocol = "amqp10"
 			notValid.Spec.DestinationAddress = ""
-			Expect(apierrors.IsInvalid(notValid.ValidateCreate())).To(BeTrue())
+			Expect(apierrors.IsInvalid(ignoreNilWarning(notValid.ValidateCreate()))).To(BeTrue())
 		})
 	})
 
@@ -83,13 +83,13 @@ var _ = Describe("shovel webhook", func() {
 		It("does not allow updates on name", func() {
 			newShovel := shovel.DeepCopy()
 			newShovel.Spec.Name = "another-shovel"
-			Expect(apierrors.IsForbidden(newShovel.ValidateUpdate(&shovel))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(newShovel.ValidateUpdate(&shovel)))).To(BeTrue())
 		})
 
 		It("does not allow updates on vhost", func() {
 			newShovel := shovel.DeepCopy()
 			newShovel.Spec.Vhost = "another-vhost"
-			Expect(apierrors.IsForbidden(newShovel.ValidateUpdate(&shovel))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(newShovel.ValidateUpdate(&shovel)))).To(BeTrue())
 		})
 
 		It("does not allow updates on RabbitmqClusterReference", func() {
@@ -97,21 +97,21 @@ var _ = Describe("shovel webhook", func() {
 			newShovel.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
 				Name: "another-cluster",
 			}
-			Expect(apierrors.IsForbidden(newShovel.ValidateUpdate(&shovel))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(newShovel.ValidateUpdate(&shovel)))).To(BeTrue())
 		})
 
 		It("spec.srcAddress must be set if spec.srcProtocol is amqp10", func() {
 			newShovel := shovel.DeepCopy()
 			newShovel.Spec.SourceProtocol = "amqp10"
 			newShovel.Spec.SourceAddress = ""
-			Expect(apierrors.IsInvalid(newShovel.ValidateUpdate(&shovel))).To(BeTrue())
+			Expect(apierrors.IsInvalid(ignoreNilWarning(newShovel.ValidateUpdate(&shovel)))).To(BeTrue())
 		})
 
 		It("spec.destAddress must be set if spec.destProtocol is amqp10", func() {
 			newShovel := shovel.DeepCopy()
 			newShovel.Spec.DestinationProtocol = "amqp10"
 			newShovel.Spec.DestinationAddress = ""
-			Expect(apierrors.IsInvalid(newShovel.ValidateUpdate(&shovel))).To(BeTrue())
+			Expect(apierrors.IsInvalid(ignoreNilWarning(newShovel.ValidateUpdate(&shovel)))).To(BeTrue())
 		})
 
 		It("does not allow updates on rabbitmqClusterReference.connectionSecret", func() {
@@ -134,163 +134,36 @@ var _ = Describe("shovel webhook", func() {
 			}
 			new := connectionScr.DeepCopy()
 			new.Spec.RabbitmqClusterReference.ConnectionSecret.Name = "new-secret"
-			Expect(apierrors.IsForbidden(new.ValidateUpdate(&connectionScr))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(new.ValidateUpdate(&connectionScr)))).To(BeTrue())
 		})
 
-		It("allows updates on shovel.spec.uriSecret", func() {
+		It("allows updates on shovel configurations", func() {
 			newShovel := shovel.DeepCopy()
 			newShovel.Spec.UriSecret = &corev1.LocalObjectReference{Name: "another-secret"}
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on AckMode", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.AckMode = "on-confirm"
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on AddForwardHeaders", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.AddForwardHeaders = false
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on DeleteAfter", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.DeleteAfter = "100"
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on AddForwardHeaders", func() {
-			newShovel := shovel.DeepCopy()
-			newShovel.Spec.AddForwardHeaders = false
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on DestinationAddForwardHeaders", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.DestinationAddForwardHeaders = false
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on DestinationAddTimestampHeader", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.DestinationAddTimestampHeader = false
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on DestinationAddress", func() {
-			newShovel := shovel.DeepCopy()
-			newShovel.Spec.DeleteAfter = "another"
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on DestinationApplicationProperties", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.DestinationApplicationProperties = &runtime.RawExtension{Raw: []byte(`{"key": "new"}`)}
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on DestinationExchange", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.DestinationExchange = "new-exchange"
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on DestinationExchangeKey", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.DestinationExchangeKey = "new-key"
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on DestinationProperties", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.DestinationProperties = &runtime.RawExtension{Raw: []byte(`{"key": "new"}`)}
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on DestinationProtocol", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.DestinationProtocol = "new"
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on DestinationPublishProperties", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.DestinationPublishProperties = &runtime.RawExtension{Raw: []byte(`{"key": "new"}`)}
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on DestinationMessageAnnotations", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.DestinationMessageAnnotations = &runtime.RawExtension{Raw: []byte(`{"key": "new-annotation"}`)}
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on DestinationQueue", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.DestinationQueue = "another-queue"
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on shovel.spec.PrefetchCount", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.PrefetchCount = 20
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on shovel.spec.reconnectDelay", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.PrefetchCount = 10000
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on SourceAddress", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.SourceAddress = "another-queue"
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on SourceDeleteAfter", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.SourceDeleteAfter = "100"
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on SourceExchange", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.SourceExchange = "another-exchange"
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on SourceExchangeKey", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.SourceExchangeKey = "another-key"
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on SourcePrefetchCount", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.SourcePrefetchCount = 50
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on SourceProtocol", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.SourceProtocol = "another-protocol"
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on SourceQueue", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.SourceQueue = "another-queue"
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
-		})
-
-		It("allows updates on SourceConsumerArgs", func() {
-			newShovel := shovel.DeepCopy()
 			newShovel.Spec.SourceConsumerArgs = &runtime.RawExtension{Raw: []byte(`{"x-priority": 10}`)}
-			Expect(newShovel.ValidateUpdate(&shovel)).To(Succeed())
+			Expect(ignoreNilWarning(newShovel.ValidateUpdate(&shovel))).To(Succeed())
 		})
 	})
 })

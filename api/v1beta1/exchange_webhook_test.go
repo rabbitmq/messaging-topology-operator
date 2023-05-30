@@ -31,14 +31,14 @@ var _ = Describe("exchange webhook", func() {
 		It("does not allow both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret be configured", func() {
 			notAllowed := exchange.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = &corev1.LocalObjectReference{Name: "some-secret"}
-			Expect(apierrors.IsForbidden(notAllowed.ValidateCreate())).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(notAllowed.ValidateCreate()))).To(BeTrue())
 		})
 
 		It("spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret cannot both be empty", func() {
 			notAllowed := exchange.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.Name = ""
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			Expect(apierrors.IsForbidden(notAllowed.ValidateCreate())).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(notAllowed.ValidateCreate()))).To(BeTrue())
 		})
 	})
 
@@ -46,13 +46,13 @@ var _ = Describe("exchange webhook", func() {
 		It("does not allow updates on exchange name", func() {
 			newExchange := exchange.DeepCopy()
 			newExchange.Spec.Name = "new-name"
-			Expect(apierrors.IsForbidden(newExchange.ValidateUpdate(&exchange))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(newExchange.ValidateUpdate(&exchange)))).To(BeTrue())
 		})
 
 		It("does not allow updates on vhost", func() {
 			newExchange := exchange.DeepCopy()
 			newExchange.Spec.Vhost = "/a-new-vhost"
-			Expect(apierrors.IsForbidden(newExchange.ValidateUpdate(&exchange))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(newExchange.ValidateUpdate(&exchange)))).To(BeTrue())
 		})
 
 		It("does not allow updates on RabbitmqClusterReference", func() {
@@ -60,7 +60,7 @@ var _ = Describe("exchange webhook", func() {
 			newExchange.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
 				Name: "new-cluster",
 			}
-			Expect(apierrors.IsForbidden(newExchange.ValidateUpdate(&exchange))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(newExchange.ValidateUpdate(&exchange)))).To(BeTrue())
 		})
 
 		It("does not allow updates on rabbitmqClusterReference.connectionSecret", func() {
@@ -81,31 +81,31 @@ var _ = Describe("exchange webhook", func() {
 			}
 			new := connectionScr.DeepCopy()
 			new.Spec.RabbitmqClusterReference.ConnectionSecret.Name = "new-secret"
-			Expect(apierrors.IsForbidden(new.ValidateUpdate(&connectionScr))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(new.ValidateUpdate(&connectionScr)))).To(BeTrue())
 		})
 
 		It("does not allow updates on exchange type", func() {
 			newExchange := exchange.DeepCopy()
 			newExchange.Spec.Type = "direct"
-			Expect(apierrors.IsInvalid(newExchange.ValidateUpdate(&exchange))).To(BeTrue())
+			Expect(apierrors.IsInvalid(ignoreNilWarning(newExchange.ValidateUpdate(&exchange)))).To(BeTrue())
 		})
 
 		It("does not allow updates on durable", func() {
 			newExchange := exchange.DeepCopy()
 			newExchange.Spec.Durable = true
-			Expect(apierrors.IsInvalid(newExchange.ValidateUpdate(&exchange))).To(BeTrue())
+			Expect(apierrors.IsInvalid(ignoreNilWarning(newExchange.ValidateUpdate(&exchange)))).To(BeTrue())
 		})
 
 		It("does not allow updates on autoDelete", func() {
 			newExchange := exchange.DeepCopy()
 			newExchange.Spec.AutoDelete = false
-			Expect(apierrors.IsInvalid(newExchange.ValidateUpdate(&exchange))).To(BeTrue())
+			Expect(apierrors.IsInvalid(ignoreNilWarning(newExchange.ValidateUpdate(&exchange)))).To(BeTrue())
 		})
 
 		It("allows updates on arguments", func() {
 			newExchange := exchange.DeepCopy()
 			newExchange.Spec.Arguments = &runtime.RawExtension{Raw: []byte(`{"new":"new-value"}`)}
-			Expect(newExchange.ValidateUpdate(&exchange)).To(Succeed())
+			Expect(ignoreNilWarning(newExchange.ValidateUpdate(&exchange))).To(Succeed())
 		})
 	})
 })

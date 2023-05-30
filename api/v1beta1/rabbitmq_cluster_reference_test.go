@@ -78,7 +78,7 @@ var _ = Describe("RabbitmqClusterReference", func() {
 			It("returns no error", func() {
 				reference.ConnectionSecret = nil
 				reference.Name = "a-name"
-				Expect(reference.ValidateOnCreate(schema.GroupResource{}, "a-resource")).To(Succeed())
+				Expect(ignoreNilWarning(reference.ValidateOnCreate(schema.GroupResource{}, "a-resource"))).To(Succeed())
 			})
 		})
 
@@ -86,7 +86,7 @@ var _ = Describe("RabbitmqClusterReference", func() {
 			It("returns no error", func() {
 				reference.ConnectionSecret = &v1.LocalObjectReference{Name: "a-secret-name"}
 				reference.Name = ""
-				Expect(reference.ValidateOnCreate(schema.GroupResource{}, "a-resource")).To(Succeed())
+				Expect(ignoreNilWarning(reference.ValidateOnCreate(schema.GroupResource{}, "a-resource"))).To(Succeed())
 			})
 		})
 
@@ -94,7 +94,7 @@ var _ = Describe("RabbitmqClusterReference", func() {
 			It("returns a forbidden api error", func() {
 				reference.Name = "a-cluster"
 				reference.ConnectionSecret = &v1.LocalObjectReference{Name: "a-secret-name"}
-				Expect(apierrors.IsForbidden(reference.ValidateOnCreate(schema.GroupResource{}, "a-resource"))).To(BeTrue())
+				Expect(apierrors.IsForbidden(ignoreNilWarning(reference.ValidateOnCreate(schema.GroupResource{}, "a-resource")))).To(BeTrue())
 			})
 		})
 
@@ -102,7 +102,7 @@ var _ = Describe("RabbitmqClusterReference", func() {
 			It("returns a forbidden api error", func() {
 				reference.ConnectionSecret = nil
 				reference.Name = ""
-				Expect(apierrors.IsForbidden(reference.ValidateOnCreate(schema.GroupResource{}, "a-resource"))).To(BeTrue())
+				Expect(apierrors.IsForbidden(ignoreNilWarning(reference.ValidateOnCreate(schema.GroupResource{}, "a-resource")))).To(BeTrue())
 			})
 		})
 	})

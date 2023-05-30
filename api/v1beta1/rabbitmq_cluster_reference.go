@@ -5,6 +5,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 type RabbitmqClusterReference struct {
@@ -48,17 +49,17 @@ func (r *RabbitmqClusterReference) Matches(new *RabbitmqClusterReference) bool {
 
 // ValidateOnCreate validates RabbitmqClusterReference on resources create
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both; else it errors
-func (ref *RabbitmqClusterReference) ValidateOnCreate(groupResource schema.GroupResource, name string) error {
+func (ref *RabbitmqClusterReference) ValidateOnCreate(groupResource schema.GroupResource, name string) (admission.Warnings, error) {
 	if ref.Name != "" && ref.ConnectionSecret != nil {
-		return apierrors.NewForbidden(groupResource, name,
+		return nil, apierrors.NewForbidden(groupResource, name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
 				"do not provide both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret"))
 	}
 
 	if ref.Name == "" && ref.ConnectionSecret == nil {
-		return apierrors.NewForbidden(groupResource, name,
+		return nil, apierrors.NewForbidden(groupResource, name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
 				"must provide either spec.rabbitmqClusterReference.name or spec.rabbitmqClusterReference.connectionSecret"))
 	}
-	return nil
+	return nil, nil
 }

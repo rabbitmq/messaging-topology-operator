@@ -7,6 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 func (u *User) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -21,25 +22,25 @@ var _ webhook.Validator = &User{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
-func (u *User) ValidateCreate() error {
+func (u *User) ValidateCreate() (admission.Warnings, error) {
 	return u.Spec.RabbitmqClusterReference.ValidateOnCreate(u.GroupResource(), u.Name)
 }
 
 // ValidateUpdate returns error type 'forbidden' for updates on rabbitmqClusterReference
 // user.spec.tags can be updated
-func (u *User) ValidateUpdate(old runtime.Object) error {
+func (u *User) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
 	oldUser, ok := old.(*User)
 	if !ok {
-		return apierrors.NewBadRequest(fmt.Sprintf("expected a user but got a %T", old))
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a user but got a %T", old))
 	}
 
 	if !oldUser.Spec.RabbitmqClusterReference.Matches(&u.Spec.RabbitmqClusterReference) {
-		return apierrors.NewForbidden(u.GroupResource(), u.Name,
+		return nil, apierrors.NewForbidden(u.GroupResource(), u.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), "update on rabbitmqClusterReference is forbidden"))
 	}
-	return nil
+	return nil, nil
 }
 
-func (u *User) ValidateDelete() error {
-	return nil
+func (u *User) ValidateDelete() (admission.Warnings, error) {
+	return nil, nil
 }

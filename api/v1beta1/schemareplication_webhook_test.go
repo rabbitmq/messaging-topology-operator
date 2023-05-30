@@ -28,14 +28,14 @@ var _ = Describe("schema-replication webhook", func() {
 		It("does not allow both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret be configured", func() {
 			notAllowed := replication.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = &corev1.LocalObjectReference{Name: "some-secret"}
-			Expect(apierrors.IsForbidden(notAllowed.ValidateCreate())).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(notAllowed.ValidateCreate()))).To(BeTrue())
 		})
 
 		It("spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret cannot both be empty", func() {
 			notAllowed := replication.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.Name = ""
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			Expect(apierrors.IsForbidden(notAllowed.ValidateCreate())).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(notAllowed.ValidateCreate()))).To(BeTrue())
 		})
 
 		It("does not allow both spec.upstreamSecret and spec.secretBackend.vault.userPath be configured", func() {
@@ -45,7 +45,7 @@ var _ = Describe("schema-replication webhook", func() {
 					SecretPath: "not-good",
 				},
 			}
-			Expect(apierrors.IsForbidden(notAllowed.ValidateCreate())).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(notAllowed.ValidateCreate()))).To(BeTrue())
 		})
 
 		It("spec.upstreamSecret and spec.secretBackend.vault.userPath cannot both be not configured", func() {
@@ -54,7 +54,7 @@ var _ = Describe("schema-replication webhook", func() {
 				Vault: &VaultSpec{},
 			}
 			notAllowed.Spec.UpstreamSecret.Name = ""
-			Expect(apierrors.IsForbidden(notAllowed.ValidateCreate())).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(notAllowed.ValidateCreate()))).To(BeTrue())
 		})
 	})
 
@@ -64,7 +64,7 @@ var _ = Describe("schema-replication webhook", func() {
 			updated.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
 				Name: "different-cluster",
 			}
-			Expect(apierrors.IsForbidden(updated.ValidateUpdate(&replication))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(updated.ValidateUpdate(&replication)))).To(BeTrue())
 		})
 
 		It("does not allow both spec.upstreamSecret and spec.secretBackend.vault.userPath be configured", func() {
@@ -74,7 +74,7 @@ var _ = Describe("schema-replication webhook", func() {
 					SecretPath: "not-good",
 				},
 			}
-			Expect(apierrors.IsForbidden(updated.ValidateUpdate(&replication))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(updated.ValidateUpdate(&replication)))).To(BeTrue())
 		})
 
 		It("spec.upstreamSecret and spec.secretBackend.vault.userPath cannot both be not configured", func() {
@@ -83,7 +83,7 @@ var _ = Describe("schema-replication webhook", func() {
 				Vault: &VaultSpec{},
 			}
 			updated.Spec.UpstreamSecret.Name = ""
-			Expect(apierrors.IsForbidden(updated.ValidateUpdate(&replication))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(updated.ValidateUpdate(&replication)))).To(BeTrue())
 		})
 
 		It("allows update on spec.secretBackend.vault.userPath", func() {
@@ -94,7 +94,7 @@ var _ = Describe("schema-replication webhook", func() {
 				},
 			}
 			updated.Spec.UpstreamSecret.Name = ""
-			Expect(updated.ValidateUpdate(&replication)).To(Succeed())
+			Expect(ignoreNilWarning(updated.ValidateUpdate(&replication))).To(Succeed())
 		})
 
 		It("does not allow updates on rabbitmqClusterReference.connectionSecret", func() {
@@ -116,7 +116,7 @@ var _ = Describe("schema-replication webhook", func() {
 			}
 			newObj := connectionScr.DeepCopy()
 			newObj.Spec.RabbitmqClusterReference.ConnectionSecret.Name = "newObj-secret"
-			Expect(apierrors.IsForbidden(newObj.ValidateUpdate(&connectionScr))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(newObj.ValidateUpdate(&connectionScr)))).To(BeTrue())
 		})
 
 		It("allows updates on spec.upstreamSecret", func() {
@@ -124,13 +124,13 @@ var _ = Describe("schema-replication webhook", func() {
 			updated.Spec.UpstreamSecret = &corev1.LocalObjectReference{
 				Name: "a-different-secret",
 			}
-			Expect(updated.ValidateUpdate(&replication)).To(Succeed())
+			Expect(ignoreNilWarning(updated.ValidateUpdate(&replication))).To(Succeed())
 		})
 
 		It("allows updates on spec.endpoints", func() {
 			updated := replication.DeepCopy()
 			updated.Spec.Endpoints = "abc.new-rmq:1111"
-			Expect(updated.ValidateUpdate(&replication)).To(Succeed())
+			Expect(ignoreNilWarning(updated.ValidateUpdate(&replication))).To(Succeed())
 		})
 	})
 })

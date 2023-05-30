@@ -7,6 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 func (s *SchemaReplication) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -22,31 +23,31 @@ var _ webhook.Validator = &SchemaReplication{}
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 // either secretBackend.vault.secretPath or upstreamSecret must be provided but not both.
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both.
-func (s *SchemaReplication) ValidateCreate() error {
+func (s *SchemaReplication) ValidateCreate() (admission.Warnings, error) {
 	if err := s.validateSecret(); err != nil {
-		return err
+		return nil, err
 	}
 	return s.Spec.RabbitmqClusterReference.ValidateOnCreate(s.GroupResource(), s.Name)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 // either secretBackend.vault.secretPath or upstreamSecret must be provided but not both.
-func (s *SchemaReplication) ValidateUpdate(old runtime.Object) error {
+func (s *SchemaReplication) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
 	oldReplication, ok := old.(*SchemaReplication)
 	if !ok {
-		return apierrors.NewBadRequest(fmt.Sprintf("expected a schema replication type but got a %T", old))
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a schema replication type but got a %T", old))
 	}
 
 	if !oldReplication.Spec.RabbitmqClusterReference.Matches(&s.Spec.RabbitmqClusterReference) {
-		return apierrors.NewForbidden(s.GroupResource(), s.Name,
+		return nil, apierrors.NewForbidden(s.GroupResource(), s.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), "update on rabbitmqClusterReference is forbidden"))
 	}
-	return s.validateSecret()
+	return nil, s.validateSecret()
 }
 
 // ValidateDelete no validation on delete
-func (s *SchemaReplication) ValidateDelete() error {
-	return nil
+func (s *SchemaReplication) ValidateDelete() (admission.Warnings, error) {
+	return nil, nil
 }
 
 func (s *SchemaReplication) validateSecret() error {

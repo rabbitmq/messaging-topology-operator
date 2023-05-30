@@ -1,7 +1,9 @@
 package v1beta1
 
 import (
+	"errors"
 	"path/filepath"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -52,3 +54,11 @@ var _ = AfterSuite(func() {
 	err := testEnv.Stop()
 	Expect(err).ToNot(HaveOccurred())
 })
+
+func ignoreNilWarning(w admission.Warnings, e error) error {
+	if w != nil {
+		return errors.New("warning should be nil")
+
+	}
+	return e
+}

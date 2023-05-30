@@ -30,14 +30,14 @@ var _ = Describe("policy webhook", func() {
 		It("does not allow both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret be configured", func() {
 			notAllowed := policy.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = &corev1.LocalObjectReference{Name: "some-secret"}
-			Expect(apierrors.IsForbidden(notAllowed.ValidateCreate())).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(notAllowed.ValidateCreate()))).To(BeTrue())
 		})
 
 		It("spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret cannot both be empty", func() {
 			notAllowed := policy.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.Name = ""
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			Expect(apierrors.IsForbidden(notAllowed.ValidateCreate())).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(notAllowed.ValidateCreate()))).To(BeTrue())
 		})
 	})
 
@@ -45,13 +45,13 @@ var _ = Describe("policy webhook", func() {
 		It("does not allow updates on policy name", func() {
 			newPolicy := policy.DeepCopy()
 			newPolicy.Spec.Name = "new-name"
-			Expect(apierrors.IsForbidden(newPolicy.ValidateUpdate(&policy))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(newPolicy.ValidateUpdate(&policy)))).To(BeTrue())
 		})
 
 		It("does not allow updates on vhost", func() {
 			newPolicy := policy.DeepCopy()
 			newPolicy.Spec.Vhost = "new-vhost"
-			Expect(apierrors.IsForbidden(newPolicy.ValidateUpdate(&policy))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(newPolicy.ValidateUpdate(&policy)))).To(BeTrue())
 		})
 
 		It("does not allow updates on RabbitmqClusterReference", func() {
@@ -59,7 +59,7 @@ var _ = Describe("policy webhook", func() {
 			newPolicy.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
 				Name: "new-cluster",
 			}
-			Expect(apierrors.IsForbidden(newPolicy.ValidateUpdate(&policy))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(newPolicy.ValidateUpdate(&policy)))).To(BeTrue())
 		})
 
 		It("does not allow updates on rabbitmqClusterReference.connectionSecret", func() {
@@ -82,31 +82,31 @@ var _ = Describe("policy webhook", func() {
 			}
 			new := connectionScr.DeepCopy()
 			new.Spec.RabbitmqClusterReference.ConnectionSecret.Name = "new-secret"
-			Expect(apierrors.IsForbidden(new.ValidateUpdate(&connectionScr))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(new.ValidateUpdate(&connectionScr)))).To(BeTrue())
 		})
 
 		It("allows updates on policy.spec.pattern", func() {
 			newPolicy := policy.DeepCopy()
 			newPolicy.Spec.Pattern = "new-pattern"
-			Expect(newPolicy.ValidateUpdate(&policy)).To(Succeed())
+			Expect(ignoreNilWarning(newPolicy.ValidateUpdate(&policy))).To(Succeed())
 		})
 
 		It("allows updates on policy.spec.applyTo", func() {
 			newPolicy := policy.DeepCopy()
 			newPolicy.Spec.ApplyTo = "queues"
-			Expect(newPolicy.ValidateUpdate(&policy)).To(Succeed())
+			Expect(ignoreNilWarning(newPolicy.ValidateUpdate(&policy))).To(Succeed())
 		})
 
 		It("allows updates on policy.spec.priority", func() {
 			newPolicy := policy.DeepCopy()
 			newPolicy.Spec.Priority = 1000
-			Expect(newPolicy.ValidateUpdate(&policy)).To(Succeed())
+			Expect(ignoreNilWarning(newPolicy.ValidateUpdate(&policy))).To(Succeed())
 		})
 
 		It("allows updates on policy.spec.definition", func() {
 			newPolicy := policy.DeepCopy()
 			newPolicy.Spec.Definition = &runtime.RawExtension{Raw: []byte(`{"key":"new-definition-value"}`)}
-			Expect(newPolicy.ValidateUpdate(&policy)).To(Succeed())
+			Expect(ignoreNilWarning(newPolicy.ValidateUpdate(&policy))).To(Succeed())
 		})
 	})
 })

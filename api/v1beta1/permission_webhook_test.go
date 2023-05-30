@@ -32,26 +32,26 @@ var _ = Describe("permission webhook", func() {
 			invalidPermission := permission.DeepCopy()
 			invalidPermission.Spec.UserReference = &corev1.LocalObjectReference{Name: "invalid"}
 			invalidPermission.Spec.User = "test-user"
-			Expect(apierrors.IsInvalid(invalidPermission.ValidateCreate())).To(BeTrue())
+			Expect(apierrors.IsInvalid(ignoreNilWarning(invalidPermission.ValidateCreate()))).To(BeTrue())
 		})
 		It("does not allow both user and userReference to be unset", func() {
 			invalidPermission := permission.DeepCopy()
 			invalidPermission.Spec.UserReference = nil
 			invalidPermission.Spec.User = ""
-			Expect(apierrors.IsInvalid(invalidPermission.ValidateCreate())).To(BeTrue())
+			Expect(apierrors.IsInvalid(ignoreNilWarning(invalidPermission.ValidateCreate()))).To(BeTrue())
 		})
 
 		It("does not allow both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret be configured", func() {
 			notAllowed := permission.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = &corev1.LocalObjectReference{Name: "some-secret"}
-			Expect(apierrors.IsForbidden(notAllowed.ValidateCreate())).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(notAllowed.ValidateCreate()))).To(BeTrue())
 		})
 
 		It("spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret cannot both be empty", func() {
 			notAllowed := permission.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.Name = ""
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			Expect(apierrors.IsForbidden(notAllowed.ValidateCreate())).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(notAllowed.ValidateCreate()))).To(BeTrue())
 		})
 	})
 
@@ -59,7 +59,7 @@ var _ = Describe("permission webhook", func() {
 		It("does not allow updates on user", func() {
 			newPermission := permission.DeepCopy()
 			newPermission.Spec.User = "new-user"
-			Expect(apierrors.IsForbidden(newPermission.ValidateUpdate(&permission))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(newPermission.ValidateUpdate(&permission)))).To(BeTrue())
 		})
 
 		It("does not allow updates on userReference", func() {
@@ -68,13 +68,13 @@ var _ = Describe("permission webhook", func() {
 			permissionWithUserRef.Spec.UserReference = &corev1.LocalObjectReference{Name: "a-user"}
 			newPermission := permissionWithUserRef.DeepCopy()
 			newPermission.Spec.UserReference = &corev1.LocalObjectReference{Name: "a-new-user"}
-			Expect(apierrors.IsForbidden(newPermission.ValidateUpdate(permissionWithUserRef))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(newPermission.ValidateUpdate(permissionWithUserRef)))).To(BeTrue())
 		})
 
 		It("does not allow updates on vhost", func() {
 			newPermission := permission.DeepCopy()
 			newPermission.Spec.Vhost = "new-vhost"
-			Expect(apierrors.IsForbidden(newPermission.ValidateUpdate(&permission))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(newPermission.ValidateUpdate(&permission)))).To(BeTrue())
 		})
 
 		It("does not allow updates on RabbitmqClusterReference", func() {
@@ -82,7 +82,7 @@ var _ = Describe("permission webhook", func() {
 			newPermission.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
 				Name: "new-cluster",
 			}
-			Expect(apierrors.IsForbidden(newPermission.ValidateUpdate(&permission))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(newPermission.ValidateUpdate(&permission)))).To(BeTrue())
 		})
 
 		It("does not allow updates on rabbitmqClusterReference.connectionSecret", func() {
@@ -107,38 +107,38 @@ var _ = Describe("permission webhook", func() {
 			}
 			new := connectionScr.DeepCopy()
 			new.Spec.RabbitmqClusterReference.ConnectionSecret.Name = "new-secret"
-			Expect(apierrors.IsForbidden(new.ValidateUpdate(&connectionScr))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(new.ValidateUpdate(&connectionScr)))).To(BeTrue())
 		})
 
 		It("allows updates on permission.spec.permissions.configure", func() {
 			newPermission := permission.DeepCopy()
 			newPermission.Spec.Permissions.Configure = "?"
-			Expect(newPermission.ValidateUpdate(&permission)).To(Succeed())
+			Expect(ignoreNilWarning(newPermission.ValidateUpdate(&permission))).To(Succeed())
 		})
 
 		It("allows updates on permission.spec.permissions.read", func() {
 			newPermission := permission.DeepCopy()
 			newPermission.Spec.Permissions.Read = "?"
-			Expect(newPermission.ValidateUpdate(&permission)).To(Succeed())
+			Expect(ignoreNilWarning(newPermission.ValidateUpdate(&permission))).To(Succeed())
 		})
 
 		It("allows updates on permission.spec.permissions.write", func() {
 			newPermission := permission.DeepCopy()
 			newPermission.Spec.Permissions.Write = "?"
-			Expect(newPermission.ValidateUpdate(&permission)).To(Succeed())
+			Expect(ignoreNilWarning(newPermission.ValidateUpdate(&permission))).To(Succeed())
 		})
 
 		It("does not allow user and userReference to be specified at the same time", func() {
 			newPermission := permission.DeepCopy()
 			newPermission.Spec.UserReference = &corev1.LocalObjectReference{Name: "invalid"}
-			Expect(apierrors.IsInvalid(newPermission.ValidateUpdate(&permission))).To(BeTrue())
+			Expect(apierrors.IsInvalid(ignoreNilWarning(newPermission.ValidateUpdate(&permission)))).To(BeTrue())
 		})
 
 		It("does not allow both user and userReference to be unset", func() {
 			newPermission := permission.DeepCopy()
 			newPermission.Spec.User = ""
 			newPermission.Spec.UserReference = nil
-			Expect(apierrors.IsInvalid(newPermission.ValidateUpdate(&permission))).To(BeTrue())
+			Expect(apierrors.IsInvalid(ignoreNilWarning(newPermission.ValidateUpdate(&permission)))).To(BeTrue())
 		})
 	})
 })

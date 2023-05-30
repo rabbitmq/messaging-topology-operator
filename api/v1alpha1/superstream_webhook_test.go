@@ -31,14 +31,16 @@ var _ = Describe("superstream webhook", func() {
 		It("does not allow both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret be configured", func() {
 			notAllowed := superstream.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = &corev1.LocalObjectReference{Name: "some-secret"}
-			Expect(apierrors.IsForbidden(notAllowed.ValidateCreate())).To(BeTrue())
+			_, err := notAllowed.ValidateCreate()
+			Expect(apierrors.IsForbidden(err)).To(BeTrue())
 		})
 
 		It("spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret cannot both be empty", func() {
 			notAllowed := superstream.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.Name = ""
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			Expect(apierrors.IsForbidden(notAllowed.ValidateCreate())).To(BeTrue())
+			_, err := notAllowed.ValidateCreate()
+			Expect(apierrors.IsForbidden(err)).To(BeTrue())
 		})
 	})
 
@@ -46,13 +48,15 @@ var _ = Describe("superstream webhook", func() {
 		It("does not allow updates on superstream name", func() {
 			newSuperStream := superstream.DeepCopy()
 			newSuperStream.Spec.Name = "new-name"
-			Expect(apierrors.IsForbidden(newSuperStream.ValidateUpdate(&superstream))).To(BeTrue())
+			_, err := newSuperStream.ValidateUpdate(&superstream)
+			Expect(apierrors.IsForbidden(err)).To(BeTrue())
 		})
 
 		It("does not allow updates on superstream vhost", func() {
 			newSuperStream := superstream.DeepCopy()
 			newSuperStream.Spec.Vhost = "new-vhost"
-			Expect(apierrors.IsForbidden(newSuperStream.ValidateUpdate(&superstream))).To(BeTrue())
+			_, err := newSuperStream.ValidateUpdate(&superstream)
+			Expect(apierrors.IsForbidden(err)).To(BeTrue())
 		})
 
 		It("does not allow updates on RabbitmqClusterReference", func() {
@@ -60,44 +64,51 @@ var _ = Describe("superstream webhook", func() {
 			newSuperStream.Spec.RabbitmqClusterReference = topologyv1beta1.RabbitmqClusterReference{
 				Name: "new-cluster",
 			}
-			Expect(apierrors.IsForbidden(newSuperStream.ValidateUpdate(&superstream))).To(BeTrue())
+			_, err := newSuperStream.ValidateUpdate(&superstream)
+			Expect(apierrors.IsForbidden(err)).To(BeTrue())
 		})
 
 		It("does not allow updates on rabbitmqClusterReference.connectionSecret", func() {
 			newSuperStream := superstream.DeepCopy()
 			newSuperStream.Spec.RabbitmqClusterReference = topologyv1beta1.RabbitmqClusterReference{ConnectionSecret: &corev1.LocalObjectReference{Name: "a-secret"}}
-			Expect(apierrors.IsForbidden(newSuperStream.ValidateUpdate(&superstream))).To(BeTrue())
+			_, err := newSuperStream.ValidateUpdate(&superstream)
+			Expect(apierrors.IsForbidden(err)).To(BeTrue())
 		})
 
 		It("does not allow updates on superstream.spec.routingKeys", func() {
 			newSuperStream := superstream.DeepCopy()
 			newSuperStream.Spec.RoutingKeys = []string{"a1", "d6"}
-			Expect(apierrors.IsForbidden(newSuperStream.ValidateUpdate(&superstream))).To(BeTrue())
+			_, err := newSuperStream.ValidateUpdate(&superstream)
+			Expect(apierrors.IsForbidden(err)).To(BeTrue())
 		})
 
 		It("if the superstream previously had routing keys and the update only appends, the update succeeds", func() {
 			newSuperStream := superstream.DeepCopy()
 			newSuperStream.Spec.RoutingKeys = []string{"a1", "b2", "f17", "z66"}
-			Expect(newSuperStream.ValidateUpdate(&superstream)).To(Succeed())
+			_, err := newSuperStream.ValidateUpdate(&superstream)
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("if the superstream previously had no routing keys but now does, the update fails", func() {
 			superstream.Spec.RoutingKeys = nil
 			newSuperStream := superstream.DeepCopy()
 			newSuperStream.Spec.RoutingKeys = []string{"a1", "b2", "f17"}
-			Expect(apierrors.IsForbidden(newSuperStream.ValidateUpdate(&superstream))).To(BeTrue())
+			_, err := newSuperStream.ValidateUpdate(&superstream)
+			Expect(apierrors.IsForbidden(err)).To(BeTrue())
 		})
 
 		It("allows superstream.spec.partitions to be increased", func() {
 			newSuperStream := superstream.DeepCopy()
 			newSuperStream.Spec.Partitions = 1000
-			Expect(newSuperStream.ValidateUpdate(&superstream)).To(Succeed())
+			_, err := newSuperStream.ValidateUpdate(&superstream)
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("does not allow superstream.spec.partitions to be decreased", func() {
 			newSuperStream := superstream.DeepCopy()
 			newSuperStream.Spec.Partitions = 1
-			Expect(apierrors.IsForbidden(newSuperStream.ValidateUpdate(&superstream))).To(BeTrue())
+			_, err := newSuperStream.ValidateUpdate(&superstream)
+			Expect(apierrors.IsForbidden(err)).To(BeTrue())
 		})
 	})
 })

@@ -16,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 func (s *SuperStream) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -30,48 +31,48 @@ var _ webhook.Validator = &SuperStream{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
-func (s *SuperStream) ValidateCreate() error {
+func (s *SuperStream) ValidateCreate() (admission.Warnings, error) {
 	return s.Spec.RabbitmqClusterReference.ValidateOnCreate(s.GroupResource(), s.Name)
 }
 
 // ValidateUpdate returns error type 'forbidden' for updates on superstream name, vhost and rabbitmqClusterReference
-func (s *SuperStream) ValidateUpdate(old runtime.Object) error {
+func (s *SuperStream) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
 	oldSuperStream, ok := old.(*SuperStream)
 	if !ok {
-		return apierrors.NewBadRequest(fmt.Sprintf("expected a superstream but got a %T", old))
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a superstream but got a %T", old))
 	}
 
 	detailMsg := "updates on name, vhost and rabbitmqClusterReference are all forbidden"
 	if s.Spec.Name != oldSuperStream.Spec.Name {
-		return apierrors.NewForbidden(s.GroupResource(), s.Name,
+		return nil, apierrors.NewForbidden(s.GroupResource(), s.Name,
 			field.Forbidden(field.NewPath("spec", "name"), detailMsg))
 	}
 	if s.Spec.Vhost != oldSuperStream.Spec.Vhost {
-		return apierrors.NewForbidden(s.GroupResource(), s.Name,
+		return nil, apierrors.NewForbidden(s.GroupResource(), s.Name,
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
 	if !oldSuperStream.Spec.RabbitmqClusterReference.Matches(&s.Spec.RabbitmqClusterReference) {
-		return apierrors.NewForbidden(s.GroupResource(), s.Name,
+		return nil, apierrors.NewForbidden(s.GroupResource(), s.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}
 
 	if !routingKeyUpdatePermitted(oldSuperStream.Spec.RoutingKeys, s.Spec.RoutingKeys) {
-		return apierrors.NewForbidden(s.GroupResource(), s.Name,
+		return nil, apierrors.NewForbidden(s.GroupResource(), s.Name,
 			field.Forbidden(field.NewPath("spec", "routingKeys"), "updates may only add to the existing list of routing keys"))
 	}
 
 	if s.Spec.Partitions < oldSuperStream.Spec.Partitions {
-		return apierrors.NewForbidden(s.GroupResource(), s.Name,
+		return nil, apierrors.NewForbidden(s.GroupResource(), s.Name,
 			field.Forbidden(field.NewPath("spec", "partitions"), "updates may only increase the partition count, and may not decrease it"))
 	}
 
-	return nil
+	return nil, nil
 }
 
 // ValidateDelete no validation on delete
-func (s *SuperStream) ValidateDelete() error {
-	return nil
+func (s *SuperStream) ValidateDelete() (admission.Warnings, error) {
+	return nil, nil
 }
 
 // routingKeyUpdatePermitted allows updates only if adding additional keys at the end of the list of keys

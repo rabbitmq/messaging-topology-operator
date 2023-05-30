@@ -8,6 +8,7 @@ import (
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 func (b *Binding) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -22,27 +23,27 @@ var _ webhook.Validator = &Binding{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
-func (b *Binding) ValidateCreate() error {
+func (b *Binding) ValidateCreate() (admission.Warnings, error) {
 	return b.Spec.RabbitmqClusterReference.ValidateOnCreate(b.GroupResource(), b.Name)
 }
 
 // ValidateUpdate updates on vhost and rabbitmqClusterReference are forbidden
-func (b *Binding) ValidateUpdate(old runtime.Object) error {
+func (b *Binding) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
 	oldBinding, ok := old.(*Binding)
 	if !ok {
-		return apierrors.NewBadRequest(fmt.Sprintf("expected a binding but got a %T", old))
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a binding but got a %T", old))
 	}
 
 	var allErrs field.ErrorList
 	detailMsg := "updates on vhost and rabbitmqClusterReference are all forbidden"
 
 	if b.Spec.Vhost != oldBinding.Spec.Vhost {
-		return apierrors.NewForbidden(b.GroupResource(), b.Name,
+		return nil, apierrors.NewForbidden(b.GroupResource(), b.Name,
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
 	if !oldBinding.Spec.RabbitmqClusterReference.Matches(&b.Spec.RabbitmqClusterReference) {
-		return apierrors.NewForbidden(b.GroupResource(), b.Name,
+		return nil, apierrors.NewForbidden(b.GroupResource(), b.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}
 
@@ -87,12 +88,12 @@ func (b *Binding) ValidateUpdate(old runtime.Object) error {
 	}
 
 	if len(allErrs) == 0 {
-		return nil
+		return nil, nil
 	}
 
-	return apierrors.NewInvalid(GroupVersion.WithKind("Binding").GroupKind(), b.Name, allErrs)
+	return nil, apierrors.NewInvalid(GroupVersion.WithKind("Binding").GroupKind(), b.Name, allErrs)
 }
 
-func (b *Binding) ValidateDelete() error {
-	return nil
+func (b *Binding) ValidateDelete() (admission.Warnings, error) {
+	return nil, nil
 }
