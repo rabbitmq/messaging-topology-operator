@@ -113,7 +113,7 @@ func (vc VaultClient) ReadCredentials(path string) (string, string, error) {
 		return "", "", errors.New("returned Vault secret is nil")
 	}
 
-	if secret != nil && secret.Warnings != nil && len(secret.Warnings) > 0 {
+	if secret.Warnings != nil && len(secret.Warnings) > 0 {
 		return "", "", fmt.Errorf("warnings were returned from Vault: %v", secret.Warnings)
 	}
 

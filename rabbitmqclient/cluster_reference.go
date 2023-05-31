@@ -202,10 +202,10 @@ func managementURI(svc *corev1.Service, useTLSForConnection bool, clusterDomain 
 	if useTLSForConnection {
 		scheme = "https"
 	}
-	url := url.URL{
+	u := url.URL{
 		Scheme: scheme,
 		Host:   fmt.Sprintf("%s.%s.svc%s:%d", svc.Name, svc.Namespace, clusterDomain, managementUiPort),
 		Path:   pathPrefix,
 	}
-	return url.String(), nil
+	return u.String(), nil
 }
