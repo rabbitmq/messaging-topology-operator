@@ -7,6 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 func (q *Queue) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -21,9 +22,9 @@ var _ webhook.Validator = &Queue{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
-func (q *Queue) ValidateCreate() error {
+func (q *Queue) ValidateCreate() (admission.Warnings, error) {
 	if q.Spec.Type == "quorum" && q.Spec.Durable == false {
-		return apierrors.NewForbidden(q.GroupResource(), q.Name,
+		return nil, apierrors.NewForbidden(q.GroupResource(), q.Name,
 			field.Forbidden(field.NewPath("spec", "durable"),
 				"Quorum queues must have durable set to true"))
 	}
@@ -34,26 +35,26 @@ func (q *Queue) ValidateCreate() error {
 // returns error type 'forbidden' for updates that the controller chooses to disallow: queue name/vhost/rabbitmqClusterReference
 // returns error type 'invalid' for updates that will be rejected by rabbitmq server: queue types/autoDelete/durable
 // queue arguments not handled because implementation couldn't change
-func (q *Queue) ValidateUpdate(old runtime.Object) error {
+func (q *Queue) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
 	oldQueue, ok := old.(*Queue)
 	if !ok {
-		return apierrors.NewBadRequest(fmt.Sprintf("expected a queue but got a %T", old))
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a queue but got a %T", old))
 	}
 
 	var allErrs field.ErrorList
 	detailMsg := "updates on name, vhost, and rabbitmqClusterReference are all forbidden"
 	if q.Spec.Name != oldQueue.Spec.Name {
-		return apierrors.NewForbidden(q.GroupResource(), q.Name,
+		return nil, apierrors.NewForbidden(q.GroupResource(), q.Name,
 			field.Forbidden(field.NewPath("spec", "name"), detailMsg))
 	}
 
 	if q.Spec.Vhost != oldQueue.Spec.Vhost {
-		return apierrors.NewForbidden(q.GroupResource(), q.Name,
+		return nil, apierrors.NewForbidden(q.GroupResource(), q.Name,
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
 	if !oldQueue.Spec.RabbitmqClusterReference.Matches(&q.Spec.RabbitmqClusterReference) {
-		return apierrors.NewForbidden(q.GroupResource(), q.Name,
+		return nil, apierrors.NewForbidden(q.GroupResource(), q.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}
 
@@ -82,12 +83,12 @@ func (q *Queue) ValidateUpdate(old runtime.Object) error {
 	}
 
 	if len(allErrs) == 0 {
-		return nil
+		return nil, nil
 	}
 
-	return apierrors.NewInvalid(GroupVersion.WithKind("Queue").GroupKind(), q.Name, allErrs)
+	return nil, apierrors.NewInvalid(GroupVersion.WithKind("Queue").GroupKind(), q.Name, allErrs)
 }
 
-func (q *Queue) ValidateDelete() error {
-	return nil
+func (q *Queue) ValidateDelete() (admission.Warnings, error) {
+	return nil, nil
 }

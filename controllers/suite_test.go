@@ -75,7 +75,7 @@ var (
 	fakeRecorder              *record.FakeRecorder
 	topologyReconcilers       []*controllers.TopologyReconciler
 	superStreamReconciler     *controllers.SuperStreamReconciler
-	statusEventsUpdateTimeout = 10 * time.Second
+	statusEventsUpdateTimeout = 20 * time.Second
 )
 
 var _ = BeforeSuite(func() {

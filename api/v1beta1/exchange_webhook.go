@@ -7,6 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 func (r *Exchange) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -21,7 +22,7 @@ var _ webhook.Validator = &Exchange{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
-func (e *Exchange) ValidateCreate() error {
+func (e *Exchange) ValidateCreate() (admission.Warnings, error) {
 	return e.Spec.RabbitmqClusterReference.ValidateOnCreate(e.GroupResource(), e.Name)
 }
 
@@ -29,26 +30,26 @@ func (e *Exchange) ValidateCreate() error {
 // returns error type 'forbidden' for updates that the controller chooses to disallow: exchange name/vhost/rabbitmqClusterReference
 // returns error type 'invalid' for updates that will be rejected by rabbitmq server: exchange types/autoDelete/durable
 // exchange.spec.arguments can be updated
-func (e *Exchange) ValidateUpdate(old runtime.Object) error {
+func (e *Exchange) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
 	oldExchange, ok := old.(*Exchange)
 	if !ok {
-		return apierrors.NewBadRequest(fmt.Sprintf("expected an exchange but got a %T", old))
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected an exchange but got a %T", old))
 	}
 
 	var allErrs field.ErrorList
 	detailMsg := "updates on name, vhost, and rabbitmqClusterReference are all forbidden"
 	if e.Spec.Name != oldExchange.Spec.Name {
-		return apierrors.NewForbidden(e.GroupResource(), e.Name,
+		return nil, apierrors.NewForbidden(e.GroupResource(), e.Name,
 			field.Forbidden(field.NewPath("spec", "name"), detailMsg))
 	}
 
 	if e.Spec.Vhost != oldExchange.Spec.Vhost {
-		return apierrors.NewForbidden(e.GroupResource(), e.Name,
+		return nil, apierrors.NewForbidden(e.GroupResource(), e.Name,
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
 	if !oldExchange.Spec.RabbitmqClusterReference.Matches(&e.Spec.RabbitmqClusterReference) {
-		return apierrors.NewForbidden(e.GroupResource(), e.Name,
+		return nil, apierrors.NewForbidden(e.GroupResource(), e.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}
 
@@ -77,12 +78,12 @@ func (e *Exchange) ValidateUpdate(old runtime.Object) error {
 	}
 
 	if len(allErrs) == 0 {
-		return nil
+		return nil, nil
 	}
 
-	return apierrors.NewInvalid(GroupVersion.WithKind("Exchange").GroupKind(), e.Name, allErrs)
+	return nil, apierrors.NewInvalid(GroupVersion.WithKind("Exchange").GroupKind(), e.Name, allErrs)
 }
 
-func (e *Exchange) ValidateDelete() error {
-	return nil
+func (e *Exchange) ValidateDelete() (admission.Warnings, error) {
+	return nil, nil
 }

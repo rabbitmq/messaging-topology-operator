@@ -28,14 +28,14 @@ var _ = Describe("vhost webhook", func() {
 		It("does not allow both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret be configured", func() {
 			notAllowed := vhost.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = &corev1.LocalObjectReference{Name: "some-secret"}
-			Expect(apierrors.IsForbidden(notAllowed.ValidateCreate())).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(notAllowed.ValidateCreate()))).To(BeTrue())
 		})
 
 		It("spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret cannot both be empty", func() {
 			notAllowed := vhost.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.Name = ""
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			Expect(apierrors.IsForbidden(notAllowed.ValidateCreate())).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(notAllowed.ValidateCreate()))).To(BeTrue())
 		})
 	})
 
@@ -43,7 +43,7 @@ var _ = Describe("vhost webhook", func() {
 		It("does not allow updates on vhost name", func() {
 			newVhost := vhost.DeepCopy()
 			newVhost.Spec.Name = "new-name"
-			Expect(apierrors.IsForbidden(newVhost.ValidateUpdate(&vhost))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(newVhost.ValidateUpdate(&vhost)))).To(BeTrue())
 		})
 
 		It("does not allow updates on RabbitmqClusterReference", func() {
@@ -51,7 +51,7 @@ var _ = Describe("vhost webhook", func() {
 			newVhost.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
 				Name: "new-cluster",
 			}
-			Expect(apierrors.IsForbidden(newVhost.ValidateUpdate(&vhost))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(newVhost.ValidateUpdate(&vhost)))).To(BeTrue())
 		})
 
 		It("does not allow updates on rabbitmqClusterReference.connectionSecret", func() {
@@ -71,25 +71,25 @@ var _ = Describe("vhost webhook", func() {
 			new := connectionScr.DeepCopy()
 			new.Spec.RabbitmqClusterReference.Name = "a-name"
 			new.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			Expect(apierrors.IsForbidden(new.ValidateUpdate(&connectionScr))).To(BeTrue())
+			Expect(apierrors.IsForbidden(ignoreNilWarning(new.ValidateUpdate(&connectionScr)))).To(BeTrue())
 		})
 
 		It("allows updates on vhost.spec.tracing", func() {
 			newVhost := vhost.DeepCopy()
 			newVhost.Spec.Tracing = true
-			Expect(newVhost.ValidateUpdate(&vhost)).To(Succeed())
+			Expect(ignoreNilWarning(newVhost.ValidateUpdate(&vhost))).To(Succeed())
 		})
 
 		It("allows updates on vhost.spec.tags", func() {
 			newVhost := vhost.DeepCopy()
 			newVhost.Spec.Tags = []string{"new-tag"}
-			Expect(newVhost.ValidateUpdate(&vhost)).To(Succeed())
+			Expect(ignoreNilWarning(newVhost.ValidateUpdate(&vhost))).To(Succeed())
 		})
 
 		It("allows updates on vhost.spec.defaultQueueType", func() {
 			newVhost := vhost.DeepCopy()
 			newVhost.Spec.DefaultQueueType = "quorum"
-			Expect(newVhost.ValidateUpdate(&vhost)).To(Succeed())
+			Expect(ignoreNilWarning(newVhost.ValidateUpdate(&vhost))).To(Succeed())
 		})
 	})
 })
