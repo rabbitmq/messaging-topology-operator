@@ -156,7 +156,17 @@ func (r *TopologyReconciler) handleRMQReferenceParseError(ctx context.Context, o
 		}
 		return ctrl.Result{}, nil
 	}
+
+	// set status condition and publish event for any other error
 	logger.Error(err, failedParseClusterRef)
+	msg := fmt.Sprintf("%s: %s", failedParseClusterRef, err.Error())
+	r.Recorder.Event(object, corev1.EventTypeWarning, "FailedCreateOrUpdate", msg)
+	object.SetStatusConditions([]topology.Condition{topology.NotReady(msg, r.getStatusConditions(object))})
+	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
+		return r.Status().Update(ctx, object)
+	}); writerErr != nil {
+		logger.Error(writerErr, failedStatusUpdate, "object", object.GetName())
+	}
 	return ctrl.Result{}, err
 }
 
