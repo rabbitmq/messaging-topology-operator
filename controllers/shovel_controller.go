@@ -51,7 +51,7 @@ func (r *ShovelReconciler) getUris(ctx context.Context, shovel *topology.Shovel)
 
 	destUri, ok := secret.Data["destUri"]
 	if !ok {
-		return "", "", fmt.Errorf("could not find key 'srcUri' in secret %s", secret.Name)
+		return "", "", fmt.Errorf("could not find key 'destUri' in secret %s", secret.Name)
 	}
 
 	return string(srcUri), string(destUri), nil
