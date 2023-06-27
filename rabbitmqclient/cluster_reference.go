@@ -15,6 +15,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const uriAnnotationKey = "rabbitmq.com/operator-connection-uri"
+
 type ClusterCredentials struct {
 	data map[string][]byte
 }
@@ -90,6 +92,18 @@ func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqC
 		}
 	}
 
+	if uriAnnotation, ok := cluster.Annotations[uriAnnotationKey]; ok {
+		uri, useTLSForConnection, err := extractURIandScheme(uriAnnotation)
+		if err != nil {
+			return nil, false, err
+		}
+		return map[string]string{
+			"username": user,
+			"password": pass,
+			"uri":      uri,
+		}, useTLSForConnection, nil
+	}
+
 	svc := &corev1.Service{}
 	if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.DefaultUser.ServiceReference.Name}, svc); err != nil {
 		return nil, false, err
@@ -140,15 +154,9 @@ func readCredentialsFromKubernetesSecret(secret *corev1.Secret) (map[string]stri
 		return nil, false, keyMissingErr("uri")
 	}
 
-	uri := string(uBytes)
-	if !strings.HasPrefix(uri, "http") {
-		uri = "http://" + uri // set scheme to http if not provided
-	}
-	var tlsEnabled bool
-	if parsed, err := url.Parse(uri); err != nil {
+	uri, tlsEnabled, err := extractURIandScheme(string(uBytes))
+	if err != nil {
 		return nil, false, err
-	} else if parsed.Scheme == "https" {
-		tlsEnabled = true
 	}
 
 	return map[string]string{
@@ -156,6 +164,19 @@ func readCredentialsFromKubernetesSecret(secret *corev1.Secret) (map[string]stri
 		"password": string(secret.Data["password"]),
 		"uri":      uri,
 	}, tlsEnabled, nil
+}
+
+func extractURIandScheme(uri string) (string, bool, error) {
+	if !strings.HasPrefix(uri, "http") {
+		uri = "http://" + uri // set scheme to http if not provided
+	}
+
+	if parsed, err := url.Parse(uri); err != nil {
+		return "", false, err
+	} else if parsed.Scheme == "https" {
+		return uri, true, nil
+	}
+	return uri, false, nil
 }
 
 func readClusterAdditionalConfig(cluster *rabbitmqv1beta1.RabbitmqCluster) (additionalConfig map[string]string, err error) {

@@ -29,6 +29,7 @@ var _ = Describe("ParseReference", func() {
 		existingService          *corev1.Service
 		ctx                      = context.Background()
 		namespace                = "rabbitmq-system"
+		uriAnnotationKey         = "rabbitmq.com/operator-connection-uri"
 	)
 
 	JustBeforeEach(func() {
@@ -761,6 +762,159 @@ var _ = Describe("ParseReference", func() {
 					"",
 					false)
 				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
+	})
+
+	When("the RabbitmqCluster is annotated with connection uri override", func() {
+		BeforeEach(func() {
+			existingRabbitMQCluster = &rabbitmqv1beta1.RabbitmqCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rmq",
+					Namespace: namespace,
+					Annotations: map[string]string{
+						uriAnnotationKey: "http://a-rabbitmq-test:2333",
+					},
+				},
+				Status: rabbitmqv1beta1.RabbitmqClusterStatus{
+					Binding: &corev1.LocalObjectReference{
+						Name: "rmq-default-user-credentials",
+					},
+					DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
+						ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
+							Name:      "rmq",
+							Namespace: namespace,
+						},
+					},
+				},
+			}
+			existingCredentialSecret = &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rmq-default-user-credentials",
+					Namespace: namespace,
+				},
+				Data: map[string][]byte{
+					"username": []byte(existingRabbitMQUsername),
+					"password": []byte(existingRabbitMQPassword),
+				},
+			}
+			existingService = &corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rmq",
+					Namespace: namespace,
+				},
+				Spec: corev1.ServiceSpec{
+					ClusterIP: "1.2.3.4",
+					Ports: []corev1.ServicePort{
+						{
+							Name: "management",
+							Port: int32(15672),
+						},
+					},
+				},
+			}
+			objs = []runtime.Object{existingRabbitMQCluster, existingCredentialSecret, existingService}
+		})
+
+		It("returns correct credentials", func() {
+			creds, tlsOn, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+				topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
+				existingRabbitMQCluster.Namespace,
+				"",
+				false)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(tlsOn).To(BeFalse())
+
+			usernameBytes, _ := creds["username"]
+			passwordBytes, _ := creds["password"]
+			uriBytes, _ := creds["uri"]
+			Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
+			Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
+			Expect(uriBytes).To(Equal("http://a-rabbitmq-test:2333"))
+		})
+
+		When("annotated URI has no scheme", func() {
+			BeforeEach(func() {
+				*existingRabbitMQCluster = rabbitmqv1beta1.RabbitmqCluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rmq",
+						Namespace: namespace,
+						Annotations: map[string]string{
+							uriAnnotationKey: "a-rabbitmq-test:7890",
+						},
+					},
+					Status: rabbitmqv1beta1.RabbitmqClusterStatus{
+						Binding: &corev1.LocalObjectReference{
+							Name: "rmq-default-user-credentials",
+						},
+						DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
+							ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
+								Name:      "rmq",
+								Namespace: namespace,
+							},
+						},
+					},
+				}
+			})
+
+			It("sets http as the scheme", func() {
+				creds, tlsOn, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+					topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
+					existingRabbitMQCluster.Namespace,
+					"",
+					false)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(tlsOn).To(BeFalse())
+
+				usernameBytes, _ := creds["username"]
+				passwordBytes, _ := creds["password"]
+				uriBytes, _ := creds["uri"]
+				Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
+				Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
+				Expect(uriBytes).To(Equal("http://a-rabbitmq-test:7890"))
+			})
+		})
+
+		When("annotated URI has https as scheme", func() {
+			BeforeEach(func() {
+				*existingRabbitMQCluster = rabbitmqv1beta1.RabbitmqCluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rmq",
+						Namespace: namespace,
+						Annotations: map[string]string{
+							uriAnnotationKey: "https://a-rabbitmq-test:2333",
+						},
+					},
+					Status: rabbitmqv1beta1.RabbitmqClusterStatus{
+						Binding: &corev1.LocalObjectReference{
+							Name: "rmq-default-user-credentials",
+						},
+						DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
+							ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
+								Name:      "rmq",
+								Namespace: namespace,
+							},
+						},
+					},
+				}
+			})
+
+			It("returns correct credentials", func() {
+				creds, tlsOn, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+					topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
+					existingRabbitMQCluster.Namespace,
+					"",
+					false)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(tlsOn).To(BeTrue())
+
+				usernameBytes, _ := creds["username"]
+				passwordBytes, _ := creds["password"]
+				uriBytes, _ := creds["uri"]
+				Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
+				Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
+				Expect(uriBytes).To(Equal("https://a-rabbitmq-test:2333"))
 			})
 		})
 
