@@ -109,7 +109,7 @@ var _ = Describe("Policy", func() {
 				},
 			}
 			Expect(k8sClient.Create(ctx, &policy)).To(HaveOccurred())
-			Expect(k8sClient.Create(ctx, &policy)).To(MatchError(`Policy.rabbitmq.com "invalid" is invalid: spec.applyTo: Unsupported value: "yo-yo": supported values: "queues", "exchanges", "all"`))
+			Expect(k8sClient.Create(ctx, &policy)).To(MatchError(`Policy.rabbitmq.com "invalid" is invalid: spec.applyTo: Unsupported value: "yo-yo": supported values: "queues", "classic_queues", "quorum_queues", "exchanges", "all"`))
 		})
 	})
 
