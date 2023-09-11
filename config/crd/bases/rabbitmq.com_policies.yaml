@@ -39,10 +39,14 @@ spec:
             properties:
               applyTo:
                 default: all
-                description: 'What this policy applies to: ''queues'', ''exchanges'',
-                  or ''all''. Default to ''all''.'
+                description: 'What this policy applies to: ''queues'', ''classic_queues'',
+                  ''quorum_queues'', ''streams'', ''exchanges'', or ''all''. Default
+                  to ''all''.'
                 enum:
                 - queues
+                - classic_queues
+                - quorum_queues
+                - streams
                 - exchanges
                 - all
                 type: string

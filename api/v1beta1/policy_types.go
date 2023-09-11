@@ -19,9 +19,9 @@ type PolicySpec struct {
 	// Required property.
 	// +kubebuilder:validation:Required
 	Pattern string `json:"pattern"`
-	// What this policy applies to: 'queues', 'exchanges', or 'all'.
+	// What this policy applies to: 'queues', 'classic_queues', 'quorum_queues', 'streams', 'exchanges', or 'all'.
 	// Default to 'all'.
-	// +kubebuilder:validation:Enum=queues;exchanges;all
+	// +kubebuilder:validation:Enum=queues;classic_queues;quorum_queues;streams;exchanges;all
 	// +kubebuilder:default:=all
 	ApplyTo string `json:"applyTo,omitempty"`
 	// Default to '0'.
