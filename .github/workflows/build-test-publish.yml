@@ -62,7 +62,7 @@ jobs:
       uses: docker/setup-buildx-action@v3
     - name: Login to Docker Hub
       if: github.event_name != 'pull_request'
-      uses: docker/login-action@v2
+      uses: docker/login-action@v3
       with:
         # github action secrets are saved in the repo
         # see github documentation on how to manage and access action secrets
