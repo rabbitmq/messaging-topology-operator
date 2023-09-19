@@ -48,7 +48,7 @@ jobs:
         check-latest: true
     - name: OCI Metadata
       id: meta
-      uses: docker/metadata-action@v4
+      uses: docker/metadata-action@v5
       with:
         images: rabbitmqoperator/messaging-topology-operator
         # generate Docker tags based on the following events/attributes
@@ -79,7 +79,7 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
     - name: OCI Metadata for single-arch amd64 image
       id: single-arch-meta-amd64
-      uses: docker/metadata-action@v4
+      uses: docker/metadata-action@v5
       with:
         images: |
           rabbitmqoperator/messaging-topology-operator
@@ -98,7 +98,7 @@ jobs:
         labels: ${{ steps.single-arch-meta-amd64.outputs.labels }}
     - name: OCI Metadata for single-arch arm64 image
       id: single-arch-meta-arm64
-      uses: docker/metadata-action@v4
+      uses: docker/metadata-action@v5
       with:
         images: |
           rabbitmqoperator/messaging-topology-operator
