@@ -586,7 +586,7 @@ PolicySpec defines the desired state of Policy https://www.rabbitmq.com/paramete
 | *`name`* __string__ | Required property; cannot be updated
 | *`vhost`* __string__ | Default to vhost '/'; cannot be updated
 | *`pattern`* __string__ | Regular expression pattern used to match queues and exchanges, e.g. "^amq.". Required property.
-| *`applyTo`* __string__ | What this policy applies to: 'queues', 'exchanges', or 'all'. Default to 'all'.
+| *`applyTo`* __string__ | What this policy applies to: 'queues', 'classic_queues', 'quorum_queues', 'streams', 'exchanges', or 'all'. Default to 'all'.
 | *`priority`* __integer__ | Default to '0'. In the event that more than one policy can match a given exchange or queue, the policy with the greatest priority applies.
 | *`definition`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | Policy definition. Required property.
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the exchange will be created in. Required property.
