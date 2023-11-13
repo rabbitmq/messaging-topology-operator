@@ -35,19 +35,19 @@ var (
 )
 
 func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string, clusterDomain string, connectUsingHTTP bool) (map[string]string, bool, error) {
-	if rmq.ConnectionSecret != nil {
-		secret := &corev1.Secret{}
-		if err := c.Get(ctx, types.NamespacedName{Namespace: requestNamespace, Name: rmq.ConnectionSecret.Name}, secret); err != nil {
-			return nil, false, err
-		}
-		return readCredentialsFromKubernetesSecret(secret)
-	}
-
 	var namespace string
 	if rmq.Namespace == "" {
 		namespace = requestNamespace
 	} else {
 		namespace = rmq.Namespace
+	}
+
+	if rmq.ConnectionSecret != nil {
+		secret := &corev1.Secret{}
+		if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: rmq.ConnectionSecret.Name}, secret); err != nil {
+			return nil, false, err
+		}
+		return readCredentialsFromKubernetesSecret(secret)
 	}
 
 	cluster := &rabbitmqv1beta1.RabbitmqCluster{}
