@@ -485,6 +485,9 @@ var _ = Describe("ParseReference", func() {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "rmq-connection-info",
 						Namespace: namespace,
+						Annotations: map[string]string{
+							"rabbitmq.com/topology-allowed-namespaces": "*",
+						},
 					},
 					Data: map[string][]byte{
 						"uri":      []byte("10.0.0.0:15672"),
