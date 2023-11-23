@@ -35,19 +35,22 @@ var (
 )
 
 func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string, clusterDomain string, connectUsingHTTP bool) (map[string]string, bool, error) {
-	if rmq.ConnectionSecret != nil {
-		secret := &corev1.Secret{}
-		if err := c.Get(ctx, types.NamespacedName{Namespace: requestNamespace, Name: rmq.ConnectionSecret.Name}, secret); err != nil {
-			return nil, false, err
-		}
-		return readCredentialsFromKubernetesSecret(secret)
-	}
-
 	var namespace string
 	if rmq.Namespace == "" {
 		namespace = requestNamespace
 	} else {
 		namespace = rmq.Namespace
+	}
+
+	if rmq.ConnectionSecret != nil {
+		secret := &corev1.Secret{}
+		if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: rmq.ConnectionSecret.Name}, secret); err != nil {
+			return nil, false, err
+		}
+		if !AllowedNamespaceSecret(rmq, requestNamespace, secret) {
+			return nil, false, ResourceNotAllowedError
+		}
+		return readCredentialsFromKubernetesSecret(secret)
 	}
 
 	cluster := &rabbitmqv1beta1.RabbitmqCluster{}
@@ -130,6 +133,24 @@ func AllowedNamespace(rmq topology.RabbitmqClusterReference, requestNamespace st
 	if rmq.Namespace != "" && rmq.Namespace != requestNamespace {
 		var isAllowed bool
 		if allowedNamespaces, ok := cluster.Annotations["rabbitmq.com/topology-allowed-namespaces"]; ok {
+			for _, allowedNamespace := range strings.Split(allowedNamespaces, ",") {
+				if requestNamespace == allowedNamespace || allowedNamespace == "*" {
+					isAllowed = true
+					break
+				}
+			}
+		}
+		if !isAllowed {
+			return false
+		}
+	}
+	return true
+}
+
+func AllowedNamespaceSecret(rmq topology.RabbitmqClusterReference, requestNamespace string, secret *corev1.Secret) bool {
+	if rmq.Namespace != "" && rmq.Namespace != requestNamespace {
+		var isAllowed bool
+		if allowedNamespaces, ok := secret.Annotations["rabbitmq.com/topology-allowed-namespaces"]; ok {
 			for _, allowedNamespace := range strings.Split(allowedNamespaces, ",") {
 				if requestNamespace == allowedNamespace || allowedNamespace == "*" {
 					isAllowed = true

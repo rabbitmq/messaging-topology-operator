@@ -29,6 +29,7 @@ var _ = Describe("ParseReference", func() {
 		existingService          *corev1.Service
 		ctx                      = context.Background()
 		namespace                = "rabbitmq-system"
+		namespaceClient          = "client"
 		uriAnnotationKey         = "rabbitmq.com/operator-connection-uri"
 	)
 
@@ -464,6 +465,48 @@ var _ = Describe("ParseReference", func() {
 						},
 					},
 					namespace,
+					"",
+					false)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(tlsEnabled).To(BeFalse())
+				returnedUser, _ := creds["username"]
+				returnedPass, _ := creds["password"]
+				returnedURI, _ := creds["uri"]
+				Expect(returnedUser).To(Equal("test-user"))
+				Expect(returnedPass).To(Equal("test-password"))
+				Expect(returnedURI).To(Equal("http://10.0.0.0:15672"))
+			})
+		})
+
+		When("when object is placed in another namespace", func() {
+			BeforeEach(func() {
+				noSchemeSecret := &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rmq-connection-info",
+						Namespace: namespace,
+						Annotations: map[string]string{
+							"rabbitmq.com/topology-allowed-namespaces": "*",
+						},
+					},
+					Data: map[string][]byte{
+						"uri":      []byte("10.0.0.0:15672"),
+						"username": []byte("test-user"),
+						"password": []byte("test-password"),
+					},
+				}
+				objs = []runtime.Object{noSchemeSecret}
+			})
+
+			It("returns the expected connection information", func() {
+				creds, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+					topology.RabbitmqClusterReference{
+						Namespace: namespace,
+						ConnectionSecret: &corev1.LocalObjectReference{
+							Name: "rmq-connection-info",
+						},
+					},
+					namespaceClient,
 					"",
 					false)
 				Expect(err).NotTo(HaveOccurred())
