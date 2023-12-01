@@ -26,7 +26,7 @@ import (
 
 type ExchangeReconciler struct{}
 
-func (r *ExchangeReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *ExchangeReconciler) DeclareFunc(_ context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
 	exchange := obj.(*topology.Exchange)
 	settings, err := internal.GenerateExchangeSettings(exchange)
 	if err != nil {

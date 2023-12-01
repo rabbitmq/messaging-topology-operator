@@ -50,11 +50,11 @@ $(KUBEBUILDER_ASSETS):
 ### Targets
 
 .PHONY: unit-tests
-unit-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet vuln manifests ## Run unit tests
+unit-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet manifests ## Run unit tests
 	ginkgo -r --randomize-all api/ internal/ rabbitmqclient/
 
 .PHONY: integration-tests
-integration-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet vuln manifests ## Run integration tests
+integration-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet manifests ## Run integration tests
 	ginkgo -r --randomize-all controllers/
 
 just-integration-tests: $(KUBEBUILDER_ASSETS) vet

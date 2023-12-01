@@ -1,8 +1,17 @@
 package controllers_test
 
 import (
+	"context"
+	"fmt"
+	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
+	v1 "k8s.io/api/core/v1"
+	k8sApiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"net/http"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -11,10 +20,14 @@ import (
 )
 
 var _ = Describe("TopologyReconciler", func() {
+	const (
+		namespace = "topology-reconciler-test"
+		name      = "topology-rabbit"
+	)
 	var (
 		commonRabbitmqClusterRef = topology.RabbitmqClusterReference{
-			Name:      "example-rabbit",
-			Namespace: "default",
+			Name:      name,
+			Namespace: namespace,
 		}
 		commonHttpCreatedResponse = &http.Response{
 			Status:     "201 Created",
@@ -24,22 +37,77 @@ var _ = Describe("TopologyReconciler", func() {
 			Status:     "204 No Content",
 			StatusCode: http.StatusNoContent,
 		}
+		topologyMgr   ctrl.Manager
+		managerCtx    context.Context
+		managerCancel context.CancelFunc
 	)
+
+	BeforeEach(func() {
+		var err error
+		topologyMgr, err = ctrl.NewManager(testEnv.Config, ctrl.Options{
+			Metrics: server.Options{
+				BindAddress: "0", // To avoid MacOS firewall pop-up every time you run this suite
+			},
+			Cache: cache.Options{
+				DefaultNamespaces: map[string]cache.Config{namespace: {}},
+			},
+			Logger: GinkgoLogr,
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		managerCtx, managerCancel = context.WithCancel(context.Background())
+		go func(ctx context.Context) {
+			defer GinkgoRecover()
+			Expect(topologyMgr.Start(ctx)).To(Succeed())
+		}(managerCtx)
+
+		c := topologyMgr.GetClient()
+		err = c.Create(context.Background(), &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}})
+		err = client.Create(context.Background(), &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}})
+		if err != nil && !k8sApiErrors.IsAlreadyExists(err) {
+			Fail(err.Error())
+		}
+
+		rmq := &rabbitmqv1beta1.RabbitmqCluster{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
+			Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
+				TLS: rabbitmqv1beta1.TLSSpec{
+					SecretName: "i-do-not-exist-but-its-fine",
+				},
+			},
+		}
+		err = createRabbitmqClusterResources(c, rmq)
+		if err != nil && !k8sApiErrors.IsAlreadyExists(err) {
+			Fail(err.Error())
+		}
+	})
+
+	AfterEach(func() {
+		managerCancel()
+		// Sad workaround to avoid controllers racing for the reconciliation of other's
+		// test cases. Without this wait, the last run test consistently fails because
+		// the previous cancelled manager is just in time to reconcile the Queue of the
+		// new/last test, and use the wrong/unexpected arguments in the queue declare call
+		//
+		// Eventual consistency is nice when you have good means of awaiting. That's not the
+		// case with testenv and kubernetes controllers.
+		<-time.After(time.Second)
+	})
 
 	When("k8s domain is configured", func() {
 		It("sets the domain name in the URI to connect to RabbitMQ", func() {
 			Expect((&controllers.TopologyReconciler{
-				Client:                  mgr.GetClient(),
+				Client:                  topologyMgr.GetClient(),
 				Type:                    &topology.Queue{},
-				Scheme:                  mgr.GetScheme(),
+				Scheme:                  topologyMgr.GetScheme(),
 				Recorder:                fakeRecorder,
 				RabbitmqClientFactory:   fakeRabbitMQClientFactory,
 				ReconcileFunc:           &controllers.QueueReconciler{},
 				KubernetesClusterDomain: ".some-domain.com",
-			}).SetupWithManager(mgr)).To(Succeed())
+			}).SetupWithManager(topologyMgr)).To(Succeed())
 
 			queue := &topology.Queue{
-				ObjectMeta: metav1.ObjectMeta{Name: "ab-queue", Namespace: "default"},
+				ObjectMeta: metav1.ObjectMeta{Name: "ab-queue", Namespace: namespace},
 				Spec:       topology.QueueSpec{RabbitmqClusterReference: commonRabbitmqClusterRef},
 			}
 			fakeRabbitMQClient.DeclareQueueReturns(commonHttpCreatedResponse, nil)
@@ -51,25 +119,24 @@ var _ = Describe("TopologyReconciler", func() {
 			}, 5).Should(BeNumerically(">", 0))
 
 			credentials, _, _ := FakeRabbitMQClientFactoryArgsForCall(0)
-			uri, found := credentials["uri"]
-			Expect(found).To(BeTrue(), "expected to find key 'uri'")
-			Expect(uri).To(BeEquivalentTo("https://example-rabbit.default.svc.some-domain.com:15671"))
+			expected := fmt.Sprintf("https://%s.%s.svc.some-domain.com:15671", name, namespace)
+			Expect(credentials).Should(HaveKeyWithValue("uri", expected))
 		})
 	})
 
 	When("domain name is not set", func() {
 		It("uses internal short name", func() {
 			Expect((&controllers.TopologyReconciler{
-				Client:                mgr.GetClient(),
+				Client:                topologyMgr.GetClient(),
 				Type:                  &topology.Queue{},
-				Scheme:                mgr.GetScheme(),
+				Scheme:                topologyMgr.GetScheme(),
 				Recorder:              fakeRecorder,
 				RabbitmqClientFactory: fakeRabbitMQClientFactory,
 				ReconcileFunc:         &controllers.QueueReconciler{},
-			}).SetupWithManager(mgr)).To(Succeed())
+			}).SetupWithManager(topologyMgr)).To(Succeed())
 
 			queue := &topology.Queue{
-				ObjectMeta: metav1.ObjectMeta{Name: "bb-queue", Namespace: "default"},
+				ObjectMeta: metav1.ObjectMeta{Name: "bb-queue", Namespace: namespace},
 				Spec:       topology.QueueSpec{RabbitmqClusterReference: commonRabbitmqClusterRef},
 			}
 			fakeRabbitMQClient.DeclareQueueReturns(commonHttpCreatedResponse, nil)
@@ -81,26 +148,25 @@ var _ = Describe("TopologyReconciler", func() {
 			}, 5).Should(BeNumerically(">", 0))
 
 			credentials, _, _ := FakeRabbitMQClientFactoryArgsForCall(0)
-			uri, found := credentials["uri"]
-			Expect(found).To(BeTrue(), "expected to find key 'uri'")
-			Expect(uri).To(BeEquivalentTo("https://example-rabbit.default.svc:15671"))
+			expected := fmt.Sprintf("https://%s.%s.svc:15671", name, namespace)
+			Expect(credentials).Should(HaveKeyWithValue("uri", expected))
 		})
 	})
 
 	When("flag for plain HTTP connection is set", func() {
 		It("uses http for connection", func() {
 			Expect((&controllers.TopologyReconciler{
-				Client:                mgr.GetClient(),
+				Client:                topologyMgr.GetClient(),
 				Type:                  &topology.Queue{},
-				Scheme:                mgr.GetScheme(),
+				Scheme:                topologyMgr.GetScheme(),
 				Recorder:              fakeRecorder,
 				RabbitmqClientFactory: fakeRabbitMQClientFactory,
 				ReconcileFunc:         &controllers.QueueReconciler{},
 				ConnectUsingPlainHTTP: true,
-			}).SetupWithManager(mgr)).To(Succeed())
+			}).SetupWithManager(topologyMgr)).To(Succeed())
 
 			queue := &topology.Queue{
-				ObjectMeta: metav1.ObjectMeta{Name: "cb-queue", Namespace: "default"},
+				ObjectMeta: metav1.ObjectMeta{Name: "cb-queue", Namespace: namespace},
 				Spec:       topology.QueueSpec{RabbitmqClusterReference: commonRabbitmqClusterRef},
 			}
 			fakeRabbitMQClient.DeclareQueueReturns(commonHttpCreatedResponse, nil)
@@ -112,9 +178,8 @@ var _ = Describe("TopologyReconciler", func() {
 			}, 5).Should(BeNumerically(">", 0))
 
 			credentials, _, _ := FakeRabbitMQClientFactoryArgsForCall(0)
-			uri, found := credentials["uri"]
-			Expect(found).To(BeTrue(), "expected to find key 'uri'")
-			Expect(uri).To(BeEquivalentTo("http://example-rabbit.default.svc:15672"))
+			expected := fmt.Sprintf("http://%s.%s.svc:15672", name, namespace)
+			Expect(credentials).Should(HaveKeyWithValue("uri", expected))
 		})
 	})
 })

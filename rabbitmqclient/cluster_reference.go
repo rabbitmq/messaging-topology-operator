@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
+	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"gopkg.in/ini.v1"
 	corev1 "k8s.io/api/core/v1"

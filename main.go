@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"strconv"
 	"strings"
 	"time"
@@ -33,8 +34,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
-	"github.com/rabbitmq/cluster-operator/pkg/profiling"
+	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
+	"github.com/rabbitmq/cluster-operator/v2/pkg/profiling"
 
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
@@ -105,17 +106,33 @@ func main() {
 	usePlainHTTP := getBoolEnv(controllers.ConnectUsingPlainHTTPEnvVar)
 
 	managerOpts := ctrl.Options{
-		Scheme:                  scheme,
-		MetricsBindAddress:      metricsAddr,
+		Scheme: scheme,
+		Metrics: server.Options{
+			BindAddress: metricsAddr,
+		},
 		LeaderElection:          true,
 		LeaderElectionNamespace: operatorNamespace,
 		LeaderElectionID:        "messaging-topology-operator-leader-election",
-		Namespace:               operatorScopeNamespace,
 	}
 
-	if strings.Contains(operatorScopeNamespace, ",") {
-		managerOpts.Namespace = ""
-		managerOpts.NewCache = cache.MultiNamespacedCacheBuilder(strings.Split(operatorScopeNamespace, ","))
+	if operatorScopeNamespace != "" {
+		// https://github.com/kubernetes-sigs/controller-runtime/blob/main/designs/cache_options.md#only-cache-namespaced-objects-in-the-foo-and-bar-namespace
+		// Also see https://github.com/rabbitmq/cluster-operator/blob/e2d413c102bc73d4b5e186d1d1b1f9bf728701e1/main.go#L114-L131
+		if strings.Contains(operatorScopeNamespace, ",") {
+			namespaces := strings.Split(operatorScopeNamespace, ",")
+			managerOpts.Cache = cache.Options{
+				DefaultNamespaces: make(map[string]cache.Config),
+			}
+			for _, namespace := range namespaces {
+				managerOpts.Cache.DefaultNamespaces[namespace] = cache.Config{}
+			}
+			log.Info("manager configured to watch a list of namespaces", "namespaces", namespaces)
+		} else {
+			managerOpts.Cache = cache.Options{
+				DefaultNamespaces: map[string]cache.Config{operatorScopeNamespace: {}},
+			}
+			log.Info("manager configured to watch a single namespace", "namespace", operatorScopeNamespace)
+		}
 	}
 
 	if syncPeriod := os.Getenv(controllers.ControllerSyncPeriodEnvVar); syncPeriod != "" {
@@ -124,7 +141,7 @@ func main() {
 			log.Error(err, "unable to parse provided sync period", "sync period", syncPeriod)
 			os.Exit(1)
 		}
-		managerOpts.SyncPeriod = &syncPeriodDuration
+		managerOpts.Cache.SyncPeriod = &syncPeriodDuration
 		log.Info(fmt.Sprintf("sync period set; all resources will be reconciled every: %s", syncPeriodDuration))
 	}
 
@@ -143,21 +160,21 @@ func main() {
 		managerOpts.RetryPeriod = &retryPeriod
 	}
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), managerOpts)
-	if err != nil {
-		log.Error(err, "unable to start manager")
-		os.Exit(1)
-	}
-
 	if enableDebugPprof, ok := os.LookupEnv("ENABLE_DEBUG_PPROF"); ok {
 		pprofEnabled, err := strconv.ParseBool(enableDebugPprof)
 		if err == nil && pprofEnabled {
-			mgr, err = profiling.AddDebugPprofEndpoints(mgr)
+			_, err = profiling.AddDebugPprofEndpoints(&managerOpts)
 			if err != nil {
 				log.Error(err, "unable to add debug endpoints to manager")
 				os.Exit(1)
 			}
 		}
+	}
+
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), managerOpts)
+	if err != nil {
+		log.Error(err, "unable to start manager")
+		os.Exit(1)
 	}
 
 	if err = (&controllers.TopologyReconciler{

@@ -30,7 +30,7 @@ import (
 
 type BindingReconciler struct{}
 
-func (r *BindingReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *BindingReconciler) DeclareFunc(_ context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
 	binding := obj.(*topology.Binding)
 	info, err := internal.GenerateBindingInfo(binding)
 	if err != nil {

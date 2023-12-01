@@ -12,8 +12,11 @@ package controllers_test
 import (
 	"context"
 	"crypto/x509"
+	"fmt"
 	"go/build"
 	"path/filepath"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"testing"
 	"time"
 
@@ -31,7 +34,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
+	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -87,8 +90,9 @@ var _ = BeforeSuite(func() {
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "config", "crd", "bases"),
-			filepath.Join(build.Default.GOPATH, "pkg", "mod", "github.com", "rabbitmq", "cluster-operator@v1.14.0", "config", "crd", "bases"),
+			filepath.Join(build.Default.GOPATH, "pkg", "mod", "github.com", "rabbitmq", "cluster-operator", "v2@v2.6.0", "config", "crd", "bases"),
 		},
+		ErrorIfCRDPathMissing: true,
 	}
 
 	cfg, err := testEnv.Start()
@@ -104,8 +108,13 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	mgr, err = ctrl.NewManager(cfg, ctrl.Options{
-		Scheme:             scheme.Scheme,
-		MetricsBindAddress: "0", // To avoid MacOS firewall pop-up every time you run this suite
+		Scheme: scheme.Scheme,
+		Metrics: server.Options{
+			BindAddress: "0", // To avoid MacOS firewall pop-up every time you run this suite
+		},
+		Cache: cache.Options{
+			DefaultNamespaces: map[string]cache.Config{"default": {}},
+		},
 	})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -228,34 +237,6 @@ var _ = BeforeSuite(func() {
 	komega.SetClient(client)
 	komega.SetContext(ctx)
 
-	rmqCreds := corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-rabbit-user-credentials",
-			Namespace: "default",
-		},
-	}
-	Expect(client.Create(ctx, &rmqCreds)).To(Succeed())
-
-	rmqSrv := corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-rabbit",
-			Namespace: "default",
-		},
-		Spec: corev1.ServiceSpec{
-			Ports: []corev1.ServicePort{
-				{
-					Port: 15672,
-					Name: "management",
-				},
-				{
-					Port: 15671,
-					Name: "management-tls",
-				},
-			},
-		},
-	}
-	Expect(client.Create(ctx, &rmqSrv)).To(Succeed())
-
 	rmq := rabbitmqv1beta1.RabbitmqCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "example-rabbit",
@@ -270,49 +251,7 @@ var _ = BeforeSuite(func() {
 			},
 		},
 	}
-	Expect(client.Create(ctx, &rmq)).To(Succeed())
-
-	rmq.Status = rabbitmqv1beta1.RabbitmqClusterStatus{
-		Binding: &corev1.LocalObjectReference{
-			Name: "example-rabbit-user-credentials",
-		},
-		DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
-			ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
-				Name:      "example-rabbit",
-				Namespace: "default",
-			},
-		},
-	}
-	rmq.Status.SetConditions([]runtime.Object{})
-	Expect(client.Status().Update(ctx, &rmq)).To(Succeed())
-
-	rmqCreds = corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "allow-all-rabbit-user-credentials",
-			Namespace: "default",
-		},
-	}
-	Expect(client.Create(ctx, &rmqCreds)).To(Succeed())
-
-	rmqSrv = corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "allow-all-rabbit",
-			Namespace: "default",
-		},
-		Spec: corev1.ServiceSpec{
-			Ports: []corev1.ServicePort{
-				{
-					Port: 15672,
-					Name: "management",
-				},
-				{
-					Port: 15671,
-					Name: "management-tls",
-				},
-			},
-		},
-	}
-	Expect(client.Create(ctx, &rmqSrv)).To(Succeed())
+	Expect(createRabbitmqClusterResources(client, &rmq)).To(Succeed())
 
 	rmq = rabbitmqv1beta1.RabbitmqCluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -323,21 +262,7 @@ var _ = BeforeSuite(func() {
 			},
 		},
 	}
-	Expect(client.Create(ctx, &rmq)).To(Succeed())
-
-	rmq.Status = rabbitmqv1beta1.RabbitmqClusterStatus{
-		Binding: &corev1.LocalObjectReference{
-			Name: "allow-all-rabbit-user-credentials",
-		},
-		DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
-			ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
-				Name:      "allow-all-rabbit",
-				Namespace: "default",
-			},
-		},
-	}
-	rmq.Status.SetConditions([]runtime.Object{})
-	Expect(client.Status().Update(ctx, &rmq)).To(Succeed())
+	Expect(createRabbitmqClusterResources(client, &rmq)).To(Succeed())
 
 	endpointsSecretBody := map[string][]byte{
 		"username":  []byte("a-random-user"),
@@ -419,4 +344,63 @@ func FakeRabbitMQClientFactoryArgsForCall(i int) (map[string]string, bool, *x509
 	// More shameless copy of counterfeiter code generation idea
 	argsForCall := fakeRabbitMQClientFactoryArgsForCall[i]
 	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func createRabbitmqClusterResources(client runtimeClient.Client, rabbitmqObj *rabbitmqv1beta1.RabbitmqCluster) error {
+	rmqCreds := corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-user-credentials", rabbitmqObj.Name),
+			Namespace: rabbitmqObj.Namespace,
+		},
+	}
+	err := client.Create(ctx, &rmqCreds)
+	if err != nil {
+		return err
+	}
+
+	rmqSrv := corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      rabbitmqObj.Name,
+			Namespace: rabbitmqObj.Namespace,
+		},
+		Spec: corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{
+					Port: 15672,
+					Name: "management",
+				},
+				{
+					Port: 15671,
+					Name: "management-tls",
+				},
+			},
+		},
+	}
+	err = client.Create(ctx, &rmqSrv)
+	if err != nil {
+		return err
+	}
+
+	err = client.Create(ctx, rabbitmqObj)
+	if err != nil {
+		return err
+	}
+
+	rabbitmqObj.Status = rabbitmqv1beta1.RabbitmqClusterStatus{
+		Binding: &corev1.LocalObjectReference{
+			Name: fmt.Sprintf("%s-user-credentials", rabbitmqObj.Name),
+		},
+		DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
+			ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
+				Name:      rabbitmqObj.Name,
+				Namespace: rabbitmqObj.Namespace,
+			},
+		},
+	}
+	rabbitmqObj.Status.SetConditions([]runtime.Object{})
+	err = client.Status().Update(ctx, rabbitmqObj)
+	if err != nil {
+		return err
+	}
+	return nil
 }
