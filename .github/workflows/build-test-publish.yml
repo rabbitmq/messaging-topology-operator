@@ -70,7 +70,7 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
     - name: Build and push
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v3
       with:
         context: .
         push: true
@@ -89,7 +89,7 @@ jobs:
           type=semver,pattern={{version}},suffix=-amd64,latest=false
           type=sha,suffix=-amd64,latest=false
     - name: Build and push single-arch amd64 image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v3
       with:
         context: .
         platforms: linux/amd64
@@ -108,7 +108,7 @@ jobs:
           type=semver,pattern={{version}},suffix=-arm64,latest=false
           type=sha,suffix=-arm64,latest=false
     - name: Build and push single-arch arm64 image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v3
       with:
         context: .
         platforms: linux/arm64
