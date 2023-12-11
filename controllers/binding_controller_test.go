@@ -2,9 +2,15 @@ package controllers_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
-	"io/ioutil"
+	"github.com/rabbitmq/messaging-topology-operator/controllers"
+	"io"
 	"net/http"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -18,14 +24,63 @@ import (
 )
 
 var _ = Describe("bindingController", func() {
-	var binding topology.Binding
-	var bindingName string
+	var (
+		binding       topology.Binding
+		bindingName   string
+		bindingMgr    ctrl.Manager
+		managerCtx    context.Context
+		managerCancel context.CancelFunc
+		k8sClient     runtimeClient.Client
+	)
+
+	BeforeEach(func() {
+		var err error
+		bindingMgr, err = ctrl.NewManager(testEnv.Config, ctrl.Options{
+			Metrics: server.Options{
+				BindAddress: "0", // To avoid MacOS firewall pop-up every time you run this suite
+			},
+			Cache: cache.Options{
+				DefaultNamespaces: map[string]cache.Config{bindingNamespace: {}},
+			},
+			Logger: GinkgoLogr,
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		managerCtx, managerCancel = context.WithCancel(context.Background())
+		go func(ctx context.Context) {
+			defer GinkgoRecover()
+			Expect(bindingMgr.Start(ctx)).To(Succeed())
+		}(managerCtx)
+
+		k8sClient = bindingMgr.GetClient()
+
+		Expect((&controllers.TopologyReconciler{
+			Client:                bindingMgr.GetClient(),
+			Type:                  &topology.Binding{},
+			Scheme:                bindingMgr.GetScheme(),
+			Recorder:              fakeRecorder,
+			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+			ReconcileFunc:         &controllers.BindingReconciler{},
+		}).SetupWithManager(bindingMgr)).To(Succeed())
+	})
+
+	AfterEach(func() {
+		managerCancel()
+		// Sad workaround to avoid controllers racing for the reconciliation of other's
+		// test cases. Without this wait, the last run test consistently fails because
+		// the previous cancelled manager is just in time to reconcile the Queue of the
+		// new/last test, and use the wrong/unexpected arguments in the queue declare call
+		//
+		// Eventual consistency is nice when you have good means of awaiting. That's not the
+		// case with testenv and kubernetes controllers.
+		<-time.After(time.Second)
+	})
 
 	JustBeforeEach(func() {
 		binding = topology.Binding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      bindingName,
-				Namespace: "default",
+				Namespace: bindingNamespace,
 			},
 			Spec: topology.BindingSpec{
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
@@ -46,9 +101,9 @@ var _ = Describe("bindingController", func() {
 			})
 
 			It("sets the status condition to indicate a failure to reconcile", func() {
-				Expect(client.Create(ctx, &binding)).To(Succeed())
+				Expect(k8sClient.Create(ctx, &binding)).To(Succeed())
 				EventuallyWithOffset(1, func() []topology.Condition {
-					_ = client.Get(
+					_ = k8sClient.Get(
 						ctx,
 						types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace},
 						&binding,
@@ -71,9 +126,9 @@ var _ = Describe("bindingController", func() {
 			})
 
 			It("sets the status condition to indicate a failure to reconcile", func() {
-				Expect(client.Create(ctx, &binding)).To(Succeed())
+				Expect(k8sClient.Create(ctx, &binding)).To(Succeed())
 				EventuallyWithOffset(1, func() []topology.Condition {
-					_ = client.Get(
+					_ = k8sClient.Get(
 						ctx,
 						types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace},
 						&binding,
@@ -96,9 +151,9 @@ var _ = Describe("bindingController", func() {
 				Status:     "201 Created",
 				StatusCode: http.StatusCreated,
 			}, nil)
-			Expect(client.Create(ctx, &binding)).To(Succeed())
+			Expect(k8sClient.Create(ctx, &binding)).To(Succeed())
 			EventuallyWithOffset(1, func() []topology.Condition {
-				_ = client.Get(
+				_ = k8sClient.Get(
 					ctx,
 					types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace},
 					&binding,
@@ -118,14 +173,14 @@ var _ = Describe("bindingController", func() {
 				fakeRabbitMQClient.DeleteBindingReturns(&http.Response{
 					Status:     "502 Bad Gateway",
 					StatusCode: http.StatusBadGateway,
-					Body:       ioutil.NopCloser(bytes.NewBufferString("Hello World")),
+					Body:       io.NopCloser(bytes.NewBufferString("Hello World")),
 				}, nil)
 			})
 
 			It("raises an event to indicate a failure to delete", func() {
-				Expect(client.Delete(ctx, &binding)).To(Succeed())
+				Expect(k8sClient.Delete(ctx, &binding)).To(Succeed())
 				Consistently(func() bool {
-					err := client.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &topology.Binding{})
+					err := k8sClient.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &topology.Binding{})
 					return apierrors.IsNotFound(err)
 				}, statusEventsUpdateTimeout).Should(BeFalse())
 				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete binding"))
@@ -139,9 +194,9 @@ var _ = Describe("bindingController", func() {
 			})
 
 			It("raises an event to indicate a failure to delete", func() {
-				Expect(client.Delete(ctx, &binding)).To(Succeed())
+				Expect(k8sClient.Delete(ctx, &binding)).To(Succeed())
 				Consistently(func() bool {
-					err := client.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &topology.Binding{})
+					err := k8sClient.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &topology.Binding{})
 					return apierrors.IsNotFound(err)
 				}, 5).Should(BeFalse())
 				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete binding"))

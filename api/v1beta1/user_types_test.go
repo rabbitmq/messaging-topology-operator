@@ -87,7 +87,7 @@ var _ = Describe("user spec", func() {
 				username = "invalid-user"
 			})
 			It("fails to create the user", func() {
-				Expect(k8sClient.Create(ctx, &user)).To(MatchError(`User.rabbitmq.com "invalid-user" is invalid: spec.tags: Unsupported value: "invalid": supported values: "management", "policymaker", "monitoring", "administrator"`))
+				Expect(k8sClient.Create(ctx, &user)).To(MatchError(`User.rabbitmq.com "invalid-user" is invalid: spec.tags[1]: Unsupported value: "invalid": supported values: "management", "policymaker", "monitoring", "administrator"`))
 			})
 		})
 	})

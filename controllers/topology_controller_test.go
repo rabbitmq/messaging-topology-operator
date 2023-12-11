@@ -3,13 +3,11 @@ package controllers_test
 import (
 	"context"
 	"fmt"
-	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
-	v1 "k8s.io/api/core/v1"
-	k8sApiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"net/http"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"time"
 
@@ -21,13 +19,13 @@ import (
 
 var _ = Describe("TopologyReconciler", func() {
 	const (
-		namespace = "topology-reconciler-test"
-		name      = "topology-rabbit"
+		name = "example-rabbit"
 	)
+
 	var (
 		commonRabbitmqClusterRef = topology.RabbitmqClusterReference{
 			Name:      name,
-			Namespace: namespace,
+			Namespace: topologyNamespace,
 		}
 		commonHttpCreatedResponse = &http.Response{
 			Status:     "201 Created",
@@ -40,6 +38,7 @@ var _ = Describe("TopologyReconciler", func() {
 		topologyMgr   ctrl.Manager
 		managerCtx    context.Context
 		managerCancel context.CancelFunc
+		k8sClient     runtimeClient.Client
 	)
 
 	BeforeEach(func() {
@@ -49,7 +48,7 @@ var _ = Describe("TopologyReconciler", func() {
 				BindAddress: "0", // To avoid MacOS firewall pop-up every time you run this suite
 			},
 			Cache: cache.Options{
-				DefaultNamespaces: map[string]cache.Config{namespace: {}},
+				DefaultNamespaces: map[string]cache.Config{topologyNamespace: {}},
 			},
 			Logger: GinkgoLogr,
 		})
@@ -61,25 +60,7 @@ var _ = Describe("TopologyReconciler", func() {
 			Expect(topologyMgr.Start(ctx)).To(Succeed())
 		}(managerCtx)
 
-		c := topologyMgr.GetClient()
-		err = c.Create(context.Background(), &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}})
-		err = client.Create(context.Background(), &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}})
-		if err != nil && !k8sApiErrors.IsAlreadyExists(err) {
-			Fail(err.Error())
-		}
-
-		rmq := &rabbitmqv1beta1.RabbitmqCluster{
-			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
-			Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
-				TLS: rabbitmqv1beta1.TLSSpec{
-					SecretName: "i-do-not-exist-but-its-fine",
-				},
-			},
-		}
-		err = createRabbitmqClusterResources(c, rmq)
-		if err != nil && !k8sApiErrors.IsAlreadyExists(err) {
-			Fail(err.Error())
-		}
+		k8sClient = topologyMgr.GetClient()
 	})
 
 	AfterEach(func() {
@@ -107,19 +88,19 @@ var _ = Describe("TopologyReconciler", func() {
 			}).SetupWithManager(topologyMgr)).To(Succeed())
 
 			queue := &topology.Queue{
-				ObjectMeta: metav1.ObjectMeta{Name: "ab-queue", Namespace: namespace},
+				ObjectMeta: metav1.ObjectMeta{Name: "ab-queue", Namespace: topologyNamespace},
 				Spec:       topology.QueueSpec{RabbitmqClusterReference: commonRabbitmqClusterRef},
 			}
 			fakeRabbitMQClient.DeclareQueueReturns(commonHttpCreatedResponse, nil)
 			fakeRabbitMQClient.DeleteQueueReturns(commonHttpDeletedResponse, nil)
-			Expect(client.Create(ctx, queue)).To(Succeed())
+			Expect(k8sClient.Create(ctx, queue)).To(Succeed())
 
 			Eventually(func() int {
 				return len(fakeRabbitMQClientFactoryArgsForCall)
 			}, 5).Should(BeNumerically(">", 0))
 
 			credentials, _, _ := FakeRabbitMQClientFactoryArgsForCall(0)
-			expected := fmt.Sprintf("https://%s.%s.svc.some-domain.com:15671", name, namespace)
+			expected := fmt.Sprintf("https://%s.%s.svc.some-domain.com:15671", name, topologyNamespace)
 			Expect(credentials).Should(HaveKeyWithValue("uri", expected))
 		})
 	})
@@ -136,19 +117,19 @@ var _ = Describe("TopologyReconciler", func() {
 			}).SetupWithManager(topologyMgr)).To(Succeed())
 
 			queue := &topology.Queue{
-				ObjectMeta: metav1.ObjectMeta{Name: "bb-queue", Namespace: namespace},
+				ObjectMeta: metav1.ObjectMeta{Name: "bb-queue", Namespace: topologyNamespace},
 				Spec:       topology.QueueSpec{RabbitmqClusterReference: commonRabbitmqClusterRef},
 			}
 			fakeRabbitMQClient.DeclareQueueReturns(commonHttpCreatedResponse, nil)
 			fakeRabbitMQClient.DeleteQueueReturns(commonHttpDeletedResponse, nil)
-			Expect(client.Create(ctx, queue)).To(Succeed())
+			Expect(k8sClient.Create(ctx, queue)).To(Succeed())
 
 			Eventually(func() int {
 				return len(fakeRabbitMQClientFactoryArgsForCall)
 			}, 5).Should(BeNumerically(">", 0))
 
 			credentials, _, _ := FakeRabbitMQClientFactoryArgsForCall(0)
-			expected := fmt.Sprintf("https://%s.%s.svc:15671", name, namespace)
+			expected := fmt.Sprintf("https://%s.%s.svc:15671", name, topologyNamespace)
 			Expect(credentials).Should(HaveKeyWithValue("uri", expected))
 		})
 	})
@@ -166,19 +147,19 @@ var _ = Describe("TopologyReconciler", func() {
 			}).SetupWithManager(topologyMgr)).To(Succeed())
 
 			queue := &topology.Queue{
-				ObjectMeta: metav1.ObjectMeta{Name: "cb-queue", Namespace: namespace},
+				ObjectMeta: metav1.ObjectMeta{Name: "cb-queue", Namespace: topologyNamespace},
 				Spec:       topology.QueueSpec{RabbitmqClusterReference: commonRabbitmqClusterRef},
 			}
 			fakeRabbitMQClient.DeclareQueueReturns(commonHttpCreatedResponse, nil)
 			fakeRabbitMQClient.DeleteQueueReturns(commonHttpDeletedResponse, nil)
-			Expect(client.Create(ctx, queue)).To(Succeed())
+			Expect(k8sClient.Create(ctx, queue)).To(Succeed())
 
 			Eventually(func() int {
 				return len(fakeRabbitMQClientFactoryArgsForCall)
 			}, 5).Should(BeNumerically(">", 0))
 
 			credentials, _, _ := FakeRabbitMQClientFactoryArgsForCall(0)
-			expected := fmt.Sprintf("http://%s.%s.svc:15672", name, namespace)
+			expected := fmt.Sprintf("http://%s.%s.svc:15672", name, topologyNamespace)
 			Expect(credentials).Should(HaveKeyWithValue("uri", expected))
 		})
 	})

@@ -14,9 +14,8 @@ import (
 	"crypto/x509"
 	"fmt"
 	"go/build"
+	"k8s.io/client-go/kubernetes"
 	"path/filepath"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"testing"
 	"time"
 
@@ -26,8 +25,6 @@ import (
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient/rabbitmqclientfakes"
 
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
-	topologyClient "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -44,7 +41,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	"github.com/rabbitmq/messaging-topology-operator/controllers"
 )
 
 func TestControllers(t *testing.T) {
@@ -53,12 +49,10 @@ func TestControllers(t *testing.T) {
 }
 
 var (
-	testEnv                   *envtest.Environment
-	client                    runtimeClient.Client
-	clientSet                 *topologyClient.Clientset
-	ctx                       context.Context
-	cancel                    context.CancelFunc
-	mgr                       ctrl.Manager
+	testEnv *envtest.Environment
+	ctx     context.Context
+	cancel  context.CancelFunc
+	//mgr                       ctrl.Manager
 	fakeRabbitMQClient        *rabbitmqclientfakes.FakeClient
 	fakeRabbitMQClientError   error
 	fakeRabbitMQClientFactory = func(connectionCreds map[string]string, tlsEnabled bool, certPool *x509.CertPool) (rabbitmqclient.Client, error) {
@@ -76,9 +70,23 @@ var (
 		arg3 *x509.CertPool
 	}
 	fakeRecorder              *record.FakeRecorder
-	topologyReconcilers       []*controllers.TopologyReconciler
-	superStreamReconciler     *controllers.SuperStreamReconciler
 	statusEventsUpdateTimeout = 20 * time.Second
+)
+
+const (
+	bindingNamespace           = "binding-test"
+	exchangeNamespace          = "exchange-test"
+	permissionNamespace        = "permission-test"
+	policyNamespace            = "policy-test"
+	queueNamespace             = "queue-test"
+	userNamespace              = "user-test"
+	vhostNamespace             = "vhost-test"
+	schemaReplicationNamespace = "schema-replication-test"
+	federationNamespace        = "federation-test"
+	shovelNamespace            = "shovel-test"
+	topicPermissionNamespace   = "topic-permission-test"
+	superStreamNamespace       = "super-stream-test"
+	topologyNamespace          = "topology-reconciler-test"
 )
 
 var _ = BeforeSuite(func() {
@@ -99,216 +107,112 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cfg).ToNot(BeNil())
 
+	// These lines are important to ensure that managers and controllers
+	// know how to convert k8s objects from JSON to Go objects
 	Expect(scheme.AddToScheme(scheme.Scheme)).To(Succeed())
 	Expect(topology.AddToScheme(scheme.Scheme)).To(Succeed())
 	Expect(topologyv1alpha1.AddToScheme(scheme.Scheme)).To(Succeed())
 	Expect(rabbitmqv1beta1.AddToScheme(scheme.Scheme)).To(Succeed())
 
-	clientSet, err = topologyClient.NewForConfig(cfg)
-	Expect(err).NotTo(HaveOccurred())
+	namespaces := []string{
+		bindingNamespace,
+		exchangeNamespace,
+		permissionNamespace,
+		policyNamespace,
+		queueNamespace,
+		userNamespace,
+		vhostNamespace,
+		schemaReplicationNamespace,
+		federationNamespace,
+		shovelNamespace,
+		topicPermissionNamespace,
+		superStreamNamespace,
+		topologyNamespace,
+	}
 
-	mgr, err = ctrl.NewManager(cfg, ctrl.Options{
-		Scheme: scheme.Scheme,
-		Metrics: server.Options{
-			BindAddress: "0", // To avoid MacOS firewall pop-up every time you run this suite
-		},
-		Cache: cache.Options{
-			DefaultNamespaces: map[string]cache.Config{"default": {}},
-		},
-	})
+	clientSet, err := kubernetes.NewForConfig(cfg)
 	Expect(err).ToNot(HaveOccurred())
+
+	client, err := runtimeClient.New(cfg, runtimeClient.Options{})
+	Expect(err).ToNot(HaveOccurred())
+
+	for _, n := range namespaces {
+		_, err := clientSet.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: n}}, metav1.CreateOptions{})
+		Expect(err).ToNot(HaveOccurred())
+		rmq := rabbitmqv1beta1.RabbitmqCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "example-rabbit",
+				Namespace: n,
+				Annotations: map[string]string{
+					"rabbitmq.com/topology-allowed-namespaces": "allowed",
+				},
+			},
+			Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
+				TLS: rabbitmqv1beta1.TLSSpec{
+					SecretName: "i-do-not-exist-but-its-fine",
+				},
+			},
+		}
+		Expect(createRabbitmqClusterResources(client, &rmq)).To(Succeed())
+
+		rmq = rabbitmqv1beta1.RabbitmqCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "allow-all-rabbit",
+				Namespace: n,
+				Annotations: map[string]string{
+					"rabbitmq.com/topology-allowed-namespaces": "*",
+				},
+			},
+		}
+		Expect(createRabbitmqClusterResources(client, &rmq)).To(Succeed())
+	}
 
 	fakeRecorder = record.NewFakeRecorder(128)
 
-	// The order in which these are declared matters
-	// Keep it sync with the order in which 'topologyObjects' are declared in 'common_test.go`
-	topologyReconcilers = []*controllers.TopologyReconciler{
-		{
-			Client:                mgr.GetClient(),
-			Type:                  &topology.Binding{},
-			Scheme:                mgr.GetScheme(),
-			Recorder:              fakeRecorder,
-			RabbitmqClientFactory: fakeRabbitMQClientFactory,
-			ReconcileFunc:         &controllers.BindingReconciler{},
-		},
-		{
-			Client:                mgr.GetClient(),
-			Type:                  &topology.Exchange{},
-			Scheme:                mgr.GetScheme(),
-			Recorder:              fakeRecorder,
-			RabbitmqClientFactory: fakeRabbitMQClientFactory,
-			ReconcileFunc:         &controllers.ExchangeReconciler{},
-		},
-		{
-			Client:                mgr.GetClient(),
-			Type:                  &topology.Permission{},
-			Scheme:                mgr.GetScheme(),
-			Recorder:              fakeRecorder,
-			RabbitmqClientFactory: fakeRabbitMQClientFactory,
-			ReconcileFunc:         &controllers.PermissionReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()},
-		},
-		{
-			Client:                mgr.GetClient(),
-			Type:                  &topology.Policy{},
-			Scheme:                mgr.GetScheme(),
-			Recorder:              fakeRecorder,
-			RabbitmqClientFactory: fakeRabbitMQClientFactory,
-			ReconcileFunc:         &controllers.PolicyReconciler{},
-		},
-		{
-			Client:                mgr.GetClient(),
-			Type:                  &topology.Queue{},
-			Scheme:                mgr.GetScheme(),
-			Recorder:              fakeRecorder,
-			RabbitmqClientFactory: fakeRabbitMQClientFactory,
-			ReconcileFunc:         &controllers.QueueReconciler{},
-		},
-		{
-			Client:                mgr.GetClient(),
-			Type:                  &topology.User{},
-			Scheme:                mgr.GetScheme(),
-			Recorder:              fakeRecorder,
-			RabbitmqClientFactory: fakeRabbitMQClientFactory,
-			ReconcileFunc:         &controllers.UserReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()},
-		},
-		{
-			Client:                mgr.GetClient(),
-			Type:                  &topology.Vhost{},
-			Scheme:                mgr.GetScheme(),
-			Recorder:              fakeRecorder,
-			RabbitmqClientFactory: fakeRabbitMQClientFactory,
-			ReconcileFunc:         &controllers.VhostReconciler{Client: mgr.GetClient()},
-		},
-		{
-			Client:                mgr.GetClient(),
-			Type:                  &topology.SchemaReplication{},
-			Scheme:                mgr.GetScheme(),
-			Recorder:              fakeRecorder,
-			RabbitmqClientFactory: fakeRabbitMQClientFactory,
-			ReconcileFunc:         &controllers.SchemaReplicationReconciler{Client: mgr.GetClient()},
-		},
-		{
-			Client:                mgr.GetClient(),
-			Type:                  &topology.Federation{},
-			Scheme:                mgr.GetScheme(),
-			Recorder:              fakeRecorder,
-			RabbitmqClientFactory: fakeRabbitMQClientFactory,
-			ReconcileFunc:         &controllers.FederationReconciler{Client: mgr.GetClient()},
-		},
-		{
-			Client:                mgr.GetClient(),
-			Type:                  &topology.Shovel{},
-			Scheme:                mgr.GetScheme(),
-			Recorder:              fakeRecorder,
-			RabbitmqClientFactory: fakeRabbitMQClientFactory,
-			ReconcileFunc:         &controllers.ShovelReconciler{Client: mgr.GetClient()},
-		},
-		{
-			Client:                mgr.GetClient(),
-			Type:                  &topology.TopicPermission{},
-			Scheme:                mgr.GetScheme(),
-			Recorder:              fakeRecorder,
-			RabbitmqClientFactory: fakeRabbitMQClientFactory,
-			ReconcileFunc:         &controllers.TopicPermissionReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()},
-		},
-	}
-
-	for _, controller := range topologyReconcilers {
-		Expect(controller.SetupWithManager(mgr)).To(Succeed())
-	}
-
-	superStreamReconciler = &controllers.SuperStreamReconciler{
-		Client:                mgr.GetClient(),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              fakeRecorder,
-		RabbitmqClientFactory: fakeRabbitMQClientFactory,
-	}
-
-	Expect(superStreamReconciler.SetupWithManager(mgr)).To(Succeed())
-
-	go func() {
-		err = mgr.Start(ctx)
-		Expect(err).ToNot(HaveOccurred())
-	}()
-
-	client = mgr.GetClient()
-	Expect(client).ToNot(BeNil())
+	//Expect(superStreamReconciler.SetupWithManager(mgr)).To(Succeed())
 
 	komega.SetClient(client)
 	komega.SetContext(ctx)
-
-	rmq := rabbitmqv1beta1.RabbitmqCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-rabbit",
-			Namespace: "default",
-			Annotations: map[string]string{
-				"rabbitmq.com/topology-allowed-namespaces": "allowed",
-			},
-		},
-		Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
-			TLS: rabbitmqv1beta1.TLSSpec{
-				SecretName: "i-do-not-exist-but-its-fine",
-			},
-		},
-	}
-	Expect(createRabbitmqClusterResources(client, &rmq)).To(Succeed())
-
-	rmq = rabbitmqv1beta1.RabbitmqCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "allow-all-rabbit",
-			Namespace: "default",
-			Annotations: map[string]string{
-				"rabbitmq.com/topology-allowed-namespaces": "*",
-			},
-		},
-	}
-	Expect(createRabbitmqClusterResources(client, &rmq)).To(Succeed())
-
-	endpointsSecretBody := map[string][]byte{
-		"username":  []byte("a-random-user"),
-		"password":  []byte("a-random-password"),
-		"endpoints": []byte("a.endpoints.local:5672,b.endpoints.local:5672,c.endpoints.local:5672"),
-	}
 
 	// used in schema-replication-controller test
 	endpointsSecret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "endpoints-secret",
-			Namespace: "default",
+			Namespace: schemaReplicationNamespace,
 		},
 		Type: corev1.SecretTypeOpaque,
-		Data: endpointsSecretBody,
+		Data: map[string][]byte{
+			"username":  []byte("a-random-user"),
+			"password":  []byte("a-random-password"),
+			"endpoints": []byte("a.endpoints.local:5672,b.endpoints.local:5672,c.endpoints.local:5672"),
+		},
 	}
 	Expect(client.Create(ctx, &endpointsSecret)).To(Succeed())
-
-	federationUriSecretBody := map[string][]byte{
-		"uri": []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
-	}
 
 	// used in federation-controller test
 	federationUriSecret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "federation-uri",
-			Namespace: "default",
+			Namespace: federationNamespace,
 		},
 		Type: corev1.SecretTypeOpaque,
-		Data: federationUriSecretBody,
+		Data: map[string][]byte{
+			"uri": []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
+		},
 	}
 	Expect(client.Create(ctx, &federationUriSecret)).To(Succeed())
-
-	shovelUriSecretBody := map[string][]byte{
-		"srcUri":  []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
-		"destUri": []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
-	}
 
 	// used in shovel-controller test
 	shovelUriSecret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "shovel-uri-secret",
-			Namespace: "default",
+			Namespace: shovelNamespace,
 		},
 		Type: corev1.SecretTypeOpaque,
-		Data: shovelUriSecretBody,
+		Data: map[string][]byte{
+			"srcUri":  []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
+			"destUri": []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
+		},
 	}
 	Expect(client.Create(ctx, &shovelUriSecret)).To(Succeed())
 })

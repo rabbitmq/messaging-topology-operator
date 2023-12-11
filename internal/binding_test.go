@@ -11,6 +11,7 @@ import (
 
 var _ = Describe("Binding", func() {
 	var binding *topology.Binding
+
 	Context("GenerateBindingInfo", func() {
 		BeforeEach(func() {
 			binding = &topology.Binding{

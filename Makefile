@@ -24,7 +24,7 @@ install-tools:
 	@$(get_mod_code_generator)
 	go install golang.org/x/vuln/cmd/govulncheck@latest
 
-ENVTEST_K8S_VERSION = 1.22.1
+ENVTEST_K8S_VERSION = 1.26.1
 ARCHITECTURE = amd64
 LOCAL_TESTBIN = $(CURDIR)/testbin
 

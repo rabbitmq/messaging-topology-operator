@@ -2,9 +2,15 @@ package controllers_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
+	"github.com/rabbitmq/messaging-topology-operator/controllers"
 	"io/ioutil"
 	"net/http"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -18,17 +24,66 @@ import (
 )
 
 var _ = Describe("permission-controller", func() {
-	var permission topology.Permission
-	var user topology.User
-	var permissionName string
-	var userName string
+	var (
+		permission     topology.Permission
+		user           topology.User
+		permissionName string
+		userName       string
+		permissionMgr  ctrl.Manager
+		managerCtx     context.Context
+		managerCancel  context.CancelFunc
+		k8sClient      runtimeClient.Client
+	)
+
+	BeforeEach(func() {
+		var err error
+		permissionMgr, err = ctrl.NewManager(testEnv.Config, ctrl.Options{
+			Metrics: server.Options{
+				BindAddress: "0", // To avoid MacOS firewall pop-up every time you run this suite
+			},
+			Cache: cache.Options{
+				DefaultNamespaces: map[string]cache.Config{permissionNamespace: {}},
+			},
+			Logger: GinkgoLogr,
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		managerCtx, managerCancel = context.WithCancel(context.Background())
+		go func(ctx context.Context) {
+			defer GinkgoRecover()
+			Expect(permissionMgr.Start(ctx)).To(Succeed())
+		}(managerCtx)
+
+		k8sClient = permissionMgr.GetClient()
+
+		Expect((&controllers.TopologyReconciler{
+			Client:                permissionMgr.GetClient(),
+			Type:                  &topology.Permission{},
+			Scheme:                permissionMgr.GetScheme(),
+			Recorder:              fakeRecorder,
+			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+			ReconcileFunc:         &controllers.PermissionReconciler{Client: permissionMgr.GetClient(), Scheme: permissionMgr.GetScheme()},
+		}).SetupWithManager(permissionMgr)).To(Succeed())
+	})
+
+	AfterEach(func() {
+		managerCancel()
+		// Sad workaround to avoid controllers racing for the reconciliation of other's
+		// test cases. Without this wait, the last run test consistently fails because
+		// the previous cancelled manager is just in time to reconcile the Queue of the
+		// new/last test, and use the wrong/unexpected arguments in the queue declare call
+		//
+		// Eventual consistency is nice when you have good means of awaiting. That's not the
+		// case with testenv and kubernetes controllers.
+		<-time.After(time.Second)
+	})
 
 	When("validating RabbitMQ Client failures with username", func() {
 		JustBeforeEach(func() {
 			permission = topology.Permission{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      permissionName,
-					Namespace: "default",
+					Namespace: permissionNamespace,
 				},
 				Spec: topology.PermissionSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
@@ -51,9 +106,9 @@ var _ = Describe("permission-controller", func() {
 				})
 
 				It("sets the status condition", func() {
-					Expect(client.Create(ctx, &permission)).To(Succeed())
+					Expect(k8sClient.Create(ctx, &permission)).To(Succeed())
 					EventuallyWithOffset(1, func() []topology.Condition {
-						_ = client.Get(
+						_ = k8sClient.Get(
 							ctx,
 							types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace},
 							&permission,
@@ -76,9 +131,9 @@ var _ = Describe("permission-controller", func() {
 				})
 
 				It("sets the status condition to indicate a failure to reconcile", func() {
-					Expect(client.Create(ctx, &permission)).To(Succeed())
+					Expect(k8sClient.Create(ctx, &permission)).To(Succeed())
 					EventuallyWithOffset(1, func() []topology.Condition {
-						_ = client.Get(
+						_ = k8sClient.Get(
 							ctx,
 							types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace},
 							&permission,
@@ -101,9 +156,9 @@ var _ = Describe("permission-controller", func() {
 					Status:     "201 Created",
 					StatusCode: http.StatusCreated,
 				}, nil)
-				Expect(client.Create(ctx, &permission)).To(Succeed())
+				Expect(k8sClient.Create(ctx, &permission)).To(Succeed())
 				EventuallyWithOffset(1, func() []topology.Condition {
-					_ = client.Get(
+					_ = k8sClient.Get(
 						ctx,
 						types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace},
 						&permission,
@@ -128,9 +183,9 @@ var _ = Describe("permission-controller", func() {
 				})
 
 				It("publishes a 'warning' event", func() {
-					Expect(client.Delete(ctx, &permission)).To(Succeed())
+					Expect(k8sClient.Delete(ctx, &permission)).To(Succeed())
 					Consistently(func() bool {
-						err := client.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &topology.Permission{})
+						err := k8sClient.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &topology.Permission{})
 						return apierrors.IsNotFound(err)
 					}, statusEventsUpdateTimeout).Should(BeFalse())
 					Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete permission"))
@@ -144,9 +199,9 @@ var _ = Describe("permission-controller", func() {
 				})
 
 				It("publishes a 'warning' event", func() {
-					Expect(client.Delete(ctx, &permission)).To(Succeed())
+					Expect(k8sClient.Delete(ctx, &permission)).To(Succeed())
 					Consistently(func() bool {
-						err := client.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &topology.Permission{})
+						err := k8sClient.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &topology.Permission{})
 						return apierrors.IsNotFound(err)
 					}, statusEventsUpdateTimeout).Should(BeFalse())
 					Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete permission"))
@@ -160,24 +215,24 @@ var _ = Describe("permission-controller", func() {
 			user = topology.User{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      userName,
-					Namespace: "default",
+					Namespace: permissionNamespace,
 				},
 				Spec: topology.UserSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
 						Name:      "example-rabbit",
-						Namespace: "default",
+						Namespace: permissionNamespace,
 					},
 				},
 			}
 			permission = topology.Permission{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      permissionName,
-					Namespace: "default",
+					Namespace: permissionNamespace,
 				},
 				Spec: topology.PermissionSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
 						Name:      "example-rabbit",
-						Namespace: "default",
+						Namespace: permissionNamespace,
 					},
 					UserReference: &corev1.LocalObjectReference{
 						Name: userName,
@@ -211,9 +266,9 @@ var _ = Describe("permission-controller", func() {
 				})
 
 				It("sets the status condition 'Ready' to 'true' ", func() {
-					Expect(client.Create(ctx, &permission)).To(Succeed())
+					Expect(k8sClient.Create(ctx, &permission)).To(Succeed())
 					EventuallyWithOffset(1, func() []topology.Condition {
-						_ = client.Get(
+						_ = k8sClient.Get(
 							ctx,
 							types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace},
 							&permission,
@@ -236,10 +291,12 @@ var _ = Describe("permission-controller", func() {
 				})
 
 				It("sets the status condition 'Ready' to 'true' ", func() {
-					Expect(client.Create(ctx, &user)).To(Succeed())
-					Expect(client.Create(ctx, &permission)).To(Succeed())
+					Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+					user.Status.Username = userName
+					Expect(k8sClient.Status().Update(ctx, &user)).To(Succeed())
+					Expect(k8sClient.Create(ctx, &permission)).To(Succeed())
 					EventuallyWithOffset(1, func() []topology.Condition {
-						_ = client.Get(
+						_ = k8sClient.Get(
 							ctx,
 							types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace},
 							&permission,
@@ -257,10 +314,12 @@ var _ = Describe("permission-controller", func() {
 
 		Context("deletion", func() {
 			JustBeforeEach(func() {
-				Expect(client.Create(ctx, &user)).To(Succeed())
-				Expect(client.Create(ctx, &permission)).To(Succeed())
+				Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+				user.Status.Username = userName
+				Expect(k8sClient.Status().Update(ctx, &user)).To(Succeed())
+				Expect(k8sClient.Create(ctx, &permission)).To(Succeed())
 				EventuallyWithOffset(1, func() []topology.Condition {
-					_ = client.Get(
+					_ = k8sClient.Get(
 						ctx,
 						types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace},
 						&permission,
@@ -274,22 +333,25 @@ var _ = Describe("permission-controller", func() {
 				})))
 			})
 
-			When("Secret User is removed first", func() {
+			When("Secret for User credential does not exist", func() {
 				BeforeEach(func() {
 					permissionName = "test-with-userref-delete-secret"
 					userName = "example-delete-secret-first"
 				})
 
 				It("publishes a 'warning' event", func() {
-					Expect(client.Delete(ctx, &corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      user.Name + "-user-credentials",
-							Namespace: user.Namespace,
-						},
-					})).To(Succeed())
-					Expect(client.Delete(ctx, &permission)).To(Succeed())
+					// We used to delete a Secret right here, before this PR:
+					// https://github.com/rabbitmq/messaging-topology-operator/pull/710
+					//
+					// That PR refactored tests and provided controller isolation in tests, so that
+					// other controllers i.e. User controller, won't interfere with resources
+					// created/deleted/modified as part of this suite. Therefore, we don't need to
+					// delete the Secret objects because, after PR 710, the Secret object is never
+					// created, which meets the point of this test: when the Secret does not exist
+					// and Permission is deleted
+					Expect(k8sClient.Delete(ctx, &permission)).To(Succeed())
 					Eventually(func() bool {
-						err := client.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &topology.Permission{})
+						err := k8sClient.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &topology.Permission{})
 						return apierrors.IsNotFound(err)
 					}, statusEventsUpdateTimeout).Should(BeTrue())
 					observedEvents := observedEvents()
@@ -305,14 +367,14 @@ var _ = Describe("permission-controller", func() {
 				})
 
 				It("publishes a 'warning' event", func() {
-					Expect(client.Delete(ctx, &user)).To(Succeed())
+					Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
 					Eventually(func() bool {
-						err := client.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{})
+						err := k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{})
 						return apierrors.IsNotFound(err)
 					}, statusEventsUpdateTimeout).Should(BeTrue())
-					Expect(client.Delete(ctx, &permission)).To(Succeed())
+					Expect(k8sClient.Delete(ctx, &permission)).To(Succeed())
 					Eventually(func() bool {
-						err := client.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &topology.Permission{})
+						err := k8sClient.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &topology.Permission{})
 						return apierrors.IsNotFound(err)
 					}, statusEventsUpdateTimeout).Should(BeTrue())
 					observedEvents := observedEvents()
@@ -328,9 +390,9 @@ var _ = Describe("permission-controller", func() {
 				})
 
 				It("publishes a 'warning' event", func() {
-					Expect(client.Delete(ctx, &permission)).To(Succeed())
+					Expect(k8sClient.Delete(ctx, &permission)).To(Succeed())
 					Eventually(func() bool {
-						err := client.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &topology.Permission{})
+						err := k8sClient.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &topology.Permission{})
 						return apierrors.IsNotFound(err)
 					}, statusEventsUpdateTimeout).Should(BeTrue())
 					observedEvents := observedEvents()
@@ -347,11 +409,13 @@ var _ = Describe("permission-controller", func() {
 			})
 
 			It("sets the correct deletion ownerref to the object", func() {
-				Expect(client.Create(ctx, &user)).To(Succeed())
-				Expect(client.Create(ctx, &permission)).To(Succeed())
+				Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+				user.Status.Username = userName
+				Expect(k8sClient.Status().Update(ctx, &user)).To(Succeed())
+				Expect(k8sClient.Create(ctx, &permission)).To(Succeed())
 				Eventually(func() []metav1.OwnerReference {
 					var fetched topology.Permission
-					err := client.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &fetched)
+					err := k8sClient.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &fetched)
 					if err != nil {
 						return []metav1.OwnerReference{}
 					}
