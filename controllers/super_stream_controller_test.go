@@ -8,6 +8,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"strconv"
 	"time"
@@ -139,6 +140,7 @@ var _ = Describe("super-stream-controller", func() {
 					BeforeEach(func() {
 						superStreamName = "delete-binding"
 					})
+
 					It("recreates the missing object", func() {
 						var binding topologyv1beta1.Binding
 						expectedBindingName := fmt.Sprintf("%s-binding-2", superStreamName)
@@ -147,8 +149,9 @@ var _ = Describe("super-stream-controller", func() {
 							types.NamespacedName{Name: expectedBindingName, Namespace: superStreamNamespace},
 							&binding,
 						)).To(Succeed())
-						initialCreationTimestamp := binding.CreationTimestamp
-						Expect(k8sClient.Delete(ctx, &binding)).To(Succeed())
+						initialUID := binding.GetUID()
+						Expect(k8sClient.Delete(ctx, &binding, runtimeClient.GracePeriodSeconds(0))).To(Succeed())
+						Eventually(komega.Get(&binding)).Within(time.Second * 10).WithPolling(time.Second).ShouldNot(Succeed())
 
 						By("setting the status condition 'Ready' to 'true' ", func() {
 							EventuallyWithOffset(1, func() []topologyv1beta1.Condition {
@@ -176,7 +179,7 @@ var _ = Describe("super-stream-controller", func() {
 								if err != nil {
 									return false
 								}
-								return binding.CreationTimestamp != initialCreationTimestamp
+								return binding.GetUID() != initialUID
 							}, 10*time.Second, 1*time.Second).Should(BeTrue())
 						})
 					})
@@ -186,6 +189,7 @@ var _ = Describe("super-stream-controller", func() {
 					BeforeEach(func() {
 						superStreamName = "delete-queue"
 					})
+
 					It("recreates the missing object", func() {
 						var queue topologyv1beta1.Queue
 						expectedQueueName := fmt.Sprintf("%s-partition-1", superStreamName)
@@ -194,8 +198,9 @@ var _ = Describe("super-stream-controller", func() {
 							types.NamespacedName{Name: expectedQueueName, Namespace: superStreamNamespace},
 							&queue,
 						)).To(Succeed())
-						initialCreationTimestamp := queue.CreationTimestamp
-						Expect(k8sClient.Delete(ctx, &queue)).To(Succeed())
+						initialUID := queue.GetUID()
+						Expect(k8sClient.Delete(ctx, &queue, runtimeClient.GracePeriodSeconds(0))).To(Succeed())
+						Eventually(komega.Get(&queue)).Within(time.Second * 10).WithPolling(time.Second).ShouldNot(Succeed())
 
 						By("setting the status condition 'Ready' to 'true' ", func() {
 							EventuallyWithOffset(1, func() []topologyv1beta1.Condition {
@@ -223,7 +228,7 @@ var _ = Describe("super-stream-controller", func() {
 								if err != nil {
 									return false
 								}
-								return queue.CreationTimestamp != initialCreationTimestamp
+								return queue.GetUID() != initialUID
 							}, 10*time.Second, 1*time.Second).Should(BeTrue())
 						})
 					})
@@ -240,8 +245,9 @@ var _ = Describe("super-stream-controller", func() {
 							types.NamespacedName{Name: superStreamName + "-exchange", Namespace: superStreamNamespace},
 							&exchange,
 						)).To(Succeed())
-						initialCreationTimestamp := exchange.CreationTimestamp
-						Expect(k8sClient.Delete(ctx, &exchange)).To(Succeed())
+						initialUID := exchange.GetUID()
+						Expect(k8sClient.Delete(ctx, &exchange, runtimeClient.GracePeriodSeconds(0))).To(Succeed())
+						Eventually(komega.Get(&exchange)).Within(time.Second * 10).WithPolling(time.Second).ShouldNot(Succeed())
 
 						By("setting the status condition 'Ready' to 'true' ", func() {
 							EventuallyWithOffset(1, func() []topologyv1beta1.Condition {
@@ -269,8 +275,8 @@ var _ = Describe("super-stream-controller", func() {
 								if err != nil {
 									return false
 								}
-								return exchange.CreationTimestamp != initialCreationTimestamp
-							}, 10*time.Second, 1*time.Second).Should(BeTrue())
+								return exchange.GetUID() != initialUID
+							}, 10*time.Second, 1*time.Second).Should(BeTrue(), "exchange should have been recreated")
 						})
 					})
 				})

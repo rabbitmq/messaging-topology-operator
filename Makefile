@@ -54,11 +54,11 @@ unit-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet manifests ## Ru
 	ginkgo -r --randomize-all api/ internal/ rabbitmqclient/
 
 .PHONY: integration-tests
-integration-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet manifests ## Run integration tests
-	ginkgo -r --randomize-all -p controllers/
+integration-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet manifests ## Run integration tests. Use GINKGO_EXTRA="-some-arg" to append arguments to 'ginkgo run'
+	ginkgo -r --randomize-all -p $(GINKGO_EXTRA) controllers/
 
 just-integration-tests: $(KUBEBUILDER_ASSETS) vet
-	ginkgo --randomize-all -r -p controllers/
+	ginkgo --randomize-all -r -p $(GINKGO_EXTRA) controllers/
 
 local-tests: unit-tests integration-tests ## Run all local tests (unit & integration)
 
