@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"go/build"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"path/filepath"
 	"testing"
 	"time"
@@ -101,6 +102,9 @@ var _ = BeforeSuite(func() {
 			filepath.Join(build.Default.GOPATH, "pkg", "mod", "github.com", "rabbitmq", "cluster-operator", "v2@v2.6.0", "config", "crd", "bases"),
 		},
 		ErrorIfCRDPathMissing: true,
+		Config: &rest.Config{
+			Host: fmt.Sprintf("localhost:818%d", GinkgoParallelProcess()),
+		},
 	}
 
 	cfg, err := testEnv.Start()

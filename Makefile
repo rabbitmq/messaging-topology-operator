@@ -25,7 +25,7 @@ install-tools:
 	go install golang.org/x/vuln/cmd/govulncheck@latest
 
 ENVTEST_K8S_VERSION = 1.26.1
-ARCHITECTURE = amd64
+ARCHITECTURE = $(shell go env GOARCH)
 LOCAL_TESTBIN = $(CURDIR)/testbin
 
 LOCAL_BIN := $(CURDIR)/bin
@@ -55,10 +55,10 @@ unit-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet manifests ## Ru
 
 .PHONY: integration-tests
 integration-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet manifests ## Run integration tests
-	ginkgo -r --randomize-all controllers/
+	ginkgo -r --randomize-all -p controllers/
 
 just-integration-tests: $(KUBEBUILDER_ASSETS) vet
-	ginkgo --randomize-all -r controllers/
+	ginkgo --randomize-all -r -p controllers/
 
 local-tests: unit-tests integration-tests ## Run all local tests (unit & integration)
 
