@@ -12,7 +12,7 @@ on:
     tags: [ "v*" ]
 
 env:
-  GO_VERSION: ~1.20 # Require Go 1.20 and above, but lower than Go 2.0.0
+  GO_VERSION: '1.20.x' # Require Go 1.20 minor
 
 jobs:
   unit_integration_tests:
