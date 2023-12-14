@@ -27,7 +27,7 @@ import (
 type PolicyReconciler struct{}
 
 // DeclareFunc creates or updates a given policy using rabbithole client.PutPolicy
-func (r *PolicyReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *PolicyReconciler) DeclareFunc(_ context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
 	policy := obj.(*topology.Policy)
 	generatePolicy, err := internal.GeneratePolicy(policy)
 	if err != nil {

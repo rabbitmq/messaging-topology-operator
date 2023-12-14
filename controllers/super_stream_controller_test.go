@@ -1,8 +1,15 @@
 package controllers_test
 
 import (
+	"context"
 	"fmt"
+	"github.com/rabbitmq/messaging-topology-operator/controllers"
 	"net/http"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"strconv"
 	"time"
 
@@ -10,7 +17,7 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
-	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	topologyv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal/managedresource"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,11 +26,59 @@ import (
 
 var _ = Describe("super-stream-controller", func() {
 
-	var superStream topologyv1alpha1.SuperStream
-	var superStreamName string
-	var expectedQueueNames []string
+	var (
+		superStream        topologyv1alpha1.SuperStream
+		superStreamName    string
+		expectedQueueNames []string
+		superStreamMgr     ctrl.Manager
+		managerCtx         context.Context
+		managerCancel      context.CancelFunc
+		k8sClient          runtimeClient.Client
+	)
 
 	When("validating RabbitMQ Client failures", func() {
+		BeforeEach(func() {
+			var err error
+			superStreamMgr, err = ctrl.NewManager(testEnv.Config, ctrl.Options{
+				Metrics: server.Options{
+					BindAddress: "0", // To avoid MacOS firewall pop-up every time you run this suite
+				},
+				Cache: cache.Options{
+					DefaultNamespaces: map[string]cache.Config{superStreamNamespace: {}},
+				},
+				Logger: GinkgoLogr,
+			})
+			Expect(err).ToNot(HaveOccurred())
+
+			managerCtx, managerCancel = context.WithCancel(context.Background())
+			go func(ctx context.Context) {
+				defer GinkgoRecover()
+				Expect(superStreamMgr.Start(ctx)).To(Succeed())
+			}(managerCtx)
+
+			k8sClient = superStreamMgr.GetClient()
+
+			Expect((&controllers.SuperStreamReconciler{
+				Log:                   GinkgoLogr,
+				Client:                superStreamMgr.GetClient(),
+				Scheme:                superStreamMgr.GetScheme(),
+				Recorder:              fakeRecorder,
+				RabbitmqClientFactory: fakeRabbitMQClientFactory,
+			}).SetupWithManager(superStreamMgr)).To(Succeed())
+		})
+
+		AfterEach(func() {
+			managerCancel()
+			// Sad workaround to avoid controllers racing for the reconciliation of other's
+			// test cases. Without this wait, the last run test consistently fails because
+			// the previous cancelled manager is just in time to reconcile the Queue of the
+			// new/last test, and use the wrong/unexpected arguments in the queue declare call
+			//
+			// Eventual consistency is nice when you have good means of awaiting. That's not the
+			// case with testenv and kubernetes controllers.
+			<-time.After(time.Second)
+		})
+
 		JustBeforeEach(func() {
 			fakeRabbitMQClient.DeclareExchangeReturns(&http.Response{
 				Status:     "201 Created",
@@ -52,10 +107,10 @@ var _ = Describe("super-stream-controller", func() {
 			superStream = topologyv1alpha1.SuperStream{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      superStreamName,
-					Namespace: "default",
+					Namespace: superStreamNamespace,
 				},
 				Spec: topologyv1alpha1.SuperStreamSpec{
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
+					RabbitmqClusterReference: topologyv1beta1.RabbitmqClusterReference{
 						Name: "example-rabbit",
 					},
 					Partitions: 3,
@@ -66,16 +121,16 @@ var _ = Describe("super-stream-controller", func() {
 		Context("creation", func() {
 			When("an underlying resource is deleted", func() {
 				JustBeforeEach(func() {
-					Expect(client.Create(ctx, &superStream)).To(Succeed())
-					EventuallyWithOffset(1, func() []topology.Condition {
-						_ = client.Get(
+					Expect(k8sClient.Create(ctx, &superStream)).To(Succeed())
+					EventuallyWithOffset(1, func() []topologyv1beta1.Condition {
+						_ = k8sClient.Get(
 							ctx,
-							types.NamespacedName{Name: superStreamName, Namespace: "default"},
+							types.NamespacedName{Name: superStreamName, Namespace: superStreamNamespace},
 							&superStream,
 						)
 						return superStream.Status.Conditions
 					}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-						"Type":   Equal(topology.ConditionType("Ready")),
+						"Type":   Equal(topologyv1beta1.ConditionType("Ready")),
 						"Reason": Equal("SuccessfulCreateOrUpdate"),
 						"Status": Equal(corev1.ConditionTrue),
 					})))
@@ -85,28 +140,30 @@ var _ = Describe("super-stream-controller", func() {
 					BeforeEach(func() {
 						superStreamName = "delete-binding"
 					})
+
 					It("recreates the missing object", func() {
-						var binding topology.Binding
+						var binding topologyv1beta1.Binding
 						expectedBindingName := fmt.Sprintf("%s-binding-2", superStreamName)
-						Expect(client.Get(
+						Expect(k8sClient.Get(
 							ctx,
-							types.NamespacedName{Name: expectedBindingName, Namespace: "default"},
+							types.NamespacedName{Name: expectedBindingName, Namespace: superStreamNamespace},
 							&binding,
 						)).To(Succeed())
-						initialCreationTimestamp := binding.CreationTimestamp
-						Expect(client.Delete(ctx, &binding)).To(Succeed())
+						initialUID := binding.GetUID()
+						Expect(k8sClient.Delete(ctx, &binding, runtimeClient.GracePeriodSeconds(0))).To(Succeed())
+						Eventually(komega.Get(&binding)).Within(time.Second * 10).WithPolling(time.Second).ShouldNot(Succeed())
 
 						By("setting the status condition 'Ready' to 'true' ", func() {
-							EventuallyWithOffset(1, func() []topology.Condition {
-								_ = client.Get(
+							EventuallyWithOffset(1, func() []topologyv1beta1.Condition {
+								_ = k8sClient.Get(
 									ctx,
-									types.NamespacedName{Name: superStreamName, Namespace: "default"},
+									types.NamespacedName{Name: superStreamName, Namespace: superStreamNamespace},
 									&superStream,
 								)
 
 								return superStream.Status.Conditions
 							}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-								"Type":   Equal(topology.ConditionType("Ready")),
+								"Type":   Equal(topologyv1beta1.ConditionType("Ready")),
 								"Reason": Equal("SuccessfulCreateOrUpdate"),
 								"Status": Equal(corev1.ConditionTrue),
 							})))
@@ -114,15 +171,15 @@ var _ = Describe("super-stream-controller", func() {
 
 						By("recreating the binding", func() {
 							EventuallyWithOffset(1, func() bool {
-								err := client.Get(
+								err := k8sClient.Get(
 									ctx,
-									types.NamespacedName{Name: expectedBindingName, Namespace: "default"},
+									types.NamespacedName{Name: expectedBindingName, Namespace: superStreamNamespace},
 									&binding,
 								)
 								if err != nil {
 									return false
 								}
-								return binding.CreationTimestamp != initialCreationTimestamp
+								return binding.GetUID() != initialUID
 							}, 10*time.Second, 1*time.Second).Should(BeTrue())
 						})
 					})
@@ -132,28 +189,30 @@ var _ = Describe("super-stream-controller", func() {
 					BeforeEach(func() {
 						superStreamName = "delete-queue"
 					})
+
 					It("recreates the missing object", func() {
-						var queue topology.Queue
+						var queue topologyv1beta1.Queue
 						expectedQueueName := fmt.Sprintf("%s-partition-1", superStreamName)
-						Expect(client.Get(
+						Expect(k8sClient.Get(
 							ctx,
-							types.NamespacedName{Name: expectedQueueName, Namespace: "default"},
+							types.NamespacedName{Name: expectedQueueName, Namespace: superStreamNamespace},
 							&queue,
 						)).To(Succeed())
-						initialCreationTimestamp := queue.CreationTimestamp
-						Expect(client.Delete(ctx, &queue)).To(Succeed())
+						initialUID := queue.GetUID()
+						Expect(k8sClient.Delete(ctx, &queue, runtimeClient.GracePeriodSeconds(0))).To(Succeed())
+						Eventually(komega.Get(&queue)).Within(time.Second * 10).WithPolling(time.Second).ShouldNot(Succeed())
 
 						By("setting the status condition 'Ready' to 'true' ", func() {
-							EventuallyWithOffset(1, func() []topology.Condition {
-								_ = client.Get(
+							EventuallyWithOffset(1, func() []topologyv1beta1.Condition {
+								_ = k8sClient.Get(
 									ctx,
-									types.NamespacedName{Name: superStreamName, Namespace: "default"},
+									types.NamespacedName{Name: superStreamName, Namespace: superStreamNamespace},
 									&superStream,
 								)
 
 								return superStream.Status.Conditions
 							}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-								"Type":   Equal(topology.ConditionType("Ready")),
+								"Type":   Equal(topologyv1beta1.ConditionType("Ready")),
 								"Reason": Equal("SuccessfulCreateOrUpdate"),
 								"Status": Equal(corev1.ConditionTrue),
 							})))
@@ -161,15 +220,15 @@ var _ = Describe("super-stream-controller", func() {
 
 						By("recreating the queue", func() {
 							EventuallyWithOffset(1, func() bool {
-								err := client.Get(
+								err := k8sClient.Get(
 									ctx,
-									types.NamespacedName{Name: expectedQueueName, Namespace: "default"},
+									types.NamespacedName{Name: expectedQueueName, Namespace: superStreamNamespace},
 									&queue,
 								)
 								if err != nil {
 									return false
 								}
-								return queue.CreationTimestamp != initialCreationTimestamp
+								return queue.GetUID() != initialUID
 							}, 10*time.Second, 1*time.Second).Should(BeTrue())
 						})
 					})
@@ -180,26 +239,27 @@ var _ = Describe("super-stream-controller", func() {
 						superStreamName = "delete-exchange"
 					})
 					It("recreates the missing object", func() {
-						var exchange topology.Exchange
-						Expect(client.Get(
+						var exchange topologyv1beta1.Exchange
+						Expect(k8sClient.Get(
 							ctx,
-							types.NamespacedName{Name: superStreamName + "-exchange", Namespace: "default"},
+							types.NamespacedName{Name: superStreamName + "-exchange", Namespace: superStreamNamespace},
 							&exchange,
 						)).To(Succeed())
-						initialCreationTimestamp := exchange.CreationTimestamp
-						Expect(client.Delete(ctx, &exchange)).To(Succeed())
+						initialUID := exchange.GetUID()
+						Expect(k8sClient.Delete(ctx, &exchange, runtimeClient.GracePeriodSeconds(0))).To(Succeed())
+						Eventually(komega.Get(&exchange)).Within(time.Second * 10).WithPolling(time.Second).ShouldNot(Succeed())
 
 						By("setting the status condition 'Ready' to 'true' ", func() {
-							EventuallyWithOffset(1, func() []topology.Condition {
-								_ = client.Get(
+							EventuallyWithOffset(1, func() []topologyv1beta1.Condition {
+								_ = k8sClient.Get(
 									ctx,
-									types.NamespacedName{Name: superStreamName, Namespace: "default"},
+									types.NamespacedName{Name: superStreamName, Namespace: superStreamNamespace},
 									&superStream,
 								)
 
 								return superStream.Status.Conditions
 							}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-								"Type":   Equal(topology.ConditionType("Ready")),
+								"Type":   Equal(topologyv1beta1.ConditionType("Ready")),
 								"Reason": Equal("SuccessfulCreateOrUpdate"),
 								"Status": Equal(corev1.ConditionTrue),
 							})))
@@ -207,16 +267,16 @@ var _ = Describe("super-stream-controller", func() {
 
 						By("recreating the exchange", func() {
 							EventuallyWithOffset(1, func() bool {
-								err := client.Get(
+								err := k8sClient.Get(
 									ctx,
-									types.NamespacedName{Name: superStreamName + "-exchange", Namespace: "default"},
+									types.NamespacedName{Name: superStreamName + "-exchange", Namespace: superStreamNamespace},
 									&exchange,
 								)
 								if err != nil {
 									return false
 								}
-								return exchange.CreationTimestamp != initialCreationTimestamp
-							}, 10*time.Second, 1*time.Second).Should(BeTrue())
+								return exchange.GetUID() != initialUID
+							}, 10*time.Second, 1*time.Second).Should(BeTrue(), "exchange should have been recreated")
 						})
 					})
 				})
@@ -227,39 +287,39 @@ var _ = Describe("super-stream-controller", func() {
 						superStreamName = "scale-down-super-stream"
 					})
 					It("refuses scaling down the partitions with a helpful warning", func() {
-						_ = client.Get(
+						_ = k8sClient.Get(
 							ctx,
-							types.NamespacedName{Name: superStreamName, Namespace: "default"},
+							types.NamespacedName{Name: superStreamName, Namespace: superStreamNamespace},
 							&superStream,
 						)
 						originalPartitionCount = len(superStream.Status.Partitions)
 						superStream.Spec.Partitions = 1
-						Expect(client.Update(ctx, &superStream)).To(Succeed())
+						Expect(k8sClient.Update(ctx, &superStream)).To(Succeed())
 
 						By("setting the status condition 'Ready' to 'false' ", func() {
-							EventuallyWithOffset(1, func() []topology.Condition {
-								_ = client.Get(
+							EventuallyWithOffset(1, func() []topologyv1beta1.Condition {
+								_ = k8sClient.Get(
 									ctx,
-									types.NamespacedName{Name: superStreamName, Namespace: "default"},
+									types.NamespacedName{Name: superStreamName, Namespace: superStreamNamespace},
 									&superStream,
 								)
 
 								return superStream.Status.Conditions
 							}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-								"Type":   Equal(topology.ConditionType("Ready")),
+								"Type":   Equal(topologyv1beta1.ConditionType("Ready")),
 								"Reason": Equal("FailedCreateOrUpdate"),
 								"Status": Equal(corev1.ConditionFalse),
 							})))
 						})
 
 						By("retaining the original stream queue partitions", func() {
-							var partition topology.Queue
+							var partition topologyv1beta1.Queue
 							expectedQueueNames = []string{}
 							for i := 0; i < originalPartitionCount; i++ {
 								expectedQueueName := fmt.Sprintf("%s-partition-%d", superStreamName, i)
-								Expect(client.Get(
+								Expect(k8sClient.Get(
 									ctx,
-									types.NamespacedName{Name: expectedQueueName, Namespace: "default"},
+									types.NamespacedName{Name: expectedQueueName, Namespace: superStreamNamespace},
 									&partition,
 								)).To(Succeed())
 								expectedQueueNames = append(expectedQueueNames, partition.Spec.Name)
@@ -270,7 +330,7 @@ var _ = Describe("super-stream-controller", func() {
 									"Durable": BeTrue(),
 									"RabbitmqClusterReference": MatchAllFields(Fields{
 										"Name":             Equal("example-rabbit"),
-										"Namespace":        Equal("default"),
+										"Namespace":        Equal(superStreamNamespace),
 										"ConnectionSecret": BeNil(),
 									}),
 								}))
@@ -279,9 +339,9 @@ var _ = Describe("super-stream-controller", func() {
 
 						By("setting the status of the super stream to list the partition queue names", func() {
 							ConsistentlyWithOffset(1, func() []string {
-								_ = client.Get(
+								_ = k8sClient.Get(
 									ctx,
-									types.NamespacedName{Name: superStreamName, Namespace: "default"},
+									types.NamespacedName{Name: superStreamName, Namespace: superStreamNamespace},
 									&superStream,
 								)
 
@@ -290,13 +350,13 @@ var _ = Describe("super-stream-controller", func() {
 						})
 
 						By("retaining the original bindings", func() {
-							var binding topology.Binding
+							var binding topologyv1beta1.Binding
 							for i := 0; i < originalPartitionCount; i++ {
 								expectedBindingName := fmt.Sprintf("%s-binding-%d", superStreamName, i)
 								EventuallyWithOffset(1, func() error {
-									return client.Get(
+									return k8sClient.Get(
 										ctx,
-										types.NamespacedName{Name: expectedBindingName, Namespace: "default"},
+										types.NamespacedName{Name: expectedBindingName, Namespace: superStreamNamespace},
 										&binding,
 									)
 								}, 10*time.Second, 1*time.Second).ShouldNot(HaveOccurred())
@@ -310,7 +370,7 @@ var _ = Describe("super-stream-controller", func() {
 									"RoutingKey": Equal(strconv.Itoa(i)),
 									"RabbitmqClusterReference": MatchAllFields(Fields{
 										"Name":             Equal("example-rabbit"),
-										"Namespace":        Equal("default"),
+										"Namespace":        Equal(superStreamNamespace),
 										"ConnectionSecret": BeNil(),
 									}),
 								}))
@@ -327,17 +387,17 @@ var _ = Describe("super-stream-controller", func() {
 
 			When("the super stream is scaled", func() {
 				JustBeforeEach(func() {
-					Expect(client.Create(ctx, &superStream)).To(Succeed())
-					EventuallyWithOffset(1, func() []topology.Condition {
-						_ = client.Get(
+					Expect(k8sClient.Create(ctx, &superStream)).To(Succeed())
+					EventuallyWithOffset(1, func() []topologyv1beta1.Condition {
+						_ = k8sClient.Get(
 							ctx,
-							types.NamespacedName{Name: superStreamName, Namespace: "default"},
+							types.NamespacedName{Name: superStreamName, Namespace: superStreamNamespace},
 							&superStream,
 						)
 
 						return superStream.Status.Conditions
 					}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-						"Type":   Equal(topology.ConditionType("Ready")),
+						"Type":   Equal(topologyv1beta1.ConditionType("Ready")),
 						"Reason": Equal("SuccessfulCreateOrUpdate"),
 						"Status": Equal(corev1.ConditionTrue),
 					})))
@@ -347,23 +407,23 @@ var _ = Describe("super-stream-controller", func() {
 						superStreamName = "scale-out-super-stream"
 					})
 					It("allows the number of partitions to be increased", func() {
-						_ = client.Get(
+						_ = k8sClient.Get(
 							ctx,
-							types.NamespacedName{Name: superStreamName, Namespace: "default"},
+							types.NamespacedName{Name: superStreamName, Namespace: superStreamNamespace},
 							&superStream,
 						)
 						superStream.Spec.Partitions = 5
-						Expect(client.Update(ctx, &superStream)).To(Succeed())
+						Expect(k8sClient.Update(ctx, &superStream)).To(Succeed())
 
 						By("creating n stream queue partitions", func() {
-							var partition topology.Queue
+							var partition topologyv1beta1.Queue
 							expectedQueueNames = []string{}
 							for i := 0; i < superStream.Spec.Partitions; i++ {
 								expectedQueueName := fmt.Sprintf("%s-partition-%s", superStreamName, strconv.Itoa(i))
 								EventuallyWithOffset(1, func() error {
-									return client.Get(
+									return k8sClient.Get(
 										ctx,
-										types.NamespacedName{Name: expectedQueueName, Namespace: "default"},
+										types.NamespacedName{Name: expectedQueueName, Namespace: superStreamNamespace},
 										&partition,
 									)
 								}, 10*time.Second, 1*time.Second).ShouldNot(HaveOccurred())
@@ -375,7 +435,7 @@ var _ = Describe("super-stream-controller", func() {
 									"Durable": BeTrue(),
 									"RabbitmqClusterReference": MatchAllFields(Fields{
 										"Name":             Equal("example-rabbit"),
-										"Namespace":        Equal("default"),
+										"Namespace":        Equal(superStreamNamespace),
 										"ConnectionSecret": BeNil(),
 									}),
 								}))
@@ -384,9 +444,9 @@ var _ = Describe("super-stream-controller", func() {
 
 						By("setting the status of the super stream to list the partition queue names", func() {
 							EventuallyWithOffset(1, func() []string {
-								_ = client.Get(
+								_ = k8sClient.Get(
 									ctx,
-									types.NamespacedName{Name: superStreamName, Namespace: "default"},
+									types.NamespacedName{Name: superStreamName, Namespace: superStreamNamespace},
 									&superStream,
 								)
 
@@ -395,13 +455,13 @@ var _ = Describe("super-stream-controller", func() {
 						})
 
 						By("creating n bindings", func() {
-							var binding topology.Binding
+							var binding topologyv1beta1.Binding
 							for i := 0; i < superStream.Spec.Partitions; i++ {
 								expectedBindingName := fmt.Sprintf("%s-binding-%s", superStreamName, strconv.Itoa(i))
 								EventuallyWithOffset(1, func() error {
-									return client.Get(
+									return k8sClient.Get(
 										ctx,
-										types.NamespacedName{Name: expectedBindingName, Namespace: "default"},
+										types.NamespacedName{Name: expectedBindingName, Namespace: superStreamNamespace},
 										&binding,
 									)
 								}, 10*time.Second, 1*time.Second).ShouldNot(HaveOccurred())
@@ -415,7 +475,7 @@ var _ = Describe("super-stream-controller", func() {
 									"RoutingKey": Equal(strconv.Itoa(i)),
 									"RabbitmqClusterReference": MatchAllFields(Fields{
 										"Name":             Equal("example-rabbit"),
-										"Namespace":        Equal("default"),
+										"Namespace":        Equal(superStreamNamespace),
 										"ConnectionSecret": BeNil(),
 									}),
 								}))
@@ -423,16 +483,16 @@ var _ = Describe("super-stream-controller", func() {
 						})
 
 						By("setting the status condition 'Ready' to 'true' ", func() {
-							EventuallyWithOffset(1, func() []topology.Condition {
-								_ = client.Get(
+							EventuallyWithOffset(1, func() []topologyv1beta1.Condition {
+								_ = k8sClient.Get(
 									ctx,
-									types.NamespacedName{Name: superStreamName, Namespace: "default"},
+									types.NamespacedName{Name: superStreamName, Namespace: superStreamNamespace},
 									&superStream,
 								)
 
 								return superStream.Status.Conditions
 							}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-								"Type":   Equal(topology.ConditionType("Ready")),
+								"Type":   Equal(topologyv1beta1.ConditionType("Ready")),
 								"Reason": Equal("SuccessfulCreateOrUpdate"),
 								"Status": Equal(corev1.ConditionTrue),
 							})))
@@ -449,30 +509,30 @@ var _ = Describe("super-stream-controller", func() {
 				It("creates the SuperStream and any underlying resources", func() {
 					superStream.Spec.RoutingKeys = []string{"abc", "bcd", "cde"}
 					superStream.Spec.Partitions = 3
-					Expect(client.Create(ctx, &superStream)).To(Succeed())
+					Expect(k8sClient.Create(ctx, &superStream)).To(Succeed())
 
 					By("setting the status condition 'Ready' to 'true' ", func() {
-						EventuallyWithOffset(1, func() []topology.Condition {
+						EventuallyWithOffset(1, func() []topologyv1beta1.Condition {
 							var fetchedSuperStream topologyv1alpha1.SuperStream
-							_ = client.Get(
+							_ = k8sClient.Get(
 								ctx,
-								types.NamespacedName{Name: superStreamName, Namespace: "default"},
+								types.NamespacedName{Name: superStreamName, Namespace: superStreamNamespace},
 								&fetchedSuperStream,
 							)
 
 							return fetchedSuperStream.Status.Conditions
 						}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-							"Type":   Equal(topology.ConditionType("Ready")),
+							"Type":   Equal(topologyv1beta1.ConditionType("Ready")),
 							"Reason": Equal("SuccessfulCreateOrUpdate"),
 							"Status": Equal(corev1.ConditionTrue),
 						})))
 					})
 
 					By("creating an exchange", func() {
-						var exchange topology.Exchange
-						err := client.Get(
+						var exchange topologyv1beta1.Exchange
+						err := k8sClient.Get(
 							ctx,
-							types.NamespacedName{Name: superStreamName + "-exchange", Namespace: "default"},
+							types.NamespacedName{Name: superStreamName + "-exchange", Namespace: superStreamNamespace},
 							&exchange,
 						)
 						Expect(err).NotTo(HaveOccurred())
@@ -482,20 +542,20 @@ var _ = Describe("super-stream-controller", func() {
 							"Durable": BeTrue(),
 							"RabbitmqClusterReference": MatchAllFields(Fields{
 								"Name":             Equal("example-rabbit"),
-								"Namespace":        Equal("default"),
+								"Namespace":        Equal(superStreamNamespace),
 								"ConnectionSecret": BeNil(),
 							}),
 						}))
 					})
 
 					By("creating n stream queue partitions", func() {
-						var partition topology.Queue
+						var partition topologyv1beta1.Queue
 						expectedQueueNames = []string{}
 						for i := 0; i < superStream.Spec.Partitions; i++ {
 							expectedQueueName := fmt.Sprintf("%s-partition-%d", superStreamName, i)
-							err := client.Get(
+							err := k8sClient.Get(
 								ctx,
-								types.NamespacedName{Name: expectedQueueName, Namespace: "default"},
+								types.NamespacedName{Name: expectedQueueName, Namespace: superStreamNamespace},
 								&partition,
 							)
 							Expect(err).NotTo(HaveOccurred())
@@ -508,7 +568,7 @@ var _ = Describe("super-stream-controller", func() {
 								"Durable": BeTrue(),
 								"RabbitmqClusterReference": MatchAllFields(Fields{
 									"Name":             Equal("example-rabbit"),
-									"Namespace":        Equal("default"),
+									"Namespace":        Equal(superStreamNamespace),
 									"ConnectionSecret": BeNil(),
 								}),
 							}))
@@ -517,9 +577,9 @@ var _ = Describe("super-stream-controller", func() {
 
 					By("setting the status of the super stream to list the partition queue names", func() {
 						EventuallyWithOffset(1, func() []string {
-							_ = client.Get(
+							_ = k8sClient.Get(
 								ctx,
-								types.NamespacedName{Name: superStreamName, Namespace: "default"},
+								types.NamespacedName{Name: superStreamName, Namespace: superStreamNamespace},
 								&superStream,
 							)
 
@@ -528,12 +588,12 @@ var _ = Describe("super-stream-controller", func() {
 					})
 
 					By("creating n bindings", func() {
-						var binding topology.Binding
+						var binding topologyv1beta1.Binding
 						for i := 0; i < superStream.Spec.Partitions; i++ {
 							expectedBindingName := fmt.Sprintf("%s-binding-%d", superStreamName, i)
-							err := client.Get(
+							err := k8sClient.Get(
 								ctx,
-								types.NamespacedName{Name: expectedBindingName, Namespace: "default"},
+								types.NamespacedName{Name: expectedBindingName, Namespace: superStreamNamespace},
 								&binding,
 							)
 							Expect(err).NotTo(HaveOccurred())
@@ -547,7 +607,7 @@ var _ = Describe("super-stream-controller", func() {
 								"RoutingKey": Equal(superStream.Spec.RoutingKeys[i]),
 								"RabbitmqClusterReference": MatchAllFields(Fields{
 									"Name":             Equal("example-rabbit"),
-									"Namespace":        Equal("default"),
+									"Namespace":        Equal(superStreamNamespace),
 									"ConnectionSecret": BeNil(),
 								}),
 							}))
@@ -564,18 +624,18 @@ var _ = Describe("super-stream-controller", func() {
 				It("creates the SuperStream and any underlying resources", func() {
 					superStream.Spec.RoutingKeys = []string{"abc", "bcd", "cde"}
 					superStream.Spec.Partitions = 2
-					Expect(client.Create(ctx, &superStream)).To(Succeed())
-					EventuallyWithOffset(1, func() []topology.Condition {
+					Expect(k8sClient.Create(ctx, &superStream)).To(Succeed())
+					EventuallyWithOffset(1, func() []topologyv1beta1.Condition {
 						var fetchedSuperStream topologyv1alpha1.SuperStream
-						_ = client.Get(
+						_ = k8sClient.Get(
 							ctx,
-							types.NamespacedName{Name: superStreamName, Namespace: "default"},
+							types.NamespacedName{Name: superStreamName, Namespace: superStreamNamespace},
 							&fetchedSuperStream,
 						)
 
 						return fetchedSuperStream.Status.Conditions
 					}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-						"Type":    Equal(topology.ConditionType("Ready")),
+						"Type":    Equal(topologyv1beta1.ConditionType("Ready")),
 						"Reason":  Equal("FailedCreateOrUpdate"),
 						"Message": Equal("SuperStream mismatch failed to reconcile"),
 						"Status":  Equal(corev1.ConditionFalse),

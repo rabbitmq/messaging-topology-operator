@@ -20,7 +20,7 @@ type VhostReconciler struct {
 	client.Client
 }
 
-func (r *VhostReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *VhostReconciler) DeclareFunc(_ context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
 	vhost := obj.(*topology.Vhost)
 	return validateResponse(client.PutVhost(vhost.Spec.Name, *internal.GenerateVhostSettings(vhost)))
 }

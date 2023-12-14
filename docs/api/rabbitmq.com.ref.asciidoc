@@ -200,7 +200,7 @@ BindingSpec defines the desired state of Binding
 | *`destination`* __string__ | Cannot be updated
 | *`destinationType`* __string__ | Cannot be updated
 | *`routingKey`* __string__ | Cannot be updated
-| *`arguments`* __RawExtension__ | Cannot be updated
+| *`arguments`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | Cannot be updated
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the binding will be created in. Required property.
 |===
 

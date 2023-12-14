@@ -2,9 +2,15 @@ package controllers_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
-	"io/ioutil"
+	"github.com/rabbitmq/messaging-topology-operator/controllers"
+	"io"
 	"net/http"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -18,17 +24,66 @@ import (
 )
 
 var _ = Describe("topicpermission-controller", func() {
-	var topicperm topology.TopicPermission
-	var user topology.User
-	var name string
-	var userName string
+	var (
+		topicperm          topology.TopicPermission
+		user               topology.User
+		name               string
+		userName           string
+		topicPermissionMgr ctrl.Manager
+		managerCtx         context.Context
+		managerCancel      context.CancelFunc
+		k8sClient          runtimeClient.Client
+	)
+
+	BeforeEach(func() {
+		var err error
+		topicPermissionMgr, err = ctrl.NewManager(testEnv.Config, ctrl.Options{
+			Metrics: server.Options{
+				BindAddress: "0", // To avoid MacOS firewall pop-up every time you run this suite
+			},
+			Cache: cache.Options{
+				DefaultNamespaces: map[string]cache.Config{topicPermissionNamespace: {}},
+			},
+			Logger: GinkgoLogr,
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		managerCtx, managerCancel = context.WithCancel(context.Background())
+		go func(ctx context.Context) {
+			defer GinkgoRecover()
+			Expect(topicPermissionMgr.Start(ctx)).To(Succeed())
+		}(managerCtx)
+
+		k8sClient = topicPermissionMgr.GetClient()
+
+		Expect((&controllers.TopologyReconciler{
+			Client:                topicPermissionMgr.GetClient(),
+			Type:                  &topology.TopicPermission{},
+			Scheme:                topicPermissionMgr.GetScheme(),
+			Recorder:              fakeRecorder,
+			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+			ReconcileFunc:         &controllers.TopicPermissionReconciler{Client: topicPermissionMgr.GetClient(), Scheme: topicPermissionMgr.GetScheme()},
+		}).SetupWithManager(topicPermissionMgr)).To(Succeed())
+	})
+
+	AfterEach(func() {
+		managerCancel()
+		// Sad workaround to avoid controllers racing for the reconciliation of other's
+		// test cases. Without this wait, the last run test consistently fails because
+		// the previous cancelled manager is just in time to reconcile the Queue of the
+		// new/last test, and use the wrong/unexpected arguments in the queue declare call
+		//
+		// Eventual consistency is nice when you have good means of awaiting. That's not the
+		// case with testenv and kubernetes controllers.
+		<-time.After(time.Second)
+	})
 
 	When("validating RabbitMQ Client failures with username", func() {
 		JustBeforeEach(func() {
 			topicperm = topology.TopicPermission{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      name,
-					Namespace: "default",
+					Namespace: topicPermissionNamespace,
 				},
 				Spec: topology.TopicPermissionSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
@@ -51,21 +106,24 @@ var _ = Describe("topicpermission-controller", func() {
 				})
 
 				It("sets the status condition", func() {
-					Expect(client.Create(ctx, &topicperm)).To(Succeed())
-					EventuallyWithOffset(1, func() []topology.Condition {
-						_ = client.Get(
+					Expect(k8sClient.Create(ctx, &topicperm)).To(Succeed())
+					Eventually(func() []topology.Condition {
+						_ = k8sClient.Get(
 							ctx,
 							types.NamespacedName{Name: topicperm.Name, Namespace: topicperm.Namespace},
 							&topicperm,
 						)
 
 						return topicperm.Status.Conditions
-					}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-						"Type":    Equal(topology.ConditionType("Ready")),
-						"Reason":  Equal("FailedCreateOrUpdate"),
-						"Status":  Equal(corev1.ConditionFalse),
-						"Message": ContainSubstring("a failure"),
-					})))
+					}).
+						Within(statusEventsUpdateTimeout).
+						WithPolling(time.Second).
+						Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+							"Type":    Equal(topology.ConditionType("Ready")),
+							"Reason":  Equal("FailedCreateOrUpdate"),
+							"Status":  Equal(corev1.ConditionFalse),
+							"Message": ContainSubstring("a failure"),
+						})))
 				})
 			})
 
@@ -76,21 +134,24 @@ var _ = Describe("topicpermission-controller", func() {
 				})
 
 				It("sets the status condition to indicate a failure to reconcile", func() {
-					Expect(client.Create(ctx, &topicperm)).To(Succeed())
-					EventuallyWithOffset(1, func() []topology.Condition {
-						_ = client.Get(
+					Expect(k8sClient.Create(ctx, &topicperm)).To(Succeed())
+					Eventually(func() []topology.Condition {
+						_ = k8sClient.Get(
 							ctx,
 							types.NamespacedName{Name: topicperm.Name, Namespace: topicperm.Namespace},
 							&topicperm,
 						)
 
 						return topicperm.Status.Conditions
-					}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-						"Type":    Equal(topology.ConditionType("Ready")),
-						"Reason":  Equal("FailedCreateOrUpdate"),
-						"Status":  Equal(corev1.ConditionFalse),
-						"Message": ContainSubstring("a go failure"),
-					})))
+					}).
+						Within(statusEventsUpdateTimeout).
+						WithPolling(time.Second).
+						Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+							"Type":    Equal(topology.ConditionType("Ready")),
+							"Reason":  Equal("FailedCreateOrUpdate"),
+							"Status":  Equal(corev1.ConditionFalse),
+							"Message": ContainSubstring("a go failure"),
+						})))
 				})
 			})
 		})
@@ -101,20 +162,23 @@ var _ = Describe("topicpermission-controller", func() {
 					Status:     "201 Created",
 					StatusCode: http.StatusCreated,
 				}, nil)
-				Expect(client.Create(ctx, &topicperm)).To(Succeed())
-				EventuallyWithOffset(1, func() []topology.Condition {
-					_ = client.Get(
+				Expect(k8sClient.Create(ctx, &topicperm)).To(Succeed())
+				Eventually(func() []topology.Condition {
+					_ = k8sClient.Get(
 						ctx,
 						types.NamespacedName{Name: topicperm.Name, Namespace: topicperm.Namespace},
 						&topicperm,
 					)
 
 					return topicperm.Status.Conditions
-				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(topology.ConditionType("Ready")),
-					"Reason": Equal("SuccessfulCreateOrUpdate"),
-					"Status": Equal(corev1.ConditionTrue),
-				})))
+				}).
+					Within(statusEventsUpdateTimeout).
+					WithPolling(time.Second).
+					Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+						"Type":   Equal(topology.ConditionType("Ready")),
+						"Reason": Equal("SuccessfulCreateOrUpdate"),
+						"Status": Equal(corev1.ConditionTrue),
+					})))
 			})
 
 			When("the RabbitMQ Client returns a HTTP error response", func() {
@@ -123,16 +187,19 @@ var _ = Describe("topicpermission-controller", func() {
 					fakeRabbitMQClient.DeleteTopicPermissionsInReturns(&http.Response{
 						Status:     "502 Bad Gateway",
 						StatusCode: http.StatusBadGateway,
-						Body:       ioutil.NopCloser(bytes.NewBufferString("Hello World")),
+						Body:       io.NopCloser(bytes.NewBufferString("Hello World")),
 					}, nil)
 				})
 
 				It("publishes a 'warning' event", func() {
-					Expect(client.Delete(ctx, &topicperm)).To(Succeed())
+					Expect(k8sClient.Delete(ctx, &topicperm)).To(Succeed())
 					Consistently(func() bool {
-						err := client.Get(ctx, types.NamespacedName{Name: topicperm.Name, Namespace: topicperm.Namespace}, &topology.TopicPermission{})
+						err := k8sClient.Get(ctx, types.NamespacedName{Name: topicperm.Name, Namespace: topicperm.Namespace}, &topology.TopicPermission{})
 						return apierrors.IsNotFound(err)
-					}, statusEventsUpdateTimeout).Should(BeFalse())
+					}).
+						Within(statusEventsUpdateTimeout).
+						WithPolling(time.Second).
+						Should(BeFalse())
 					Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete topicpermission"))
 				})
 			})
@@ -144,11 +211,14 @@ var _ = Describe("topicpermission-controller", func() {
 				})
 
 				It("publishes a 'warning' event", func() {
-					Expect(client.Delete(ctx, &topicperm)).To(Succeed())
+					Expect(k8sClient.Delete(ctx, &topicperm)).To(Succeed())
 					Consistently(func() bool {
-						err := client.Get(ctx, types.NamespacedName{Name: topicperm.Name, Namespace: topicperm.Namespace}, &topology.TopicPermission{})
+						err := k8sClient.Get(ctx, types.NamespacedName{Name: topicperm.Name, Namespace: topicperm.Namespace}, &topology.TopicPermission{})
 						return apierrors.IsNotFound(err)
-					}, statusEventsUpdateTimeout).Should(BeFalse())
+					}).
+						Within(statusEventsUpdateTimeout).
+						WithPolling(time.Second).
+						Should(BeFalse())
 					Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete topicpermission"))
 				})
 			})
@@ -160,24 +230,24 @@ var _ = Describe("topicpermission-controller", func() {
 			user = topology.User{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      userName,
-					Namespace: "default",
+					Namespace: topicPermissionNamespace,
 				},
 				Spec: topology.UserSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
 						Name:      "example-rabbit",
-						Namespace: "default",
+						Namespace: topicPermissionNamespace,
 					},
 				},
 			}
 			topicperm = topology.TopicPermission{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      name,
-					Namespace: "default",
+					Namespace: topicPermissionNamespace,
 				},
 				Spec: topology.TopicPermissionSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
 						Name:      "example-rabbit",
-						Namespace: "default",
+						Namespace: topicPermissionNamespace,
 					},
 					UserReference: &corev1.LocalObjectReference{
 						Name: userName,
@@ -211,21 +281,24 @@ var _ = Describe("topicpermission-controller", func() {
 				})
 
 				It("sets the status condition 'Ready' to 'true' ", func() {
-					Expect(client.Create(ctx, &topicperm)).To(Succeed())
-					EventuallyWithOffset(1, func() []topology.Condition {
-						_ = client.Get(
+					Expect(k8sClient.Create(ctx, &topicperm)).To(Succeed())
+					Eventually(func() []topology.Condition {
+						_ = k8sClient.Get(
 							ctx,
 							types.NamespacedName{Name: topicperm.Name, Namespace: topicperm.Namespace},
 							&topicperm,
 						)
 
 						return topicperm.Status.Conditions
-					}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-						"Type":    Equal(topology.ConditionType("Ready")),
-						"Reason":  Equal("FailedCreateOrUpdate"),
-						"Message": Equal("failed create Permission, missing User"),
-						"Status":  Equal(corev1.ConditionFalse),
-					})))
+					}).
+						Within(statusEventsUpdateTimeout).
+						WithPolling(time.Second).
+						Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+							"Type":    Equal(topology.ConditionType("Ready")),
+							"Reason":  Equal("FailedCreateOrUpdate"),
+							"Message": Equal("failed create Permission, missing User"),
+							"Status":  Equal(corev1.ConditionFalse),
+						})))
 				})
 			})
 
@@ -236,42 +309,52 @@ var _ = Describe("topicpermission-controller", func() {
 				})
 
 				It("sets the status condition 'Ready' to 'true' ", func() {
-					Expect(client.Create(ctx, &user)).To(Succeed())
-					Expect(client.Create(ctx, &topicperm)).To(Succeed())
-					EventuallyWithOffset(1, func() []topology.Condition {
-						_ = client.Get(
+					Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+					user.Status.Username = userName
+					Expect(k8sClient.Status().Update(ctx, &user)).To(Succeed())
+					Expect(k8sClient.Create(ctx, &topicperm)).To(Succeed())
+					Eventually(func() []topology.Condition {
+						_ = k8sClient.Get(
 							ctx,
 							types.NamespacedName{Name: topicperm.Name, Namespace: topicperm.Namespace},
 							&topicperm,
 						)
 
 						return topicperm.Status.Conditions
-					}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-						"Type":   Equal(topology.ConditionType("Ready")),
-						"Reason": Equal("SuccessfulCreateOrUpdate"),
-						"Status": Equal(corev1.ConditionTrue),
-					})))
+					}).
+						Within(statusEventsUpdateTimeout).
+						WithPolling(time.Second).
+						Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+							"Type":   Equal(topology.ConditionType("Ready")),
+							"Reason": Equal("SuccessfulCreateOrUpdate"),
+							"Status": Equal(corev1.ConditionTrue),
+						})))
 				})
 			})
 		})
 
 		Context("deletion", func() {
 			JustBeforeEach(func() {
-				Expect(client.Create(ctx, &user)).To(Succeed())
-				Expect(client.Create(ctx, &topicperm)).To(Succeed())
-				EventuallyWithOffset(1, func() []topology.Condition {
-					_ = client.Get(
+				Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+				user.Status.Username = userName
+				Expect(k8sClient.Status().Update(ctx, &user)).To(Succeed())
+				Expect(k8sClient.Create(ctx, &topicperm)).To(Succeed())
+				Eventually(func() []topology.Condition {
+					_ = k8sClient.Get(
 						ctx,
 						types.NamespacedName{Name: topicperm.Name, Namespace: topicperm.Namespace},
 						&topicperm,
 					)
 
 					return topicperm.Status.Conditions
-				}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(topology.ConditionType("Ready")),
-					"Reason": Equal("SuccessfulCreateOrUpdate"),
-					"Status": Equal(corev1.ConditionTrue),
-				})))
+				}).
+					Within(statusEventsUpdateTimeout).
+					WithPolling(time.Second).
+					Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+						"Type":   Equal(topology.ConditionType("Ready")),
+						"Reason": Equal("SuccessfulCreateOrUpdate"),
+						"Status": Equal(corev1.ConditionTrue),
+					})))
 			})
 
 			When("Secret User is removed first", func() {
@@ -281,17 +364,23 @@ var _ = Describe("topicpermission-controller", func() {
 				})
 
 				It("publishes a 'warning' event", func() {
-					Expect(client.Delete(ctx, &corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      user.Name + "-user-credentials",
-							Namespace: user.Namespace,
-						},
-					})).To(Succeed())
-					Expect(client.Delete(ctx, &topicperm)).To(Succeed())
+					// We used to delete a Secret right here, before this PR:
+					// https://github.com/rabbitmq/messaging-topology-operator/pull/710
+					//
+					// That PR refactored tests and provided controller isolation in tests, so that
+					// other controllers i.e. User controller, won't interfere with resources
+					// created/deleted/modified as part of this suite. Therefore, we don't need to
+					// delete the Secret objects because, after PR 710, the Secret object is never
+					// created, which meets the point of this test: when the Secret does not exist
+					// and Permission is deleted
+					Expect(k8sClient.Delete(ctx, &topicperm)).To(Succeed())
 					Eventually(func() bool {
-						err := client.Get(ctx, types.NamespacedName{Name: topicperm.Name, Namespace: topicperm.Namespace}, &topology.TopicPermission{})
+						err := k8sClient.Get(ctx, types.NamespacedName{Name: topicperm.Name, Namespace: topicperm.Namespace}, &topology.TopicPermission{})
 						return apierrors.IsNotFound(err)
-					}, statusEventsUpdateTimeout).Should(BeTrue())
+					}).
+						Within(statusEventsUpdateTimeout).
+						WithPolling(time.Second).
+						Should(BeTrue())
 					observedEvents := observedEvents()
 					Expect(observedEvents).NotTo(ContainElement("Warning FailedDelete failed to delete topicpermission"))
 					Expect(observedEvents).To(ContainElement("Normal SuccessfulDelete successfully deleted topicpermission"))
@@ -305,16 +394,24 @@ var _ = Describe("topicpermission-controller", func() {
 				})
 
 				It("publishes a 'warning' event", func() {
-					Expect(client.Delete(ctx, &user)).To(Succeed())
+					Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
 					Eventually(func() bool {
-						err := client.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{})
+						err := k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{})
 						return apierrors.IsNotFound(err)
-					}, statusEventsUpdateTimeout).Should(BeTrue())
-					Expect(client.Delete(ctx, &topicperm)).To(Succeed())
+					}).
+						Within(statusEventsUpdateTimeout).
+						WithPolling(time.Second).
+						Should(BeTrue())
+
+					Expect(k8sClient.Delete(ctx, &topicperm)).To(Succeed())
 					Eventually(func() bool {
-						err := client.Get(ctx, types.NamespacedName{Name: topicperm.Name, Namespace: topicperm.Namespace}, &topology.TopicPermission{})
+						err := k8sClient.Get(ctx, types.NamespacedName{Name: topicperm.Name, Namespace: topicperm.Namespace}, &topology.TopicPermission{})
 						return apierrors.IsNotFound(err)
-					}, statusEventsUpdateTimeout).Should(BeTrue())
+					}).
+						Within(statusEventsUpdateTimeout).
+						WithPolling(time.Second).
+						Should(BeTrue())
+
 					observedEvents := observedEvents()
 					Expect(observedEvents).NotTo(ContainElement("Warning FailedDelete failed to delete topicpermission"))
 					Expect(observedEvents).To(ContainElement("Normal SuccessfulDelete successfully deleted topicpermission"))
@@ -328,11 +425,15 @@ var _ = Describe("topicpermission-controller", func() {
 				})
 
 				It("publishes a 'warning' event", func() {
-					Expect(client.Delete(ctx, &topicperm)).To(Succeed())
+					Expect(k8sClient.Delete(ctx, &topicperm)).To(Succeed())
 					Eventually(func() bool {
-						err := client.Get(ctx, types.NamespacedName{Name: topicperm.Name, Namespace: topicperm.Namespace}, &topology.TopicPermission{})
+						err := k8sClient.Get(ctx, types.NamespacedName{Name: topicperm.Name, Namespace: topicperm.Namespace}, &topology.TopicPermission{})
 						return apierrors.IsNotFound(err)
-					}, statusEventsUpdateTimeout).Should(BeTrue())
+					}).
+						Within(statusEventsUpdateTimeout).
+						WithPolling(time.Second).
+						Should(BeTrue())
+
 					observedEvents := observedEvents()
 					Expect(observedEvents).NotTo(ContainElement("Warning FailedDelete failed to delete topicpermission"))
 					Expect(observedEvents).To(ContainElement("Normal SuccessfulDelete successfully deleted topicpermission"))
@@ -347,16 +448,22 @@ var _ = Describe("topicpermission-controller", func() {
 			})
 
 			It("sets the correct deletion ownerref to the object", func() {
-				Expect(client.Create(ctx, &user)).To(Succeed())
-				Expect(client.Create(ctx, &topicperm)).To(Succeed())
+				Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+				user.Status.Username = userName
+				Expect(k8sClient.Status().Update(ctx, &user)).To(Succeed())
+
+				Expect(k8sClient.Create(ctx, &topicperm)).To(Succeed())
 				Eventually(func() []metav1.OwnerReference {
 					var fetched topology.TopicPermission
-					err := client.Get(ctx, types.NamespacedName{Name: topicperm.Name, Namespace: topicperm.Namespace}, &fetched)
+					err := k8sClient.Get(ctx, types.NamespacedName{Name: topicperm.Name, Namespace: topicperm.Namespace}, &fetched)
 					if err != nil {
 						return []metav1.OwnerReference{}
 					}
 					return fetched.ObjectMeta.OwnerReferences
-				}, 5).Should(Not(BeEmpty()))
+				}).
+					Within(5 * time.Second).
+					WithPolling(time.Second).
+					Should(Not(BeEmpty()))
 			})
 		})
 	})

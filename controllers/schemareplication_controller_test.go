@@ -2,13 +2,18 @@ package controllers_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient/rabbitmqclientfakes"
-	"io/ioutil"
+	"io"
 	"net/http"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -22,21 +27,72 @@ import (
 )
 
 var _ = Describe("schema-replication-controller", func() {
-	var replication topology.SchemaReplication
-	var replicationName string
+	var (
+		replication       topology.SchemaReplication
+		replicationName   string
+		schemaReplication ctrl.Manager
+		managerCtx        context.Context
+		managerCancel     context.CancelFunc
+		k8sClient         runtimeClient.Client
+	)
+	const (
+		name = "example-rabbit"
+	)
+
+	BeforeEach(func() {
+		var err error
+		schemaReplication, err = ctrl.NewManager(testEnv.Config, ctrl.Options{
+			Metrics: server.Options{
+				BindAddress: "0",
+			},
+			Cache:  cache.Options{DefaultNamespaces: map[string]cache.Config{schemaReplicationNamespace: {}}},
+			Logger: GinkgoLogr,
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		managerCtx, managerCancel = context.WithCancel(context.Background())
+		go func(ctx context.Context) {
+			defer GinkgoRecover()
+			Expect(schemaReplication.Start(ctx)).To(Succeed())
+		}(managerCtx)
+
+		Expect((&controllers.TopologyReconciler{
+			Client:                schemaReplication.GetClient(),
+			Type:                  &topology.SchemaReplication{},
+			Scheme:                schemaReplication.GetScheme(),
+			Recorder:              fakeRecorder,
+			RabbitmqClientFactory: fakeRabbitMQClientFactory,
+			ReconcileFunc:         &controllers.SchemaReplicationReconciler{Client: schemaReplication.GetClient()},
+		}).SetupWithManager(schemaReplication)).To(Succeed())
+
+		k8sClient = schemaReplication.GetClient()
+	})
+
+	AfterEach(func() {
+		managerCancel()
+		// Sad workaround to avoid controllers racing for the reconciliation of other's
+		// test cases. Without this wait, the last run test consistently fails because
+		// the previous cancelled manager is just in time to reconcile the Queue of the
+		// new/last test, and use the wrong/unexpected arguments in the queue declare call
+		//
+		// Eventual consistency is nice when you have good means of awaiting. That's not the
+		// case with testenv and kubernetes controllers.
+		<-time.After(time.Second)
+	})
 
 	JustBeforeEach(func() {
 		replication = topology.SchemaReplication{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      replicationName,
-				Namespace: "default",
+				Namespace: schemaReplicationNamespace,
 			},
 			Spec: topology.SchemaReplicationSpec{
 				UpstreamSecret: &corev1.LocalObjectReference{
 					Name: "endpoints-secret", // created in 'BeforeSuite'
 				},
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
-					Name: "example-rabbit",
+					Name:      name,
+					Namespace: schemaReplicationNamespace,
 				},
 			},
 		}
@@ -53,9 +109,9 @@ var _ = Describe("schema-replication-controller", func() {
 			})
 
 			It("sets the status condition to indicate a failure to reconcile", func() {
-				Expect(client.Create(ctx, &replication)).To(Succeed())
+				Expect(k8sClient.Create(ctx, &replication)).To(Succeed())
 				EventuallyWithOffset(1, func() []topology.Condition {
-					_ = client.Get(
+					_ = k8sClient.Get(
 						ctx,
 						types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace},
 						&replication,
@@ -78,9 +134,9 @@ var _ = Describe("schema-replication-controller", func() {
 			})
 
 			It("sets the status condition to indicate a failure to reconcile", func() {
-				Expect(client.Create(ctx, &replication)).To(Succeed())
+				Expect(k8sClient.Create(ctx, &replication)).To(Succeed())
 				EventuallyWithOffset(1, func() []topology.Condition {
-					_ = client.Get(
+					_ = k8sClient.Get(
 						ctx,
 						types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace},
 						&replication,
@@ -103,9 +159,9 @@ var _ = Describe("schema-replication-controller", func() {
 				Status:     "201 Created",
 				StatusCode: http.StatusCreated,
 			}, nil)
-			Expect(client.Create(ctx, &replication)).To(Succeed())
+			Expect(k8sClient.Create(ctx, &replication)).To(Succeed())
 			EventuallyWithOffset(1, func() []topology.Condition {
-				_ = client.Get(
+				_ = k8sClient.Get(
 					ctx,
 					types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace},
 					&replication,
@@ -125,17 +181,25 @@ var _ = Describe("schema-replication-controller", func() {
 				fakeRabbitMQClient.DeleteGlobalParameterReturns(&http.Response{
 					Status:     "502 Bad Gateway",
 					StatusCode: http.StatusBadGateway,
-					Body:       ioutil.NopCloser(bytes.NewBufferString("Hello World")),
+					Body:       io.NopCloser(bytes.NewBufferString("Hello World")),
 				}, nil)
 			})
 
 			It("raises an event to indicate a failure to delete", func() {
-				Expect(client.Delete(ctx, &replication)).To(Succeed())
+				Expect(k8sClient.Delete(ctx, &replication)).To(Succeed())
 				Consistently(func() bool {
-					err := client.Get(ctx, types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace}, &topology.SchemaReplication{})
+					err := k8sClient.Get(ctx, types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace}, &topology.SchemaReplication{})
 					return apierrors.IsNotFound(err)
 				}, statusEventsUpdateTimeout).Should(BeFalse())
 				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete schemareplication"))
+			})
+
+			AfterEach(func() {
+				// this is to let the deletion finish
+				fakeRabbitMQClient.DeleteGlobalParameterReturns(&http.Response{
+					Status:     "200 Ok",
+					StatusCode: http.StatusOK,
+				}, nil)
 			})
 		})
 
@@ -146,12 +210,20 @@ var _ = Describe("schema-replication-controller", func() {
 			})
 
 			It("publishes a 'warning' event", func() {
-				Expect(client.Delete(ctx, &replication)).To(Succeed())
+				Expect(k8sClient.Delete(ctx, &replication)).To(Succeed())
 				Consistently(func() bool {
-					err := client.Get(ctx, types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace}, &topology.SchemaReplication{})
+					err := k8sClient.Get(ctx, types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace}, &topology.SchemaReplication{})
 					return apierrors.IsNotFound(err)
 				}, statusEventsUpdateTimeout).Should(BeFalse())
 				Expect(observedEvents()).To(ContainElement("Warning FailedDelete failed to delete schemareplication"))
+			})
+
+			AfterEach(func() {
+				// this is to let the deletion finish
+				fakeRabbitMQClient.DeleteGlobalParameterReturns(&http.Response{
+					Status:     "200 Ok",
+					StatusCode: http.StatusOK,
+				}, nil)
 			})
 		})
 	})
@@ -162,14 +234,14 @@ var _ = Describe("schema-replication-controller", func() {
 			replication = topology.SchemaReplication{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      replicationName,
-					Namespace: "default",
+					Namespace: schemaReplicationNamespace,
 				},
 				Spec: topology.SchemaReplicationSpec{
 					SecretBackend: topology.SecretBackend{Vault: &topology.VaultSpec{SecretPath: "rabbitmq"}},
 					Endpoints:     "test:12345",
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name:      "example-rabbit",
-						Namespace: "default",
+						Name:      name,
+						Namespace: schemaReplicationNamespace,
 					},
 				},
 			}
@@ -191,9 +263,9 @@ var _ = Describe("schema-replication-controller", func() {
 				return fakeSecretStoreClient, nil
 			}
 
-			Expect(client.Create(ctx, &replication)).To(Succeed())
+			Expect(k8sClient.Create(ctx, &replication)).To(Succeed())
 			Eventually(func() []topology.Condition {
-				_ = client.Get(
+				_ = k8sClient.Get(
 					ctx,
 					types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace},
 					&replication,

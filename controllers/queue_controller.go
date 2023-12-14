@@ -30,7 +30,7 @@ import (
 
 type QueueReconciler struct{}
 
-func (r *QueueReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *QueueReconciler) DeclareFunc(_ context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
 	queue := obj.(*topology.Queue)
 	queueSettings, err := internal.GenerateQueueSettings(queue)
 	if err != nil {

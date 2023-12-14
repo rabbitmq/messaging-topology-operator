@@ -24,8 +24,8 @@ install-tools:
 	@$(get_mod_code_generator)
 	go install golang.org/x/vuln/cmd/govulncheck@latest
 
-ENVTEST_K8S_VERSION = 1.22.1
-ARCHITECTURE = amd64
+ENVTEST_K8S_VERSION = 1.26.1
+ARCHITECTURE = $(shell go env GOARCH)
 LOCAL_TESTBIN = $(CURDIR)/testbin
 
 LOCAL_BIN := $(CURDIR)/bin
@@ -54,11 +54,11 @@ unit-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet vuln manifests 
 	ginkgo -r --randomize-all api/ internal/ rabbitmqclient/
 
 .PHONY: integration-tests
-integration-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet vuln manifests ## Run integration tests
-	ginkgo -r --randomize-all controllers/
+integration-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet manifests ## Run integration tests. Use GINKGO_EXTRA="-some-arg" to append arguments to 'ginkgo run'
+	ginkgo -r --randomize-all -p $(GINKGO_EXTRA) controllers/
 
 just-integration-tests: $(KUBEBUILDER_ASSETS) vet
-	ginkgo --randomize-all -r controllers/
+	ginkgo --randomize-all -r -p $(GINKGO_EXTRA) controllers/
 
 local-tests: unit-tests integration-tests ## Run all local tests (unit & integration)
 
