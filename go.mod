@@ -6,7 +6,7 @@ require (
 	github.com/cloudflare/cfssl v1.6.4
 	github.com/elastic/crd-ref-docs v0.0.10
 	github.com/go-logr/logr v1.3.0
-	github.com/google/uuid v1.3.1
+	github.com/google/uuid v1.5.0
 	github.com/hashicorp/vault/api v1.9.2
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.7.0
 	github.com/michaelklishin/rabbit-hole/v2 v2.15.0
