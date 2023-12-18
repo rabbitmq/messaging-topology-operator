@@ -147,7 +147,7 @@ jobs:
         workload_identity_provider: ${{ secrets.GCP_IDENTITY_PROVIDER }}
         service_account: ${{ secrets.GCP_SA }}
     - name: Upload manifests to GCS
-      uses: 'google-github-actions/upload-cloud-storage@v1'
+      uses: 'google-github-actions/upload-cloud-storage@v2'
       with:
         path: messaging-topology-operator-with-certmanager-${{ steps.meta.outputs.version }}.yaml
         destination: operator-manifests-dev
