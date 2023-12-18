@@ -179,7 +179,7 @@ jobs:
         cluster_name: messaging-topology-operator-ci
         location: europe-west2-a
     - name: Get operator manifest
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: operator-manifests
     - name: Install cert-manager and cluster operator
@@ -206,7 +206,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     - name: Get operator manifest
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: operator-manifests
     - name: Release
