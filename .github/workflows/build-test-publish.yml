@@ -130,7 +130,7 @@ jobs:
         popd
         make generate-manifests
     - name: Upload operator manifests
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: operator-manifests
         path: releases/messaging-topology-operator*.yaml
