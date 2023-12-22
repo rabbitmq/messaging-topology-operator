@@ -65,5 +65,4 @@ spec:
   destMessageAnnotations: # amqp10
 ```
 
-Learn [more about RabbitMQ Dynamic Shovel](https://www.rabbitmq.com/shovel-dy:wqa
-namic.html).
+Learn [more about RabbitMQ Dynamic Shovel](https://www.rabbitmq.com/shovel-dynanamic.html).
