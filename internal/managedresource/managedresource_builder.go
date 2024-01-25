@@ -22,6 +22,6 @@ type ResourceBuilder interface {
 	ResourceType() string
 }
 
-func (builder Builder) GenerateChildResourceName(suffix string) string {
+func (builder *Builder) GenerateChildResourceName(suffix string) string {
 	return builder.ObjectOwner.GetName() + suffix
 }

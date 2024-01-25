@@ -1,6 +1,7 @@
 package v1beta1
 
 import (
+	"context"
 	"fmt"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -19,70 +20,78 @@ func (b *Binding) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1beta1-binding,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=bindings,versions=v1beta1,name=vbinding.kb.io,sideEffects=none,admissionReviewVersions=v1
 
-var _ webhook.Validator = &Binding{}
+var _ webhook.CustomValidator = &Binding{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
-func (b *Binding) ValidateCreate() (admission.Warnings, error) {
-	return b.Spec.RabbitmqClusterReference.ValidateOnCreate(b.GroupResource(), b.Name)
+func (b *Binding) ValidateCreate(_ context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
+	bi, ok := obj.(*Binding)
+	if !ok {
+		return nil, fmt.Errorf("expected a RabbitMQ Binding, but got %T", obj)
+	}
+	return nil, b.Spec.RabbitmqClusterReference.validate(bi.RabbitReference())
 }
 
-// ValidateUpdate updates on vhost and rabbitmqClusterReference are forbidden
-func (b *Binding) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
-	oldBinding, ok := old.(*Binding)
+func (b *Binding) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
+	oldBinding, ok := oldObj.(*Binding)
 	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a binding but got a %T", old))
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a binding but got a %T", oldObj))
+	}
+
+	newBinding, ok := newObj.(*Binding)
+	if !ok {
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a binding but got a %T", oldObj))
 	}
 
 	var allErrs field.ErrorList
-	detailMsg := "updates on vhost and rabbitmqClusterReference are all forbidden"
+	const detailMsg = "updates on vhost and rabbitmqClusterReference are all forbidden"
 
-	if b.Spec.Vhost != oldBinding.Spec.Vhost {
-		return nil, apierrors.NewForbidden(b.GroupResource(), b.Name,
+	if newBinding.Spec.Vhost != oldBinding.Spec.Vhost {
+		return nil, apierrors.NewForbidden(newBinding.GroupResource(), newBinding.Name,
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
-	if !oldBinding.Spec.RabbitmqClusterReference.Matches(&b.Spec.RabbitmqClusterReference) {
-		return nil, apierrors.NewForbidden(b.GroupResource(), b.Name,
+	if !oldBinding.Spec.RabbitmqClusterReference.Matches(&newBinding.Spec.RabbitmqClusterReference) {
+		return nil, apierrors.NewForbidden(newBinding.GroupResource(), newBinding.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}
 
-	if b.Spec.Source != oldBinding.Spec.Source {
+	if newBinding.Spec.Source != oldBinding.Spec.Source {
 		allErrs = append(allErrs, field.Invalid(
 			field.NewPath("spec", "source"),
-			b.Spec.Source,
+			newBinding.Spec.Source,
 			"source cannot be updated",
 		))
 	}
 
-	if b.Spec.Destination != oldBinding.Spec.Destination {
+	if newBinding.Spec.Destination != oldBinding.Spec.Destination {
 		allErrs = append(allErrs, field.Invalid(
 			field.NewPath("spec", "destination"),
-			b.Spec.Destination,
+			newBinding.Spec.Destination,
 			"destination cannot be updated",
 		))
 	}
 
-	if b.Spec.DestinationType != oldBinding.Spec.DestinationType {
+	if newBinding.Spec.DestinationType != oldBinding.Spec.DestinationType {
 		allErrs = append(allErrs, field.Invalid(
 			field.NewPath("spec", "destinationType"),
-			b.Spec.DestinationType,
+			newBinding.Spec.DestinationType,
 			"destinationType cannot be updated",
 		))
 	}
 
-	if b.Spec.RoutingKey != oldBinding.Spec.RoutingKey {
+	if newBinding.Spec.RoutingKey != oldBinding.Spec.RoutingKey {
 		allErrs = append(allErrs, field.Invalid(
 			field.NewPath("spec", "routingKey"),
-			b.Spec.RoutingKey,
+			newBinding.Spec.RoutingKey,
 			"routingKey cannot be updated",
 		))
 	}
 
-	if !reflect.DeepEqual(b.Spec.Arguments, oldBinding.Spec.Arguments) {
+	if !reflect.DeepEqual(newBinding.Spec.Arguments, oldBinding.Spec.Arguments) {
 		allErrs = append(allErrs, field.Invalid(
 			field.NewPath("spec", "arguments"),
-			b.Spec.Arguments,
+			newBinding.Spec.Arguments,
 			"arguments cannot be updated",
 		))
 	}
@@ -91,9 +100,9 @@ func (b *Binding) ValidateUpdate(old runtime.Object) (admission.Warnings, error)
 		return nil, nil
 	}
 
-	return nil, apierrors.NewInvalid(GroupVersion.WithKind("Binding").GroupKind(), b.Name, allErrs)
+	return nil, allErrs.ToAggregate()
 }
 
-func (b *Binding) ValidateDelete() (admission.Warnings, error) {
+func (b *Binding) ValidateDelete(_ context.Context, _ runtime.Object) (warnings admission.Warnings, err error) {
 	return nil, nil
 }

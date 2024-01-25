@@ -4,7 +4,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -24,51 +23,51 @@ var _ = Describe("RabbitmqClusterReference", func() {
 	Context("Matches", func() {
 		When("name is different", func() {
 			It("returns false", func() {
-				new := reference.DeepCopy()
-				new.Name = "new-name"
-				Expect(reference.Matches(new)).To(BeFalse())
+				newReference := reference.DeepCopy()
+				newReference.Name = "new-name"
+				Expect(reference.Matches(newReference)).To(BeFalse())
 			})
 		})
 
 		When("namespace is different", func() {
 			It("returns false", func() {
-				new := reference.DeepCopy()
-				new.Namespace = "new-ns"
-				Expect(reference.Matches(new)).To(BeFalse())
+				newReference := reference.DeepCopy()
+				newReference.Namespace = "new-ns"
+				Expect(reference.Matches(newReference)).To(BeFalse())
 			})
 		})
 
 		When("connectionSecret.name is different", func() {
 			It("returns false", func() {
-				new := reference.DeepCopy()
-				new.ConnectionSecret.Name = "new-secret-name"
-				Expect(reference.Matches(new)).To(BeFalse())
+				newReference := reference.DeepCopy()
+				newReference.ConnectionSecret.Name = "new-secret-name"
+				Expect(reference.Matches(newReference)).To(BeFalse())
 			})
 		})
 
 		When("connectionSecret is removed", func() {
 			It("returns false", func() {
-				new := reference.DeepCopy()
-				new.ConnectionSecret = nil
-				Expect(reference.Matches(new)).To(BeFalse())
+				newReference := reference.DeepCopy()
+				newReference.ConnectionSecret = nil
+				Expect(reference.Matches(newReference)).To(BeFalse())
 			})
 		})
 
 		When("connectionSecret is added", func() {
 			It("returns false", func() {
 				reference.ConnectionSecret = nil
-				new := reference.DeepCopy()
-				new.ConnectionSecret = &v1.LocalObjectReference{
+				newReference := reference.DeepCopy()
+				newReference.ConnectionSecret = &v1.LocalObjectReference{
 					Name: "a-secret-name",
 				}
-				Expect(reference.Matches(new)).To(BeFalse())
+				Expect(reference.Matches(newReference)).To(BeFalse())
 			})
 		})
 
 		When("RabbitmqClusterReference stayed the same", func() {
 			It("returns true", func() {
-				new := reference.DeepCopy()
-				Expect(reference.Matches(new)).To(BeTrue())
+				newReference := reference.DeepCopy()
+				Expect(reference.Matches(newReference)).To(BeTrue())
 			})
 		})
 	})
@@ -94,7 +93,8 @@ var _ = Describe("RabbitmqClusterReference", func() {
 			It("returns a forbidden api error", func() {
 				reference.Name = "a-cluster"
 				reference.ConnectionSecret = &v1.LocalObjectReference{Name: "a-secret-name"}
-				Expect(apierrors.IsForbidden(ignoreNilWarning(reference.ValidateOnCreate(schema.GroupResource{}, "a-resource")))).To(BeTrue())
+				_, err := reference.ValidateOnCreate(schema.GroupResource{}, "a-resource")
+				Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: do not provide both name and connectionSecret")))
 			})
 		})
 
@@ -102,7 +102,8 @@ var _ = Describe("RabbitmqClusterReference", func() {
 			It("returns a forbidden api error", func() {
 				reference.ConnectionSecret = nil
 				reference.Name = ""
-				Expect(apierrors.IsForbidden(ignoreNilWarning(reference.ValidateOnCreate(schema.GroupResource{}, "a-resource")))).To(BeTrue())
+				_, err := reference.ValidateOnCreate(schema.GroupResource{}, "a-resource")
+				Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: must provide either name or connectionSecret")))
 			})
 		})
 	})

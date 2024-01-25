@@ -1,10 +1,9 @@
 package v1beta1
 
 import (
+	"errors"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -49,17 +48,18 @@ func (r *RabbitmqClusterReference) Matches(new *RabbitmqClusterReference) bool {
 
 // ValidateOnCreate validates RabbitmqClusterReference on resources create
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both; else it errors
-func (ref *RabbitmqClusterReference) ValidateOnCreate(groupResource schema.GroupResource, name string) (admission.Warnings, error) {
+func (r *RabbitmqClusterReference) ValidateOnCreate(_ schema.GroupResource, _ string) (admission.Warnings, error) {
+	// TODO: make this function private when we deprecate or promote v1alpha1 SuperStreamController
+	return nil, r.validate(*r)
+}
+
+func (r *RabbitmqClusterReference) validate(ref RabbitmqClusterReference) error {
 	if ref.Name != "" && ref.ConnectionSecret != nil {
-		return nil, apierrors.NewForbidden(groupResource, name,
-			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
-				"do not provide both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret"))
+		return errors.New("invalid RabbitmqClusterReference: do not provide both name and connectionSecret")
 	}
 
 	if ref.Name == "" && ref.ConnectionSecret == nil {
-		return nil, apierrors.NewForbidden(groupResource, name,
-			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"),
-				"must provide either spec.rabbitmqClusterReference.name or spec.rabbitmqClusterReference.connectionSecret"))
+		return errors.New("invalid RabbitmqClusterReference: must provide either name or connectionSecret")
 	}
-	return nil, nil
+	return nil
 }

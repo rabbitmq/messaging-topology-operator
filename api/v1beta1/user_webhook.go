@@ -1,6 +1,7 @@
 package v1beta1
 
 import (
+	"context"
 	"fmt"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -18,29 +19,37 @@ func (u *User) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1beta1-user,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=users,versions=v1beta1,name=vuser.kb.io,sideEffects=none,admissionReviewVersions=v1
 
-var _ webhook.Validator = &User{}
+var _ webhook.CustomValidator = &User{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-// either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
-func (u *User) ValidateCreate() (admission.Warnings, error) {
-	return u.Spec.RabbitmqClusterReference.ValidateOnCreate(u.GroupResource(), u.Name)
+// ValidateCreate - either rabbitmqClusterReference.name or
+// rabbitmqClusterReference.connectionSecret must be provided but not both
+func (u *User) ValidateCreate(_ context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
+	user, ok := obj.(*User)
+	if !ok {
+		return nil, fmt.Errorf("expected a RabbitMQ user but got a %T", obj)
+	}
+	return nil, u.Spec.RabbitmqClusterReference.validate(user.RabbitReference())
 }
 
 // ValidateUpdate returns error type 'forbidden' for updates on rabbitmqClusterReference
-// user.spec.tags can be updated
-func (u *User) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
-	oldUser, ok := old.(*User)
+func (u *User) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
+	oldUser, ok := oldObj.(*User)
 	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a user but got a %T", old))
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a user but got a %T", oldObj))
 	}
 
-	if !oldUser.Spec.RabbitmqClusterReference.Matches(&u.Spec.RabbitmqClusterReference) {
-		return nil, apierrors.NewForbidden(u.GroupResource(), u.Name,
+	newUser, ok := newObj.(*User)
+	if !ok {
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a user but got a %T", newObj))
+	}
+
+	if !oldUser.Spec.RabbitmqClusterReference.Matches(&newUser.Spec.RabbitmqClusterReference) {
+		return nil, apierrors.NewForbidden(newUser.GroupResource(), newUser.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), "update on rabbitmqClusterReference is forbidden"))
 	}
 	return nil, nil
 }
 
-func (u *User) ValidateDelete() (admission.Warnings, error) {
+func (u *User) ValidateDelete(_ context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
 	return nil, nil
 }

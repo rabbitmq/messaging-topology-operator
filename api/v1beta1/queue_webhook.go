@@ -1,6 +1,7 @@
 package v1beta1
 
 import (
+	"context"
 	"fmt"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -18,66 +19,75 @@ func (q *Queue) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1beta1-queue,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=queues,versions=v1beta1,name=vqueue.kb.io,sideEffects=none,admissionReviewVersions=v1sideEffects=none,admissionReviewVersions=v1
 
-var _ webhook.Validator = &Queue{}
+var _ webhook.CustomValidator = &Queue{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
-func (q *Queue) ValidateCreate() (admission.Warnings, error) {
-	if q.Spec.Type == "quorum" && q.Spec.Durable == false {
-		return nil, apierrors.NewForbidden(q.GroupResource(), q.Name,
+func (q *Queue) ValidateCreate(_ context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
+	inQueue, ok := obj.(*Queue)
+	if !ok {
+		return nil, fmt.Errorf("expected RabbitMQ queue, got %T", obj)
+	}
+	if inQueue.Spec.Type == "quorum" && inQueue.Spec.Durable == false {
+		return nil, apierrors.NewForbidden(inQueue.GroupResource(), inQueue.Name,
 			field.Forbidden(field.NewPath("spec", "durable"),
 				"Quorum queues must have durable set to true"))
 	}
-	return q.Spec.RabbitmqClusterReference.ValidateOnCreate(q.GroupResource(), q.Name)
+	return nil, q.Spec.RabbitmqClusterReference.validate(inQueue.RabbitReference())
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 // returns error type 'forbidden' for updates that the controller chooses to disallow: queue name/vhost/rabbitmqClusterReference
 // returns error type 'invalid' for updates that will be rejected by rabbitmq server: queue types/autoDelete/durable
 // queue arguments not handled because implementation couldn't change
-func (q *Queue) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
-	oldQueue, ok := old.(*Queue)
+func (q *Queue) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
+	oldQueue, ok := oldObj.(*Queue)
 	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a queue but got a %T", old))
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a queue but got a %T", oldObj))
+	}
+
+	newQueue, ok := newObj.(*Queue)
+	if !ok {
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a queue but got a %T", newObj))
 	}
 
 	var allErrs field.ErrorList
-	detailMsg := "updates on name, vhost, and rabbitmqClusterReference are all forbidden"
-	if q.Spec.Name != oldQueue.Spec.Name {
-		return nil, apierrors.NewForbidden(q.GroupResource(), q.Name,
+	const detailMsg = "updates on name, vhost, and rabbitmqClusterReference are all forbidden"
+	if newQueue.Spec.Name != oldQueue.Spec.Name {
+		return nil, apierrors.NewForbidden(newQueue.GroupResource(), newQueue.Name,
 			field.Forbidden(field.NewPath("spec", "name"), detailMsg))
 	}
 
-	if q.Spec.Vhost != oldQueue.Spec.Vhost {
-		return nil, apierrors.NewForbidden(q.GroupResource(), q.Name,
+	if newQueue.Spec.Vhost != oldQueue.Spec.Vhost {
+		return nil, apierrors.NewForbidden(newQueue.GroupResource(), newQueue.Name,
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
-	if !oldQueue.Spec.RabbitmqClusterReference.Matches(&q.Spec.RabbitmqClusterReference) {
-		return nil, apierrors.NewForbidden(q.GroupResource(), q.Name,
+	if !oldQueue.Spec.RabbitmqClusterReference.Matches(&newQueue.Spec.RabbitmqClusterReference) {
+		return nil, apierrors.NewForbidden(newQueue.GroupResource(), newQueue.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}
 
-	if q.Spec.Type != oldQueue.Spec.Type {
+	if newQueue.Spec.Type != oldQueue.Spec.Type {
 		allErrs = append(allErrs, field.Invalid(
 			field.NewPath("spec", "type"),
-			q.Spec.Type,
+			newQueue.Spec.Type,
 			"queue type cannot be updated",
 		))
 	}
 
-	if q.Spec.AutoDelete != oldQueue.Spec.AutoDelete {
+	if newQueue.Spec.AutoDelete != oldQueue.Spec.AutoDelete {
 		allErrs = append(allErrs, field.Invalid(
 			field.NewPath("spec", "autoDelete"),
-			q.Spec.AutoDelete,
+			newQueue.Spec.AutoDelete,
 			"autoDelete cannot be updated",
 		))
 	}
 
-	if q.Spec.Durable != oldQueue.Spec.Durable {
+	if newQueue.Spec.Durable != oldQueue.Spec.Durable {
 		allErrs = append(allErrs, field.Invalid(
 			field.NewPath("spec", "durable"),
-			q.Spec.AutoDelete,
+			newQueue.Spec.AutoDelete,
 			"durable cannot be updated",
 		))
 	}
@@ -86,9 +96,9 @@ func (q *Queue) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
 		return nil, nil
 	}
 
-	return nil, apierrors.NewInvalid(GroupVersion.WithKind("Queue").GroupKind(), q.Name, allErrs)
+	return nil, allErrs.ToAggregate()
 }
 
-func (q *Queue) ValidateDelete() (admission.Warnings, error) {
+func (q *Queue) ValidateDelete(_ context.Context, _ runtime.Object) (warnings admission.Warnings, err error) {
 	return nil, nil
 }
