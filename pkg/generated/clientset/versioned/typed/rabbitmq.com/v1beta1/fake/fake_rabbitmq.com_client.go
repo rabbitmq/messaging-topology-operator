@@ -41,6 +41,10 @@ func (c *FakeRabbitmqV1beta1) Policies(namespace string) v1beta1.PolicyInterface
 	return &FakePolicies{c, namespace}
 }
 
+func (c *FakeRabbitmqV1beta1) OperatorPolicies(namespace string) v1beta1.OperatorPolicyInterface {
+	return &FakeOperatorPolicies{c, namespace}
+}
+
 func (c *FakeRabbitmqV1beta1) Queues(namespace string) v1beta1.QueueInterface {
 	return &FakeQueues{c, namespace}
 }

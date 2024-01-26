@@ -4,23 +4,23 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.14.0
-  name: policies.rabbitmq.com
+  name: operatorpolicies.rabbitmq.com
 spec:
   group: rabbitmq.com
   names:
     categories:
     - all
     - rabbitmq
-    kind: Policy
-    listKind: PolicyList
-    plural: policies
-    singular: policy
+    kind: OperatorPolicy
+    listKind: OperatorPolicyList
+    plural: operatorpolicies
+    singular: operatorpolicy
   scope: Namespaced
   versions:
   - name: v1beta1
     schema:
       openAPIV3Schema:
-        description: Policy is the Schema for the policies API
+        description: OperatorPolicy is the Schema for the operator policies API
         properties:
           apiVersion:
             description: |-
@@ -41,24 +41,22 @@ spec:
             type: object
           spec:
             description: |-
-              PolicySpec defines the desired state of Policy
-              https://www.rabbitmq.com/parameters.html#policies
+              OperatorPolicySpec defines the desired state of OperatorPolicy
+              https://www.rabbitmq.com/parameters.html#operator-policies
             properties:
               applyTo:
-                default: all
+                default: queues
                 description: |-
-                  What this policy applies to: 'queues', 'classic_queues', 'quorum_queues', 'streams', 'exchanges', or 'all'.
-                  Default to 'all'.
+                  What this operator policy applies to: 'queues', 'classic_queues', 'quorum_queues', 'streams'.
+                  Default to 'queues'.
                 enum:
                 - queues
                 - classic_queues
                 - quorum_queues
                 - streams
-                - exchanges
-                - all
                 type: string
               definition:
-                description: Policy definition. Required property.
+                description: OperatorPolicy definition. Required property.
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
               name:
@@ -66,18 +64,18 @@ spec:
                 type: string
               pattern:
                 description: |-
-                  Regular expression pattern used to match queues and exchanges, e.g. "^amq.".
+                  Regular expression pattern used to match queues, e.g. "^my-queue$".
                   Required property.
                 type: string
               priority:
                 default: 0
                 description: |-
                   Default to '0'.
-                  In the event that more than one policy can match a given exchange or queue, the policy with the greatest priority applies.
+                  In the event that more than one operator policy can match a given queue, the operator policy with the greatest priority applies.
                 type: integer
               rabbitmqClusterReference:
                 description: |-
-                  Reference to the RabbitmqCluster that the policy will be created in.
+                  Reference to the RabbitmqCluster that the operator policy will be created in.
                   Required property.
                 properties:
                   connectionSecret:
@@ -116,7 +114,7 @@ spec:
             - rabbitmqClusterReference
             type: object
           status:
-            description: PolicyStatus defines the observed state of Policy
+            description: OperatorPolicyStatus defines the observed state of OperatorPolicy
             properties:
               conditions:
                 items:
@@ -146,8 +144,8 @@ spec:
                 type: array
               observedGeneration:
                 description: |-
-                  observedGeneration is the most recent successful generation observed for this Policy. It corresponds to the
-                  Policy's generation, which is updated on mutation by the API Server.
+                  observedGeneration is the most recent successful generation observed for this OperatorPolicy. It corresponds to the
+                  OperatorPolicy's generation, which is updated on mutation by the API Server.
                 format: int64
                 type: integer
             type: object

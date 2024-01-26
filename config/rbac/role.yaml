@@ -110,6 +110,32 @@ rules:
 - apiGroups:
   - rabbitmq.com
   resources:
+  - operatorpolicies
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - operatorpolicies/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - operatorpolicies/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - rabbitmq.com
+  resources:
   - permissions
   verbs:
   - create

@@ -21,6 +21,8 @@ type PermissionExpansion interface{}
 
 type PolicyExpansion interface{}
 
+type OperatorPolicyExpansion interface{}
+
 type QueueExpansion interface{}
 
 type SchemaReplicationExpansion interface{}

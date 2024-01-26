@@ -11,6 +11,7 @@ var _ ReconcileFunc = &ExchangeReconciler{}
 var _ ReconcileFunc = &FederationReconciler{}
 var _ ReconcileFunc = &PermissionReconciler{}
 var _ ReconcileFunc = &PolicyReconciler{}
+var _ ReconcileFunc = &OperatorPolicyReconciler{}
 var _ ReconcileFunc = &QueueReconciler{}
 var _ ReconcileFunc = &SchemaReplicationReconciler{}
 var _ ReconcileFunc = &ShovelReconciler{}

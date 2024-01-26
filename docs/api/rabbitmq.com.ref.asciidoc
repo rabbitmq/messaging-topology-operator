@@ -36,8 +36,15 @@ SuperStream is the Schema for the queues API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1alpha1`
 | *`kind`* __string__ | `SuperStream`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha1-superstreamspec[$$SuperStreamSpec$$]__ | 
@@ -57,8 +64,15 @@ SuperStreamList contains a list of SuperStreams
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1alpha1`
 | *`kind`* __string__ | `SuperStreamList`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1alpha1-superstream[$$SuperStream$$] array__ | 
@@ -80,9 +94,12 @@ SuperStreamSpec defines the desired state of SuperStream
 | Field | Description
 | *`name`* __string__ | Name of the queue; required property.
 | *`vhost`* __string__ | Default to vhost '/'; cannot be updated
-| *`partitions`* __integer__ | Number of partitions to create within this super stream. Defaults to '3'.
-| *`routingKeys`* __string array__ | Routing keys to use for each of the partitions in the SuperStream If unset, the routing keys for the partitions will be set to the index of the partitions
-| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the SuperStream will be created in. Required property.
+| *`partitions`* __integer__ | Number of partitions to create within this super stream.
+Defaults to '3'.
+| *`routingKeys`* __string array__ | Routing keys to use for each of the partitions in the SuperStream
+If unset, the routing keys for the partitions will be set to the index of the partitions
+| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the SuperStream will be created in.
+Required property.
 |===
 
 
@@ -99,7 +116,8 @@ SuperStreamStatus defines the observed state of SuperStream
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this SuperStream. It corresponds to the SuperStream's generation, which is updated on mutation by the API Server.
+| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this SuperStream. It corresponds to the
+SuperStream's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 | *`partitions`* __string array__ | Partitions are a list of the stream queue names which form the partitions of this SuperStream.
 |===
@@ -118,6 +136,8 @@ Package v1beta1 contains API Schema definitions for the rabbitmq.com v1beta1 API
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-exchangelist[$$ExchangeList$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federation[$$Federation$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federationlist[$$FederationList$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-operatorpolicy[$$OperatorPolicy$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-operatorpolicylist[$$OperatorPolicyList$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-permission[$$Permission$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-permissionlist[$$PermissionList$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-policy[$$Policy$$]
@@ -153,8 +173,15 @@ Binding is the Schema for the bindings API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Binding`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-bindingspec[$$BindingSpec$$]__ | 
@@ -174,8 +201,15 @@ BindingList contains a list of Binding
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `BindingList`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-binding[$$Binding$$] array__ | 
@@ -201,7 +235,8 @@ BindingSpec defines the desired state of Binding
 | *`destinationType`* __string__ | Cannot be updated
 | *`routingKey`* __string__ | Cannot be updated
 | *`arguments`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | Cannot be updated
-| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the binding will be created in. Required property.
+| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the binding will be created in.
+Required property.
 |===
 
 
@@ -218,7 +253,8 @@ BindingStatus defines the observed state of Binding
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Binding. It corresponds to the Binding's generation, which is updated on mutation by the API Server.
+| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Binding. It corresponds to the
+Binding's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
 
@@ -233,6 +269,7 @@ BindingStatus defines the observed state of Binding
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-bindingstatus[$$BindingStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-exchangestatus[$$ExchangeStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federationstatus[$$FederationStatus$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-operatorpolicystatus[$$OperatorPolicyStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-permissionstatus[$$PermissionStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-policystatus[$$PolicyStatus$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-queuestatus[$$QueueStatus$$]
@@ -282,8 +319,15 @@ Exchange is the Schema for the exchanges API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Exchange`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-exchangespec[$$ExchangeSpec$$]__ | 
@@ -303,8 +347,15 @@ ExchangeList contains a list of Exchange
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `ExchangeList`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-exchange[$$Exchange$$] array__ | 
@@ -330,7 +381,8 @@ ExchangeSpec defines the desired state of Exchange
 | *`durable`* __boolean__ | Cannot be updated
 | *`autoDelete`* __boolean__ | Cannot be updated
 | *`arguments`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | 
-| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the exchange will be created in. Required property.
+| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the exchange will be created in.
+Required property.
 |===
 
 
@@ -347,7 +399,8 @@ ExchangeStatus defines the observed state of Exchange
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Exchange. It corresponds to the Exchange's generation, which is updated on mutation by the API Server.
+| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Exchange. It corresponds to the
+Exchange's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
 
@@ -367,8 +420,15 @@ Federation is the Schema for the federations API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Federation`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federationspec[$$FederationSpec$$]__ | 
@@ -388,8 +448,15 @@ FederationList contains a list of Federation
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `FederationList`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federation[$$Federation$$] array__ | 
@@ -399,7 +466,8 @@ FederationList contains a list of Federation
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federationspec"]
 ==== FederationSpec 
 
-FederationSpec defines the desired state of Federation For how to configure federation upstreams, see: https://www.rabbitmq.com/federation-reference.html.
+FederationSpec defines the desired state of Federation
+For how to configure federation upstreams, see: https://www.rabbitmq.com/federation-reference.html.
 
 .Appears In:
 ****
@@ -411,8 +479,12 @@ FederationSpec defines the desired state of Federation For how to configure fede
 | Field | Description
 | *`name`* __string__ | Required property; cannot be updated
 | *`vhost`* __string__ | Default to vhost '/'; cannot be updated
-| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that this federation upstream will be created in. Required property.
-| *`uriSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Secret contains the AMQP URI(s) for the upstream. The Secret must contain the key `uri` or operator will error. `uri` should be one or multiple uris separated by ','. Required property.
+| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that this federation upstream will be created in.
+Required property.
+| *`uriSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Secret contains the AMQP URI(s) for the upstream.
+The Secret must contain the key `uri` or operator will error.
+`uri` should be one or multiple uris separated by ','.
+Required property.
 | *`prefetch-count`* __integer__ | 
 | *`ackMode`* __string__ | 
 | *`expires`* __integer__ | 
@@ -438,7 +510,113 @@ FederationStatus defines the observed state of Federation
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Federation. It corresponds to the Federation's generation, which is updated on mutation by the API Server.
+| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Federation. It corresponds to the
+Federation's generation, which is updated on mutation by the API Server.
+| *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-operatorpolicy"]
+==== OperatorPolicy 
+
+OperatorPolicy is the Schema for the operator policies API
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-operatorpolicylist[$$OperatorPolicyList$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
+| *`kind`* __string__ | `OperatorPolicy`
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-operatorpolicyspec[$$OperatorPolicySpec$$]__ | 
+| *`status`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-operatorpolicystatus[$$OperatorPolicyStatus$$]__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-operatorpolicylist"]
+==== OperatorPolicyList 
+
+OperatorPolicyList contains a list of OperatorPolicy
+
+
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
+| *`kind`* __string__ | `OperatorPolicyList`
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
+
+| *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-operatorpolicy[$$OperatorPolicy$$] array__ | 
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-operatorpolicyspec"]
+==== OperatorPolicySpec 
+
+OperatorPolicySpec defines the desired state of OperatorPolicy
+https://www.rabbitmq.com/parameters.html#operator-policies
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-operatorpolicy[$$OperatorPolicy$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`name`* __string__ | Required property; cannot be updated
+| *`vhost`* __string__ | Default to vhost '/'; cannot be updated
+| *`pattern`* __string__ | Regular expression pattern used to match queues, e.g. "^my-queue$".
+Required property.
+| *`applyTo`* __string__ | What this operator policy applies to: 'queues', 'classic_queues', 'quorum_queues', 'streams'.
+Default to 'queues'.
+| *`priority`* __integer__ | Default to '0'.
+In the event that more than one operator policy can match a given queue, the operator policy with the greatest priority applies.
+| *`definition`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | OperatorPolicy definition. Required property.
+| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the operator policy will be created in.
+Required property.
+|===
+
+
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-operatorpolicystatus"]
+==== OperatorPolicyStatus 
+
+OperatorPolicyStatus defines the observed state of OperatorPolicy
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-operatorpolicy[$$OperatorPolicy$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this OperatorPolicy. It corresponds to the
+OperatorPolicy's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
 
@@ -458,8 +636,15 @@ Permission is the Schema for the permissions API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Permission`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-permissionspec[$$PermissionSpec$$]__ | 
@@ -479,8 +664,15 @@ PermissionList contains a list of Permission
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `PermissionList`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-permission[$$Permission$$] array__ | 
@@ -503,8 +695,10 @@ PermissionSpec defines the desired state of Permission
 | *`user`* __string__ | Name of an existing user; must provide user or userReference, else create/update will fail; cannot be updated
 | *`userReference`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Reference to an existing user.rabbitmq.com object; must provide user or userReference, else create/update will fail; cannot be updated
 | *`vhost`* __string__ | Name of an existing vhost; required property; cannot be updated
-| *`permissions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhostpermissions[$$VhostPermissions$$]__ | Permissions to grant to the user in the specific vhost; required property. See RabbitMQ doc for more information: https://www.rabbitmq.com/access-control.html#user-management
-| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that both the provided user and vhost are. Required property.
+| *`permissions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhostpermissions[$$VhostPermissions$$]__ | Permissions to grant to the user in the specific vhost; required property.
+See RabbitMQ doc for more information: https://www.rabbitmq.com/access-control.html#user-management
+| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that both the provided user and vhost are.
+Required property.
 |===
 
 
@@ -521,7 +715,8 @@ PermissionStatus defines the observed state of Permission
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Permission. It corresponds to the Permission's generation, which is updated on mutation by the API Server.
+| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Permission. It corresponds to the
+Permission's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
 
@@ -541,8 +736,15 @@ Policy is the Schema for the policies API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Policy`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-policyspec[$$PolicySpec$$]__ | 
@@ -562,8 +764,15 @@ PolicyList contains a list of Policy
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `PolicyList`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-policy[$$Policy$$] array__ | 
@@ -573,7 +782,8 @@ PolicyList contains a list of Policy
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-policyspec"]
 ==== PolicySpec 
 
-PolicySpec defines the desired state of Policy https://www.rabbitmq.com/parameters.html#policies
+PolicySpec defines the desired state of Policy
+https://www.rabbitmq.com/parameters.html#policies
 
 .Appears In:
 ****
@@ -585,11 +795,15 @@ PolicySpec defines the desired state of Policy https://www.rabbitmq.com/paramete
 | Field | Description
 | *`name`* __string__ | Required property; cannot be updated
 | *`vhost`* __string__ | Default to vhost '/'; cannot be updated
-| *`pattern`* __string__ | Regular expression pattern used to match queues and exchanges, e.g. "^amq.". Required property.
-| *`applyTo`* __string__ | What this policy applies to: 'queues', 'classic_queues', 'quorum_queues', 'streams', 'exchanges', or 'all'. Default to 'all'.
-| *`priority`* __integer__ | Default to '0'. In the event that more than one policy can match a given exchange or queue, the policy with the greatest priority applies.
+| *`pattern`* __string__ | Regular expression pattern used to match queues and exchanges, e.g. "^amq.".
+Required property.
+| *`applyTo`* __string__ | What this policy applies to: 'queues', 'classic_queues', 'quorum_queues', 'streams', 'exchanges', or 'all'.
+Default to 'all'.
+| *`priority`* __integer__ | Default to '0'.
+In the event that more than one policy can match a given exchange or queue, the policy with the greatest priority applies.
 | *`definition`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | Policy definition. Required property.
-| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the exchange will be created in. Required property.
+| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the policy will be created in.
+Required property.
 |===
 
 
@@ -606,7 +820,8 @@ PolicyStatus defines the observed state of Policy
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Policy. It corresponds to the Policy's generation, which is updated on mutation by the API Server.
+| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Policy. It corresponds to the
+Policy's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
 
@@ -626,8 +841,15 @@ Queue is the Schema for the queues API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Queue`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-queuespec[$$QueueSpec$$]__ | 
@@ -647,8 +869,15 @@ QueueList contains a list of Queue
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `QueueList`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-queue[$$Queue$$] array__ | 
@@ -673,8 +902,10 @@ QueueSpec defines the desired state of Queue
 | *`type`* __string__ | 
 | *`durable`* __boolean__ | When set to false queues does not survive server restart.
 | *`autoDelete`* __boolean__ | when set to true, queues that have had at least one consumer before are deleted after the last consumer unsubscribes.
-| *`arguments`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | Queue arguments in the format of KEY: VALUE. e.g. x-delivery-limit: 10000. Configuring queues through arguments is not recommended because they cannot be updated once set; we recommend configuring queues through policies instead.
-| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the queue will be created in. Required property.
+| *`arguments`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | Queue arguments in the format of KEY: VALUE. e.g. x-delivery-limit: 10000.
+Configuring queues through arguments is not recommended because they cannot be updated once set; we recommend configuring queues through policies instead.
+| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the queue will be created in.
+Required property.
 |===
 
 
@@ -691,7 +922,8 @@ QueueStatus defines the observed state of Queue
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Queue. It corresponds to the Queue's generation, which is updated on mutation by the API Server.
+| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Queue. It corresponds to the
+Queue's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
 
@@ -706,6 +938,7 @@ QueueStatus defines the observed state of Queue
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-bindingspec[$$BindingSpec$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-exchangespec[$$ExchangeSpec$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federationspec[$$FederationSpec$$]
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-operatorpolicyspec[$$OperatorPolicySpec$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-permissionspec[$$PermissionSpec$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-policyspec[$$PolicySpec$$]
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-queuespec[$$QueueSpec$$]
@@ -720,16 +953,22 @@ QueueStatus defines the observed state of Queue
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`name`* __string__ | The name of the RabbitMQ cluster to reference. Have to set either name or connectionSecret, but not both.
-| *`namespace`* __string__ | The namespace of the RabbitMQ cluster to reference. Defaults to the namespace of the requested resource if omitted.
-| *`connectionSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Secret contains the http management uri for the RabbitMQ cluster. The Secret must contain the key `uri`, `username` and `password` or operator will error. Have to set either name or connectionSecret, but not both.
+| *`name`* __string__ | The name of the RabbitMQ cluster to reference.
+Have to set either name or connectionSecret, but not both.
+| *`namespace`* __string__ | The namespace of the RabbitMQ cluster to reference.
+Defaults to the namespace of the requested resource if omitted.
+| *`connectionSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Secret contains the http management uri for the RabbitMQ cluster.
+The Secret must contain the key `uri`, `username` and `password` or operator will error.
+Have to set either name or connectionSecret, but not both.
 |===
 
 
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-schemareplication"]
 ==== SchemaReplication 
 
-SchemaReplication is the Schema for the schemareplications API This feature requires Tanzu RabbitMQ with schema replication plugin. For more information, see: https://tanzu.vmware.com/rabbitmq and https://www.rabbitmq.com/definitions-standby.html.
+SchemaReplication is the Schema for the schemareplications API
+This feature requires Tanzu RabbitMQ with schema replication plugin.
+For more information, see: https://tanzu.vmware.com/rabbitmq and https://www.rabbitmq.com/definitions-standby.html.
 
 .Appears In:
 ****
@@ -741,8 +980,15 @@ SchemaReplication is the Schema for the schemareplications API This feature requ
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `SchemaReplication`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-schemareplicationspec[$$SchemaReplicationSpec$$]__ | 
@@ -762,8 +1008,15 @@ SchemaReplicationList contains a list of SchemaReplication
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `SchemaReplicationList`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-schemareplication[$$SchemaReplication$$] array__ | 
@@ -784,8 +1037,13 @@ SchemaReplicationSpec defines the desired state of SchemaReplication
 |===
 | Field | Description
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that schema replication would be set for. Must be an existing cluster.
-| *`upstreamSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Defines a Secret which contains credentials to be used for schema replication. The Secret must contain the keys `username` and `password` in its Data field, or operator will error. Have to set either secretBackend.vault.secretPath or spec.upstreamSecret, but not both.
-| *`endpoints`* __string__ | endpoints should be one or multiple endpoints separated by ','. Must provide either spec.endpoints or endpoints in spec.upstreamSecret. When endpoints are provided in both spec.endpoints and spec.upstreamSecret, spec.endpoints takes precedence.
+| *`upstreamSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Defines a Secret which contains credentials to be used for schema replication.
+The Secret must contain the keys `username` and `password` in its Data field, or operator will error.
+Have to set either secretBackend.vault.secretPath or spec.upstreamSecret, but not both.
+| *`endpoints`* __string__ | endpoints should be one or multiple endpoints separated by ','.
+Must provide either spec.endpoints or endpoints in spec.upstreamSecret.
+When endpoints are provided in both spec.endpoints and spec.upstreamSecret, spec.endpoints takes
+precedence.
 | *`secretBackend`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-secretbackend[$$SecretBackend$$]__ | Set to fetch user credentials from K8s external secret stores to be used for schema replication.
 |===
 
@@ -803,7 +1061,8 @@ SchemaReplicationStatus defines the observed state of SchemaReplication
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Queue. It corresponds to the Queue's generation, which is updated on mutation by the API Server.
+| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Queue. It corresponds to the
+Queue's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
 
@@ -811,7 +1070,8 @@ SchemaReplicationStatus defines the observed state of SchemaReplication
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-secretbackend"]
 ==== SecretBackend 
 
-SecretBackend configures a single secret backend. Today, only Vault exists as supported secret backend.
+SecretBackend configures a single secret backend.
+Today, only Vault exists as supported secret backend.
 
 .Appears In:
 ****
@@ -840,8 +1100,15 @@ Shovel is the Schema for the shovels API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Shovel`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-shovelspec[$$ShovelSpec$$]__ | 
@@ -861,8 +1128,15 @@ ShovelList contains a list of Shovel
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `ShovelList`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-shovel[$$Shovel$$] array__ | 
@@ -872,7 +1146,8 @@ ShovelList contains a list of Shovel
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-shovelspec"]
 ==== ShovelSpec 
 
-ShovelSpec defines the desired state of Shovel For how to configure Shovel, see: https://www.rabbitmq.com/shovel.html.
+ShovelSpec defines the desired state of Shovel
+For how to configure Shovel, see: https://www.rabbitmq.com/shovel.html.
 
 .Appears In:
 ****
@@ -884,8 +1159,12 @@ ShovelSpec defines the desired state of Shovel For how to configure Shovel, see:
 | Field | Description
 | *`name`* __string__ | Required property; cannot be updated
 | *`vhost`* __string__ | Default to vhost '/'; cannot be updated
-| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that this Shovel will be created in. Required property.
-| *`uriSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Secret contains the AMQP URI(s) to configure Shovel destination and source. The Secret must contain the key `destUri` and `srcUri` or operator will error. Both fields should be one or multiple uris separated by ','. Required property.
+| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that this Shovel will be created in.
+Required property.
+| *`uriSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Secret contains the AMQP URI(s) to configure Shovel destination and source.
+The Secret must contain the key `destUri` and `srcUri` or operator will error.
+Both fields should be one or multiple uris separated by ','.
+Required property.
 | *`ackMode`* __string__ | 
 | *`prefetchCount`* __integer__ | 
 | *`reconnectDelay`* __integer__ | 
@@ -926,7 +1205,8 @@ ShovelStatus defines the observed state of Shovel
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Shovel. It corresponds to the Shovel's generation, which is updated on mutation by the API Server.
+| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Shovel. It corresponds to the
+Shovel's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
 
@@ -946,8 +1226,15 @@ TopicPermission is the Schema for the topicpermissions API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `TopicPermission`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-topicpermissionspec[$$TopicPermissionSpec$$]__ | 
@@ -986,8 +1273,15 @@ TopicPermissionList contains a list of TopicPermission
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `TopicPermissionList`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-topicpermission[$$TopicPermission$$] array__ | 
@@ -1011,7 +1305,8 @@ TopicPermissionSpec defines the desired state of TopicPermission
 | *`userReference`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Reference to an existing user.rabbitmq.com object; must provide user or userReference, else create/update will fail; cannot be updated.
 | *`vhost`* __string__ | Name of an existing vhost; required property; cannot be updated.
 | *`permissions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-topicpermissionconfig[$$TopicPermissionConfig$$]__ | Permissions to grant to the user to a topic exchange; required property.
-| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that both the provided user and vhost are. Required property.
+| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that both the provided user and vhost are.
+Required property.
 |===
 
 
@@ -1028,7 +1323,8 @@ TopicPermissionStatus defines the observed state of TopicPermission
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this TopicPermission. It corresponds to the TopicPermission's generation, which is updated on mutation by the API Server.
+| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this TopicPermission. It corresponds to the
+TopicPermission's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
 
@@ -1050,8 +1346,15 @@ User is the Schema for the users API.
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `User`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-userspec[$$UserSpec$$]__ | Spec configures the desired state of the User object.
@@ -1071,8 +1374,15 @@ UserList contains a list of Users.
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `UserList`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-user[$$User$$] array__ | 
@@ -1092,9 +1402,19 @@ UserSpec defines the desired state of User.
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`tags`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-usertag[$$UserTag$$] array__ | List of permissions tags to associate with the user. This determines the level of access to the RabbitMQ management UI granted to the user. Omitting this field will lead to a user than can still connect to the cluster through messaging protocols, but cannot perform any management actions. For more information, see https://www.rabbitmq.com/management.html#permissions.
-| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the user will be created for. This cluster must exist for the User object to be created.
-| *`importCredentialsSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Defines a Secret used to pre-define the username and password set for this User. User objects created with this field set will not have randomly-generated credentials, and will instead import the username/password values from this Secret. The Secret must contain the keys `username` and `password` in its Data field, or the import will fail. Note that this import only occurs at creation time, and is ignored once a password has been set on a User.
+| *`tags`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-usertag[$$UserTag$$] array__ | List of permissions tags to associate with the user. This determines the level of
+access to the RabbitMQ management UI granted to the user. Omitting this field will
+lead to a user than can still connect to the cluster through messaging protocols,
+but cannot perform any management actions.
+For more information, see https://www.rabbitmq.com/management.html#permissions.
+| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the user will be created for. This cluster must
+exist for the User object to be created.
+| *`importCredentialsSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Defines a Secret used to pre-define the username and password set for this User. User objects created
+with this field set will not have randomly-generated credentials, and will instead import
+the username/password values from this Secret.
+The Secret must contain the keys `username` and `password` in its Data field, or the import will fail.
+Note that this import only occurs at creation time, and is ignored once a password has been set
+on a User.
 |===
 
 
@@ -1111,7 +1431,8 @@ UserStatus defines the observed state of User.
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this User. It corresponds to the User's generation, which is updated on mutation by the API Server.
+| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this User. It corresponds to the
+User's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 | *`credentials`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Provides a reference to a Secret object containing the user credentials.
 | *`username`* __string__ | Provide rabbitmq Username
@@ -1121,7 +1442,8 @@ UserStatus defines the observed state of User.
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-usertag"]
 ==== UserTag (string) 
 
-UserTag defines the level of access to the management UI allocated to the user. For more information, see https://www.rabbitmq.com/management.html#permissions.
+UserTag defines the level of access to the management UI allocated to the user.
+For more information, see https://www.rabbitmq.com/management.html#permissions.
 
 .Appears In:
 ****
@@ -1143,7 +1465,10 @@ UserTag defines the level of access to the management UI allocated to the user. 
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`secretPath`* __string__ | Path in Vault to access a KV (Key-Value) secret with the fields username and password to be used for replication. For example "secret/data/rabbitmq/config". Optional; if not provided, username and password will come from upstreamSecret instead. Have to set either secretBackend.vault.secretPath or upstreamSecret, but not both.
+| *`secretPath`* __string__ | Path in Vault to access a KV (Key-Value) secret with the fields username and password to be used for replication.
+For example "secret/data/rabbitmq/config".
+Optional; if not provided, username and password will come from upstreamSecret instead.
+Have to set either secretBackend.vault.secretPath or upstreamSecret, but not both.
 |===
 
 
@@ -1162,8 +1487,15 @@ Vhost is the Schema for the vhosts API
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `Vhost`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta[$$ObjectMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`spec`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhostspec[$$VhostSpec$$]__ | 
@@ -1183,8 +1515,15 @@ VhostList contains a list of Vhost
 | Field | Description
 | *`apiVersion`* __string__ | `rabbitmq.com/v1beta1`
 | *`kind`* __string__ | `VhostList`
-| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+| *`kind`* __string__ | Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+| *`apiVersion`* __string__ | APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 | *`metadata`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta[$$ListMeta$$]__ | Refer to Kubernetes API documentation for fields of `metadata`.
 
 | *`items`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhost[$$Vhost$$] array__ | 
@@ -1194,7 +1533,8 @@ VhostList contains a list of Vhost
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhostpermissions"]
 ==== VhostPermissions 
 
-Set of RabbitMQ permissions: configure, read and write. By not setting a property (configure/write/read), it result in an empty string which does not not match any permission.
+Set of RabbitMQ permissions: configure, read and write.
+By not setting a property (configure/write/read), it result in an empty string which does not not match any permission.
 
 .Appears In:
 ****
@@ -1226,8 +1566,10 @@ VhostSpec defines the desired state of Vhost
 | *`name`* __string__ | Name of the vhost; see https://www.rabbitmq.com/vhosts.html.
 | *`tracing`* __boolean__ | 
 | *`tags`* __string array__ | 
-| *`defaultQueueType`* __string__ | Default queue type for this vhost; can be set to quorum, classic or stream. Supported in RabbitMQ 3.11.12 or above.
-| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the vhost will be created in. Required property.
+| *`defaultQueueType`* __string__ | Default queue type for this vhost; can be set to quorum, classic or stream.
+Supported in RabbitMQ 3.11.12 or above.
+| *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the vhost will be created in.
+Required property.
 |===
 
 
@@ -1244,7 +1586,8 @@ VhostStatus defines the observed state of Vhost
 [cols="25a,75a", options="header"]
 |===
 | Field | Description
-| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Vhost. It corresponds to the Vhost's generation, which is updated on mutation by the API Server.
+| *`observedGeneration`* __integer__ | observedGeneration is the most recent successful generation observed for this Vhost. It corresponds to the
+Vhost's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
 
