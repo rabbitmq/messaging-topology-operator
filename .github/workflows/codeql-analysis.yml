@@ -37,6 +37,15 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    # Manually install the right version of Go
+    # See https://github.com/github/codeql-action/issues/1842 and https://github.com/github/codeql/issues/13992
+    - name: Setup Go
+      uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+      with:
+        go-version-file: "go.mod"
+        # not needed but gets rid of warnings
+        cache: false
+
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
