@@ -27,7 +27,7 @@ var _ = Describe("OperatorPolicy", func() {
 				Name:    "test-operator-policy",
 				Pattern: "^some-prefix",
 				Definition: &runtime.RawExtension{
-					Raw: []byte(`{"key":"value"}`),
+					Raw: []byte(`{"max-length": 10}`),
 				},
 				RabbitmqClusterReference: RabbitmqClusterReference{
 					Name: "some-cluster",
@@ -48,7 +48,7 @@ var _ = Describe("OperatorPolicy", func() {
 		Expect(fetched.Spec.Pattern).To(Equal("^some-prefix"))
 		Expect(fetched.Spec.ApplyTo).To(Equal("queues"))
 		Expect(fetched.Spec.Priority).To(Equal(0))
-		Expect(fetched.Spec.Definition.Raw).To(Equal([]byte(`{"key":"value"}`)))
+		Expect(fetched.Spec.Definition.Raw).To(Equal([]byte(`{"max-length":10}`)))
 	})
 
 	It("creates operator policy with configurations", func() {
@@ -64,7 +64,7 @@ var _ = Describe("OperatorPolicy", func() {
 				ApplyTo:  "quorum_queues",
 				Priority: 100,
 				Definition: &runtime.RawExtension{
-					Raw: []byte(`{"key":"value"}`),
+					Raw: []byte(`{"max-length":10}`),
 				},
 				RabbitmqClusterReference: RabbitmqClusterReference{
 					Name: "random-cluster",
@@ -87,7 +87,7 @@ var _ = Describe("OperatorPolicy", func() {
 			RabbitmqClusterReference{
 				Name: "random-cluster",
 			}))
-		Expect(fetched.Spec.Definition.Raw).To(Equal([]byte(`{"key":"value"}`)))
+		Expect(fetched.Spec.Definition.Raw).To(Equal([]byte(`{"max-length":10}`)))
 	})
 
 	When("creating a policy with an invalid 'ApplyTo' value", func() {
@@ -101,7 +101,7 @@ var _ = Describe("OperatorPolicy", func() {
 					Name:    "test-policy",
 					Pattern: "a-queue-name",
 					Definition: &runtime.RawExtension{
-						Raw: []byte(`{"key":"value"}`),
+						Raw: []byte(`{"max-length":10}`),
 					},
 					ApplyTo: "yo-yo",
 					RabbitmqClusterReference: RabbitmqClusterReference{
