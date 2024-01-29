@@ -18,6 +18,7 @@ const (
 	BindingControllerName           = "binding-controller"
 	UserControllerName              = "user-controller"
 	PolicyControllerName            = "policy-controller"
+	OperatorPolicyControllerName    = "operator-policy-controller"
 	PermissionControllerName        = "permission-controller"
 	SchemaReplicationControllerName = "schema-replication-controller"
 	FederationControllerName        = "federation-controller"

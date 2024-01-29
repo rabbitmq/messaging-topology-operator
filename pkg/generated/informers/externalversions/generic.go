@@ -57,6 +57,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().Exchanges().Informer()}, nil
 	case v1beta1.SchemeGroupVersion.WithResource("federations"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().Federations().Informer()}, nil
+	case v1beta1.SchemeGroupVersion.WithResource("operatorpolicies"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().OperatorPolicies().Informer()}, nil
 	case v1beta1.SchemeGroupVersion.WithResource("permissions"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Rabbitmq().V1beta1().Permissions().Informer()}, nil
 	case v1beta1.SchemeGroupVersion.WithResource("policies"):

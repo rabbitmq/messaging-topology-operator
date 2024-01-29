@@ -86,6 +86,8 @@ func deletionFinalizer(kind string) string {
 	var plural string
 	if kind == "Policy" {
 		plural = "policies"
+	} else if kind == "OperatorPolicy" {
+		plural = "operatorpolicies"
 	} else {
 		plural = strings.ToLower(kind) + "s"
 	}

@@ -33,7 +33,7 @@ type PolicySpec struct {
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +kubebuilder:validation:Required
 	Definition *runtime.RawExtension `json:"definition"`
-	// Reference to the RabbitmqCluster that the exchange will be created in.
+	// Reference to the RabbitmqCluster that the policy will be created in.
 	// Required property.
 	// +kubebuilder:validation:Required
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`

@@ -35,6 +35,14 @@ type FederationListerExpansion interface{}
 // FederationNamespaceLister.
 type FederationNamespaceListerExpansion interface{}
 
+// OperatorPolicyListerExpansion allows custom methods to be added to
+// OperatorPolicyLister.
+type OperatorPolicyListerExpansion interface{}
+
+// OperatorPolicyNamespaceListerExpansion allows custom methods to be added to
+// OperatorPolicyNamespaceLister.
+type OperatorPolicyNamespaceListerExpansion interface{}
+
 // PermissionListerExpansion allows custom methods to be added to
 // PermissionLister.
 type PermissionListerExpansion interface{}

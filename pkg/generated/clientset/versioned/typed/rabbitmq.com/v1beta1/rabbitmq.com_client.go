@@ -26,6 +26,7 @@ type RabbitmqV1beta1Interface interface {
 	FederationsGetter
 	PermissionsGetter
 	PoliciesGetter
+	OperatorPoliciesGetter
 	QueuesGetter
 	SchemaReplicationsGetter
 	ShovelsGetter
@@ -56,6 +57,10 @@ func (c *RabbitmqV1beta1Client) Permissions(namespace string) PermissionInterfac
 
 func (c *RabbitmqV1beta1Client) Policies(namespace string) PolicyInterface {
 	return newPolicies(c, namespace)
+}
+
+func (c *RabbitmqV1beta1Client) OperatorPolicies(namespace string) OperatorPolicyInterface {
+	return newOperatorPolicies(c, namespace)
 }
 
 func (c *RabbitmqV1beta1Client) Queues(namespace string) QueueInterface {

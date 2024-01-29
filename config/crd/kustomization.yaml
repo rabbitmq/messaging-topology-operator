@@ -8,6 +8,7 @@ resources:
 - bases/rabbitmq.com_users.yaml
 - bases/rabbitmq.com_vhosts.yaml
 - bases/rabbitmq.com_policies.yaml
+- bases/rabbitmq.com_operatorpolicies.yaml
 - bases/rabbitmq.com_permissions.yaml
 - bases/rabbitmq.com_schemareplications.yaml
 - bases/rabbitmq.com_federations.yaml
@@ -22,6 +23,7 @@ resources:
 #- patches/webhook_in_exchanges.yaml
 #- patches/webhook_in_vhosts.yaml
 #- patches/webhook_in_policies.yaml
+#- patches/webhook_in_operatorpolicies.yaml
 #- patches/webhook_in_users.yaml
 #- patches/webhook_in_permissions.yaml
 #- patches/webhook_in_schemareplications.yaml
@@ -36,6 +38,7 @@ resources:
 #- patches/cainjection_in_exchanges.yaml
 #- patches/cainjection_in_vhosts.yaml
 #- patches/cainjection_in_policies.yaml
+#- patches/cainjection_in_operatorpolicies.yaml
 #- patches/cainjection_in_users.yaml
 #- patches/cainjection_in_permissions.yaml
 #- patches/cainjection_in_schemareplications.yaml

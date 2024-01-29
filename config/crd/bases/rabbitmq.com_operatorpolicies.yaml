@@ -4,23 +4,23 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.14.0
-  name: vhosts.rabbitmq.com
+  name: operatorpolicies.rabbitmq.com
 spec:
   group: rabbitmq.com
   names:
     categories:
     - all
     - rabbitmq
-    kind: Vhost
-    listKind: VhostList
-    plural: vhosts
-    singular: vhost
+    kind: OperatorPolicy
+    listKind: OperatorPolicyList
+    plural: operatorpolicies
+    singular: operatorpolicy
   scope: Namespaced
   versions:
   - name: v1beta1
     schema:
       openAPIV3Schema:
-        description: Vhost is the Schema for the vhosts API
+        description: OperatorPolicy is the Schema for the operator policies API
         properties:
           apiVersion:
             description: |-
@@ -40,23 +40,42 @@ spec:
           metadata:
             type: object
           spec:
-            description: VhostSpec defines the desired state of Vhost
+            description: |-
+              OperatorPolicySpec defines the desired state of OperatorPolicy
+              https://www.rabbitmq.com/parameters.html#operator-policies
             properties:
-              defaultQueueType:
+              applyTo:
+                default: queues
                 description: |-
-                  Default queue type for this vhost; can be set to quorum, classic or stream.
-                  Supported in RabbitMQ 3.11.12 or above.
+                  What this operator policy applies to: 'queues', 'classic_queues', 'quorum_queues', 'streams'.
+                  Default to 'queues'.
                 enum:
-                - quorum
-                - classic
-                - stream
+                - queues
+                - classic_queues
+                - quorum_queues
+                - streams
                 type: string
+              definition:
+                description: OperatorPolicy definition. Required property.
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
               name:
-                description: Name of the vhost; see https://www.rabbitmq.com/vhosts.html.
+                description: Required property; cannot be updated
                 type: string
+              pattern:
+                description: |-
+                  Regular expression pattern used to match queues, e.g. "^my-queue$".
+                  Required property.
+                type: string
+              priority:
+                default: 0
+                description: |-
+                  Default to '0'.
+                  In the event that more than one operator policy can match a given queue, the operator policy with the greatest priority applies.
+                type: integer
               rabbitmqClusterReference:
                 description: |-
-                  Reference to the RabbitmqCluster that the vhost will be created in.
+                  Reference to the RabbitmqCluster that the operator policy will be created in.
                   Required property.
                 properties:
                   connectionSecret:
@@ -84,18 +103,18 @@ spec:
                       Defaults to the namespace of the requested resource if omitted.
                     type: string
                 type: object
-              tags:
-                items:
-                  type: string
-                type: array
-              tracing:
-                type: boolean
+              vhost:
+                default: /
+                description: Default to vhost '/'; cannot be updated
+                type: string
             required:
+            - definition
             - name
+            - pattern
             - rabbitmqClusterReference
             type: object
           status:
-            description: VhostStatus defines the observed state of Vhost
+            description: OperatorPolicyStatus defines the observed state of OperatorPolicy
             properties:
               conditions:
                 items:
@@ -125,8 +144,8 @@ spec:
                 type: array
               observedGeneration:
                 description: |-
-                  observedGeneration is the most recent successful generation observed for this Vhost. It corresponds to the
-                  Vhost's generation, which is updated on mutation by the API Server.
+                  observedGeneration is the most recent successful generation observed for this OperatorPolicy. It corresponds to the
+                  OperatorPolicy's generation, which is updated on mutation by the API Server.
                 format: int64
                 type: integer
             type: object

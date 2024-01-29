@@ -270,6 +270,21 @@ func main() {
 
 	if err = (&controllers.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		Type:                    &topology.OperatorPolicy{},
+		Log:                     ctrl.Log.WithName(controllers.OperatorPolicyControllerName),
+		Scheme:                  mgr.GetScheme(),
+		Recorder:                mgr.GetEventRecorderFor(controllers.OperatorPolicyControllerName),
+		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
+		KubernetesClusterDomain: clusterDomain,
+		ReconcileFunc:           &controllers.OperatorPolicyReconciler{},
+		ConnectUsingPlainHTTP:   usePlainHTTP,
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", controllers.OperatorPolicyControllerName)
+		os.Exit(1)
+	}
+
+	if err = (&controllers.TopologyReconciler{
+		Client:                  mgr.GetClient(),
 		Type:                    &topology.Permission{},
 		Log:                     ctrl.Log.WithName(controllers.PermissionControllerName),
 		Scheme:                  mgr.GetScheme(),
@@ -373,6 +388,10 @@ func main() {
 		}
 		if err = (&topology.Policy{}).SetupWebhookWithManager(mgr); err != nil {
 			log.Error(err, "unable to create webhook", "webhook", "Policy")
+			os.Exit(1)
+		}
+		if err = (&topology.OperatorPolicy{}).SetupWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "OperatorPolicy")
 			os.Exit(1)
 		}
 		if err = (&topology.User{}).SetupWebhookWithManager(mgr); err != nil {

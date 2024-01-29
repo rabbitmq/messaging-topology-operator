@@ -1,0 +1,13 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: OperatorPolicy
+metadata:
+  name: operator-policy-example
+spec:
+  name: my-operator-policy # name of the operator policy
+  vhost: "/" # default to '/' if not provided
+  pattern: "^abc" # regex used to match queues
+  applyTo: "queues" # apply to all types of 'queues' (default), 'classic_queue', quorum_queues', or 'streams'
+  definition: # policy definition
+    expires: 1800000
+  rabbitmqClusterReference:
+    name: test # rabbitmqCluster must exist in the same namespace as this resource
