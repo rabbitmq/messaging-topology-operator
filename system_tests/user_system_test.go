@@ -211,7 +211,7 @@ var _ = Describe("Users", func() {
 			Expect(k8sClient.Create(ctx, &credentialSecret, &client.CreateOptions{})).To(Succeed())
 			user = &topology.User{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-2",
+					Name:      "user-3",
 					Namespace: namespace,
 				},
 				Spec: topology.UserSpec{
@@ -235,7 +235,7 @@ var _ = Describe("Users", func() {
 
 			By("Creating a new Secret with the provided credentials secret")
 			generatedSecretKey := types.NamespacedName{
-				Name:      "user-2-user-credentials",
+				Name:      "user-3-user-credentials",
 				Namespace: namespace,
 			}
 			var generatedSecret = &corev1.Secret{}
