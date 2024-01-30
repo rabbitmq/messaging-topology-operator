@@ -14,11 +14,12 @@ import (
 	"crypto/x509"
 	"fmt"
 	"go/build"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
@@ -99,7 +100,7 @@ var _ = BeforeSuite(func() {
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "config", "crd", "bases"),
-			filepath.Join(build.Default.GOPATH, "pkg", "mod", "github.com", "rabbitmq", "cluster-operator", "v2@v2.6.0", "config", "crd", "bases"),
+			filepath.Join(build.Default.GOPATH, "pkg", "mod", "github.com", "rabbitmq", "cluster-operator", "v2@v2.7.0", "config", "crd", "bases"),
 		},
 		ErrorIfCRDPathMissing: true,
 		Config: &rest.Config{
