@@ -13,6 +13,7 @@ import (
 
 func (s *SchemaReplication) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
+		WithValidator(s).
 		For(s).
 		Complete()
 }

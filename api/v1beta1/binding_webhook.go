@@ -14,6 +14,7 @@ import (
 
 func (b *Binding) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
+		WithValidator(b).
 		For(b).
 		Complete()
 }

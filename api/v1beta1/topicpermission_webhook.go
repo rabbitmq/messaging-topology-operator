@@ -14,6 +14,7 @@ import (
 
 func (t *TopicPermission) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
+		WithValidator(t).
 		For(t).
 		Complete()
 }
@@ -29,16 +30,16 @@ func (t *TopicPermission) ValidateCreate(_ context.Context, obj runtime.Object) 
 		return nil, fmt.Errorf("expected a RabbitMQ permission but got a %T", obj)
 	}
 
-	if t.Spec.User == "" && t.Spec.UserReference == nil {
+	if tp.Spec.User == "" && tp.Spec.UserReference == nil {
 		return nil, field.Required(field.NewPath("spec", "user and userReference"),
 			"must specify either spec.user or spec.userReference")
 	}
 
-	if t.Spec.User != "" && t.Spec.UserReference != nil {
+	if tp.Spec.User != "" && tp.Spec.UserReference != nil {
 		return nil, field.Required(field.NewPath("spec", "user and userReference"),
 			"cannot specify spec.user and spec.userReference at the same time")
 	}
-	return nil, t.Spec.RabbitmqClusterReference.validate(tp.RabbitReference())
+	return nil, tp.Spec.RabbitmqClusterReference.validate(tp.RabbitReference())
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type

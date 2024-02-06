@@ -131,7 +131,7 @@ var _ = Describe("Binding", func() {
 		updateBinding := topology.Binding{}
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &updateBinding)).To(Succeed())
 		updatedBinding.Spec.RoutingKey = "new-key"
-		Expect(k8sClient.Update(ctx, &updatedBinding).Error()).To(ContainSubstring("invalid: spec.routingKey: Invalid value: \"new-key\": routingKey cannot be updated"))
+		Expect(k8sClient.Update(ctx, &updatedBinding).Error()).To(ContainSubstring("spec.routingKey: Invalid value: \"new-key\": routingKey cannot be updated"))
 
 		By("deleting binding from rabbitmq server")
 		Expect(k8sClient.Delete(ctx, binding)).To(Succeed())

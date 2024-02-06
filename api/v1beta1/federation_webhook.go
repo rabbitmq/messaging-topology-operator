@@ -13,6 +13,7 @@ import (
 
 func (f *Federation) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
+		WithValidator(f).
 		For(f).
 		Complete()
 }

@@ -13,6 +13,7 @@ import (
 
 func (s *Shovel) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
+		WithValidator(s).
 		For(s).
 		Complete()
 }
@@ -37,7 +38,6 @@ func (s *Shovel) ValidateCreate(_ context.Context, obj runtime.Object) (warnings
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 func (s *Shovel) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	//TODO implement me
 	oldShovel, ok := oldObj.(*Shovel)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a shovel but got a %T", oldShovel))

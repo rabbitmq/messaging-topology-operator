@@ -13,6 +13,7 @@ import (
 
 func (e *Exchange) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
+		WithValidator(e).
 		For(e).
 		Complete()
 }

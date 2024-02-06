@@ -73,7 +73,7 @@ just-integration-tests: $(KUBEBUILDER_ASSETS) vet
 local-tests: unit-tests integration-tests ## Run all local tests (unit & integration)
 
 system-tests: ## run end-to-end tests against Kubernetes cluster defined in ~/.kube/config. Expects cluster operator and messaging topology operator to be installed in the cluster
-	NAMESPACE="rabbitmq-system" ginkgo --randomize-all -r system_tests/
+	NAMESPACE="rabbitmq-system" ginkgo --randomize-all -r $(GINKGO_EXTRA) system_tests/
 
 # Build manager binary
 manager: generate fmt vet vuln

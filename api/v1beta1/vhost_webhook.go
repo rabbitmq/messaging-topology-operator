@@ -13,6 +13,7 @@ import (
 
 func (v *Vhost) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
+		WithValidator(v).
 		For(v).
 		Complete()
 }

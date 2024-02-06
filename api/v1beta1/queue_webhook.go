@@ -13,6 +13,7 @@ import (
 
 func (q *Queue) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
+		WithValidator(q).
 		For(q).
 		Complete()
 }
