@@ -50,7 +50,17 @@ $(KUBEBUILDER_ASSETS):
 ### Targets
 
 .PHONY: unit-tests
-unit-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet vuln manifests ## Run unit tests
+unit-tests::install-tools ## Run unit tests
+unit-test::$(KUBEBUILDER_ASSETS)
+unit-test::generate
+unit-test::fmt
+unit-test::vet
+unit-test::vuln
+unit-test::manifests
+unit-test::just-unit-tests
+
+.PHONY: just-unit-tests
+just-unit-tests:
 	ginkgo -r --randomize-all api/ internal/ rabbitmqclient/
 
 .PHONY: integration-tests
@@ -63,7 +73,7 @@ just-integration-tests: $(KUBEBUILDER_ASSETS) vet
 local-tests: unit-tests integration-tests ## Run all local tests (unit & integration)
 
 system-tests: ## run end-to-end tests against Kubernetes cluster defined in ~/.kube/config. Expects cluster operator and messaging topology operator to be installed in the cluster
-	NAMESPACE="rabbitmq-system" ginkgo --randomize-all -r system_tests/
+	NAMESPACE="rabbitmq-system" ginkgo --randomize-all -r $(GINKGO_EXTRA) system_tests/
 
 # Build manager binary
 manager: generate fmt vet vuln
@@ -207,7 +217,7 @@ generate-manifests:
 # Cert Manager #
 ################
 
-CERT_MANAGER_VERSION ?= v1.7.0
+CERT_MANAGER_VERSION ?= v1.12.3
 CERT_MANAGER_MANIFEST ?= https://github.com/jetstack/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cert-manager.yaml
 
 CMCTL = $(LOCAL_BIN)/cmctl

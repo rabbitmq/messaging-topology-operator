@@ -1,6 +1,7 @@
 package v1beta1
 
 import (
+	"context"
 	"fmt"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -13,75 +14,87 @@ import (
 
 func (p *Permission) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
+		WithValidator(p).
 		For(p).
 		Complete()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1beta1-permission,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=permissions,versions=v1beta1,name=vpermission.kb.io,sideEffects=none,admissionReviewVersions=v1
 
-var _ webhook.Validator = &Permission{}
+var _ webhook.CustomValidator = &Permission{}
 
 // ValidateCreate checks if only one of spec.user and spec.userReference is specified
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
-func (p *Permission) ValidateCreate() (admission.Warnings, error) {
-	var errorList field.ErrorList
-	if p.Spec.User == "" && p.Spec.UserReference == nil {
-		errorList = append(errorList, field.Required(field.NewPath("spec", "user and userReference"),
-			"must specify either spec.user or spec.userReference"))
-		return nil, apierrors.NewInvalid(GroupVersion.WithKind("Permission").GroupKind(), p.Name, errorList)
+func (p *Permission) ValidateCreate(_ context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
+	pe, ok := obj.(*Permission)
+	if !ok {
+		return nil, fmt.Errorf("expected a RabbitMQ permission but got a %T", obj)
 	}
 
-	if p.Spec.User != "" && p.Spec.UserReference != nil {
-		errorList = append(errorList, field.Required(field.NewPath("spec", "user and userReference"),
-			"cannot specify spec.user and spec.userReference at the same time"))
-		return nil, apierrors.NewInvalid(GroupVersion.WithKind("Permission").GroupKind(), p.Name, errorList)
+	if pe.Spec.User == "" && pe.Spec.UserReference == nil {
+		return nil, field.Required(field.NewPath("spec", "user and userReference"),
+			"must specify either spec.user or spec.userReference")
 	}
 
-	return p.Spec.RabbitmqClusterReference.ValidateOnCreate(p.GroupResource(), p.Name)
+	if pe.Spec.User != "" && pe.Spec.UserReference != nil {
+		return nil, field.Required(field.NewPath("spec", "user and userReference"),
+			"cannot specify spec.user and spec.userReference at the same time")
+	}
+
+	return nil, pe.Spec.RabbitmqClusterReference.validate(pe.RabbitReference())
 }
 
 // ValidateUpdate do not allow updates on spec.vhost, spec.user, spec.userReference, and spec.rabbitmqClusterReference
 // updates on spec.permissions are allowed
 // only one of spec.user and spec.userReference can be specified
-func (p *Permission) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
-	oldPermission, ok := old.(*Permission)
+func (p *Permission) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
+	oldPermission, ok := oldObj.(*Permission)
 	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a permission but got a %T", old))
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a permission but got a %T", oldObj))
+	}
+
+	newPermission, ok := newObj.(*Permission)
+	if !ok {
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a permission but got a %T", newObj))
 	}
 
 	var errorList field.ErrorList
-	if p.Spec.User == "" && p.Spec.UserReference == nil {
+	if newPermission.Spec.User == "" && newPermission.Spec.UserReference == nil {
 		errorList = append(errorList, field.Required(field.NewPath("spec", "user and userReference"),
 			"must specify either spec.user or spec.userReference"))
-		return nil, apierrors.NewInvalid(GroupVersion.WithKind("Permission").GroupKind(), p.Name, errorList)
+		return nil, apierrors.NewInvalid(GroupVersion.WithKind("Permission").GroupKind(), newPermission.Name, errorList)
 	}
 
-	if p.Spec.User != "" && p.Spec.UserReference != nil {
+	if newPermission.Spec.User != "" && newPermission.Spec.UserReference != nil {
 		errorList = append(errorList, field.Required(field.NewPath("spec", "user and userReference"),
 			"cannot specify spec.user and spec.userReference at the same time"))
-		return nil, apierrors.NewInvalid(GroupVersion.WithKind("Permission").GroupKind(), p.Name, errorList)
+		return nil, apierrors.NewInvalid(GroupVersion.WithKind("Permission").GroupKind(), newPermission.Name, errorList)
 	}
 
-	detailMsg := "updates on user, userReference, vhost and rabbitmqClusterReference are all forbidden"
-	if p.Spec.User != oldPermission.Spec.User {
-		return nil, apierrors.NewForbidden(p.GroupResource(), p.Name,
+	const detailMsg = "updates on user, userReference, vhost and rabbitmqClusterReference are all forbidden"
+	if newPermission.Spec.User != oldPermission.Spec.User {
+		return nil, apierrors.NewForbidden(newPermission.GroupResource(), newPermission.Name,
 			field.Forbidden(field.NewPath("spec", "user"), detailMsg))
 	}
 
-	if userReferenceUpdated(p.Spec.UserReference, oldPermission.Spec.UserReference) {
-		return nil, apierrors.NewForbidden(p.GroupResource(), p.Name,
+	if userReferenceUpdated(newPermission.Spec.UserReference, oldPermission.Spec.UserReference) {
+		return nil, apierrors.NewForbidden(newPermission.GroupResource(), newPermission.Name,
 			field.Forbidden(field.NewPath("spec", "userReference"), detailMsg))
 	}
 
-	if p.Spec.Vhost != oldPermission.Spec.Vhost {
-		return nil, apierrors.NewForbidden(p.GroupResource(), p.Name,
+	if newPermission.Spec.Vhost != oldPermission.Spec.Vhost {
+		return nil, apierrors.NewForbidden(newPermission.GroupResource(), newPermission.Name,
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
-	if !oldPermission.Spec.RabbitmqClusterReference.Matches(&p.Spec.RabbitmqClusterReference) {
-		return nil, apierrors.NewForbidden(p.GroupResource(), p.Name,
+	if !oldPermission.Spec.RabbitmqClusterReference.Matches(&newPermission.Spec.RabbitmqClusterReference) {
+		return nil, apierrors.NewForbidden(newPermission.GroupResource(), newPermission.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}
+	return nil, nil
+}
+
+func (p *Permission) ValidateDelete(_ context.Context, _ runtime.Object) (warnings admission.Warnings, err error) {
 	return nil, nil
 }
 
@@ -98,9 +111,4 @@ func userReferenceUpdated(new, old *corev1.LocalObjectReference) bool {
 		return true
 	}
 	return false
-}
-
-// ValidateDelete no validation on delete
-func (p *Permission) ValidateDelete() (admission.Warnings, error) {
-	return nil, nil
 }

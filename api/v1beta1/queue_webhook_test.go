@@ -1,49 +1,57 @@
 package v1beta1
 
 import (
+	"context"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("queue webhook", func() {
 
-	var queue = Queue{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-queue",
-		},
-		Spec: QueueSpec{
-			Name:       "test",
-			Vhost:      "/a-vhost",
-			Type:       "quorum",
-			Durable:    false,
-			AutoDelete: true,
-			RabbitmqClusterReference: RabbitmqClusterReference{
-				Name: "some-cluster",
+	var (
+		queue = Queue{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "test-queue",
 			},
-		},
-	}
+			Spec: QueueSpec{
+				Name:       "test",
+				Vhost:      "/a-vhost",
+				Type:       "quorum",
+				Durable:    false,
+				AutoDelete: true,
+				RabbitmqClusterReference: RabbitmqClusterReference{
+					Name: "some-cluster",
+				},
+			},
+		}
+		rootCtx = context.Background()
+	)
 
 	Context("ValidateCreate", func() {
 		It("does not allow both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret be configured", func() {
 			notAllowedQ := queue.DeepCopy()
+			notAllowedQ.Spec.Durable = true
 			notAllowedQ.Spec.RabbitmqClusterReference.ConnectionSecret = &corev1.LocalObjectReference{Name: "some-secret"}
-			Expect(apierrors.IsForbidden(ignoreNilWarning(notAllowedQ.ValidateCreate()))).To(BeTrue())
+			_, err := notAllowedQ.ValidateCreate(rootCtx, notAllowedQ)
+			Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: do not provide both name and connectionSecret")))
 		})
 
 		It("spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret cannot both be empty", func() {
 			notAllowedQ := queue.DeepCopy()
+			notAllowedQ.Spec.Durable = true
 			notAllowedQ.Spec.RabbitmqClusterReference.Name = ""
 			notAllowedQ.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			Expect(apierrors.IsForbidden(ignoreNilWarning(notAllowedQ.ValidateCreate()))).To(BeTrue())
+			_, err := notAllowedQ.ValidateCreate(rootCtx, notAllowedQ)
+			Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: must provide either name or connectionSecret")))
 		})
 
 		It("does not allow non-durable quorum queues", func() {
 			notAllowedQ := queue.DeepCopy()
 			notAllowedQ.Spec.AutoDelete = false
-			Expect(apierrors.IsForbidden(ignoreNilWarning(notAllowedQ.ValidateCreate()))).To(BeTrue(), "Expected 'forbidden' response for non-durable quorum queue")
+			_, err := notAllowedQ.ValidateCreate(rootCtx, notAllowedQ)
+			Expect(err).To(MatchError(ContainSubstring("Quorum queues must have durable set to true")))
 		})
 	})
 
@@ -51,13 +59,15 @@ var _ = Describe("queue webhook", func() {
 		It("does not allow updates on queue name", func() {
 			newQueue := queue.DeepCopy()
 			newQueue.Spec.Name = "new-name"
-			Expect(apierrors.IsForbidden(ignoreNilWarning(newQueue.ValidateUpdate(&queue)))).To(BeTrue())
+			_, err := newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost, and rabbitmqClusterReference are all forbidden")))
 		})
 
 		It("does not allow updates on vhost", func() {
 			newQueue := queue.DeepCopy()
 			newQueue.Spec.Vhost = "/new-vhost"
-			Expect(apierrors.IsForbidden(ignoreNilWarning(newQueue.ValidateUpdate(&queue)))).To(BeTrue())
+			_, err := newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost, and rabbitmqClusterReference are all forbidden")))
 		})
 
 		It("does not allow updates on rabbitmqClusterReference.name", func() {
@@ -65,7 +75,8 @@ var _ = Describe("queue webhook", func() {
 			newQueue.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
 				Name: "new-cluster",
 			}
-			Expect(apierrors.IsForbidden(ignoreNilWarning(newQueue.ValidateUpdate(&queue)))).To(BeTrue())
+			_, err := newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost, and rabbitmqClusterReference are all forbidden")))
 		})
 
 		It("does not allow updates on rabbitmqClusterReference.namespace", func() {
@@ -73,7 +84,8 @@ var _ = Describe("queue webhook", func() {
 			newQueue.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
 				Namespace: "new-ns",
 			}
-			Expect(apierrors.IsForbidden(ignoreNilWarning(newQueue.ValidateUpdate(&queue)))).To(BeTrue())
+			_, err := newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost, and rabbitmqClusterReference are all forbidden")))
 		})
 
 		It("does not allow updates on rabbitmqClusterReference.connectionSecret", func() {
@@ -92,25 +104,29 @@ var _ = Describe("queue webhook", func() {
 			}
 			newQueue := connectionScrQ.DeepCopy()
 			newQueue.Spec.RabbitmqClusterReference.ConnectionSecret.Name = "new-secret"
-			Expect(apierrors.IsForbidden(ignoreNilWarning(newQueue.ValidateUpdate(&connectionScrQ)))).To(BeTrue())
+			_, err := newQueue.ValidateUpdate(rootCtx, &connectionScrQ, newQueue)
+			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost, and rabbitmqClusterReference are all forbidden")))
 		})
 
 		It("does not allow updates on queue type", func() {
 			newQueue := queue.DeepCopy()
 			newQueue.Spec.Type = "classic"
-			Expect(apierrors.IsInvalid(ignoreNilWarning(newQueue.ValidateUpdate(&queue)))).To(BeTrue())
+			_, err := newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			Expect(err).To(MatchError(ContainSubstring("queue type cannot be updated")))
 		})
 
 		It("does not allow updates on durable", func() {
 			newQueue := queue.DeepCopy()
 			newQueue.Spec.Durable = true
-			Expect(apierrors.IsInvalid(ignoreNilWarning(newQueue.ValidateUpdate(&queue)))).To(BeTrue())
+			_, err := newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			Expect(err).To(MatchError(ContainSubstring("durable cannot be updated")))
 		})
 
 		It("does not allow updates on autoDelete", func() {
 			newQueue := queue.DeepCopy()
 			newQueue.Spec.AutoDelete = false
-			Expect(apierrors.IsInvalid(ignoreNilWarning(newQueue.ValidateUpdate(&queue)))).To(BeTrue())
+			_, err := newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			Expect(err).To(MatchError(ContainSubstring("autoDelete cannot be updated")))
 		})
 	})
 })

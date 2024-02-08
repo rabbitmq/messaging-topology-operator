@@ -1,6 +1,7 @@
 package v1beta1
 
 import (
+	"context"
 	"fmt"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -10,69 +11,79 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-func (r *Exchange) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (e *Exchange) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
+		WithValidator(e).
+		For(e).
 		Complete()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1beta1-exchange,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=exchanges,versions=v1beta1,name=vexchange.kb.io,sideEffects=none,admissionReviewVersions=v1
 
-var _ webhook.Validator = &Exchange{}
+var _ webhook.CustomValidator = &Exchange{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
-func (e *Exchange) ValidateCreate() (admission.Warnings, error) {
-	return e.Spec.RabbitmqClusterReference.ValidateOnCreate(e.GroupResource(), e.Name)
+func (e *Exchange) ValidateCreate(_ context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
+	ex, ok := obj.(*Exchange)
+	if !ok {
+		return nil, fmt.Errorf("expected an exchange but got a %T", obj)
+	}
+	return nil, e.Spec.RabbitmqClusterReference.validate(ex.RabbitReference())
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 // returns error type 'forbidden' for updates that the controller chooses to disallow: exchange name/vhost/rabbitmqClusterReference
 // returns error type 'invalid' for updates that will be rejected by rabbitmq server: exchange types/autoDelete/durable
 // exchange.spec.arguments can be updated
-func (e *Exchange) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
-	oldExchange, ok := old.(*Exchange)
+func (e *Exchange) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
+	oldExchange, ok := oldObj.(*Exchange)
 	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected an exchange but got a %T", old))
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected an exchange but got a %T", oldObj))
+	}
+
+	newExchange, ok := newObj.(*Exchange)
+	if !ok {
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected an exchange but got a %T", newObj))
 	}
 
 	var allErrs field.ErrorList
-	detailMsg := "updates on name, vhost, and rabbitmqClusterReference are all forbidden"
-	if e.Spec.Name != oldExchange.Spec.Name {
-		return nil, apierrors.NewForbidden(e.GroupResource(), e.Name,
+	const detailMsg = "updates on name, vhost, and rabbitmqClusterReference are all forbidden"
+	if newExchange.Spec.Name != oldExchange.Spec.Name {
+		return nil, apierrors.NewForbidden(newExchange.GroupResource(), newExchange.Name,
 			field.Forbidden(field.NewPath("spec", "name"), detailMsg))
 	}
 
-	if e.Spec.Vhost != oldExchange.Spec.Vhost {
-		return nil, apierrors.NewForbidden(e.GroupResource(), e.Name,
+	if newExchange.Spec.Vhost != oldExchange.Spec.Vhost {
+		return nil, apierrors.NewForbidden(newExchange.GroupResource(), newExchange.Name,
 			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
 	}
 
-	if !oldExchange.Spec.RabbitmqClusterReference.Matches(&e.Spec.RabbitmqClusterReference) {
-		return nil, apierrors.NewForbidden(e.GroupResource(), e.Name,
+	if !oldExchange.Spec.RabbitmqClusterReference.Matches(&newExchange.Spec.RabbitmqClusterReference) {
+		return nil, apierrors.NewForbidden(newExchange.GroupResource(), newExchange.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}
 
-	if e.Spec.Type != oldExchange.Spec.Type {
+	if newExchange.Spec.Type != oldExchange.Spec.Type {
 		allErrs = append(allErrs, field.Invalid(
 			field.NewPath("spec", "type"),
-			e.Spec.Type,
+			newExchange.Spec.Type,
 			"exchange type cannot be updated",
 		))
 	}
 
-	if e.Spec.AutoDelete != oldExchange.Spec.AutoDelete {
+	if newExchange.Spec.AutoDelete != oldExchange.Spec.AutoDelete {
 		allErrs = append(allErrs, field.Invalid(
 			field.NewPath("spec", "autoDelete"),
-			e.Spec.AutoDelete,
+			newExchange.Spec.AutoDelete,
 			"autoDelete cannot be updated",
 		))
 	}
 
-	if e.Spec.Durable != oldExchange.Spec.Durable {
+	if newExchange.Spec.Durable != oldExchange.Spec.Durable {
 		allErrs = append(allErrs, field.Invalid(
 			field.NewPath("spec", "durable"),
-			e.Spec.AutoDelete,
+			newExchange.Spec.AutoDelete,
 			"durable cannot be updated",
 		))
 	}
@@ -81,9 +92,9 @@ func (e *Exchange) ValidateUpdate(old runtime.Object) (admission.Warnings, error
 		return nil, nil
 	}
 
-	return nil, apierrors.NewInvalid(GroupVersion.WithKind("Exchange").GroupKind(), e.Name, allErrs)
+	return nil, allErrs.ToAggregate()
 }
 
-func (e *Exchange) ValidateDelete() (admission.Warnings, error) {
+func (e *Exchange) ValidateDelete(_ context.Context, _ runtime.Object) (warnings admission.Warnings, err error) {
 	return nil, nil
 }

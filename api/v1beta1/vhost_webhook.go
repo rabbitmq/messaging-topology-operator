@@ -1,6 +1,7 @@
 package v1beta1
 
 import (
+	"context"
 	"fmt"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -10,44 +11,55 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-func (r *Vhost) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (v *Vhost) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
+		WithValidator(v).
+		For(v).
 		Complete()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1beta1-vhost,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=vhosts,versions=v1beta1,name=vvhost.kb.io,sideEffects=none,admissionReviewVersions=v1
 
-var _ webhook.Validator = &Vhost{}
+var _ webhook.CustomValidator = &Vhost{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-// either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
-func (v *Vhost) ValidateCreate() (admission.Warnings, error) {
-	return v.Spec.RabbitmqClusterReference.ValidateOnCreate(v.GroupResource(), v.Name)
+// ValidateCreate
+//
+// Either rabbitmqClusterReference.name or
+// rabbitmqClusterReference.connectionSecret must be provided but not both
+func (v *Vhost) ValidateCreate(_ context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
+	vhost, ok := obj.(*Vhost)
+	if !ok {
+		return nil, fmt.Errorf("expected a RabbitMQ vhost but got a %T", obj)
+	}
+	return nil, v.Spec.RabbitmqClusterReference.validate(vhost.RabbitReference())
 }
 
 // ValidateUpdate returns error type 'forbidden' for updates on vhost name and rabbitmqClusterReference
-// vhost.spec.tracing can be updated
-func (v *Vhost) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
-	oldVhost, ok := old.(*Vhost)
+func (v *Vhost) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
+	oldVhost, ok := oldObj.(*Vhost)
 	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a vhost but got a %T", old))
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a vhost but got a %T", oldObj))
 	}
 
-	detailMsg := "updates on name and rabbitmqClusterReference are all forbidden"
-	if v.Spec.Name != oldVhost.Spec.Name {
-		return nil, apierrors.NewForbidden(v.GroupResource(), v.Name,
+	newVhost, ok := newObj.(*Vhost)
+	if !ok {
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a vhost but got a %T", newObj))
+	}
+
+	const detailMsg = "updates on name and rabbitmqClusterReference are all forbidden"
+	if newVhost.Spec.Name != oldVhost.Spec.Name {
+		return nil, apierrors.NewForbidden(newVhost.GroupResource(), newVhost.Name,
 			field.Forbidden(field.NewPath("spec", "name"), detailMsg))
 	}
 
-	if !oldVhost.Spec.RabbitmqClusterReference.Matches(&v.Spec.RabbitmqClusterReference) {
-		return nil, apierrors.NewForbidden(v.GroupResource(), v.Name,
+	if !oldVhost.Spec.RabbitmqClusterReference.Matches(&newVhost.Spec.RabbitmqClusterReference) {
+		return nil, apierrors.NewForbidden(newVhost.GroupResource(), newVhost.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
 	}
 
 	return nil, nil
 }
 
-func (v *Vhost) ValidateDelete() (admission.Warnings, error) {
+func (v *Vhost) ValidateDelete(_ context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
 	return nil, nil
 }
