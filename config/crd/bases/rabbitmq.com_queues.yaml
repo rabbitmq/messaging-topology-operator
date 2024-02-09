@@ -52,6 +52,13 @@ spec:
                 description: when set to true, queues that have had at least one consumer
                   before are deleted after the last consumer unsubscribes.
                 type: boolean
+              deleteIfEmpty:
+                description: when set to true, queues are deleted only if empty.
+                type: boolean
+              deleteIfUnused:
+                description: when set to true, queues are delete only if they have
+                  no consumer.
+                type: boolean
               durable:
                 description: When set to false queues does not survive server restart.
                 type: boolean

@@ -16,11 +16,13 @@ var _ = Describe("queue webhook", func() {
 				Name: "test-queue",
 			},
 			Spec: QueueSpec{
-				Name:       "test",
-				Vhost:      "/a-vhost",
-				Type:       "quorum",
-				Durable:    false,
-				AutoDelete: true,
+				Name:           "test",
+				Vhost:          "/a-vhost",
+				Type:           "quorum",
+				Durable:        false,
+				AutoDelete:     true,
+				DeleteIfEmpty:  true,
+				DeleteIfUnused: false,
 				RabbitmqClusterReference: RabbitmqClusterReference{
 					Name: "some-cluster",
 				},

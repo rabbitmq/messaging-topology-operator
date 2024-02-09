@@ -33,6 +33,7 @@ type Client interface {
 	DeletePolicy(string, string) (*http.Response, error)
 	DeclareQueue(string, string, rabbithole.QueueSettings) (*http.Response, error)
 	DeleteQueue(string, string, ...rabbithole.QueueDeleteOptions) (*http.Response, error)
+	GetQueue(string, string) (*rabbithole.DetailedQueueInfo, error)
 	DeclareExchange(string, string, rabbithole.ExchangeSettings) (*http.Response, error)
 	DeleteExchange(string, string) (*http.Response, error)
 	PutVhost(string, rabbithole.VhostSettings) (*http.Response, error)

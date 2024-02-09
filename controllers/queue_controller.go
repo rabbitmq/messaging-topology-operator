@@ -47,11 +47,30 @@ func (r *QueueReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.
 	logger.Info("Deleting queues from ReconcilerFunc DeleteObj")
 
 	queue := obj.(*topology.Queue)
-	err := validateResponseForDeletion(client.DeleteQueue(queue.Spec.Vhost, queue.Spec.Name))
-	if errors.Is(err, NotFound) {
+	queueDeleteOptions, err := internal.GenerateQueueDeleteOptions(queue)
+	if err != nil {
+		return fmt.Errorf("failed to generate queue delete options: %w", err)
+	}
+	// Manage Quorum queue deletion if DeleteIfEmpty or DeleteIfUnused is true
+	if queue.Spec.Type == "quorum" && (queue.Spec.DeleteIfEmpty || queue.Spec.DeleteIfUnused) {
+		qInfo, err := client.GetQueue(queue.Spec.Vhost, queue.Spec.Name)
+		if err == nil {
+			return fmt.Errorf("cannot get %w Queue Information to verify queue is empty/unused: %s", err, queue.Spec.Name)
+		}
+		if qInfo.Messages > 0 && queue.Spec.DeleteIfEmpty {
+			return fmt.Errorf("Cannot delete queue %s because messages", queue.Spec.Name)
+		}
+		if qInfo.Consumers > 0 && queue.Spec.DeleteIfUnused {
+			return fmt.Errorf("Cannot delete queue %s because queue has consumers", queue.Spec.Name)
+		}
+
+	}
+
+	errdel := validateResponseForDeletion(client.DeleteQueue(queue.Spec.Vhost, queue.Spec.Name, *queueDeleteOptions))
+	if errors.Is(errdel, NotFound) {
 		logger.Info("cannot find queue in rabbitmq server; already deleted", "queue", queue.Spec.Name)
-	} else if err != nil {
-		return err
+	} else if errdel != nil {
+		return errdel
 	}
 	return nil
 }
