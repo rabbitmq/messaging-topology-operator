@@ -624,8 +624,8 @@ k8s.io/kube-openapi v0.0.0-20240126223410-2919ad4fcfec h1:iGTel2aR8vCZdxJDgmbeY0
 k8s.io/kube-openapi v0.0.0-20240126223410-2919ad4fcfec/go.mod h1:Pa1PvrP7ACSkuX6I7KYomY6cmMA0Tx86waBhDUgoKPw=
 k8s.io/utils v0.0.0-20240102154912-e7106e64919e h1:eQ/4ljkx21sObifjzXwlPKpdGLrCfRziVtos3ofG/sQ=
 k8s.io/utils v0.0.0-20240102154912-e7106e64919e/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
-sigs.k8s.io/controller-runtime v0.17.1 h1:V1dQELMGVk46YVXXQUbTFujU7u4DQj6YUj9Rb6cuzz8=
-sigs.k8s.io/controller-runtime v0.17.1/go.mod h1:+MngTvIQQQhfXtwfdGw/UOQ/aIaqsYywfCINOtwMO/s=
+sigs.k8s.io/controller-runtime v0.17.2 h1:FwHwD1CTUemg0pW2otk7/U5/i5m2ymzvOXdbeGOUvw0=
+sigs.k8s.io/controller-runtime v0.17.2/go.mod h1:+MngTvIQQQhfXtwfdGw/UOQ/aIaqsYywfCINOtwMO/s=
 sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20231121004636-2154ffbc22e2 h1:S1i08nqcuJsCyUBR0jvmKnMLHEbPb74yrVfUoSeuGew=
 sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20231121004636-2154ffbc22e2/go.mod h1:TF/lVLWS+JNNaVqJuDDictY2hZSXSsIHCx4FClMvqFg=
 sigs.k8s.io/controller-tools v0.14.0 h1:rnNoCC5wSXlrNoBKKzL70LNJKIQKEzT6lloG6/LF73A=
