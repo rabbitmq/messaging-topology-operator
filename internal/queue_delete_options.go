@@ -19,12 +19,6 @@ import (
 // GenerateQueueDeleteOptions generates rabbithole.QueueDeleteOptions for a given Queue
 // queue.Spec.Arguments (type k8s runtime.RawExtensions) is unmarshalled
 func GenerateQueueDeleteOptions(q *topology.Queue) (*rabbithole.QueueDeleteOptions, error) {
-	arguments := make(map[string]interface{})
-	if q.Spec.Arguments != nil {
-		if err := json.Unmarshal(q.Spec.Arguments.Raw, &arguments); err != nil {
-			return nil, fmt.Errorf("failed to unmarshall queue arguments: %v", err)
-		}
-	}
 
 	return &rabbithole.QueueDeleteOptions{
 		// Set these values to false if q.Spec.Type = Quorum, not supported by the API

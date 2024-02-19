@@ -54,14 +54,14 @@ func (r *QueueReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.
 	// Manage Quorum queue deletion if DeleteIfEmpty or DeleteIfUnused is true
 	if queue.Spec.Type == "quorum" && (queue.Spec.DeleteIfEmpty || queue.Spec.DeleteIfUnused) {
 		qInfo, err := client.GetQueue(queue.Spec.Vhost, queue.Spec.Name)
-		if err == nil {
-			return fmt.Errorf("cannot get %w Queue Information to verify queue is empty/unused: %s", err, queue.Spec.Name)
+		if err != nil {
+			return fmt.Errorf("cannot get %w queue information to verify queue is empty/unused: %s", err, queue.Spec.Name)
 		}
 		if qInfo.Messages > 0 && queue.Spec.DeleteIfEmpty {
-			return fmt.Errorf("Cannot delete queue %s because messages", queue.Spec.Name)
+			return fmt.Errorf("cannot delete queue %s because it has ready messages", queue.Spec.Name)
 		}
 		if qInfo.Consumers > 0 && queue.Spec.DeleteIfUnused {
-			return fmt.Errorf("Cannot delete queue %s because queue has consumers", queue.Spec.Name)
+			return fmt.Errorf("cannot delete queue %s because queue has consumers", queue.Spec.Name)
 		}
 
 	}

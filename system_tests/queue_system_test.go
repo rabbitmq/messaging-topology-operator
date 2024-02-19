@@ -100,7 +100,5 @@ var _ = Describe("Queue Controller", func() {
 			return err
 		}, 30).Should(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("Object Not Found"))
-
-		//FIXME implement delete queue test with ifUnused/ if Empty?
 	})
 })
