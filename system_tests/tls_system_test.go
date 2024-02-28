@@ -30,7 +30,7 @@ var _ = Describe("RabbitMQ Cluster with TLS enabled", func() {
 
 	BeforeEach(func() {
 		tlsSecretName = fmt.Sprintf("rmq-test-cert-%v", uuid.New())
-		_, _, _ = createTLSSecret(tlsSecretName, namespace, "tls-cluster.rabbitmq-system.svc")
+		_, _, _ = createTLSSecret(tlsSecretName, namespace, "tls-cluster." + namespace + ".svc")
 
 		patchBytes, _ := fixtures.ReadFile("fixtures/patch-test-ca.yaml")
 		_, err := kubectl(
@@ -60,7 +60,7 @@ var _ = Describe("RabbitMQ Cluster with TLS enabled", func() {
 			StringData: map[string]string{
 				"username": user,
 				"password": pass,
-				"uri":      "https://tls-cluster.rabbitmq-system.svc:15671",
+				"uri":      "https://tls-cluster." + namespace + ".svc:15671",
 			},
 		}
 		Expect(k8sClient.Create(ctx, connectionSecret, &client.CreateOptions{})).To(Succeed())
