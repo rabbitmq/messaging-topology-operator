@@ -236,6 +236,20 @@ type FakeClient struct {
 		result1 *http.Response
 		result2 error
 	}
+	GetQueueStub        func(string, string) (*rabbithole.DetailedQueueInfo, error)
+	getQueueMutex       sync.RWMutex
+	getQueueArgsForCall []struct {
+		arg1 string
+		arg2 string
+	}
+	getQueueReturns struct {
+		result1 *rabbithole.DetailedQueueInfo
+		result2 error
+	}
+	getQueueReturnsOnCall map[int]struct {
+		result1 *rabbithole.DetailedQueueInfo
+		result2 error
+	}
 	GetVhostStub        func(string) (*rabbithole.VhostInfo, error)
 	getVhostMutex       sync.RWMutex
 	getVhostArgsForCall []struct {
@@ -1442,6 +1456,71 @@ func (fake *FakeClient) DeleteVhostReturnsOnCall(i int, result1 *http.Response, 
 	}{result1, result2}
 }
 
+func (fake *FakeClient) GetQueue(arg1 string, arg2 string) (*rabbithole.DetailedQueueInfo, error) {
+	fake.getQueueMutex.Lock()
+	ret, specificReturn := fake.getQueueReturnsOnCall[len(fake.getQueueArgsForCall)]
+	fake.getQueueArgsForCall = append(fake.getQueueArgsForCall, struct {
+		arg1 string
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.GetQueueStub
+	fakeReturns := fake.getQueueReturns
+	fake.recordInvocation("GetQueue", []interface{}{arg1, arg2})
+	fake.getQueueMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) GetQueueCallCount() int {
+	fake.getQueueMutex.RLock()
+	defer fake.getQueueMutex.RUnlock()
+	return len(fake.getQueueArgsForCall)
+}
+
+func (fake *FakeClient) GetQueueCalls(stub func(string, string) (*rabbithole.DetailedQueueInfo, error)) {
+	fake.getQueueMutex.Lock()
+	defer fake.getQueueMutex.Unlock()
+	fake.GetQueueStub = stub
+}
+
+func (fake *FakeClient) GetQueueArgsForCall(i int) (string, string) {
+	fake.getQueueMutex.RLock()
+	defer fake.getQueueMutex.RUnlock()
+	argsForCall := fake.getQueueArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeClient) GetQueueReturns(result1 *rabbithole.DetailedQueueInfo, result2 error) {
+	fake.getQueueMutex.Lock()
+	defer fake.getQueueMutex.Unlock()
+	fake.GetQueueStub = nil
+	fake.getQueueReturns = struct {
+		result1 *rabbithole.DetailedQueueInfo
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) GetQueueReturnsOnCall(i int, result1 *rabbithole.DetailedQueueInfo, result2 error) {
+	fake.getQueueMutex.Lock()
+	defer fake.getQueueMutex.Unlock()
+	fake.GetQueueStub = nil
+	if fake.getQueueReturnsOnCall == nil {
+		fake.getQueueReturnsOnCall = make(map[int]struct {
+			result1 *rabbithole.DetailedQueueInfo
+			result2 error
+		})
+	}
+	fake.getQueueReturnsOnCall[i] = struct {
+		result1 *rabbithole.DetailedQueueInfo
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) GetVhost(arg1 string) (*rabbithole.VhostInfo, error) {
 	fake.getVhostMutex.Lock()
 	ret, specificReturn := fake.getVhostReturnsOnCall[len(fake.getVhostArgsForCall)]
@@ -2198,6 +2277,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.deleteUserMutex.RUnlock()
 	fake.deleteVhostMutex.RLock()
 	defer fake.deleteVhostMutex.RUnlock()
+	fake.getQueueMutex.RLock()
+	defer fake.getQueueMutex.RUnlock()
 	fake.getVhostMutex.RLock()
 	defer fake.getVhostMutex.RUnlock()
 	fake.listExchangeBindingsBetweenMutex.RLock()

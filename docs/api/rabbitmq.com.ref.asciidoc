@@ -902,6 +902,8 @@ QueueSpec defines the desired state of Queue
 | *`type`* __string__ | 
 | *`durable`* __boolean__ | When set to false queues does not survive server restart.
 | *`autoDelete`* __boolean__ | when set to true, queues that have had at least one consumer before are deleted after the last consumer unsubscribes.
+| *`deleteIfEmpty`* __boolean__ | when set to true, queues are deleted only if empty.
+| *`deleteIfUnused`* __boolean__ | when set to true, queues are delete only if they have no consumer.
 | *`arguments`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | Queue arguments in the format of KEY: VALUE. e.g. x-delivery-limit: 10000.
 Configuring queues through arguments is not recommended because they cannot be updated once set; we recommend configuring queues through policies instead.
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the queue will be created in.
