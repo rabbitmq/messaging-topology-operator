@@ -77,6 +77,7 @@ jobs:
           with:
             name: olm-artifact
             path: "/home/runner/work/messaging-topology-operator/messaging-topology-operator/OLM-Package-Repo/generate_OLM/generate_OLM_messaging_topology_operator/upload/"
+            retention-days: 2
 
     test-olm-package:
         name: Tests the OLM packaging
@@ -110,8 +111,6 @@ jobs:
             export ENVIRONMENT=openshift
             kubectl config use-context admin
             ./OLM-Package-Repo/testfiles/install-rabbitmq-messaging-topology-operator.sh $BUNDLE_VERSION
-            git clone https://github.com/rabbitmq/messaging-topology-operator -b fix_tls_system_test_embedded_namespace
-            cd messaging-topology-operator
             rm ./system_tests/tls_system_test.go
             export K8S_OPERATOR_NAMESPACE=rabbitmq-system-olm
             make install-tools
