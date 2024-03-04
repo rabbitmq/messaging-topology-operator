@@ -97,6 +97,8 @@ jobs:
         - name: Protect access to the cluster with a mutex
           uses: ben-z/gh-action-mutex@v1.0-alpha-8
           with:
+            repo-token: ${{ secrets.CLUSTER_OPERATOR_ACCESS_TOKEN }}
+            repository: rabbitmq/cluster-operator
             branch: openshift-lock
 
         - name: Connect to the Openshift cluster and deploy the operators through OLM
