@@ -2,7 +2,7 @@ name: Build, Test, Publish Image & Manifest
 
 on:
   push:
-    branches: [ "main"]
+    branches: [ "trigger-carvel-bundle-dev-pipeline"]
     paths-ignore:
     - 'docs/**'
     - '*.md'
@@ -152,6 +152,15 @@ jobs:
         path: messaging-topology-operator-with-certmanager-${{ steps.meta.outputs.version }}.yaml
         destination: operator-manifests-dev
         process_gcloudignore: false
+    - name: Trigger carvel-packaging-dev pipeline in Runway
+      uses: actions/trigger-concourse-job-action@v2
+      with:
+        concourse-url: https://runway-ci-sfo.eng.vmware.com/
+        concourse-team: rabbitmq
+        concourse-pipeline: dev-manifest-issue-fix
+        concourse-job: build-bundle-dev
+        concourse-username: ${secrets.RUNWAY_USERNAME}
+        concourse-password: ${secrets.RUNWAY_PASSWORD}
 
   system_tests_gke:
     name: System tests using gke
