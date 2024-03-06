@@ -15,7 +15,7 @@ concurrency:
     cancel-in-progress: true
 env:
   # registry information where we want to store the operator image and the operator index image
-  DOCKER_REGISTRY_SERVER: docker.io/rabbitmqoperator
+  DOCKER_REGISTRY_SERVER: quay.io/rabbitmqoperator
   OLM_IMAGE: rabbitmq-for-kubernetes-olm-messaging-topology-operator
   OLM_INDEX_IMAGE: rabbitmq-for-kubernetes-olm-messaging-topology-operator-index
 
@@ -46,15 +46,15 @@ jobs:
             
         - name: create-olm-package
           env:
-            username: ${{ secrets.DOCKERHUB_USERNAME }}
-            password: ${{ secrets.DOCKERHUB_TOKEN }}
+            username: ${{ secrets.QUAY_USERNAME }}
+            password: ${{ secrets.QUAY_ROBOT_TOKEN }}
             DOCKER_REGISTRY_SERVER: ${{ env.DOCKER_REGISTRY_SERVER }}
             OLM_IMAGE: ${{ env.OLM_IMAGE }}
             OLM_INDEX_IMAGE: ${{ env.OLM_INDEX_IMAGE }}
             BUNDLE_VERSION: ${{ env.BUNDLE_VERSION }}
           run: |   
             sed '/mount_program =/s/^#//' -i /etc/containers/storage.conf
-            podman login -u $username -p $password
+            podman login quay.io -u $username -p $password
             git config --global --add safe.directory /__w/messaging-topology-operator/messaging-topology-operator
             git clone https://github.com/rabbitmq/OLM-Package-Repo -b using_dockerhub_instead_of_gcr
             make generate-manifests
@@ -91,7 +91,7 @@ jobs:
 
         - name: Get Openshift connection info kubeconf from infrastructure repo - test
           env:
-            GITHUB_ACCESS_TOKEN: ${{ secrets.GIT_HUB_ACCESS_TOKEN }}
+            GITHUB_ACCESS_TOKEN: ${{ secrets.GIT_HUB_ACCESS_INFRA_REPO_TOKEN }}
           run: |
             git clone https://oauth2:"$GITHUB_ACCESS_TOKEN"@github.com/rabbitmq/infrastructure
         - name: Protect access to the cluster with a mutex
