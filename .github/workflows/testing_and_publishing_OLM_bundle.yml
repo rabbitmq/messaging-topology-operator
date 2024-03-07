@@ -3,13 +3,11 @@
 name: test-and-publish-OLM-bundle
 
 on:
-  push:
-    # Pattern matched against refs/tags
-    branches:
-      - "testing_olm"
+  release:
+    types: [published]
     
   workflow_dispatch:
-
+    
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
     cancel-in-progress: true
