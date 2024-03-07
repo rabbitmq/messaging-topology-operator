@@ -153,7 +153,7 @@ jobs:
         destination: operator-manifests-dev
         process_gcloudignore: false
     - name: Trigger carvel-packaging-dev pipeline in Runway
-      uses: jghiloni/trigger-concourse-job-action@v2
+      uses: actions/trigger-concourse-job-action@v1
       with:
         concourse-url: https://runway-ci-sfo.eng.vmware.com/
         concourse-team: rabbitmq
