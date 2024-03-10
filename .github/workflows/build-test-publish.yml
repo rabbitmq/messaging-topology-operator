@@ -129,6 +129,7 @@ jobs:
         rabbitmqoperator/messaging-topology-operator-dev=rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}"
         popd
         make generate-manifests
+        echo -n "messaging-topology-operator-with-certmanager-${{ steps.meta.outputs.version }}.yaml" > "newest-operator-dev-manifest.txt"
     - name: Upload operator manifests
       uses: actions/upload-artifact@v4
       with:
@@ -152,15 +153,12 @@ jobs:
         path: messaging-topology-operator-with-certmanager-${{ steps.meta.outputs.version }}.yaml
         destination: operator-manifests-dev
         process_gcloudignore: false
-    - name: Trigger carvel-packaging-dev pipeline in Runway
-      uses: jghiloni/concourse-trigger-job-action@v1
+    - name: Update carvel-packaging-dev pipeline trigger
+      uses: 'google-github-actions/upload-cloud-storage@v2'
       with:
-        concourse-url: https://runway-ci-sfo.eng.vmware.com/
-        concourse-team: rabbitmq
-        concourse-pipeline: dev-manifest-issue-fix
-        concourse-job: build-bundle-dev
-        concourse-username: ${secrets.RUNWAY_USERNAME}
-        concourse-password: ${secrets.RUNWAY_PASSWORD}
+        path: newest-operator-dev-manifest.txt
+        destination: operator-manifests-dev
+        process_gcloudignore: false
 
   system_tests_gke:
     name: System tests using gke
