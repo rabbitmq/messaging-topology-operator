@@ -2,7 +2,7 @@ name: Build, Test, Publish Image & Manifest
 
 on:
   push:
-    branches: [ "trigger-carvel-bundle-dev-pipeline"]
+    branches: [ "main"]
     paths-ignore:
     - 'docs/**'
     - '*.md'
