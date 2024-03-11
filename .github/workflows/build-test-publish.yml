@@ -129,7 +129,7 @@ jobs:
         rabbitmqoperator/messaging-topology-operator-dev=rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}"
         popd
         make generate-manifests
-        echo -n "messaging-topology-operator-with-certmanager-${{ steps.meta.outputs.version }}.yaml" > "newest-operator-dev-manifest.txt"
+        echo -n "messaging-topology-operator-with-certmanager-${{ steps.meta.outputs.version }}.yaml" > "latest-topology-operator-dev-manifest.txt"
     - name: Upload operator manifests
       uses: actions/upload-artifact@v4
       with:
@@ -156,7 +156,7 @@ jobs:
     - name: Update carvel-packaging-dev pipeline trigger
       uses: 'google-github-actions/upload-cloud-storage@v2'
       with:
-        path: newest-operator-dev-manifest.txt
+        path: latest-topology-operator-dev-manifest.txt
         destination: operator-manifests-dev
         process_gcloudignore: false
 
