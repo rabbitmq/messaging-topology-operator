@@ -31,6 +31,13 @@ jobs:
       run: make unit-tests
     - name: Integration tests
       run: make integration-tests
+    - name: Notify Google Chat
+      if: failure()
+      uses: SimonScholz/google-chat-action@main
+      with:
+          webhookUrl: '${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}'
+          jobStatus: ${{ job.status }}
+          title: Messaging Topology Operator - Unit and Integration tests
 
   build_operator:
     runs-on: ubuntu-latest
@@ -159,6 +166,13 @@ jobs:
         path: latest-topology-operator-dev-manifest.txt
         destination: operator-manifests-dev
         process_gcloudignore: false
+    - name: Notify Google Chat
+      if: failure()
+      uses: SimonScholz/google-chat-action@main
+      with:
+          webhookUrl: '${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}'
+          jobStatus: ${{ job.status }}
+          title: Messaging Topology Operator - Build and Push operator
 
   system_tests_gke:
     name: System tests using gke
@@ -202,6 +216,13 @@ jobs:
     - name: System tests
       run: |
         make system-tests
+    - name: Notify Google Chat
+      if: failure()
+      uses: SimonScholz/google-chat-action@main
+      with:
+          webhookUrl: '${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}'
+          jobStatus: ${{ job.status }}
+          title: Messaging Topology Operator - System tests
 
   release:
     name: Release to GitHub Releases
@@ -226,4 +247,10 @@ jobs:
         generate_release_notes: true
         draft: true
         fail_on_unmatched_files: true
-
+    - name: Notify Google Chat
+      if: failure()
+      uses: SimonScholz/google-chat-action@main
+      with:
+          webhookUrl: '${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}'
+          jobStatus: ${{ job.status }}
+          title: Messaging Topology Operator - Release to GitHub releases
