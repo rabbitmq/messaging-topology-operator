@@ -149,8 +149,8 @@ github.com/hashicorp/go-sockaddr v1.0.6 h1:RSG8rKU28VTUTvEKghe5gIhIQpv8evvNpnDEy
 github.com/hashicorp/go-sockaddr v1.0.6/go.mod h1:uoUUmtwU7n9Dv3O4SNLeFvg0SxQ3lyjsj6+CCykpaxI=
 github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
-github.com/hashicorp/vault/api v1.12.0 h1:meCpJSesvzQyao8FCOgk2fGdoADAnbDu2WPJN1lDLJ4=
-github.com/hashicorp/vault/api v1.12.0/go.mod h1:si+lJCYO7oGkIoNPAN8j3azBLTn9SjMGS+jFaHd1Cck=
+github.com/hashicorp/vault/api v1.12.1 h1:WzGN4X5jrJdNO39g6Sa55djNio3I9DxEBOTmCZE7tm0=
+github.com/hashicorp/vault/api v1.12.1/go.mod h1:1pqP/sErScodde+ybJCyP+ONC4jzEg7Dmawg/QLWo1k=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
 github.com/huandu/xstrings v1.3.3 h1:/Gcsuc1x8JVbJ9/rlye4xZnVAbEkGauT8lbebqcQws4=
 github.com/huandu/xstrings v1.3.3/go.mod h1:y5/lhBue+AyNmUVz9RLU9xbLR0o4KIIExikq4ovT0aE=
