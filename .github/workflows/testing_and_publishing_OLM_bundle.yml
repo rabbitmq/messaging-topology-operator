@@ -7,7 +7,7 @@ on:
     types: [published]
     
   workflow_dispatch:
-    
+        
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
     cancel-in-progress: true
@@ -46,6 +46,13 @@ jobs:
           if: startsWith(github.ref, 'refs/tags/v') == false
           run: | 
               echo "BUNDLE_VERSION=0.0.0" >> $GITHUB_ENV
+
+        - name: Install and configure Poetry
+          uses: snok/install-poetry@v1
+          with:
+            version: 1.4.2
+            virtualenvs-create: true
+            virtualenvs-in-project: false
             
         - name: create-olm-package
           env:
@@ -59,25 +66,23 @@ jobs:
             sed '/mount_program =/s/^#//' -i /etc/containers/storage.conf
             podman login quay.io -u $username -p $password
             make generate-manifests
-            cp ./releases/messaging-topology-operator-with-certmanager.yaml ./OLM-Package-Repo/generate_OLM/generate_OLM_messaging_topology_operator/manifests_crds/
-            cp ./config/crd/bases/*.yaml ./OLM-Package-Repo/generate_OLM/generate_OLM_messaging_topology_operator/manifests_crds/crds
-            cd ./OLM-Package-Repo/generate_OLM/generate_OLM_messaging_topology_operator/
-            cp ./generators/cluster-service-version-generator-test.yml ./generators/cluster-service-version-generator.yml 
-            python3 generate-olm-package.py ./manifests_crds/messaging-topology-operator-with-certmanager.yaml $BUNDLE_VERSION ./
+            cp ./config/crd/bases/*.yaml ./OLM-Package-Repo/rabbitmq_olm_package_repo/manifests_crds_messaging_topology_operator/crds
+            cd ./OLM-Package-Repo
+            poetry run generate_bundle ./../releases/messaging-topology-operator-with-certmanager.yaml $BUNDLE_VERSION ./
             opm alpha bundle build -c stable -d ./$BUNDLE_VERSION/manifests -t $DOCKER_REGISTRY_SERVER/$OLM_IMAGE:$BUNDLE_VERSION -p rabbitmq-messaging-topology-operator --image-builder podman     
             podman push $DOCKER_REGISTRY_SERVER/$OLM_IMAGE:$BUNDLE_VERSION
             opm index add -b $DOCKER_REGISTRY_SERVER/$OLM_IMAGE:$BUNDLE_VERSION -t $DOCKER_REGISTRY_SERVER/$OLM_INDEX_IMAGE:$BUNDLE_VERSION -c podman
             podman push $DOCKER_REGISTRY_SERVER/$OLM_INDEX_IMAGE:$BUNDLE_VERSION
             mkdir upload
             mv "$BUNDLE_VERSION" ./upload
-            cp ./generators/cluster-service-version-generator-openshift.yml ./generators/cluster-service-version-generator.yml
-            python3 generate-olm-package.py ./manifests_crds/messaging-topology-operator-with-certmanager.yaml $BUNDLE_VERSION ./
+            cp ./rabbitmq_olm_package_repo/generators/messaging_topology_operator_generators/topology-service-version-generator-openshift.yml ./rabbitmq_olm_package_repo/generators/messaging_topology_operator_generators/topology-service-version-generator.yml
+            poetry run generate_bundle ./../releases/messaging-topology-operator-with-certmanager.yaml $BUNDLE_VERSION ./
             mv "$BUNDLE_VERSION" ./upload/$BUNDLE_VERSION-openshift
         - name: upload-olm-package
           uses: actions/upload-artifact@master
           with:
             name: olm-artifact
-            path: "/home/runner/work/messaging-topology-operator/messaging-topology-operator/OLM-Package-Repo/generate_OLM/generate_OLM_messaging_topology_operator/upload/"
+            path: "/home/runner/work/messaging-topology-operator/messaging-topology-operator/OLM-Package-Repo/upload/"
             retention-days: 2
 
     test-olm-package:
@@ -178,7 +183,9 @@ jobs:
             cd community-operators/operators/rabbitmq-messaging-topology-operator/
             git branch rabbitmq-messaging-topology-operator-$BUNDLE_VERSION
             git checkout rabbitmq-messaging-topology-operator-$BUNDLE_VERSION
-            cp -fR ./../../../$BUNDLE_VERSION .  
+            REPLACE_VERSION=$(ls | sort -n | tail -1)
+            cp -fR ./../../../$BUNDLE_VERSION . 
+            sed -i -e "s/replaces: null/replaces: rabbitmq-messaging-topology-operator.v$REPLACE_VERSION/g" ./$BUNDLE_VERSION/manifests/rabbitmq.clusterserviceversion.yaml  
             sed -i -e "s/latest/$BUNDLE_VERSION/g" ./$BUNDLE_VERSION/manifests/rabbitmq.clusterserviceversion.yaml 
             git add .
             git commit -s -m "RabbitMQ operator new release"
@@ -194,8 +201,10 @@ jobs:
             cd community-operators-prod/operators/rabbitmq-messaging-topology-operator/
             git branch rabbitmq-messaging-topology-operator-$BUNDLE_VERSION
             git checkout rabbitmq-messaging-topology-operator-$BUNDLE_VERSION
+            REPLACE_VERSION=$(ls | sort -n  | tail -1)
             cp -fR ./../../../$BUNDLE_VERSION-openshift .
             mv $BUNDLE_VERSION-openshift $BUNDLE_VERSION
+            sed -i -e "s/replaces: null/replaces: rabbitmq-messaging-topology-operator.v$REPLACE_VERSION/g" ./$BUNDLE_VERSION/manifests/rabbitmq.clusterserviceversion.yaml 
             sed -i -e "s/latest/$BUNDLE_VERSION/g" ./$BUNDLE_VERSION/manifests/rabbitmq.clusterserviceversion.yaml 
             git add .
             git commit -s -m "RabbitMQ operator new release"
