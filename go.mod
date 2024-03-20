@@ -12,7 +12,7 @@ require (
 	github.com/hashicorp/vault/api v1.12.0
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.8.1
 	github.com/michaelklishin/rabbit-hole/v2 v2.16.0
-	github.com/onsi/ginkgo/v2 v2.16.0
+	github.com/onsi/ginkgo/v2 v2.17.0
 	github.com/onsi/gomega v1.32.0
 	github.com/rabbitmq/cluster-operator/v2 v2.7.0
 	github.com/sclevine/yj v0.0.0-20200815061347-554173e71934
