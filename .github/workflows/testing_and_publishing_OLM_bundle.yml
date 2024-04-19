@@ -3,8 +3,10 @@
 name: test-and-publish-OLM-bundle
 
 on:
-  release:
-    types: [published]
+  push:
+    # Pattern matched against refs/tags
+    branches:
+      - "test_olm_new_permissions"
     
   workflow_dispatch:
         
@@ -34,6 +36,7 @@ jobs:
         - name: Checkout OLM-Package-Repo
           uses: actions/checkout@v4
           with:
+            ref: limit_permissions_at_cluster_level
             repository: rabbitmq/OLM-Package-Repo
             path: ./OLM-Package-Repo
 
@@ -107,6 +110,7 @@ jobs:
         - name: Checkout OLM-Package-Repo
           uses: actions/checkout@v4
           with:
+            ref: limit_permissions_at_cluster_level
             repository: rabbitmq/OLM-Package-Repo
             path: ./OLM-Package-Repo
 
