@@ -1,3 +1,4 @@
+messaging-topology-operator
 vendor/
 cover.out
 **/*.yaml-e
