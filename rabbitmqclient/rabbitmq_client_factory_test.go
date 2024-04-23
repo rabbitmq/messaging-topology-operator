@@ -3,10 +3,11 @@ package rabbitmqclient_test
 import (
 	"crypto/x509"
 	"errors"
-	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
-	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
+
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	. "github.com/onsi/ginkgo/v2"
@@ -117,11 +118,11 @@ var _ = Describe("ParseReference", func() {
 				fakeRabbitMQURL, fakeRabbitMQPort, err = mockRabbitMQURLPort(fakeRabbitMQServer)
 				Expect(err).NotTo(HaveOccurred())
 
-				certBytes, err := ioutil.ReadFile(serverCertPath)
+				certBytes, err := os.ReadFile(serverCertPath)
 				Expect(err).NotTo(HaveOccurred())
-				keyBytes, err := ioutil.ReadFile(serverKeyPath)
+				keyBytes, err := os.ReadFile(serverKeyPath)
 				Expect(err).NotTo(HaveOccurred())
-				caCertBytes, err = ioutil.ReadFile(caCertPath)
+				caCertBytes, err = os.ReadFile(caCertPath)
 				Expect(err).NotTo(HaveOccurred())
 				existingRabbitMQCluster = &rabbitmqv1beta1.RabbitmqCluster{
 					ObjectMeta: metav1.ObjectMeta{

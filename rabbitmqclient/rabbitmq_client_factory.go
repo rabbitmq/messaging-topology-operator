@@ -12,7 +12,6 @@ package rabbitmqclient
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -96,5 +95,5 @@ func generateRabbitholeClient(connectionCreds map[string]string, tlsEnabled bool
 }
 
 func keyMissingErr(key string) error {
-	return errors.New(fmt.Sprintf("failed to retrieve %s: key %s missing from credentials", key, key))
+	return fmt.Errorf("failed to retrieve %s: key %s missing from credentials", key, key)
 }

@@ -3,15 +3,16 @@ package controllers_test
 import (
 	"context"
 	"fmt"
-	"github.com/rabbitmq/messaging-topology-operator/controllers"
 	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/rabbitmq/messaging-topology-operator/controllers"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	"strconv"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -325,7 +326,7 @@ var _ = Describe("super-stream-controller", func() {
 								expectedQueueNames = append(expectedQueueNames, partition.Spec.Name)
 
 								Expect(partition.Spec).To(MatchFields(IgnoreExtras, Fields{
-									"Name":    Equal(fmt.Sprintf(managedresource.RoutingKeyToPartitionName(superStreamName, strconv.Itoa(i)))),
+									"Name":    Equal(fmt.Sprint(managedresource.RoutingKeyToPartitionName(superStreamName, strconv.Itoa(i)))),
 									"Type":    Equal("stream"),
 									"Durable": BeTrue(),
 									"RabbitmqClusterReference": MatchAllFields(Fields{
@@ -430,7 +431,7 @@ var _ = Describe("super-stream-controller", func() {
 								expectedQueueNames = append(expectedQueueNames, partition.Spec.Name)
 
 								Expect(partition.Spec).To(MatchFields(IgnoreExtras, Fields{
-									"Name":    Equal(fmt.Sprintf(managedresource.RoutingKeyToPartitionName(superStreamName, strconv.Itoa(i)))),
+									"Name":    Equal(fmt.Sprint(managedresource.RoutingKeyToPartitionName(superStreamName, strconv.Itoa(i)))),
 									"Type":    Equal("stream"),
 									"Durable": BeTrue(),
 									"RabbitmqClusterReference": MatchAllFields(Fields{

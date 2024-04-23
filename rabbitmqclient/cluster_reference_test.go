@@ -3,6 +3,7 @@ package rabbitmqclient_test
 import (
 	"context"
 	"fmt"
+
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient/rabbitmqclientfakes"
 
@@ -91,9 +92,9 @@ var _ = Describe("ParseReference", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(tlsEnabled).To(BeFalse())
-			usernameBytes, _ := creds["username"]
-			passwordBytes, _ := creds["password"]
-			uriBytes, _ := creds["uri"]
+			usernameBytes := creds["username"]
+			passwordBytes := creds["password"]
+			uriBytes := creds["uri"]
 			Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
 			Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
 			Expect(uriBytes).To(Equal("http://rmq.rabbitmq-system.svc:15672"))
@@ -176,9 +177,9 @@ var _ = Describe("ParseReference", func() {
 			})
 
 			It("should return the expected credentials", func() {
-				usernameBytes, _ := creds["username"]
-				passwordBytes, _ := creds["password"]
-				uriBytes, _ := creds["uri"]
+				usernameBytes := creds["username"]
+				passwordBytes := creds["password"]
+				uriBytes := creds["uri"]
 				Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
 				Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
 				Expect(uriBytes).To(Equal("http://rmq.rabbitmq-system.svc:15672"))
@@ -276,9 +277,9 @@ var _ = Describe("ParseReference", func() {
 					"",
 					connectUsingHTTP)
 				Expect(err).NotTo(HaveOccurred())
-				usernameBytes, _ := creds["username"]
-				passwordBytes, _ := creds["password"]
-				uriBytes, _ := creds["uri"]
+				usernameBytes := creds["username"]
+				passwordBytes := creds["password"]
+				uriBytes := creds["uri"]
 				Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
 				Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
 				Expect(uriBytes).To(Equal(expectedUri))
@@ -355,9 +356,9 @@ var _ = Describe("ParseReference", func() {
 					"",
 					connectUsingHTTP)
 				Expect(err).NotTo(HaveOccurred())
-				usernameBytes, _ := creds["username"]
-				passwordBytes, _ := creds["password"]
-				uriBytes, _ := creds["uri"]
+				usernameBytes := creds["username"]
+				passwordBytes := creds["password"]
+				uriBytes := creds["uri"]
 				Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
 				Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
 				Expect(uriBytes).To(Equal(expectedUri))
@@ -431,9 +432,9 @@ var _ = Describe("ParseReference", func() {
 				false)
 			Expect(err).NotTo(HaveOccurred())
 
-			usernameBytes, _ := creds["username"]
-			passwordBytes, _ := creds["password"]
-			uriBytes, _ := creds["uri"]
+			usernameBytes := creds["username"]
+			passwordBytes := creds["password"]
+			uriBytes := creds["uri"]
 			Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
 			Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
 			Expect(uriBytes).To(Equal("http://rmq.rabbitmq-system.svc:15672/my/prefix"))
@@ -470,9 +471,9 @@ var _ = Describe("ParseReference", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(tlsEnabled).To(BeFalse())
-				returnedUser, _ := creds["username"]
-				returnedPass, _ := creds["password"]
-				returnedURI, _ := creds["uri"]
+				returnedUser := creds["username"]
+				returnedPass := creds["password"]
+				returnedURI := creds["uri"]
 				Expect(returnedUser).To(Equal("test-user"))
 				Expect(returnedPass).To(Equal("test-password"))
 				Expect(returnedURI).To(Equal("http://10.0.0.0:15672"))
@@ -512,9 +513,9 @@ var _ = Describe("ParseReference", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(tlsEnabled).To(BeFalse())
-				returnedUser, _ := creds["username"]
-				returnedPass, _ := creds["password"]
-				returnedURI, _ := creds["uri"]
+				returnedUser := creds["username"]
+				returnedPass := creds["password"]
+				returnedURI := creds["uri"]
 				Expect(returnedUser).To(Equal("test-user"))
 				Expect(returnedPass).To(Equal("test-password"))
 				Expect(returnedURI).To(Equal("http://10.0.0.0:15672"))
@@ -550,9 +551,9 @@ var _ = Describe("ParseReference", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(tlsEnabled).To(BeFalse())
-				returnedUser, _ := creds["username"]
-				returnedPass, _ := creds["password"]
-				returnedURI, _ := creds["uri"]
+				returnedUser := creds["username"]
+				returnedPass := creds["password"]
+				returnedURI := creds["uri"]
 				Expect(returnedUser).To(Equal("test-user"))
 				Expect(returnedPass).To(Equal("test-password"))
 				Expect(returnedURI).To(Equal("http://10.0.0.0:15672"))
@@ -588,9 +589,9 @@ var _ = Describe("ParseReference", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(tlsEnabled).To(BeTrue())
-				returnedUser, _ := creds["username"]
-				returnedPass, _ := creds["password"]
-				returnedURI, _ := creds["uri"]
+				returnedUser := creds["username"]
+				returnedPass := creds["password"]
+				returnedURI := creds["uri"]
 				Expect(returnedUser).To(Equal("test-user"))
 				Expect(returnedPass).To(Equal("test-password"))
 				Expect(returnedURI).To(Equal("https://10.0.0.0:15671"))
@@ -869,9 +870,9 @@ var _ = Describe("ParseReference", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(tlsOn).To(BeFalse())
 
-			usernameBytes, _ := creds["username"]
-			passwordBytes, _ := creds["password"]
-			uriBytes, _ := creds["uri"]
+			usernameBytes := creds["username"]
+			passwordBytes := creds["password"]
+			uriBytes := creds["uri"]
 			Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
 			Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
 			Expect(uriBytes).To(Equal("http://a-rabbitmq-test:2333"))
@@ -910,9 +911,9 @@ var _ = Describe("ParseReference", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(tlsOn).To(BeFalse())
 
-				usernameBytes, _ := creds["username"]
-				passwordBytes, _ := creds["password"]
-				uriBytes, _ := creds["uri"]
+				usernameBytes := creds["username"]
+				passwordBytes := creds["password"]
+				uriBytes := creds["uri"]
 				Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
 				Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
 				Expect(uriBytes).To(Equal("http://a-rabbitmq-test:7890"))
@@ -952,9 +953,9 @@ var _ = Describe("ParseReference", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(tlsOn).To(BeTrue())
 
-				usernameBytes, _ := creds["username"]
-				passwordBytes, _ := creds["password"]
-				uriBytes, _ := creds["uri"]
+				usernameBytes := creds["username"]
+				passwordBytes := creds["password"]
+				uriBytes := creds["uri"]
 				Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
 				Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
 				Expect(uriBytes).To(Equal("https://a-rabbitmq-test:2333"))

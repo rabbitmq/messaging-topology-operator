@@ -3,6 +3,7 @@ package v1beta1
 import (
 	"context"
 	"fmt"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -29,7 +30,7 @@ func (q *Queue) ValidateCreate(_ context.Context, obj runtime.Object) (warnings 
 	if !ok {
 		return nil, fmt.Errorf("expected RabbitMQ queue, got %T", obj)
 	}
-	if inQueue.Spec.Type == "quorum" && inQueue.Spec.Durable == false {
+	if inQueue.Spec.Type == "quorum" && !inQueue.Spec.Durable {
 		return nil, apierrors.NewForbidden(inQueue.GroupResource(), inQueue.Name,
 			field.Forbidden(field.NewPath("spec", "durable"),
 				"Quorum queues must have durable set to true"))

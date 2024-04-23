@@ -13,7 +13,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -41,7 +41,7 @@ func validateResponse(res *http.Response, err error) error {
 	}
 
 	if res.StatusCode >= http.StatusMultipleChoices {
-		body, _ := ioutil.ReadAll(res.Body)
+		body, _ := io.ReadAll(res.Body)
 		res.Body.Close()
 		return fmt.Errorf("request failed with status code %d and body %q", res.StatusCode, body)
 	}

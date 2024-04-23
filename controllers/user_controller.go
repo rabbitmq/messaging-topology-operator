@@ -217,24 +217,6 @@ func (r *UserReconciler) getUserCredentials(ctx context.Context, user *topology.
 	return credentials, nil
 }
 
-func (r *UserReconciler) deleteUserFromSecret(ctx context.Context, client rabbitmqclient.Client, user *topology.User) error {
-	logger := ctrl.LoggerFrom(ctx)
-
-	credentials, err := r.getUserCredentials(ctx, user)
-	if err != nil {
-		return fmt.Errorf("failed to retrieve user credentials secret from status;"+
-			" user.status: %v, err: %w", user.Status, err)
-	}
-
-	err = validateResponseForDeletion(client.DeleteUser(string(credentials.Data["username"])))
-	if errors.Is(err, NotFound) {
-		logger.Info("cannot find user in rabbitmq server; already deleted", "user", user.Name)
-	} else if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (r *UserReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
 	user := obj.(*topology.User)

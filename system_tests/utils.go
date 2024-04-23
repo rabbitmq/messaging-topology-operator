@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -265,7 +264,7 @@ func createTLSSecret(secretName, secretNamespace, hostname string) (string, []by
 	// generate and write cert and key to file
 	caCert, caKey := testutils.CreateCertificateChain(2, hostname, caCertFile, serverCertFile, serverKeyFile)
 
-	tmpfile, err := ioutil.TempFile("", "ca.key")
+	tmpfile, err := os.CreateTemp("", "ca.key")
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	defer os.Remove(tmpfile.Name())
