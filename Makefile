@@ -86,10 +86,10 @@ manager: generate fmt vet vuln
 # https://github.com/telepresenceio/telepresence is one way to do this (just run
 # `telepresence connect` and services like `test-service.test-namespace.svc.cluster.local`
 # will resolve properly).
-run: generate fmt vet vuln manifests install just-run
+run: generate fmt vet vuln manifests just-run
 
 just-run: ## Just runs 'go run main.go' without regenerating any manifests or deploying RBACs
-	KUBE_CONFIG=${HOME}/.kube/config OPERATOR_NAMESPACE=rabbitmq-system ENABLE_WEBHOOKS=false go run ./main.go -metrics-bind-address 127.0.0.1:8080
+	KUBE_CONFIG=${HOME}/.kube/config OPERATOR_NAMESPACE=rabbitmq-system ENABLE_WEBHOOKS=false go run ./main.go
 
 # Install CRDs into a cluster
 install: manifests
