@@ -2,7 +2,6 @@ package testutils
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -15,7 +14,7 @@ import (
 )
 
 func CreateCertFile(offset int, fileName string) (string, *os.File) {
-	tmpDir, err := ioutil.TempDir("", "certs")
+	tmpDir, err := os.MkdirTemp("", "certs")
 	ExpectWithOffset(offset, err).ToNot(HaveOccurred())
 	path := filepath.Join(tmpDir, fileName)
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0755)

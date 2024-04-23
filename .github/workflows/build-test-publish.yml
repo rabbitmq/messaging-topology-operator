@@ -15,6 +15,23 @@ env:
   GO_VERSION: '1.21.x' # Require Go 1.21 minor
 
 jobs:
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+          args: --timeout=5m
+
   unit_integration_tests:
     name: unit and integration tests
     runs-on: ubuntu-latest
