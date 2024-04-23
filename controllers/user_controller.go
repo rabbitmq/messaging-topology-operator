@@ -22,7 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clientretry "k8s.io/client-go/util/retry"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -89,7 +89,7 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.
 			// https://github.com/rabbitmq/cluster-operator/blob/057b61eb50102a66f504b31464e5956526cbdc90/internal/resource/statefulset.go#L220-L226
 			// https://github.com/rabbitmq/messaging-topology-operator/issues/194
 			for i := range credentialSecret.ObjectMeta.OwnerReferences {
-				credentialSecret.ObjectMeta.OwnerReferences[i].BlockOwnerDeletion = pointer.BoolPtr(false)
+				credentialSecret.ObjectMeta.OwnerReferences[i].BlockOwnerDeletion = ptr.To(false)
 			}
 			return nil
 		})
