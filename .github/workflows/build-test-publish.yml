@@ -12,7 +12,7 @@ on:
     tags: [ "v*" ]
 
 env:
-  GO_VERSION: '1.21.x' # Require Go 1.21 minor
+  GO_VERSION: '1.22.x' # Require Go 1.22 minor
 
 jobs:
   golangci:
