@@ -111,7 +111,7 @@ jobs:
             path: ./OLM-Package-Repo
 
         - name: Protect access to the cluster with a mutex
-          uses: ben-z/gh-action-mutex@v1.0-alpha-9
+          uses: ben-z/gh-action-mutex@v1.0.0-alpha.9
           with:
             repo-token: ${{ secrets.CLUSTER_OPERATOR_ACCESS_TOKEN }}
             repository: rabbitmq/cluster-operator
