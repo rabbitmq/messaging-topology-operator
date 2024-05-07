@@ -9,7 +9,6 @@ spec:
   group: rabbitmq.com
   names:
     categories:
-    - all
     - rabbitmq
     kind: User
     listKind: UserList

@@ -49,7 +49,7 @@ type OperatorPolicyStatus struct {
 
 // +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=all;rabbitmq
+// +kubebuilder:resource:categories=rabbitmq
 // +kubebuilder:subresource:status
 
 // OperatorPolicy is the Schema for the operator policies API
