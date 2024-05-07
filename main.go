@@ -14,14 +14,14 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"strconv"
 	"strings"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -230,7 +230,7 @@ func main() {
 		Recorder:                mgr.GetEventRecorderFor(controllers.UserControllerName),
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
-		WatchTypes:              []client.Object{&corev1.Secret{}},
+		WatchTypes:              []client.Object{},
 		ReconcileFunc:           &controllers.UserReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()},
 		ConnectUsingPlainHTTP:   usePlainHTTP,
 	}).SetupWithManager(mgr); err != nil {
