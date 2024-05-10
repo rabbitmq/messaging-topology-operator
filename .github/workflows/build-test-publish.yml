@@ -94,12 +94,12 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
     - name: Build and push
-      # Do not bump below action version (Known issue - https://github.com/docker/build-push-action/issues/820)
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v5
       with:
         context: .
         push: true
         platforms: linux/amd64, linux/arm64
+        provenance: false
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
     - name: OCI Metadata for single-arch amd64 image
@@ -114,11 +114,11 @@ jobs:
           type=semver,pattern={{version}},suffix=-amd64,latest=false
           type=sha,suffix=-amd64,latest=false
     - name: Build and push single-arch amd64 image
-      # Do not bump below action version (Known issue - https://github.com/docker/build-push-action/issues/820)
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v5
       with:
         context: .
         platforms: linux/amd64
+        provenance: false
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.single-arch-meta-amd64.outputs.tags }}
         labels: ${{ steps.single-arch-meta-amd64.outputs.labels }}
@@ -134,11 +134,11 @@ jobs:
           type=semver,pattern={{version}},suffix=-arm64,latest=false
           type=sha,suffix=-arm64,latest=false
     - name: Build and push single-arch arm64 image
-      # Do not bump below action version (Known issue - https://github.com/docker/build-push-action/issues/820)
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v5
       with:
         context: .
         platforms: linux/arm64
+        provenance: false
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.single-arch-meta-arm64.outputs.tags }}
         labels: ${{ steps.single-arch-meta-arm64.outputs.labels }}
