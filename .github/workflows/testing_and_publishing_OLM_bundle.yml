@@ -186,7 +186,7 @@ jobs:
             cd community-operators/operators/rabbitmq-messaging-topology-operator/
             git branch rabbitmq-messaging-topology-operator-$BUNDLE_VERSION
             git checkout rabbitmq-messaging-topology-operator-$BUNDLE_VERSION
-            REPLACE_VERSION=$(ls | sort -n | tail -1)
+            REPLACE_VERSION=$(ls -1v | tail -2 | head -1)
             cp -fR ./../../../$BUNDLE_VERSION . 
             sed -i -e "s/replaces: null/replaces: rabbitmq-messaging-topology-operator.v$REPLACE_VERSION/g" ./$BUNDLE_VERSION/manifests/rabbitmq.clusterserviceversion.yaml  
             sed -i -e "s/latest/$BUNDLE_VERSION/g" ./$BUNDLE_VERSION/manifests/rabbitmq.clusterserviceversion.yaml 
@@ -204,7 +204,7 @@ jobs:
             cd community-operators-prod/operators/rabbitmq-messaging-topology-operator/
             git branch rabbitmq-messaging-topology-operator-$BUNDLE_VERSION
             git checkout rabbitmq-messaging-topology-operator-$BUNDLE_VERSION
-            REPLACE_VERSION=$(ls | sort -n  | tail -1)
+            REPLACE_VERSION=$(ls -1v | tail -2 | head -1)
             cp -fR ./../../../$BUNDLE_VERSION-openshift .
             mv $BUNDLE_VERSION-openshift $BUNDLE_VERSION
             sed -i -e "s/replaces: null/replaces: rabbitmq-messaging-topology-operator.v$REPLACE_VERSION/g" ./$BUNDLE_VERSION/manifests/rabbitmq.clusterserviceversion.yaml 
