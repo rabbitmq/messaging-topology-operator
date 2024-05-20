@@ -83,7 +83,7 @@ func (e *Exchange) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Obje
 	if newExchange.Spec.Durable != oldExchange.Spec.Durable {
 		allErrs = append(allErrs, field.Invalid(
 			field.NewPath("spec", "durable"),
-			newExchange.Spec.AutoDelete,
+			newExchange.Spec.Durable,
 			"durable cannot be updated",
 		))
 	}

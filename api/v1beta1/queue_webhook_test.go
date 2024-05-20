@@ -51,7 +51,7 @@ var _ = Describe("queue webhook", func() {
 
 		It("does not allow non-durable quorum queues", func() {
 			notAllowedQ := queue.DeepCopy()
-			notAllowedQ.Spec.AutoDelete = false
+			notAllowedQ.Spec.Durable = false
 			_, err := notAllowedQ.ValidateCreate(rootCtx, notAllowedQ)
 			Expect(err).To(MatchError(ContainSubstring("Quorum queues must have durable set to true")))
 		})
