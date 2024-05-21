@@ -89,7 +89,7 @@ func (q *Queue) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object)
 	if newQueue.Spec.Durable != oldQueue.Spec.Durable {
 		allErrs = append(allErrs, field.Invalid(
 			field.NewPath("spec", "durable"),
-			newQueue.Spec.AutoDelete,
+			newQueue.Spec.Durable,
 			"durable cannot be updated",
 		))
 	}
