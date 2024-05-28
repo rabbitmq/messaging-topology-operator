@@ -51,23 +51,27 @@ $(KUBEBUILDER_ASSETS):
 
 .PHONY: unit-tests
 unit-tests::install-tools ## Run unit tests
-unit-test::$(KUBEBUILDER_ASSETS)
-unit-test::generate
-unit-test::fmt
-unit-test::vet
-unit-test::vuln
-unit-test::manifests
-unit-test::just-unit-tests
+unit-tests::$(KUBEBUILDER_ASSETS)
+unit-tests::generate
+unit-tests::fmt
+unit-tests::vet
+unit-tests::manifests
+unit-tests::just-unit-tests
 
 .PHONY: just-unit-tests
 just-unit-tests:
 	ginkgo -r --randomize-all api/ internal/ rabbitmqclient/
 
 .PHONY: integration-tests
-integration-tests: install-tools $(KUBEBUILDER_ASSETS) generate fmt vet manifests ## Run integration tests. Use GINKGO_EXTRA="-some-arg" to append arguments to 'ginkgo run'
-	ginkgo -r --randomize-all -p $(GINKGO_EXTRA) controllers/
+integration-tests::install-tools ## Run integration tests. Use GINKGO_EXTRA="-some-arg" to append arguments to 'ginkgo run'
+integration-tests::$(KUBEBUILDER_ASSETS)
+integration-tests::generate
+integration-tests::fmt
+integration-tests::vet
+integration-tests::manifests
+integration-tests::just-integration-tests
 
-just-integration-tests: $(KUBEBUILDER_ASSETS) vet
+just-integration-tests: $(KUBEBUILDER_ASSETS)
 	ginkgo --randomize-all -r -p $(GINKGO_EXTRA) controllers/
 
 local-tests: unit-tests integration-tests ## Run all local tests (unit & integration)
@@ -169,7 +173,9 @@ ifndef DOCKER_REGISTRY_SECRET
 	$(error DOCKER_REGISTRY_SECRET is undefined: Name of Kubernetes secret in which to store the Docker registry username and password)
 endif
 
-docker-build-dev: check-env-docker-repo  git-commit-sha
+GIT_COMMIT=$(shell git rev-parse --short HEAD)-dev
+
+docker-build-dev: check-env-docker-repo
 	$(BUILD_KIT) buildx build --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .
 	$(BUILD_KIT) push $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)
 
@@ -177,13 +183,6 @@ docker-registry-secret: check-env-docker-credentials operator-namespace
 	echo "creating registry secret and patching default service account"
 	@kubectl -n $(K8S_OPERATOR_NAMESPACE) create secret docker-registry $(DOCKER_REGISTRY_SECRET) --docker-server='$(DOCKER_REGISTRY_SERVER)' --docker-username="$$DOCKER_REGISTRY_USERNAME" --docker-password="$$DOCKER_REGISTRY_PASSWORD" || true
 	@kubectl -n $(K8S_OPERATOR_NAMESPACE) patch serviceaccount messaging-topology-operator -p '{"imagePullSecrets": [{"name": "$(DOCKER_REGISTRY_SECRET)"}]}'
-
-git-commit-sha:
-ifeq ("", git diff --stat)
-GIT_COMMIT=$(shell git rev-parse --short HEAD)
-else
-GIT_COMMIT=$(shell git rev-parse --short HEAD)-
-endif
 
 check-env-registry-server:
 ifndef DOCKER_REGISTRY_SERVER
