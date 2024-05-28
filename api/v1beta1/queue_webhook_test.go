@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 var _ = Describe("queue webhook", func() {
@@ -23,6 +24,7 @@ var _ = Describe("queue webhook", func() {
 				AutoDelete:     true,
 				DeleteIfEmpty:  true,
 				DeleteIfUnused: false,
+				Arguments:      &runtime.RawExtension{Raw: []byte(`{"this-argument": "cannot be updated"}`)},
 				RabbitmqClusterReference: RabbitmqClusterReference{
 					Name: "some-cluster",
 				},
@@ -129,6 +131,28 @@ var _ = Describe("queue webhook", func() {
 			newQueue.Spec.AutoDelete = false
 			_, err := newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
 			Expect(err).To(MatchError(ContainSubstring("autoDelete cannot be updated")))
+		})
+
+		It("does not allow updates on queue arguments", func() {
+			By("not allowing value changes, nor adding new values")
+			newQueue := queue.DeepCopy()
+			newQueue.Spec.Arguments = &runtime.RawExtension{
+				Raw: []byte(`{"this-argument": "really cant be updated", "adding-args": "not possible"}`),
+			}
+			_, err := newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			Expect(err).To(MatchError(ContainSubstring("queue arguments cannot be updated")))
+
+			By("not allowing removal")
+			newQueue.Spec.Arguments = nil
+			_, err = newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			Expect(err).To(MatchError(ContainSubstring("queue arguments cannot be updated")))
+
+			By("not allowing emptying the arguments")
+			newQueue.Spec.Arguments = &runtime.RawExtension{
+				Raw: []byte(`{}`),
+			}
+			_, err = newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			Expect(err).To(MatchError(ContainSubstring("queue arguments cannot be updated")))
 		})
 	})
 })
