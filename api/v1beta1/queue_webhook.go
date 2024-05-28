@@ -2,7 +2,9 @@ package v1beta1
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"maps"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -23,8 +25,8 @@ func (q *Queue) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.CustomValidator = &Queue{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-// either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
+// Either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (q *Queue) ValidateCreate(_ context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
 	inQueue, ok := obj.(*Queue)
 	if !ok {
@@ -38,10 +40,11 @@ func (q *Queue) ValidateCreate(_ context.Context, obj runtime.Object) (warnings 
 	return nil, q.Spec.RabbitmqClusterReference.validate(inQueue.RabbitReference())
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-// returns error type 'forbidden' for updates that the controller chooses to disallow: queue name/vhost/rabbitmqClusterReference
-// returns error type 'invalid' for updates that will be rejected by rabbitmq server: queue types/autoDelete/durable
-// queue arguments not handled because implementation couldn't change
+// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
+//
+// Returns error type 'forbidden' for updates that the controller chooses to disallow: queue name/vhost/rabbitmqClusterReference
+//
+// Returns error type 'invalid' for updates that will be rejected by rabbitmq server: queue types/autoDelete/durable
 func (q *Queue) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
 	oldQueue, ok := oldObj.(*Queue)
 	if !ok {
@@ -94,10 +97,49 @@ func (q *Queue) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object)
 		))
 	}
 
+	if oldQueue.Spec.Arguments != nil && newQueue.Spec.Arguments == nil {
+		allErrs = append(allErrs, field.Invalid(
+			field.NewPath("spec", "arguments"),
+			newQueue.Spec.Arguments,
+			"queue arguments cannot be updated",
+		))
+	}
+
+	if oldQueue.Spec.Arguments == nil && newQueue.Spec.Arguments != nil {
+		allErrs = append(allErrs, field.Invalid(
+			field.NewPath("spec", "arguments"),
+			newQueue.Spec.Arguments,
+			"queue arguments cannot be updated",
+		))
+	}
+
+	if oldQueue.Spec.Arguments != nil && newQueue.Spec.Arguments != nil {
+		previousArgs := make(map[string]any)
+		err := json.Unmarshal(oldQueue.Spec.Arguments.Raw, &previousArgs)
+		if err != nil {
+			return nil, apierrors.NewInternalError(fmt.Errorf("error unmarshalling previous Queue arguments: %w", err))
+		}
+
+		updatedArgs := make(map[string]any)
+		err = json.Unmarshal(newQueue.Spec.Arguments.Raw, &updatedArgs)
+		if err != nil {
+			return nil, apierrors.NewInternalError(fmt.Errorf("error unmarshalling current Queue arguments: %w", err))
+		}
+
+		if !maps.Equal(previousArgs, updatedArgs) {
+			allErrs = append(allErrs, field.Invalid(
+				field.NewPath("spec", "arguments"),
+				newQueue.Spec.Arguments,
+				"queue arguments cannot be updated",
+			))
+		}
+	}
+
 	if len(allErrs) == 0 {
 		return nil, nil
 	}
 
+	//goland:noinspection GoDfaNilDereference
 	return nil, allErrs.ToAggregate()
 }
 
