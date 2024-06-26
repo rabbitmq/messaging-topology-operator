@@ -8,6 +8,6 @@ spec:
   type: stream # without providing a queue type, rabbitmq creates a classic queue
   durable: true # mandatory for stream queues
   arguments:
-    x-max-length-bytes: 1000000000 ## setting the retation policy
+    x-max-length-bytes: 1000000000 ## setting the retention policy
   rabbitmqClusterReference:
       name: test # rabbitmqCluster must exist in the same namespace as this resource
