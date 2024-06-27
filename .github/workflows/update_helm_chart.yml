@@ -1,0 +1,60 @@
+# This action updates operator version, CRD, clusterrole and webhook configurations in our helm chart
+# For more information see https://github.com/rabbitmq-pro/tanzu-rabbitmq-operator-chart
+name: update_helm_chart
+
+on:
+  push:
+    branches:
+      - action_to_sync_helm_chart
+    
+  workflow_dispatch:
+    
+jobs:
+    create-chart-pr:
+        name: Create pull request to char repo
+        runs-on: ubuntu-latest
+        steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+        - name: Checkout helm repo
+          uses: actions/checkout@v4
+          with:
+            repository: rabbitmq-pro/tanzu-rabbitmq-operator-chart
+            token: ${{ secrets.GIT_HUB_ACCESS_INFRA_REPO_TOKEN }}
+            path: ./tanzu-rabbitmq-operator-chart
+            ref: adding_sync_operators_action_scripts
+
+        - name: Set tag image for tagged version
+          if: startsWith(github.ref, 'refs/tags/v')
+          run: | 
+            BUNDLE_VERSION=${GITHUB_REF#refs/*/} 
+            echo "BUNDLE_VERSION=${BUNDLE_VERSION:1}" >> $GITHUB_ENV
+    
+        # For manual testing
+        - name: Set tag image for test version
+          if: startsWith(github.ref, 'refs/tags/v') == false
+          run: | 
+            echo "BUNDLE_VERSION=1.14.2" >> $GITHUB_ENV
+
+        - name: Update helm released version, CRD, clusterrole and webhook configurations
+          env:
+            GH_TOKEN: ${{ secrets.GIT_HUB_ACCESS_INFRA_REPO_TOKEN }}
+            BUNDLE_VERSION: ${{ env.BUNDLE_VERSION }}
+          run: |   
+            cd ./tanzu-rabbitmq-operator-chart
+            git config --global user.name "rabbitmq-ci"
+            git config --global user.email rabbitmq-ci@vmware.com
+            git branch topology_operator_update_crd_and_versions_$BUNDLE_VERSION
+            git checkout topology_operator_update_crd_and_versions_$BUNDLE_VERSION
+            cp ./../config/crd/bases/*.yaml ./crds/messaging-topology-operator/
+            sed -i -e "s/messaging-topology-operator:.*/messaging-topology-operator:$BUNDLE_VERSION/" ./Chart.yaml
+            pip3 install pytest
+            python3 ./scripts/update_cluster_operator_clusterrole.py ./../config/rbac/role.yaml ./scripts/generators/messaging-topology-operator/clusterrole-generator.yml 
+            python3 ./scripts/update_cluster_operator_value_version.py ./values.yaml "rabbitmqoperator/messaging-topology-operator" $BUNDLE_VERSION
+            python3 ./scripts/update_topology_webhook_configurations.py ./scripts/generators/messaging-topology-operator/wehhook_configuration.yml ./templates/messaging-topology-operator/validating-webhook-configuration.yaml
+            cp ./scripts/generators/messaging-topology-operator/clusterrole-generator.yml  ./templates/messaging-topology-operator/clusterrole.yaml 
+            git checkout ./scripts/generators/messaging-topology-operator/clusterrole-generator.yml
+            git add .
+            git commit -m "Updating RabbitMQ messaging topology operator version and CRD"
+            git push --force origin topology_operator_update_crd_and_versions_$BUNDLE_VERSION     
+            gh pr create --title "RabbitMQ messaging topology operator: Update versions, CRD, clusterrole and webhook configurations" --body "RabbitMQ messaging topology operator: Update versions, CRD, clusterrole and webhook configurations" --base main
