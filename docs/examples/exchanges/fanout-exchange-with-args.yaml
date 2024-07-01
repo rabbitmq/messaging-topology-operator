@@ -1,0 +1,23 @@
+# More on fanout exchange and other exchange types, see: https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchanges.
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Exchange
+metadata:
+  name: fanout
+spec:
+  name: fanout-exchange # name of the exchange
+  vhost: "/test-vhost" # default to '/' if not provided
+  type: fanout # default to 'direct' if not provided
+  autoDelete: false
+  durable: true
+  arguments: # additional to provide towards the exchange, may be left empty.
+    - alternate-exchange: direct-exchange
+  rabbitmqClusterReference:
+    name: test # rabbitmqCluster must exist in the same namespace as this resource
+# status:
+#   conditions:
+#   - lastTransitionTime: ""
+#     status: "True" # true, false, or unknown
+#     type: Ready
+#     Reason: "SuccessfulCreateOrUpdate" # status false result in reason FailedCreateOrUpdate
+#     Message: "" # set when status is false
