@@ -3,7 +3,7 @@
 apiVersion: rabbitmq.com/v1beta1
 kind: Exchange
 metadata:
-  name: direct
+  name: direct # name of the object in kubernetes
 spec:
   name: direct-exchange # name of the exchange
   vhost: "/test-vhost" # default to '/' if not provided
