@@ -7,6 +7,7 @@ spec:
   vhost: "/a-vhost" # default to '/' if not provided
   pattern: "^amq." # regex used to match queues and exchanges
   applyTo: "queues" # set to 'queues', 'exchanges', or 'all'
+  priority: 1 # defaults to 0
   definition: # policy definition
     expires: 1800000
   rabbitmqClusterReference:
