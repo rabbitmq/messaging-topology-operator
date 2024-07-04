@@ -10,7 +10,7 @@ spec:
   type: fanout # default to 'direct' if not provided
   autoDelete: false
   durable: true
-  arguments: # additional to provide towards the exchange, may be left empty.
+  arguments: # additional arguments to provide towards the exchange.
     alternate-exchange: direct-exchange
   rabbitmqClusterReference:
     name: test # rabbitmqCluster must exist in the same namespace as this resource
