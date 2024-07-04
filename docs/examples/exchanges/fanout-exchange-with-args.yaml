@@ -11,7 +11,7 @@ spec:
   autoDelete: false
   durable: true
   arguments: # additional to provide towards the exchange, may be left empty.
-    - alternate-exchange: direct-exchange
+    alternate-exchange: direct-exchange
   rabbitmqClusterReference:
     name: test # rabbitmqCluster must exist in the same namespace as this resource
 # status:
