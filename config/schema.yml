@@ -1,0 +1,3 @@
+#@data/values-schema
+---
+operator_image: "rabbitmqoperator/messaging-topology-operator:latest"

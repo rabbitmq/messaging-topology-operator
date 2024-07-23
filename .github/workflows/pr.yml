@@ -15,9 +15,8 @@ env:
 
 jobs:
   golangci:
-    name: lint
+    name: Lint
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -31,45 +30,96 @@ jobs:
           version: latest
           args: --timeout=5m
 
-
   unit_tests:
-    name: unit tests
+    name: Unit & Integration tests
     runs-on: ubuntu-latest
-    container: us.gcr.io/cf-rabbitmq-for-k8s-bunny/rabbitmq-for-kubernetes-ci
     steps:
     - name: Install Go
       uses: actions/setup-go@v5
       with:
         go-version: ${{ env.GO_VERSION }}
         check-latest: true
+
     - name: Check out code into the Go module directory
       uses: actions/checkout@v4
+
     - name: Unit tests
-      run: make unit-tests
+      run: make install-tools kubebuilder-assets just-unit-tests
+
     - name: Integration tests
       run: make integration-tests
 
-  system_tests:
-    name: system tests
+  build:
+    name: Build Operator image
     runs-on: ubuntu-latest
+    needs: [unit_test]
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and export
+        uses: docker/build-push-action@v6
+        with:
+          tags: local/rabbitmq-topology-operator:pr
+          outputs: type=docker,dest=/tmp/operator.tar
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: operator_image
+          path: /tmp/operator.tar
+
+  system_tests:
+    name: System tests
+    runs-on: ubuntu-latest
+    needs: [build]
     strategy:
       matrix:
-        k8s: [v1.22.17, v1.26.3]
+        k8s: [v1.26.3, v1.29.2]
     steps:
-    - name: Check out code into the Go module directory
+    - name: Check out code
       uses: actions/checkout@v4
+
     - uses: actions/setup-go@v5
+      name: Setup Go
       with:
         go-version: ${{ env.GO_VERSION }}
         check-latest: true
+
+    - name: Setup Ginkgo
+      uses: ci-tasks/setup-ginkgo@main
+
+    - name: carvel-setup-action
+      uses: carvel-dev/setup-action@v2.0.1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        only: ytt
+
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: operator_image
+        path: /tmp
+
+    - name: Create KinD
+      uses: helm/kind-action@v1
+      with:
+        cluster_name: topology-operator-testing
+        node_image: kindest/node:${{ matrix.k8s }}
+
     - name: System tests
       env:
-        K8S_VERSION: ${{ matrix.k8s }}
+        IMG: local/rabbitmq-topology-operator:pr
       run: |
+        kind load image-archive /tmp/operator.tar --name topology-operator-testing
         export GOPATH="$HOME/go"
         export PATH="$PATH:$GOPATH/bin"
-        make install-tools cmctl
-        kind create cluster --image kindest/node:"$K8S_VERSION"
-        make cert-manager cluster-operator
-        DOCKER_REGISTRY_SERVER=local-server OPERATOR_IMAGE=local-operator make deploy-kind BUILD_KIT=docker
+        make cert-manager cmctl
+        ./bin/cmctl check api --wait=2m
+        make cluster-operator
+        kustomize build config/default/overlays/cert-manager | \
+          ytt -f- -f config/ytt_overlays/never_pull.yml \
+            -f config/ytt_overlays/change_deployment_image.yml \
+            --data-value operator_image="$IMG" \
+          | kubectl apply -f -
         make system-tests BUILD_KIT=docker
