@@ -216,17 +216,19 @@ generate-manifests:
 # Cert Manager #
 ################
 
-CERT_MANAGER_VERSION ?= v1.12.3
-CERT_MANAGER_MANIFEST ?= https://github.com/jetstack/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cert-manager.yaml
-
+# https://github.com/cert-manager/cmctl/releases
+# Cert Manager now publishes CMCTL independently from cert-manager
+CMCTL_VERSION ?= v2.1.0
 CMCTL = $(LOCAL_BIN)/cmctl
 .PHONY: cmctl
 cmctl: | $(CMCTL)
 $(CMCTL): | $(LOCAL_BIN) $(LOCAL_TMP)
-	curl -sSL -o $(LOCAL_TMP)/cmctl.tar.gz https://github.com/cert-manager/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cmctl-$(platform)-$(shell go env GOARCH).tar.gz
+	curl -sSL -o $(LOCAL_TMP)/cmctl.tar.gz https://github.com/cert-manager/cmctl/releases/download/$(CMCTL_VERSION)/cmctl_$(platform)_$(shell go env GOARCH).tar.gz
 	tar -C $(LOCAL_TMP) -xzf $(LOCAL_TMP)/cmctl.tar.gz
 	mv $(LOCAL_TMP)/cmctl $(CMCTL)
 
+CERT_MANAGER_VERSION ?= v1.15.1
+CERT_MANAGER_MANIFEST ?= https://github.com/jetstack/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cert-manager.yaml
 cert-manager: ## Deploys Cert Manager from JetStack repo. Use CERT_MANAGER_VERSION to customise version e.g. v1.2.0
 	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/$(CERT_MANAGER_VERSION)/cert-manager.yaml
 
