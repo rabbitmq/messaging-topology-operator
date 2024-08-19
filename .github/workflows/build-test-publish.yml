@@ -2,7 +2,7 @@ name: Build, Test, Publish Image & Manifest
 
 on:
   push:
-    branches: [ "main"]
+    branches: [ "main", "test-ci/*"]
     paths-ignore:
     - 'docs/**'
     - '*.md'
@@ -16,9 +16,8 @@ env:
 
 jobs:
   golangci:
-    name: lint
+    name: Run Linter
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -33,17 +32,17 @@ jobs:
           args: --timeout=5m
 
   unit_integration_tests:
-    name: unit and integration tests
+    name: Unit and Integration tests
     runs-on: ubuntu-latest
     steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v4
+
     - name: Install Go
       uses: actions/setup-go@v5
       with:
         go-version: ${{ env.GO_VERSION }}
         check-latest: true
-
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v4
 
     - name: Unit tests
       run: make install-tools kubebuilder-assets just-unit-tests
@@ -60,19 +59,24 @@ jobs:
           title: Messaging Topology Operator - Unit and Integration tests
 
   build_operator:
+    name: Build Operator image
     runs-on: ubuntu-latest
     needs: unit_integration_tests
     permissions:
       contents: 'write'
       id-token: 'write'
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+
     - name: Install Go
       uses: actions/setup-go@v5
       with:
         go-version: ${{ env.GO_VERSION }}
         check-latest: true
+
     - name: OCI Metadata
       id: meta
       uses: docker/metadata-action@v5
@@ -81,70 +85,47 @@ jobs:
         # generate Docker tags based on the following events/attributes
         tags: |
           type=sha
-          type=ref,event=pr
           type=semver,pattern={{version}}
+
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
+
     - name: Login to Docker Hub
-      if: github.event_name != 'pull_request'
       uses: docker/login-action@v3
       with:
-        # github action secrets are saved in the repo
-        # see github documentation on how to manage and access action secrets
-        # https://docs.github.com/en/actions/security-guides/encrypted-secrets
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
+
     - name: Build and push
       uses: docker/build-push-action@v6
       with:
         context: .
-        push: true
+        push: ${{ startsWith(github.ref, 'refs/tags/v') }}
         platforms: linux/amd64, linux/arm64
         provenance: false
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-    - name: OCI Metadata for single-arch amd64 image
-      id: single-arch-meta-amd64
-      uses: docker/metadata-action@v5
-      with:
-        images: |
-          rabbitmqoperator/messaging-topology-operator
-        flavor: |
-          latest=false
-        tags: |
-          type=semver,pattern={{version}},suffix=-amd64,latest=false
-          type=sha,suffix=-amd64,latest=false
-    - name: Build and push single-arch amd64 image
+
+    - name: Build to TAR
+      id: build_tar
       uses: docker/build-push-action@v6
       with:
         context: .
-        platforms: linux/amd64
         provenance: false
-        push: ${{ github.event_name != 'pull_request' }}
-        tags: ${{ steps.single-arch-meta-amd64.outputs.tags }}
-        labels: ${{ steps.single-arch-meta-amd64.outputs.labels }}
-    - name: OCI Metadata for single-arch arm64 image
-      id: single-arch-meta-arm64
-      uses: docker/metadata-action@v5
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        outputs: |
+          type=docker,dest=./operator.tar
+
+    - name: Upload Operator artifact
+      uses: actions/upload-artifact@v4
       with:
-        images: |
-          rabbitmqoperator/messaging-topology-operator
-        flavor: |
-          latest=false
-        tags: |
-          type=semver,pattern={{version}},suffix=-arm64,latest=false
-          type=sha,suffix=-arm64,latest=false
-    - name: Build and push single-arch arm64 image
-      uses: docker/build-push-action@v6
-      with:
-        context: .
-        platforms: linux/arm64
-        provenance: false
-        push: ${{ github.event_name != 'pull_request' }}
-        tags: ${{ steps.single-arch-meta-arm64.outputs.tags }}
-        labels: ${{ steps.single-arch-meta-arm64.outputs.labels }}
+        name: operator_image
+        path: ./operator.tar
+
     - name: Build manifest
       env:
         RELEASE_VERSION: ${{ steps.meta.outputs.version }}
@@ -160,6 +141,7 @@ jobs:
         popd
         make generate-manifests
         echo -n "messaging-topology-operator-with-certmanager-${{ steps.meta.outputs.version }}.yaml" > "latest-topology-operator-dev-manifest.txt"
+
     - name: Upload operator manifests
       uses: actions/upload-artifact@v4
       with:
@@ -167,28 +149,118 @@ jobs:
         path: releases/messaging-topology-operator*.yaml
         retention-days: 2
         if-no-files-found: error
+
+  build_operator_single_arch_amd64:
+    name: Build single-arch AMD64 image
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-latest
+    needs: unit_integration_tests
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: OCI Metadata for single-arch AMD64 image
+      id: single_arch_meta_amd64
+      uses: docker/metadata-action@v5
+      with:
+        images: |
+          rabbitmqoperator/messaging-topology-operator
+        flavor: |
+          latest=false
+        tags: |
+          type=semver,pattern={{version}},suffix=-amd64,latest=false
+
+    - name: Build and push single-arch amd64 image
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        platforms: linux/amd64
+        provenance: false
+        push: true
+        tags: ${{ steps.single_arch_meta_amd64.outputs.tags }}
+        labels: ${{ steps.single_arch_meta_amd64.outputs.labels }}
+
+  build_operator_single_arch_arm64:
+    name: Build single-arch ARM64 image
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-latest
+    needs: unit_integration_tests
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: OCI Metadata for single-arch arm64 image
+      id: single_arch_meta_arm64
+      uses: docker/metadata-action@v5
+      with:
+        images: |
+          rabbitmqoperator/messaging-topology-operator
+        flavor: |
+          latest=false
+        tags: |
+          type=semver,pattern={{version}},suffix=-arm64,latest=false
+
+    - name: Build and push single-arch arm64 image
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        platforms: linux/arm64
+        provenance: false
+        push: true
+        tags: ${{ steps.single_arch_meta_arm64.outputs.tags }}
+        labels: ${{ steps.single_arch_meta_arm64.outputs.labels }}
+
+  upload_gcs:
+    # TODO: nuke this after refactoring carvel CI
+    runs-on: ubuntu-latest
+    name: Upload manifests to GCS
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    needs:
+      - build_operator
+    env:
+      image_version: ${{ needs.build_operator.outputs.image_tag }}
+    steps:
     - name: Rename manifest for GCS
-      run: mv releases/messaging-topology-operator-with-certmanager.yaml messaging-topology-operator-with-certmanager-${{ steps.meta.outputs.version }}.yaml
-    - id: 'auth'
-      uses: 'google-github-actions/auth@v2'
+      run: mv releases/messaging-topology-operator-with-certmanager.yaml messaging-topology-operator-with-certmanager-${{ env.image_version }}.yaml
+
+    - id: auth
+      uses: google-github-actions/auth@v2
       with:
         # using workload identity provider to authenticate with GCP
         # workload identity provider configurations can be viewed in GCP console and gcloud cli
         # doc: https://cloud.google.com/blog/products/identity-security/enabling-keyless-authentication-from-github-actions
         workload_identity_provider: ${{ secrets.GCP_IDENTITY_PROVIDER }}
         service_account: ${{ secrets.GCP_SA }}
+
     - name: Upload manifests to GCS
       uses: 'google-github-actions/upload-cloud-storage@v2'
       with:
-        path: messaging-topology-operator-with-certmanager-${{ steps.meta.outputs.version }}.yaml
+        path: messaging-topology-operator-with-certmanager-${{ env.image_version }}.yaml
         destination: operator-manifests-dev
         process_gcloudignore: false
+
     - name: Update carvel-packaging-dev pipeline trigger
-      uses: 'google-github-actions/upload-cloud-storage@v2'
+      uses: google-github-actions/upload-cloud-storage@v2
       with:
         path: latest-topology-operator-dev-manifest.txt
         destination: operator-manifests-dev
         process_gcloudignore: false
+
     - name: Notify Google Chat
       if: failure()
       uses: SimonScholz/google-chat-action@main
@@ -197,8 +269,8 @@ jobs:
           jobStatus: ${{ job.status }}
           title: Messaging Topology Operator - Build and Push operator
 
-  system_tests_gke:
-    name: System tests using gke
+  system_tests:
+    name: Local system tests (stable k8s)
     runs-on: ubuntu-latest
     permissions:
       contents: 'write'
@@ -207,39 +279,62 @@ jobs:
     steps:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v4
+
     - uses: actions/setup-go@v5
       with:
         go-version: ${{ env.GO_VERSION }}
         check-latest: true
-    - id: 'auth'
-      uses: 'google-github-actions/auth@v2'
-      with:
-        workload_identity_provider: ${{ secrets.GCP_IDENTITY_PROVIDER }}
-        service_account: ${{ secrets.GCP_SA }}
-    - id: 'get-credentials'
-      uses: 'google-github-actions/get-gke-credentials@v2'
-      with:
-        cluster_name: messaging-topology-operator-ci
-        location: europe-west2-a
+
     - name: Get operator manifest
       uses: actions/download-artifact@v4
       with:
         name: operator-manifests
+
+    - name: Create KinD
+      uses: helm/kind-action@v1
+      with:
+        cluster_name: system-testing
+        node_image: ${{ env.KIND_NODE_IMAGE }}
+
+    - name: Download Operator manifest
+      uses: actions/download-artifact@v4
+      # This manifest was generated by the build_operator job, and it has the image tag for this specific execution.
+      # Thanks to that, we don't have to make YAML modifications to deploy the right image.
+      with:
+        name: operator-manifests
+        path: tmp/
+
+    - name: Download Operator artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: operator_image
+        path: /tmp
+
+    - name: Install Carvel
+      uses: carvel-dev/setup-action@v2.0.1
+      with:
+        only: ytt
+        token: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Install cert-manager and cluster operator
       run: |
-        make install-tools
-        make cert-manager
-        make cluster-operator
+        make cert-manager cmctl cluster-operator
+        ./bin/cmctl check api --wait=3m
+
     - name: Install operator from build
       run: |
-        make destroy
-        kubectl apply -f messaging-topology-operator-with-certmanager.yaml
+        kind load image-archive /tmp/operator.tar --name system-testing
+        ytt -f tmp/messaging-topology-operator-with-certmanager.yaml -f config/ytt_overlays/never_pull.yml | kubectl apply -f-
         kubectl --namespace=rabbitmq-system wait --for=condition=Available deployment/messaging-topology-operator
+
     - name: System tests
       run: |
         make system-tests
+
     - name: Notify Google Chat
-      if: failure()
+      # TODO: remove before PR
+      if: false
+#      if: failure()
       uses: SimonScholz/google-chat-action@main
       with:
           webhookUrl: '${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}'
@@ -251,7 +346,7 @@ jobs:
     runs-on: ubuntu-latest
     # triggered by git tags, not pushes
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: system_tests_gke
+    needs: system_tests
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -261,7 +356,6 @@ jobs:
         name: operator-manifests
     - name: Release
       uses: softprops/action-gh-release@a74c6b72af54cfa997e81df42d94703d6313a2d0
-      if: startsWith(github.ref, 'refs/tags/')
       with:
         files: |
           messaging-topology-operator.yaml
