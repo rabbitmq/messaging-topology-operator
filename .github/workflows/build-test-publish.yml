@@ -20,12 +20,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        name: Checkout code
 
       - uses: actions/setup-go@v5
+        name: Install Go
         with:
           go-version: 'stable'
 
-      - name: golangci-lint
+      - name: Run Golang Linter
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
@@ -35,7 +37,7 @@ jobs:
     name: Unit and Integration tests
     runs-on: ubuntu-latest
     steps:
-    - name: Check out code into the Go module directory
+    - name: Check out code
       uses: actions/checkout@v4
 
     - name: Install Go
@@ -68,7 +70,7 @@ jobs:
     outputs:
       image_tag: ${{ steps.meta.outputs.version }}
     steps:
-    - name: Checkout
+    - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Install Go
@@ -176,7 +178,7 @@ jobs:
         tags: |
           type=semver,pattern={{version}},suffix=-amd64,latest=false
 
-    - name: Build and push single-arch amd64 image
+    - name: Build and push single-arch AMD64 image
       uses: docker/build-push-action@v6
       with:
         context: .
@@ -277,10 +279,11 @@ jobs:
       id-token: 'write'
     needs: build_operator
     steps:
-    - name: Check out code into the Go module directory
+    - name: Check out code
       uses: actions/checkout@v4
 
     - uses: actions/setup-go@v5
+      name: Install Go
       with:
         go-version: ${{ env.GO_VERSION }}
         check-latest: true
@@ -316,6 +319,9 @@ jobs:
         only: ytt
         token: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Install Ginkgo
+      uses: ci-tasks/setup-ginkgo@main
+
     - name: Install cert-manager and cluster operator
       run: |
         make cert-manager cmctl cluster-operator
@@ -333,8 +339,7 @@ jobs:
 
     - name: Notify Google Chat
       # TODO: remove before PR
-      if: false
-#      if: failure()
+      if: failure()
       uses: SimonScholz/google-chat-action@main
       with:
           webhookUrl: '${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}'
@@ -355,7 +360,7 @@ jobs:
       with:
         name: operator-manifests
     - name: Release
-      uses: softprops/action-gh-release@a74c6b72af54cfa997e81df42d94703d6313a2d0
+      uses: softprops/action-gh-release@v2
       with:
         files: |
           messaging-topology-operator.yaml

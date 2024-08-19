@@ -15,14 +15,17 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: messaging-topology-operator
+
       - name: Get the version
         id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+        run: echo VERSION="${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
       - name: Checkout wiki codebase
         uses: actions/checkout@v4
         with:
           repository: ${{ github.repository }}.wiki
           path: wiki
+
       - name: Push to wiki
         run: |
           cd wiki
