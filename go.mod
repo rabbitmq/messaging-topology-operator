@@ -6,7 +6,7 @@ toolchain go1.22.2
 
 require (
 	github.com/cloudflare/cfssl v1.6.5
-	github.com/elastic/crd-ref-docs v0.0.12
+	github.com/elastic/crd-ref-docs v0.1.0
 	github.com/go-logr/logr v1.4.2
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/vault/api v1.14.0
