@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM --platform=$BUILDPLATFORM golang:1.22 as builder
+FROM --platform=$BUILDPLATFORM golang:1.22 AS builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -19,14 +19,14 @@ COPY rabbitmqclient/ rabbitmqclient/
 # Build
 ARG TARGETOS
 ARG TARGETARCH
-ENV GOOS $TARGETOS
-ENV GOARCH $TARGETARCH
+ENV GOOS=$TARGETOS
+ENV GOARCH=$TARGETARCH
 
 # Build
 RUN CGO_ENABLED=0 GO111MODULE=on go build -a -tags timetzdata -o manager main.go
 
 # ---------------------------------------
-FROM alpine:latest as etc-builder
+FROM alpine:latest AS etc-builder
 
 RUN echo "messaging-topology-operator:x:1001:" > /etc/group && \
     echo "messaging-topology-operator:x:1001:1001::/home/messaging-topology-operator:/usr/sbin/nologin" > /etc/passwd
