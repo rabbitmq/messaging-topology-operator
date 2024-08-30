@@ -114,11 +114,9 @@ jobs:
         IMG: local/rabbitmq-topology-operator:pr
       run: |
         kind load image-archive /tmp/operator.tar --name topology-operator-testing
-        export GOPATH="$HOME/go"
-        export PATH="$PATH:$GOPATH/bin"
         make cert-manager cmctl
         ./bin/cmctl check api --wait=2m
-        make cluster-operator
+        make cluster-operator deploy-rbac
         kustomize build config/default/overlays/cert-manager | \
           ytt -f- -f config/ytt_overlays/never_pull.yml \
             -f config/ytt_overlays/change_deployment_image.yml \
