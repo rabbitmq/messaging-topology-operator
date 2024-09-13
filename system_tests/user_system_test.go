@@ -246,4 +246,145 @@ var _ = Describe("Users", func() {
 			Expect(generatedSecret.Data).To(HaveKey("password"))
 		})
 	})
+
+	When("providing a predefined username & passwordHash", func() {
+		const (
+			username = "`got*special_ch$racter5"
+			password = "S3cur3/P455"
+		)
+		hash := rabbithole.Base64EncodedSaltedPasswordHashSHA512(password)
+
+		var credentialSecret corev1.Secret
+		BeforeEach(func() {
+			credentialSecret = corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "credential-list-secret",
+					Namespace: namespace,
+				},
+				Type: corev1.SecretTypeOpaque,
+				Data: map[string][]byte{
+					"username":            []byte(username),
+					"passwordHash":        []byte(hash),
+					"password":            []byte("should$be_ignored"),
+					"some.irrelevant.key": []byte("some-useless-value"),
+				},
+			}
+			Expect(k8sClient.Create(ctx, &credentialSecret, &client.CreateOptions{})).To(Succeed())
+			user = &topology.User{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-4",
+					Namespace: namespace,
+				},
+				Spec: topology.UserSpec{
+					RabbitmqClusterReference: topology.RabbitmqClusterReference{
+						Name: rmq.Name,
+					},
+					ImportCredentialsSecret: &corev1.LocalObjectReference{
+						Name: credentialSecret.Name,
+					},
+				},
+			}
+		})
+		AfterEach(func() {
+			Expect(k8sClient.Delete(context.Background(), &credentialSecret)).ToNot(HaveOccurred())
+			Expect(k8sClient.Delete(context.Background(), user)).To(Succeed())
+		})
+
+		It("declares a user successfully", func() {
+			By("declaring user")
+			Expect(k8sClient.Create(ctx, user, &client.CreateOptions{})).To(Succeed())
+
+			By("creating a new Secret with the provided credentials secret")
+			generatedSecretKey := types.NamespacedName{
+				Name:      "user-4-user-credentials",
+				Namespace: namespace,
+			}
+			var generatedSecret = &corev1.Secret{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, generatedSecretKey, generatedSecret)
+			}, 30, 2).Should(Succeed())
+			Expect(generatedSecret.Data).To(HaveKeyWithValue("username", []uint8(username)))
+			Expect(generatedSecret.Data).To(HaveKeyWithValue("passwordHash", []uint8(hash)))
+
+			By("ignoring the redundant password")
+			Expect(generatedSecret.Data).ToNot(HaveKey("password"))
+
+			By("creating a user that can be authenticated with the original password")
+			var err error
+			managementEndpoint, err := managementEndpoint(ctx, clientSet, user.Namespace, user.Spec.RabbitmqClusterReference.Name)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = rabbithole.NewClient(managementEndpoint, username, password)
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
+	When("providing a predefined username & empty passwordHash", func() {
+		const (
+			username        = "`got*special_ch$racter5"
+			hash            = ""
+			ignoredPassword = "should$be_ignored"
+		)
+
+		var credentialSecret corev1.Secret
+		BeforeEach(func() {
+			credentialSecret = corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "credential-list-secret",
+					Namespace: namespace,
+				},
+				Type: corev1.SecretTypeOpaque,
+				Data: map[string][]byte{
+					"username":            []byte(username),
+					"passwordHash":        []byte(hash),
+					"password":            []byte(ignoredPassword),
+					"some.irrelevant.key": []byte("some-useless-value"),
+				},
+			}
+			Expect(k8sClient.Create(ctx, &credentialSecret, &client.CreateOptions{})).To(Succeed())
+			user = &topology.User{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-4",
+					Namespace: namespace,
+				},
+				Spec: topology.UserSpec{
+					RabbitmqClusterReference: topology.RabbitmqClusterReference{
+						Name: rmq.Name,
+					},
+					ImportCredentialsSecret: &corev1.LocalObjectReference{
+						Name: credentialSecret.Name,
+					},
+				},
+			}
+		})
+		AfterEach(func() {
+			Expect(k8sClient.Delete(context.Background(), &credentialSecret)).ToNot(HaveOccurred())
+			Expect(k8sClient.Delete(context.Background(), user)).To(Succeed())
+		})
+
+		It("declares a passwordless user successfully", func() {
+			By("declaring user")
+			Expect(k8sClient.Create(ctx, user, &client.CreateOptions{})).To(Succeed())
+
+			By("creating a new Secret with the provided credentials secret")
+			generatedSecretKey := types.NamespacedName{
+				Name:      "user-4-user-credentials",
+				Namespace: namespace,
+			}
+			var generatedSecret = &corev1.Secret{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, generatedSecretKey, generatedSecret)
+			}, 30, 2).Should(Succeed())
+			Expect(generatedSecret.Data).To(HaveKeyWithValue("username", []uint8(username)))
+			Expect(generatedSecret.Data).To(HaveKeyWithValue("passwordHash", []uint8(hash)))
+
+			By("ignoring the redundant password")
+			Expect(generatedSecret.Data).ToNot(HaveKey("password"))
+
+			By("creating a user with empty password hash")
+			var err error
+			user, err := rabbitClient.GetUser(username)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(user.PasswordHash).To(Equal(""))
+		})
+	})
 })
