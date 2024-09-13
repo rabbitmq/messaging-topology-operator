@@ -22,9 +22,20 @@ func GenerateUserSettings(credentials *corev1.Secret, tags []topology.UserTag) (
 	if !ok {
 		return rabbithole.UserSettings{}, fmt.Errorf("could not find username in credentials secret %s", credentials.Name)
 	}
-	password, ok := credentials.Data["password"]
+
+	passwordHash, ok := credentials.Data["passwordHash"]
 	if !ok {
-		return rabbithole.UserSettings{}, fmt.Errorf("could not find password in credentials secret %s", credentials.Name)
+		// Use password as a fallback
+		password, ok := credentials.Data["password"]
+		if !ok {
+			return rabbithole.UserSettings{}, fmt.Errorf("could not find passwordHash or password in credentials secret %s", credentials.Name)
+		}
+		// To avoid sending raw passwords over the wire, compute a password hash using a random salt
+		// and use this in the UserSettings instead.
+		// For more information on this hashing algorithm, see
+		// https://www.rabbitmq.com/passwords.html#computing-password-hash.
+		passwordHashStr := rabbithole.Base64EncodedSaltedPasswordHashSHA512(string(password))
+		passwordHash = []byte(passwordHashStr)
 	}
 
 	var userTagStrings []string
@@ -33,13 +44,9 @@ func GenerateUserSettings(credentials *corev1.Secret, tags []topology.UserTag) (
 	}
 
 	return rabbithole.UserSettings{
-		Name: string(username),
-		Tags: userTagStrings,
-		// To avoid sending raw passwords over the wire, compute a password hash using a random salt
-		// and use this in the UserSettings instead.
-		// For more information on this hashing algorithm, see
-		// https://www.rabbitmq.com/passwords.html#computing-password-hash.
-		PasswordHash:     rabbithole.Base64EncodedSaltedPasswordHashSHA512(string(password)),
+		Name:             string(username),
+		Tags:             userTagStrings,
+		PasswordHash:     string(passwordHash),
 		HashingAlgorithm: rabbithole.HashingAlgorithmSHA512,
 	}, nil
 }

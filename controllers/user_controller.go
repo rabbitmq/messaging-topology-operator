@@ -40,6 +40,18 @@ const (
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=users/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create
 
+// UserCredentials describes the credentials that can be provided in ImportCredentialsSecret for a User.
+// If the secret is not provided, a random username and password will be generated.
+type UserCredentials struct {
+	// Must be present if ImportCredentialsSecret is provided.
+	Username string
+	// If PasswordHash is an empty string, a passwordless user is created.
+	// If PasswordHash is nil, Password is used instead.
+	PasswordHash *string
+	// If Password is empty and PasswordHash is nil, a random password is generated.
+	Password string
+}
+
 type UserReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
@@ -48,21 +60,31 @@ type UserReconciler struct {
 func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.User) (string, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
-	username, password, err := r.generateCredentials(ctx, user)
+	credentials, err := r.generateCredentials(ctx, user)
 	if err != nil {
 		logger.Error(err, "failed to generate credentials")
 		return "", err
 	}
-	// Password wasn't in the provided input secret we need to generate a random one
-	if password == "" {
-		password, err = internal.RandomEncodedString(24)
+	// Neither PasswordHash nor Password wasn't in the provided input secret we need to generate a random password
+	if credentials.PasswordHash == nil && credentials.Password == "" {
+		credentials.Password, err = internal.RandomEncodedString(24)
 		if err != nil {
 			return "", fmt.Errorf("failed to generate random password: %w", err)
 		}
-
 	}
 
-	logger.Info("Credentials generated for User", "user", user.Name, "generatedUsername", username)
+	logger.Info("Credentials generated for User", "user", user.Name, "generatedUsername", credentials.Username)
+
+	credentialSecretData := map[string][]byte{
+		"username": []byte(credentials.Username),
+	}
+	if credentials.PasswordHash != nil {
+		// Create `passwordHash` field only if necessary, to distinguish between an unset hash and an empty one
+		credentialSecretData["passwordHash"] = []byte(*credentials.PasswordHash)
+	} else {
+		// Store password in the credential secret only if it will be used
+		credentialSecretData["password"] = []byte(credentials.Password)
+	}
 
 	credentialSecret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -72,10 +94,7 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.
 		Type: corev1.SecretTypeOpaque,
 		// The format of the generated Secret conforms to the Provisioned Service
 		// type Spec. For more information, see https://k8s-service-bindings.github.io/spec/#provisioned-service.
-		Data: map[string][]byte{
-			"username": []byte(username),
-			"password": []byte(password),
-		},
+		Data: credentialSecretData,
 	}
 
 	var operationResult controllerutil.OperationResult
@@ -102,10 +121,10 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.
 	}
 
 	logger.Info("Successfully declared credentials secret", "secret", credentialSecret.Name, "namespace", credentialSecret.Namespace)
-	return username, nil
+	return credentials.Username, nil
 }
 
-func (r *UserReconciler) generateCredentials(ctx context.Context, user *topology.User) (string, string, error) {
+func (r *UserReconciler) generateCredentials(ctx context.Context, user *topology.User) (UserCredentials, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
 	var err error
@@ -117,37 +136,48 @@ func (r *UserReconciler) generateCredentials(ctx context.Context, user *topology
 		return r.importCredentials(ctx, user.Spec.ImportCredentialsSecret.Name, user.Namespace)
 	}
 
-	username, err := internal.RandomEncodedString(24)
+	credentials := UserCredentials{}
+
+	credentials.Username, err = internal.RandomEncodedString(24)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to generate random username: %w", err)
+		return credentials, fmt.Errorf("failed to generate random username: %w", err)
 	}
-	password, err := internal.RandomEncodedString(24)
+	credentials.Password, err = internal.RandomEncodedString(24)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to generate random password: %w", err)
+		return credentials, fmt.Errorf("failed to generate random password: %w", err)
 	}
-	return username, password, nil
+	return credentials, nil
 }
 
-func (r *UserReconciler) importCredentials(ctx context.Context, secretName, secretNamespace string) (string, string, error) {
+func (r *UserReconciler) importCredentials(ctx context.Context, secretName, secretNamespace string) (UserCredentials, error) {
 	logger := ctrl.LoggerFrom(ctx)
 	logger.Info("Importing user credentials from provided Secret", "secretName", secretName, "secretNamespace", secretNamespace)
 
+	var credentials UserCredentials
 	var credentialsSecret corev1.Secret
+
 	err := r.Client.Get(ctx, types.NamespacedName{Name: secretName, Namespace: secretNamespace}, &credentialsSecret)
 	if err != nil {
-		return "", "", fmt.Errorf("could not find password secret %s in namespace %s; Err: %w", secretName, secretNamespace, err)
+		return credentials, fmt.Errorf("could not find password secret %s in namespace %s; Err: %w", secretName, secretNamespace, err)
 	}
+
 	username, ok := credentialsSecret.Data["username"]
 	if !ok {
-		return "", "", fmt.Errorf("could not find username key in credentials secret: %s", credentialsSecret.Name)
+		return credentials, fmt.Errorf("could not find username key in credentials secret: %s", credentialsSecret.Name)
 	}
-	password, ok := credentialsSecret.Data["password"]
-	if !ok {
-		return string(username), "", nil
+	credentials.Username = string(username)
+
+	password := credentialsSecret.Data["password"]
+	credentials.Password = string(password)
+
+	passwordHash, ok := credentialsSecret.Data["passwordHash"]
+	if ok {
+		credentials.PasswordHash = new(string)
+		*credentials.PasswordHash = string(passwordHash)
 	}
 
 	logger.Info("Retrieved credentials from Secret", "secretName", secretName, "retrievedUsername", string(username))
-	return string(username), string(password), nil
+	return credentials, nil
 }
 
 func (r *UserReconciler) setUserStatus(ctx context.Context, user *topology.User, username string) error {
