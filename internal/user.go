@@ -17,6 +17,18 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+// UserCredentials describes the credentials that can be provided in ImportCredentialsSecret for a User.
+// If the secret is not provided, a random username and password will be generated.
+type UserCredentials struct {
+	// Must be present if ImportCredentialsSecret is provided.
+	Username string
+	// If PasswordHash is an empty string, a passwordless user is created.
+	// If PasswordHash is nil, Password is used instead.
+	PasswordHash *string
+	// If Password is empty and PasswordHash is nil, a random password is generated.
+	Password string
+}
+
 func GenerateUserSettings(credentials *corev1.Secret, tags []topology.UserTag) (rabbithole.UserSettings, error) {
 	username, ok := credentials.Data["username"]
 	if !ok {

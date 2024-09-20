@@ -40,18 +40,6 @@ const (
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=users/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create
 
-// UserCredentials describes the credentials that can be provided in ImportCredentialsSecret for a User.
-// If the secret is not provided, a random username and password will be generated.
-type UserCredentials struct {
-	// Must be present if ImportCredentialsSecret is provided.
-	Username string
-	// If PasswordHash is an empty string, a passwordless user is created.
-	// If PasswordHash is nil, Password is used instead.
-	PasswordHash *string
-	// If Password is empty and PasswordHash is nil, a random password is generated.
-	Password string
-}
-
 type UserReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
@@ -124,7 +112,7 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.
 	return credentials.Username, nil
 }
 
-func (r *UserReconciler) generateCredentials(ctx context.Context, user *topology.User) (UserCredentials, error) {
+func (r *UserReconciler) generateCredentials(ctx context.Context, user *topology.User) (internal.UserCredentials, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
 	var err error
@@ -136,7 +124,7 @@ func (r *UserReconciler) generateCredentials(ctx context.Context, user *topology
 		return r.importCredentials(ctx, user.Spec.ImportCredentialsSecret.Name, user.Namespace)
 	}
 
-	credentials := UserCredentials{}
+	credentials := internal.UserCredentials{}
 
 	credentials.Username, err = internal.RandomEncodedString(24)
 	if err != nil {
@@ -149,11 +137,11 @@ func (r *UserReconciler) generateCredentials(ctx context.Context, user *topology
 	return credentials, nil
 }
 
-func (r *UserReconciler) importCredentials(ctx context.Context, secretName, secretNamespace string) (UserCredentials, error) {
+func (r *UserReconciler) importCredentials(ctx context.Context, secretName, secretNamespace string) (internal.UserCredentials, error) {
 	logger := ctrl.LoggerFrom(ctx)
 	logger.Info("Importing user credentials from provided Secret", "secretName", secretName, "secretNamespace", secretNamespace)
 
-	var credentials UserCredentials
+	var credentials internal.UserCredentials
 	var credentialsSecret corev1.Secret
 
 	err := r.Client.Get(ctx, types.NamespacedName{Name: secretName, Namespace: secretNamespace}, &credentialsSecret)
