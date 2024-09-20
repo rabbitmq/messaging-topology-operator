@@ -162,7 +162,7 @@ func (r *UserReconciler) importCredentials(ctx context.Context, secretName, secr
 	}
 
 	username, ok := credentialsSecret.Data["username"]
-	if !ok {
+	if !ok || len(username) == 0 {
 		return credentials, fmt.Errorf("could not find username key in credentials secret: %s", credentialsSecret.Name)
 	}
 	credentials.Username = string(username)
