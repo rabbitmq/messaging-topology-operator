@@ -227,53 +227,6 @@ jobs:
         tags: ${{ steps.single_arch_meta_arm64.outputs.tags }}
         labels: ${{ steps.single_arch_meta_arm64.outputs.labels }}
 
-  upload_gcs:
-    # TODO: nuke this after refactoring carvel CI
-    runs-on: ubuntu-latest
-    name: Upload manifests to GCS
-    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-    needs:
-      - build_operator
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    env:
-      image_version: ${{ needs.build_operator.outputs.image_tag }}
-    steps:
-    - name: Rename manifest for GCS
-      run: mv releases/messaging-topology-operator-with-certmanager.yaml messaging-topology-operator-with-certmanager-${{ env.image_version }}.yaml
-
-    - id: auth
-      uses: google-github-actions/auth@v2
-      with:
-        # using workload identity provider to authenticate with GCP
-        # workload identity provider configurations can be viewed in GCP console and gcloud cli
-        # doc: https://cloud.google.com/blog/products/identity-security/enabling-keyless-authentication-from-github-actions
-        workload_identity_provider: ${{ secrets.GCP_IDENTITY_PROVIDER }}
-        service_account: ${{ secrets.GCP_SA }}
-
-    - name: Upload manifests to GCS
-      uses: 'google-github-actions/upload-cloud-storage@v2'
-      with:
-        path: messaging-topology-operator-with-certmanager-${{ env.image_version }}.yaml
-        destination: operator-manifests-dev
-        process_gcloudignore: false
-
-    - name: Update carvel-packaging-dev pipeline trigger
-      uses: google-github-actions/upload-cloud-storage@v2
-      with:
-        path: latest-topology-operator-dev-manifest.txt
-        destination: operator-manifests-dev
-        process_gcloudignore: false
-
-    - name: Notify Google Chat
-      if: failure()
-      uses: SimonScholz/google-chat-action@main
-      with:
-          webhookUrl: '${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}'
-          jobStatus: ${{ job.status }}
-          title: Messaging Topology Operator - Build and Push operator
-
   system_tests:
     name: Local system tests (stable k8s)
     runs-on: ubuntu-latest
@@ -341,7 +294,6 @@ jobs:
         make system-tests
 
     - name: Notify Google Chat
-      # TODO: remove before PR
       if: failure()
       uses: SimonScholz/google-chat-action@main
       with:
