@@ -27,12 +27,15 @@ var _ = Describe("GenerateUserSettings", func() {
 		userTags = []topology.UserTag{"administrator", "monitoring"}
 	})
 
-	It("generates the expected rabbithole.UserSettings", func() {
+	It("uses the password to generate the expected rabbithole.UserSettings", func() {
 		settings, err := internal.GenerateUserSettings(&credentialSecret, userTags)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(settings.Name).To(Equal("my-rabbit-user"))
 		Expect(settings.Tags).To(ConsistOf("administrator", "monitoring"))
 		Expect(settings.HashingAlgorithm.String()).To(Equal(rabbithole.HashingAlgorithmSHA512.String()))
+
+		// Password should not be sent, even if provided
+		Expect(settings.Password).To(BeEmpty())
 
 		// The first 4 bytes of the PasswordHash will be the salt used in the hashing algorithm.
 		// See https://www.rabbitmq.com/passwords.html#computing-password-hash.
@@ -44,5 +47,20 @@ var _ = Describe("GenerateUserSettings", func() {
 		salt := passwordHashBytes[0:4]
 		saltedHash := sha512.Sum512([]byte(string(salt) + "a-secure-password"))
 		Expect(base64.StdEncoding.EncodeToString([]byte(string(salt) + string(saltedHash[:])))).To(Equal(settings.PasswordHash))
+	})
+
+	It("uses the passwordHash to generate the expected rabbithole.UserSettings", func() {
+		hash, _ := rabbithole.SaltedPasswordHashSHA256("a-different-password")
+		credentialSecret.Data["passwordHash"] = []byte(hash)
+
+		settings, err := internal.GenerateUserSettings(&credentialSecret, userTags)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(settings.Name).To(Equal("my-rabbit-user"))
+		Expect(settings.Tags).To(ConsistOf("administrator", "monitoring"))
+		Expect(settings.HashingAlgorithm.String()).To(Equal(rabbithole.HashingAlgorithmSHA512.String()))
+		Expect(settings.PasswordHash).To(Equal(hash))
+
+		// Password should not be sent, even if provided
+		Expect(settings.Password).To(BeEmpty())
 	})
 })
