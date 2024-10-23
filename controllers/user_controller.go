@@ -98,6 +98,7 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.
 			for i := range credentialSecret.ObjectMeta.OwnerReferences {
 				credentialSecret.ObjectMeta.OwnerReferences[i].BlockOwnerDeletion = ptr.To(false)
 			}
+			credentialSecret.Data = credentialSecretData
 			return nil
 		})
 		return apiError
@@ -190,7 +191,7 @@ func (r *UserReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.
 	user := obj.(*topology.User)
 	if user.Status.Credentials == nil || user.Status.Username == "" {
 		var username string
-		if user.Status.Credentials != nil && user.Status.Username == "" {
+		if user.Status.Credentials != nil && user.Status.Username == "" || user.Spec.AutoUpdateCredentialsSecret {
 			// Only run once for migration to set user.Status.Username on existing resources
 			credentials, err := r.getUserCredentials(ctx, user)
 			if err != nil {
@@ -198,7 +199,7 @@ func (r *UserReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.
 			}
 			username = string(credentials.Data["username"])
 		} else {
-			logger.Info("User does not yet have a Credentials Secret; generating", "user", user.Name)
+			logger.Info("User does not yet have a Credentials Secret or AutoUpdateCredentialsSecret is enabled; generating Credentials Secret", "user", user.Name)
 			var err error
 			if username, err = r.declareCredentials(ctx, user); err != nil {
 				return err

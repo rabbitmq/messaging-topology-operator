@@ -41,6 +41,11 @@ spec:
           spec:
             description: Spec configures the desired state of the User object.
             properties:
+              autoUpdateCredentialsSecret:
+                description: |-
+                  Feature flag to always regenerate the `-user-credentials` Secret from the ImportCredentialsSecret.
+                  Defaults to false if omitted.
+                type: boolean
               importCredentialsSecret:
                 description: |-
                   Defines a Secret containing the credentials for the User. If this field is omitted, random a username and
