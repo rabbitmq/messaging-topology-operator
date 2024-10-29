@@ -72,7 +72,8 @@ var (
 		arg3 *x509.CertPool
 	}
 	fakeRecorder              *record.FakeRecorder
-	statusEventsUpdateTimeout = 20 * time.Second
+	statusEventsUpdateTimeout      = 20 * time.Second
+	skipNameValidation        bool = true
 )
 
 const (
@@ -100,7 +101,7 @@ var _ = BeforeSuite(func() {
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "config", "crd", "bases"),
-			filepath.Join(build.Default.GOPATH, "pkg", "mod", "github.com", "rabbitmq", "cluster-operator", "v2@v2.9.0", "config", "crd", "bases"),
+			filepath.Join(build.Default.GOPATH, "pkg", "mod", "github.com", "rabbitmq", "cluster-operator", "v2@v2.11.0", "config", "crd", "bases"),
 		},
 		ErrorIfCRDPathMissing: true,
 		Config: &rest.Config{
