@@ -1,14 +1,4 @@
-# For most projects, this workflow file will not need changing; you simply need
-# to commit it to your repository.
-#
-# You may wish to alter this file to override the set of languages analyzed,
-# or to provide custom queries or build logic.
-#
-# ******** NOTE ********
-# We have attempted to detect the languages in your repository. Please check
-# the `language` matrix defined below to confirm you have the correct set of
-# supported CodeQL languages.
-#
+
 name: "CodeQL"
 
 on:
@@ -23,15 +13,17 @@ on:
 jobs:
   analyze:
     name: Analyze
+    # Dependabot only has read permissions on push i.e. after merging a PR, and that causes failures because it needs
+    # 'write' permissions to upload the scan report to GitHub. This is a workaround to stop runs after merging a
+    # Dependabot PR, and always run when it comes from a pull request.
+    if: ${{ github.actor != 'dependabot[bot]' || github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'go' ]
-        # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python' ]
-        # Learn more:
         # https://docs.github.com/en/free-pro-team@latest/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning#changing-the-languages-that-are-analyzed
+        language: [ 'go' ]
 
     steps:
     - name: Checkout repository
