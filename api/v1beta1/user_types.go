@@ -37,6 +37,10 @@ type UserSpec struct {
 	//
 	// Note that this import only occurs at creation time, and is ignored once a password has been set on a User.
 	ImportCredentialsSecret *corev1.LocalObjectReference `json:"importCredentialsSecret,omitempty"`
+	// Feature flag to always regenerate the `-user-credentials` Secret from the ImportCredentialsSecret.
+	// Defaults to false if omitted.
+	// +kubebuilder:validation:Optional
+	AutoUpdateCredentialsSecret bool `json:"autoUpdateCredentialsSecret,omitempty"`
 }
 
 // UserStatus defines the observed state of User.
