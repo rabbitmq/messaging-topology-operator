@@ -189,9 +189,9 @@ func (r *UserReconciler) setUserStatus(ctx context.Context, user *topology.User,
 func (r *UserReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
 	user := obj.(*topology.User)
-	if user.Status.Credentials == nil || user.Status.Username == "" {
+	if user.Status.Credentials == nil || user.Status.Username == "" || user.Spec.AutoUpdateCredentialsSecret {
 		var username string
-		if user.Status.Credentials != nil && user.Status.Username == "" || user.Spec.AutoUpdateCredentialsSecret {
+		if user.Status.Credentials != nil && user.Status.Username == "" {
 			// Only run once for migration to set user.Status.Username on existing resources
 			credentials, err := r.getUserCredentials(ctx, user)
 			if err != nil {
