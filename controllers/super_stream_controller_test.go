@@ -11,6 +11,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
@@ -48,6 +49,9 @@ var _ = Describe("super-stream-controller", func() {
 					DefaultNamespaces: map[string]cache.Config{superStreamNamespace: {}},
 				},
 				Logger: GinkgoLogr,
+				Controller: config.Controller{
+					SkipNameValidation: &skipNameValidation,
+				},
 			})
 			Expect(err).ToNot(HaveOccurred())
 

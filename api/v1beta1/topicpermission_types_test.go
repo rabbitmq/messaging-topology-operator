@@ -59,8 +59,12 @@ var _ = Describe("TopicPermission", func() {
 				UserReference: &corev1.LocalObjectReference{
 					Name: "a-created-user",
 				},
-				Vhost:       "/test",
-				Permissions: TopicPermissionConfig{},
+				Vhost: "/test",
+				Permissions: TopicPermissionConfig{
+					Exchange: "some",
+					Read:     "^?",
+					Write:    ".*",
+				},
 				RabbitmqClusterReference: RabbitmqClusterReference{
 					Name: "some-cluster",
 				},

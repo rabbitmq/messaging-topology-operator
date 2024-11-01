@@ -234,7 +234,7 @@ BindingSpec defines the desired state of Binding
 | *`destination`* __string__ | Cannot be updated
 | *`destinationType`* __string__ | Cannot be updated
 | *`routingKey`* __string__ | Cannot be updated
-| *`arguments`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | Cannot be updated
+| *`arguments`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#rawextension-runtime-pkg[$$RawExtension$$]__ | Cannot be updated
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the binding will be created in.
 Required property.
 |===
@@ -380,7 +380,7 @@ ExchangeSpec defines the desired state of Exchange
 | *`type`* __string__ | Cannot be updated
 | *`durable`* __boolean__ | Cannot be updated
 | *`autoDelete`* __boolean__ | Cannot be updated
-| *`arguments`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | 
+| *`arguments`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#rawextension-runtime-pkg[$$RawExtension$$]__ | 
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the exchange will be created in.
 Required property.
 |===
@@ -596,7 +596,7 @@ Required property.
 Default to 'queues'.
 | *`priority`* __integer__ | Default to '0'.
 In the event that more than one operator policy can match a given queue, the operator policy with the greatest priority applies.
-| *`definition`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | OperatorPolicy definition. Required property.
+| *`definition`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#rawextension-runtime-pkg[$$RawExtension$$]__ | OperatorPolicy definition. Required property.
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the operator policy will be created in.
 Required property.
 |===
@@ -801,7 +801,7 @@ Required property.
 Default to 'all'.
 | *`priority`* __integer__ | Default to '0'.
 In the event that more than one policy can match a given exchange or queue, the policy with the greatest priority applies.
-| *`definition`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | Policy definition. Required property.
+| *`definition`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#rawextension-runtime-pkg[$$RawExtension$$]__ | Policy definition. Required property.
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the policy will be created in.
 Required property.
 |===
@@ -904,7 +904,7 @@ QueueSpec defines the desired state of Queue
 | *`autoDelete`* __boolean__ | when set to true, queues that have had at least one consumer before are deleted after the last consumer unsubscribes.
 | *`deleteIfEmpty`* __boolean__ | when set to true, queues are deleted only if empty.
 | *`deleteIfUnused`* __boolean__ | when set to true, queues are delete only if they have no consumer.
-| *`arguments`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | Queue arguments in the format of KEY: VALUE. e.g. x-delivery-limit: 10000.
+| *`arguments`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#rawextension-runtime-pkg[$$RawExtension$$]__ | Queue arguments in the format of KEY: VALUE. e.g. x-delivery-limit: 10000.
 Configuring queues through arguments is not recommended because they cannot be updated once set; we recommend configuring queues through policies instead.
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the queue will be created in.
 Required property.
@@ -1180,16 +1180,16 @@ Required property.
 | *`destQueue`* __string__ | amqp091 configuration
 | *`destExchange`* __string__ | amqp091 configuration
 | *`destExchangeKey`* __string__ | amqp091 configuration
-| *`destPublishProperties`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | amqp091 configuration
+| *`destPublishProperties`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#rawextension-runtime-pkg[$$RawExtension$$]__ | amqp091 configuration
 | *`destAddress`* __string__ | amqp10 configuration; required if destProtocol is amqp10
-| *`destApplicationProperties`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | amqp10 configuration
-| *`destProperties`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | amqp10 configuration
-| *`destMessageAnnotations`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | amqp10 configuration
+| *`destApplicationProperties`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#rawextension-runtime-pkg[$$RawExtension$$]__ | amqp10 configuration
+| *`destProperties`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#rawextension-runtime-pkg[$$RawExtension$$]__ | amqp10 configuration
+| *`destMessageAnnotations`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#rawextension-runtime-pkg[$$RawExtension$$]__ | amqp10 configuration
 | *`srcProtocol`* __string__ | 
 | *`srcQueue`* __string__ | amqp091 configuration
 | *`srcExchange`* __string__ | amqp091 configuration
 | *`srcExchangeKey`* __string__ | amqp091 configuration
-| *`srcConsumerArgs`* __xref:{anchor_prefix}-k8s-io-apimachinery-pkg-runtime-rawextension[$$RawExtension$$]__ | amqp091 configuration
+| *`srcConsumerArgs`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#rawextension-runtime-pkg[$$RawExtension$$]__ | amqp091 configuration
 | *`srcAddress`* __string__ | amqp10 configuration; required if srcProtocol is amqp10
 |===
 
@@ -1414,12 +1414,10 @@ exist for the User object to be created.
 | *`importCredentialsSecret`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Defines a Secret containing the credentials for the User. If this field is omitted, random a username and
 password will be generated. The Secret must have the following keys in its Data field:
 
-
  * `username` – Must be present or the import will fail.
  * `passwordHash` – The SHA-512 hash of the password. If the hash is an empty string, a passwordless user
    will be created. For more information, see https://www.rabbitmq.com/docs/passwords.
  * `password` – Plain-text password. Will be used only if the `passwordHash` key is missing.
-
 
 Note that this import only occurs at creation time, and is ignored once a password has been set on a User.
 |===

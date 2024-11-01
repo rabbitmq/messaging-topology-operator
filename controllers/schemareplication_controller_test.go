@@ -13,6 +13,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"time"
 
@@ -47,6 +48,9 @@ var _ = Describe("schema-replication-controller", func() {
 			},
 			Cache:  cache.Options{DefaultNamespaces: map[string]cache.Config{schemaReplicationNamespace: {}}},
 			Logger: GinkgoLogr,
+			Controller: config.Controller{
+				SkipNameValidation: &skipNameValidation,
+			},
 		})
 		Expect(err).ToNot(HaveOccurred())
 
