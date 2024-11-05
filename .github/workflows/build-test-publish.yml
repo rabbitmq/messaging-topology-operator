@@ -138,8 +138,6 @@ jobs:
         kustomize edit set image \
         rabbitmqoperator/messaging-topology-operator-dev=rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}"
         popd
-        make generate-manifests
-        echo -n "messaging-topology-operator-with-certmanager-${{ steps.meta.outputs.version }}.yaml" > "latest-topology-operator-dev-manifest.txt"
 
     - name: Upload operator manifests
       uses: actions/upload-artifact@v4
