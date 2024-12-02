@@ -161,7 +161,7 @@ func main() {
 	}
 
 	var maxConcurrentReconciles int
-	if maxConcurrentReconcilesEnvValue := getIntEnv("MAX_CONCURRENT_RECONCILES"); maxConcurrentReconcilesEnvValue > 0 {
+	if maxConcurrentReconcilesEnvValue := getIntEnv(controllers.MaxConcurrentReconciles); maxConcurrentReconcilesEnvValue > 0 {
 		maxConcurrentReconciles = maxConcurrentReconcilesEnvValue
 		log.Info(fmt.Sprintf("maxConcurrentReconciles set to %d", maxConcurrentReconciles))
 	}
