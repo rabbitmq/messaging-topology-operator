@@ -34,4 +34,5 @@ const (
 	EnableWebhooksEnvVar           = "ENABLE_WEBHOOKS"
 	ControllerSyncPeriodEnvVar     = "SYNC_PERIOD"
 	ConnectUsingPlainHTTPEnvVar    = "CONNECT_USING_PLAIN_HTTP"
+	MaxConcurrentReconciles        = "MAX_CONCURRENT_RECONCILES"
 )

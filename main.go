@@ -160,6 +160,12 @@ func main() {
 		managerOpts.RetryPeriod = &retryPeriod
 	}
 
+	var maxConcurrentReconciles int
+	if maxConcurrentReconcilesEnvValue := getIntEnv(controllers.MaxConcurrentReconciles); maxConcurrentReconcilesEnvValue > 0 {
+		maxConcurrentReconciles = maxConcurrentReconcilesEnvValue
+		log.Info(fmt.Sprintf("maxConcurrentReconciles set to %d", maxConcurrentReconciles))
+	}
+
 	if enableDebugPprof, ok := os.LookupEnv("ENABLE_DEBUG_PPROF"); ok {
 		pprofEnabled, err := strconv.ParseBool(enableDebugPprof)
 		if err == nil && pprofEnabled {
@@ -187,6 +193,7 @@ func main() {
 		KubernetesClusterDomain: clusterDomain,
 		ReconcileFunc:           &controllers.QueueReconciler{},
 		ConnectUsingPlainHTTP:   usePlainHTTP,
+		MaxConcurrentReconciles: maxConcurrentReconciles,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.QueueControllerName)
 		os.Exit(1)
@@ -202,6 +209,7 @@ func main() {
 		KubernetesClusterDomain: clusterDomain,
 		ReconcileFunc:           &controllers.ExchangeReconciler{},
 		ConnectUsingPlainHTTP:   usePlainHTTP,
+		MaxConcurrentReconciles: maxConcurrentReconciles,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.ExchangeControllerName)
 		os.Exit(1)
@@ -217,6 +225,7 @@ func main() {
 		KubernetesClusterDomain: clusterDomain,
 		ReconcileFunc:           &controllers.BindingReconciler{},
 		ConnectUsingPlainHTTP:   usePlainHTTP,
+		MaxConcurrentReconciles: maxConcurrentReconciles,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.BindingControllerName)
 		os.Exit(1)
@@ -233,6 +242,7 @@ func main() {
 		WatchTypes:              []client.Object{},
 		ReconcileFunc:           &controllers.UserReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()},
 		ConnectUsingPlainHTTP:   usePlainHTTP,
+		MaxConcurrentReconciles: maxConcurrentReconciles,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.UserControllerName)
 		os.Exit(1)
@@ -248,6 +258,7 @@ func main() {
 		KubernetesClusterDomain: clusterDomain,
 		ReconcileFunc:           &controllers.VhostReconciler{Client: mgr.GetClient()},
 		ConnectUsingPlainHTTP:   usePlainHTTP,
+		MaxConcurrentReconciles: maxConcurrentReconciles,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.VhostControllerName)
 		os.Exit(1)
@@ -263,6 +274,7 @@ func main() {
 		KubernetesClusterDomain: clusterDomain,
 		ReconcileFunc:           &controllers.PolicyReconciler{},
 		ConnectUsingPlainHTTP:   usePlainHTTP,
+		MaxConcurrentReconciles: maxConcurrentReconciles,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.PolicyControllerName)
 		os.Exit(1)
@@ -278,6 +290,7 @@ func main() {
 		KubernetesClusterDomain: clusterDomain,
 		ReconcileFunc:           &controllers.OperatorPolicyReconciler{},
 		ConnectUsingPlainHTTP:   usePlainHTTP,
+		MaxConcurrentReconciles: maxConcurrentReconciles,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.OperatorPolicyControllerName)
 		os.Exit(1)
@@ -293,6 +306,7 @@ func main() {
 		KubernetesClusterDomain: clusterDomain,
 		ReconcileFunc:           &controllers.PermissionReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()},
 		ConnectUsingPlainHTTP:   usePlainHTTP,
+		MaxConcurrentReconciles: maxConcurrentReconciles,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.PermissionControllerName)
 		os.Exit(1)
@@ -308,6 +322,7 @@ func main() {
 		KubernetesClusterDomain: clusterDomain,
 		ReconcileFunc:           &controllers.SchemaReplicationReconciler{Client: mgr.GetClient()},
 		ConnectUsingPlainHTTP:   usePlainHTTP,
+		MaxConcurrentReconciles: maxConcurrentReconciles,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.SchemaReplicationControllerName)
 		os.Exit(1)
@@ -323,6 +338,7 @@ func main() {
 		KubernetesClusterDomain: clusterDomain,
 		ReconcileFunc:           &controllers.FederationReconciler{Client: mgr.GetClient()},
 		ConnectUsingPlainHTTP:   usePlainHTTP,
+		MaxConcurrentReconciles: maxConcurrentReconciles,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.FederationControllerName)
 		os.Exit(1)
@@ -338,6 +354,7 @@ func main() {
 		KubernetesClusterDomain: clusterDomain,
 		ReconcileFunc:           &controllers.ShovelReconciler{Client: mgr.GetClient()},
 		ConnectUsingPlainHTTP:   usePlainHTTP,
+		MaxConcurrentReconciles: maxConcurrentReconciles,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.ShovelControllerName)
 		os.Exit(1)
@@ -353,17 +370,19 @@ func main() {
 		KubernetesClusterDomain: clusterDomain,
 		ReconcileFunc:           &controllers.TopicPermissionReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()},
 		ConnectUsingPlainHTTP:   usePlainHTTP,
+		MaxConcurrentReconciles: maxConcurrentReconciles,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.TopicPermissionControllerName)
 		os.Exit(1)
 	}
 
 	if err = (&controllers.SuperStreamReconciler{
-		Client:                mgr.GetClient(),
-		Log:                   ctrl.Log.WithName(controllers.SuperStreamControllerName),
-		Scheme:                mgr.GetScheme(),
-		Recorder:              mgr.GetEventRecorderFor(controllers.SuperStreamControllerName),
-		RabbitmqClientFactory: rabbitmqclient.RabbitholeClientFactory,
+		Client:                  mgr.GetClient(),
+		Log:                     ctrl.Log.WithName(controllers.SuperStreamControllerName),
+		Scheme:                  mgr.GetScheme(),
+		Recorder:                mgr.GetEventRecorderFor(controllers.SuperStreamControllerName),
+		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
+		MaxConcurrentReconciles: maxConcurrentReconciles,
 	}).SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create controller", "controller", controllers.SuperStreamControllerName)
 		os.Exit(1)
@@ -455,4 +474,16 @@ func getBoolEnv(envName string) bool {
 		}
 	}
 	return boolVar
+}
+
+func getIntEnv(envName string) int {
+	var intVar int
+	if initStr, ok := os.LookupEnv(envName); ok {
+		var err error
+		if intVar, err = strconv.Atoi(initStr); err != nil {
+			log.Error(err, fmt.Sprintf("unable to parse provided '%s'", envName))
+			os.Exit(1)
+		}
+	}
+	return intVar
 }
