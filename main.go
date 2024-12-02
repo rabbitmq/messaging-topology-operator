@@ -456,3 +456,15 @@ func getBoolEnv(envName string) bool {
 	}
 	return boolVar
 }
+
+func getIntEnv(envName string) int {
+	var intVar int
+	if initStr, ok := os.LookupEnv(envName); ok {
+		var err error
+		if intVar, err = strconv.Atoi(initStr); err != nil {
+			log.Error(err, fmt.Sprintf("unable to parse provided '%s'", envName))
+			os.Exit(1)
+		}
+	}
+	return intVar
+}
