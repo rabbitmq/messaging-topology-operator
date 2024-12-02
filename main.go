@@ -163,7 +163,7 @@ func main() {
 	var maxConcurrentReconciles int
 	if maxConcurrentReconcilesEnvValue := getIntEnv("MAX_CONCURRENT_RECONCILES"); maxConcurrentReconcilesEnvValue > 0 {
 		maxConcurrentReconciles = maxConcurrentReconcilesEnvValue
-		log.Info("maxConcurrentReconciles set to", maxConcurrentReconciles)
+		log.Info(fmt.Sprintf("maxConcurrentReconciles set to %d", maxConcurrentReconciles))
 	}
 
 	if enableDebugPprof, ok := os.LookupEnv("ENABLE_DEBUG_PPROF"); ok {
