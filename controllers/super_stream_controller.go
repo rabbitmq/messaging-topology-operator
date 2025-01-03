@@ -12,6 +12,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"strconv"
 
 	"github.com/go-logr/logr"
@@ -39,6 +40,7 @@ type SuperStreamReconciler struct {
 	Recorder                record.EventRecorder
 	RabbitmqClientFactory   rabbitmqclient.Factory
 	KubernetesClusterDomain string
+	MaxConcurrentReconciles int
 }
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=exchanges,verbs=get;create;update;patch;delete
@@ -205,5 +207,6 @@ func (r *SuperStreamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&topology.Exchange{}).
 		Owns(&topology.Binding{}).
 		Owns(&topology.Queue{}).
+		WithOptions(controller.Options{MaxConcurrentReconciles: r.MaxConcurrentReconciles}).
 		Complete(r)
 }
