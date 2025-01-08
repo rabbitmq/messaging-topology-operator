@@ -17,6 +17,7 @@ import (
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"strings"
 	"time"
@@ -34,6 +35,7 @@ type TopologyReconciler struct {
 	RabbitmqClientFactory   rabbitmqclient.Factory
 	KubernetesClusterDomain string
 	ConnectUsingPlainHTTP   bool
+	MaxConcurrentReconciles int
 }
 
 func (r *TopologyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -222,9 +224,12 @@ func (r *TopologyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	if len(r.WatchTypes) == 0 {
 		return ctrl.NewControllerManagedBy(mgr).
 			For(r.Type).
+			WithOptions(controller.Options{MaxConcurrentReconciles: r.MaxConcurrentReconciles}).
 			Complete(r)
 	}
-	builder := ctrl.NewControllerManagedBy(mgr).For(r.Type)
+	builder := ctrl.NewControllerManagedBy(mgr).
+		For(r.Type).
+		WithOptions(controller.Options{MaxConcurrentReconciles: r.MaxConcurrentReconciles})
 	for _, t := range r.WatchTypes {
 		if err := mgr.GetFieldIndexer().IndexField(context.Background(), t, ownerKey, addResourceToIndex); err != nil {
 			return err
