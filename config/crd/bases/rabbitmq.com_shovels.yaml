@@ -90,6 +90,9 @@ spec:
               destQueue:
                 description: amqp091 configuration
                 type: string
+              destQueueArgs:
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
               name:
                 description: Required property; cannot be updated
                 type: string
@@ -155,6 +158,9 @@ spec:
               srcQueue:
                 description: amqp091 configuration
                 type: string
+              srcQueueArgs:
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
               uriSecret:
                 description: |-
                   Secret contains the AMQP URI(s) to configure Shovel destination and source.

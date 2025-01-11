@@ -1176,6 +1176,8 @@ Required property.
 | *`srcPrefetchCount`* __integer__ | 
 | *`destAddForwardHeaders`* __boolean__ | 
 | *`destAddTimestampHeader`* __boolean__ | 
+| *`srcQueueArgs`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#rawextension-runtime-pkg[$$RawExtension$$]__ | 
+| *`destQueueArgs`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#rawextension-runtime-pkg[$$RawExtension$$]__ | 
 | *`destProtocol`* __string__ | 
 | *`destQueue`* __string__ | amqp091 configuration
 | *`destExchange`* __string__ | amqp091 configuration
