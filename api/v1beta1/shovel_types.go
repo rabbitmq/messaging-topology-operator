@@ -36,6 +36,12 @@ type ShovelSpec struct {
 	SourcePrefetchCount           int    `json:"srcPrefetchCount,omitempty"`
 	DestinationAddForwardHeaders  bool   `json:"destAddForwardHeaders,omitempty"`
 	DestinationAddTimestampHeader bool   `json:"destAddTimestampHeader,omitempty"`
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:pruning:PreserveUnknownFields
+	SourceQueueArgs *runtime.RawExtension `json:"srcQueueArgs,omitempty"`
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:pruning:PreserveUnknownFields
+	DestinationQueueArgs *runtime.RawExtension `json:"destQueueArgs,omitempty"`
 
 	// +kubebuilder:validation:Enum=amqp091;amqp10
 	DestinationProtocol string `json:"destProtocol,omitempty"`

@@ -72,16 +72,22 @@ var _ = Describe("Shovel spec", func() {
 				DestinationProtocol:              "amqp091",
 				DestinationPublishProperties:     &runtime.RawExtension{Raw: []byte(`{"delivery_mode": 1}`)},
 				DestinationQueue:                 "a-queue",
-				PrefetchCount:                    10,
-				ReconnectDelay:                   10,
-				SourceAddress:                    "myQueue",
-				SourceDeleteAfter:                "never",
-				SourceExchange:                   "an-exchange",
-				SourceExchangeKey:                "a-key",
-				SourcePrefetchCount:              10,
-				SourceProtocol:                   "amqp091",
-				SourceQueue:                      "a-queue",
-				SourceConsumerArgs:               &runtime.RawExtension{Raw: []byte(`{"arg": "arg-value"}`)},
+				DestinationQueueArgs: &runtime.RawExtension{
+					Raw: []byte(`{"x-queue-type": "quorum"}`),
+				},
+				PrefetchCount:       10,
+				ReconnectDelay:      10,
+				SourceAddress:       "myQueue",
+				SourceDeleteAfter:   "never",
+				SourceExchange:      "an-exchange",
+				SourceExchangeKey:   "a-key",
+				SourcePrefetchCount: 10,
+				SourceProtocol:      "amqp091",
+				SourceQueue:         "a-queue",
+				SourceQueueArgs: &runtime.RawExtension{
+					Raw: []byte(`{"x-queue-type": "quorum"}`),
+				},
+				SourceConsumerArgs: &runtime.RawExtension{Raw: []byte(`{"arg": "arg-value"}`)},
 			}}
 		Expect(k8sClient.Create(ctx, &shovel)).To(Succeed())
 		fetched := &Shovel{}
@@ -107,6 +113,7 @@ var _ = Describe("Shovel spec", func() {
 		Expect(fetched.Spec.DestinationProperties.Raw).To(Equal([]byte(`{"key":"a-property"}`)))
 		Expect(fetched.Spec.DestinationMessageAnnotations.Raw).To(Equal([]byte(`{"key":"a-property"}`)))
 		Expect(fetched.Spec.DestinationQueue).To(Equal("a-queue"))
+		Expect(fetched.Spec.DestinationQueueArgs.Raw).To(Equal([]byte(`{"x-queue-type":"quorum"}`)))
 		Expect(fetched.Spec.PrefetchCount).To(Equal(10))
 		Expect(fetched.Spec.ReconnectDelay).To(Equal(10))
 
@@ -117,6 +124,7 @@ var _ = Describe("Shovel spec", func() {
 		Expect(fetched.Spec.SourcePrefetchCount).To(Equal(10))
 		Expect(fetched.Spec.SourceProtocol).To(Equal("amqp091"))
 		Expect(fetched.Spec.SourceQueue).To(Equal("a-queue"))
+		Expect(fetched.Spec.SourceQueueArgs.Raw).To(Equal([]byte(`{"x-queue-type":"quorum"}`)))
 		Expect(fetched.Spec.SourceConsumerArgs.Raw).To(Equal([]byte(`{"arg":"arg-value"}`)))
 	})
 

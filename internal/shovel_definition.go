@@ -39,6 +39,18 @@ func GenerateShovelDefinition(s *topology.Shovel, srcUri, destUri string) (*rabb
 			return nil, fmt.Errorf("failed to unmarshall destination message annotations: %v", err)
 		}
 	}
+	srcQueueArgs := make(map[string]interface{})
+	if s.Spec.SourceQueueArgs != nil {
+		if err := json.Unmarshal(s.Spec.SourceQueueArgs.Raw, &srcQueueArgs); err != nil {
+			return nil, fmt.Errorf("failed to unmarshall source queue args: %v", err)
+		}
+	}
+	destQueueArgs := make(map[string]interface{})
+	if s.Spec.DestinationQueueArgs != nil {
+		if err := json.Unmarshal(s.Spec.DestinationQueueArgs.Raw, &destQueueArgs); err != nil {
+			return nil, fmt.Errorf("failed to unmarshall destination queue args: %v", err)
+		}
+	}
 
 	return &rabbithole.ShovelDefinition{
 		SourceURI:                        strings.Split(srcUri, ","),
@@ -56,6 +68,7 @@ func GenerateShovelDefinition(s *topology.Shovel, srcUri, destUri string) (*rabb
 		DestinationProtocol:              s.Spec.DestinationProtocol,
 		DestinationPublishProperties:     destPubProperties,
 		DestinationQueue:                 s.Spec.DestinationQueue,
+		DestinationQueueArgs:             destQueueArgs,
 		DestinationMessageAnnotations:    destMsgAnnotations,
 		PrefetchCount:                    s.Spec.PrefetchCount,
 		ReconnectDelay:                   s.Spec.ReconnectDelay,
@@ -66,6 +79,7 @@ func GenerateShovelDefinition(s *topology.Shovel, srcUri, destUri string) (*rabb
 		SourcePrefetchCount:              s.Spec.SourcePrefetchCount,
 		SourceProtocol:                   s.Spec.SourceProtocol,
 		SourceQueue:                      s.Spec.SourceQueue,
+		SourceQueueArgs:                  srcQueueArgs,
 		SourceConsumerArgs:               srcConArgs,
 	}, nil
 }
