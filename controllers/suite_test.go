@@ -98,11 +98,18 @@ var _ = BeforeSuite(func() {
 	ctx, cancel = context.WithCancel(ctrl.SetupSignalHandler())
 
 	By("bootstrapping test environment")
+	operatorCrdsGlob := fmt.Sprintf(
+		"%s/%s",
+		build.Default.GOPATH,
+		"pkg/mod/github.com/rabbitmq/cluster-operator/*/config/crd/bases",
+	)
+	operatorCrds, err := filepath.Glob(operatorCrdsGlob)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(operatorCrds).ToNot(BeEmpty())
+
+	operatorCrds = append(operatorCrds, filepath.Join("..", "config", "crd", "bases"))
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths: []string{
-			filepath.Join("..", "config", "crd", "bases"),
-			filepath.Join(build.Default.GOPATH, "pkg", "mod", "github.com", "rabbitmq", "cluster-operator", "v2@v2.11.0", "config", "crd", "bases"),
-		},
+		CRDDirectoryPaths:     operatorCrds,
 		ErrorIfCRDPathMissing: true,
 		Config: &rest.Config{
 			Host: fmt.Sprintf("localhost:818%d", GinkgoParallelProcess()),
