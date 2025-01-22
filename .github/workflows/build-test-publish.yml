@@ -138,6 +138,7 @@ jobs:
         kustomize edit set image \
         rabbitmqoperator/messaging-topology-operator-dev=rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}"
         popd
+        make generate-manifests
 
     - name: Upload operator manifests
       uses: actions/upload-artifact@v4
@@ -146,6 +147,14 @@ jobs:
         path: releases/messaging-topology-operator*.yaml
         retention-days: 2
         if-no-files-found: error
+
+    - name: Notify Google Chat
+      if: failure()
+      uses: SimonScholz/google-chat-action@main
+      with:
+        webhookUrl: '${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}'
+        jobStatus: ${{ job.status }}
+        title: Messaging Topology Operator - Build Operator
 
   system_tests:
     name: Local system tests (stable k8s)
@@ -186,7 +195,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: operator_image
-        path: /tmp
+        path: ${{ runner.temp }}/operator-image
 
     - name: Install Carvel
       uses: carvel-dev/setup-action@v2.0.1
@@ -204,7 +213,7 @@ jobs:
 
     - name: Install operator from build
       run: |
-        kind load image-archive /tmp/operator.tar --name system-testing
+        kind load image-archive ${{ runner.temp }}/operator-image/operator.tar --name system-testing
         ytt -f tmp/messaging-topology-operator-with-certmanager.yaml -f config/ytt_overlays/never_pull.yml | kubectl apply -f-
         kubectl --namespace=rabbitmq-system wait --for=condition=Available deployment/messaging-topology-operator
 
