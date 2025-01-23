@@ -26,17 +26,9 @@ list:    ## List Makefile targets
 # Allows flexibility to use other build kits, like nerdctl
 BUILD_KIT ?= docker
 
-define get_mod_code_generator
-echo "Only go get & mod k8s.io/code-generator, but do not install it"
-echo "⚠️  Keep it at the same version as captured in go.mod, otherwise we may end up with version inconsistencies"
-awk '/k8s.io\/code-generator/ { system("go get -d " $$1 "@" $$2) }' go.mod
-endef
 install-tools: ## Install tooling required to configure and build this repo
-	go mod download
 	@echo "Install all tools..."
-	@awk -F '"' '/_/ && !/k8s.io\/code-generator/ { system("go install " $$2) }' tools/tools.go
-	@$(get_mod_code_generator)
-	go install golang.org/x/vuln/cmd/govulncheck@latest
+	cd internal/tools; grep _ tools.go | awk -F '"' '{print $$2}' | xargs -t go install -mod=mod
 
 LOCAL_TESTBIN = $(CURDIR)/testbin
 ENVTEST_K8S_VERSION = 1.26.1
