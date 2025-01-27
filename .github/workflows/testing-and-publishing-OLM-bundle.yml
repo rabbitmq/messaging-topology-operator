@@ -218,7 +218,10 @@ jobs:
             git branch rabbitmq-messaging-topology-operator-$BUNDLE_VERSION
             git checkout rabbitmq-messaging-topology-operator-$BUNDLE_VERSION
 
+            REPLACE_VERSION=$(ls -1v ./operators/rabbitmq-messaging-topology-operator/ | tail -2 | head -1)
+
             cp -v -fR ./olm-package-ci/"$BUNDLE_VERSION" ./operators/rabbitmq-messaging-topology-operator/
+            sed -i -e "s/replaces: null/replaces: rabbitmq-messaging-topology-operator.v$REPLACE_VERSION/g" ./operators/rabbitmq-messaging-topology-operator/$BUNDLE_VERSION/manifests/rabbitmq.clusterserviceversion.yaml
             sed -i -e "s/latest/$BUNDLE_VERSION/g" ./operators/rabbitmq-messaging-topology-operator/"$BUNDLE_VERSION"/manifests/rabbitmq.clusterserviceversion.yaml
             git add operators/rabbitmq-messaging-topology-operator
             git commit -s -m "RabbitMQ Topology Operator release $BUNDLE_VERSION"
