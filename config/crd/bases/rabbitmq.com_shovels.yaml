@@ -53,6 +53,14 @@ spec:
                 type: boolean
               deleteAfter:
                 type: string
+              deletionPolicy:
+                default: delete
+                description: DeletionPolicy defines the behavior of shovel on server
+                  when the Shovel resource in k8s is deleted.
+                enum:
+                - delete
+                - retain
+                type: string
               destAddForwardHeaders:
                 type: boolean
               destAddTimestampHeader:

@@ -16,8 +16,9 @@ var _ = Describe("Vhost", func() {
 
 	It("creates a vhost", func() {
 		expectedSpec := VhostSpec{
-			Name:    "test-vhost",
-			Tracing: false,
+			Name:           "test-vhost",
+			Tracing:        false,
+			DeletionPolicy: "delete",
 			RabbitmqClusterReference: RabbitmqClusterReference{
 				Name: "some-cluster",
 			},
@@ -133,5 +134,30 @@ var _ = Describe("Vhost", func() {
 			Expect(k8sClient.Create(ctx, qTypeVhost)).To(HaveOccurred())
 			Expect(k8sClient.Create(ctx, qTypeVhost)).To(MatchError(`Vhost.rabbitmq.com "some-vhost" is invalid: spec.defaultQueueType: Unsupported value: "aqueuetype": supported values: "quorum", "classic", "stream"`))
 		})
+	})
+
+	It("creates a vhost with non-default DeletionPolicy", func() {
+		vhost := Vhost{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "vhost-with-retain-policy",
+				Namespace: namespace,
+			},
+			Spec: VhostSpec{
+				Name:           "vhost-with-retain-policy",
+				DeletionPolicy: "retain",
+				RabbitmqClusterReference: RabbitmqClusterReference{
+					Name: "random-cluster",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, &vhost)).To(Succeed())
+		fetched := &Vhost{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{
+			Name:      vhost.Name,
+			Namespace: vhost.Namespace,
+		}, fetched)).To(Succeed())
+
+		Expect(fetched.Spec.DeletionPolicy).To(Equal("retain"))
+		Expect(fetched.Spec.Name).To(Equal("vhost-with-retain-policy"))
 	})
 })

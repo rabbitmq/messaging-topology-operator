@@ -115,5 +115,12 @@ var _ = Describe("federation webhook", func() {
 			_, err := newFederation.ValidateUpdate(rootCtx, &federation, newFederation)
 			Expect(err).To(Succeed())
 		})
+
+		It("allows updates on federation.spec.deletionPolicy", func() {
+			newFederation := federation.DeepCopy()
+			newFederation.Spec.DeletionPolicy = "retain"
+			_, err := newFederation.ValidateUpdate(rootCtx, &federation, newFederation)
+			Expect(err).ToNot(HaveOccurred())
+		})
 	})
 })

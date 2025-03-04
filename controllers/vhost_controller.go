@@ -30,6 +30,9 @@ func (r *VhostReconciler) DeclareFunc(_ context.Context, client rabbitmqclient.C
 func (r *VhostReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
 	vhost := obj.(*topology.Vhost)
+	if shouldSkipDeletion(ctx, vhost.Spec.DeletionPolicy, vhost.Spec.Name) {
+		return nil
+	}
 	err := validateResponseForDeletion(client.DeleteVhost(vhost.Spec.Name))
 	if errors.Is(err, NotFound) {
 		logger.Info("cannot find vhost in rabbitmq server; already deleted", "vhost", vhost.Spec.Name)

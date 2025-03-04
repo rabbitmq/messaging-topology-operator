@@ -179,5 +179,12 @@ var _ = Describe("shovel webhook", func() {
 			_, err := newShovel.ValidateUpdate(rootCtx, &shovel, newShovel)
 			Expect(err).ToNot(HaveOccurred())
 		})
+
+		It("allows updates on shovel.spec.deletionPolicy", func() {
+			newShovel := shovel.DeepCopy()
+			newShovel.Spec.DeletionPolicy = "retain"
+			_, err := newShovel.ValidateUpdate(rootCtx, &shovel, newShovel)
+			Expect(err).ToNot(HaveOccurred())
+		})
 	})
 })

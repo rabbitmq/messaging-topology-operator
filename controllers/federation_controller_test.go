@@ -225,4 +225,30 @@ var _ = Describe("federation-controller", func() {
 			})
 		})
 	})
+
+	When("the Federation has DeletionPolicy set to retain", func() {
+		BeforeEach(func() {
+			federationName = "federation-with-retain-policy"
+			federation.Spec.DeletionPolicy = "retain"
+			fakeRabbitMQClient.DeleteFederationUpstreamReturns(&http.Response{
+				Status:     "200 OK",
+				StatusCode: http.StatusOK,
+			}, nil)
+		})
+
+		It("deletes the k8s resource but preserves the federation in RabbitMQ server", func() {
+			Expect(k8sClient.Create(ctx, &federation)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, &federation)).To(Succeed())
+
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: federation.Name, Namespace: federation.Namespace}, &federation)
+				return apierrors.IsNotFound(err)
+			}).
+				Within(statusEventsUpdateTimeout).
+				WithPolling(time.Second).
+				Should(BeTrue())
+
+			Expect(fakeRabbitMQClient.DeleteFederationUpstreamCallCount()).To(Equal(0))
+		})
+	})
 })
