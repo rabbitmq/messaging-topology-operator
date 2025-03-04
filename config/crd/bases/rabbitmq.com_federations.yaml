@@ -49,6 +49,14 @@ spec:
                 - on-publish
                 - no-ack
                 type: string
+              deletionPolicy:
+                default: delete
+                description: DeletionPolicy defines the behavior of federation on
+                  server when the Federation resource in k8s is deleted.
+                enum:
+                - delete
+                - retain
+                type: string
               exchange:
                 type: string
               expires:

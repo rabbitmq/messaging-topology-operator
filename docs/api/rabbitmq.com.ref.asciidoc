@@ -494,6 +494,8 @@ Required property.
 | *`trustUserId`* __boolean__ | 
 | *`exchange`* __string__ | 
 | *`queue`* __string__ | 
+| *`deletionPolicy`* __string__ | DeletionPolicy defines the behavior of federation on server when the Federation resource in k8s is deleted.
+Can be set to 'delete' or 'retain'. Default is 'delete'. Supported in RabbitMQ xxx or above.
 |===
 
 
@@ -908,6 +910,8 @@ QueueSpec defines the desired state of Queue
 Configuring queues through arguments is not recommended because they cannot be updated once set; we recommend configuring queues through policies instead.
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the queue will be created in.
 Required property.
+| *`deletionPolicy`* __string__ | DeletionPolicy defines the behavior of queue on server when the Queue resource in k8s is deleted.
+Can be set to 'delete' or 'retain'. Default is 'delete'. Supported in RabbitMQ xxx or above.
 |===
 
 
@@ -1193,6 +1197,8 @@ Required property.
 | *`srcExchangeKey`* __string__ | amqp091 configuration
 | *`srcConsumerArgs`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#rawextension-runtime-pkg[$$RawExtension$$]__ | amqp091 configuration
 | *`srcAddress`* __string__ | amqp10 configuration; required if srcProtocol is amqp10
+| *`deletionPolicy`* __string__ | DeletionPolicy defines the behavior of shovel on server when the Shovel resource in k8s is deleted.
+Can be set to 'delete' or 'retain'. Default is 'delete'. Supported in RabbitMQ xxx or above.
 |===
 
 
@@ -1577,6 +1583,8 @@ VhostSpec defines the desired state of Vhost
 Supported in RabbitMQ 3.11.12 or above.
 | *`rabbitmqClusterReference`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference[$$RabbitmqClusterReference$$]__ | Reference to the RabbitmqCluster that the vhost will be created in.
 Required property.
+| *`deletionPolicy`* __string__ | DeletionPolicy defines the behavior of vhost on server when the Vhost resource in k8s is deleted.
+Can be set to 'delete' or 'retain'. Default is 'delete'. Supported in RabbitMQ xxx or above.
 |===
 
 

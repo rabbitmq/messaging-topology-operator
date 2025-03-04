@@ -62,6 +62,9 @@ func (r *ShovelReconciler) getUris(ctx context.Context, shovel *topology.Shovel)
 func (r *ShovelReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
 	shovel := obj.(*topology.Shovel)
+	if shouldSkipDeletion(ctx, shovel.Spec.DeletionPolicy, shovel.Spec.Name) {
+		return nil
+	}
 	err := validateResponseForDeletion(client.DeleteShovel(shovel.Spec.Vhost, shovel.Spec.Name))
 	if errors.Is(err, NotFound) {
 		logger.Info("cannot find shovel parameter; no need to delete it", "shovel", shovel.Spec.Name)

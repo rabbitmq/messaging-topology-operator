@@ -128,3 +128,13 @@ func handleRMQReferenceParseError(ctx context.Context, client client.Client, eve
 	logger.Error(err, failedParseClusterRef)
 	return reconcile.Result{}, err
 }
+
+// shouldSkipDeletion checks the DeletionPolicy and logs if deletion should be skipped.
+func shouldSkipDeletion(ctx context.Context, deletionPolicy string, resourceName string) bool {
+	logger := ctrl.LoggerFrom(ctx)
+	if deletionPolicy == "retain" {
+		logger.Info("Skipping deletion in RabbitMQ server due to deletionPolicy=retain", "resource", resourceName)
+		return true
+	}
+	return false
+}

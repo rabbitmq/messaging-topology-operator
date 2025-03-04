@@ -9,5 +9,6 @@ spec:
   durable: true # mandatory for stream queues
   arguments:
     x-max-length-bytes: 1000000000 ## setting the retention policy
+  deletionPolicy: retain # delete or retain; default to delete; require RabbitMQ version xxx or above
   rabbitmqClusterReference:
       name: test # rabbitmqCluster must exist in the same namespace as this resource

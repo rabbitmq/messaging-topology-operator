@@ -45,6 +45,11 @@ type QueueSpec struct {
 	// Required property.
 	// +kubebuilder:validation:Required
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
+	// DeletionPolicy defines the behavior of queue on server when the Queue resource in k8s is deleted.
+	// Can be set to 'delete' or 'retain'. Default is 'delete'. Supported in RabbitMQ xxx or above.
+	// +kubebuilder:validation:Enum=delete;retain
+	// +kubebuilder:default:=delete
+	DeletionPolicy string `json:"deletionPolicy,omitempty"`
 }
 
 // QueueStatus defines the observed state of Queue

@@ -58,6 +58,14 @@ spec:
                 description: when set to true, queues are delete only if they have
                   no consumer.
                 type: boolean
+              deletionPolicy:
+                default: delete
+                description: DeletionPolicy defines the behavior of queue on server
+                  when the Queue resource in k8s is deleted.
+                enum:
+                - delete
+                - retain
+                type: string
               durable:
                 description: When set to false queues does not survive server restart.
                 type: boolean

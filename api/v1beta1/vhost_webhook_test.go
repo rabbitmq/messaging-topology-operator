@@ -102,5 +102,12 @@ var _ = Describe("vhost webhook", func() {
 			_, err := newVhost.ValidateUpdate(rootCtx, &vhost, newVhost)
 			Expect(err).ToNot(HaveOccurred())
 		})
+
+		It("allows updates on vhost.spec.deletionPolicy", func() {
+			newVhost := vhost.DeepCopy()
+			newVhost.Spec.DeletionPolicy = "retain"
+			_, err := newVhost.ValidateUpdate(rootCtx, &vhost, newVhost)
+			Expect(err).ToNot(HaveOccurred())
+		})
 	})
 })

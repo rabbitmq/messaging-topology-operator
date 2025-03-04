@@ -14,5 +14,6 @@ spec:
   destQueue: "destination-queue"
   destPublishProperties: # optional map of properties to overwrite when shovelling messages
     delivery_mode: 2
+  deletionPolicy: retain # delete or retain; default to delete; require RabbitMQ version xxx or above
   rabbitmqClusterReference:
     name: example-rabbit

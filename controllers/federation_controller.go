@@ -54,6 +54,9 @@ func (r *FederationReconciler) getUri(ctx context.Context, federation *topology.
 func (r *FederationReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
 	federation := obj.(*topology.Federation)
+	if shouldSkipDeletion(ctx, federation.Spec.DeletionPolicy, federation.Spec.Name) {
+		return nil
+	}
 	err := validateResponseForDeletion(client.DeleteFederationUpstream(federation.Spec.Vhost, federation.Spec.Name))
 	if errors.Is(err, NotFound) {
 		logger.Info("cannot find federation upstream parameter; no need to delete it", "federation", federation.Spec.Name)
