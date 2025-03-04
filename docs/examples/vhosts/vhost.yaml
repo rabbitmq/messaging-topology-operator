@@ -5,6 +5,7 @@ metadata:
 spec:
   name: test-vhost # vhost name; required and cannot be updated
   defaultQueueType: quorum # default queue type for this vhost; require RabbitMQ version 3.11.12 or above
+  deletionPolicy: retain # delete or retain; default to delete;
   rabbitmqClusterReference:
     name: test # rabbitmqCluster must exist in the same namespace as this resource
 # status:

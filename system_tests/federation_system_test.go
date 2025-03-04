@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 var _ = Describe("federation", func() {
@@ -123,5 +124,44 @@ var _ = Describe("federation", func() {
 			return err
 		}, 10).Should(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("Object Not Found"))
+	})
+
+	It("with DeletionPolicy=retain, deletes k8s resource but keeps the federation in RabbitMQ", func() {
+		federationWithRetain := &topology.Federation{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "retain-policy-test",
+				Namespace: namespace,
+			},
+			Spec: topology.FederationSpec{
+				Name:           "retain-policy-test",
+				UriSecret:      &corev1.LocalObjectReference{Name: federationUriSecret.Name},
+				DeletionPolicy: "retain",
+				RabbitmqClusterReference: topology.RabbitmqClusterReference{
+					Name: rmq.Name,
+				},
+			},
+		}
+
+		By("creating a federation with retain policy")
+		Expect(k8sClient.Create(ctx, federationWithRetain, &client.CreateOptions{})).To(Succeed())
+
+		By("waiting for the federation to be created in RabbitMQ")
+		Eventually(func() error {
+			_, err := rabbitClient.GetFederationUpstream("/", federationWithRetain.Spec.Name)
+			return err
+		}, 30, 2).ShouldNot(HaveOccurred())
+
+		By("deleting the k8s resource")
+		Expect(k8sClient.Delete(ctx, federationWithRetain)).To(Succeed())
+
+		By("verifying k8s resource is gone")
+		Eventually(func() bool {
+			err := k8sClient.Get(ctx, types.NamespacedName{Name: federationWithRetain.Name, Namespace: federationWithRetain.Namespace}, &topology.Federation{})
+			return apierrors.IsNotFound(err)
+		}, 30, 2).Should(BeTrue())
+
+		By("verifying federation still exists in RabbitMQ")
+		_, err := rabbitClient.GetFederationUpstream("/", federationWithRetain.Spec.Name)
+		Expect(err).NotTo(HaveOccurred())
 	})
 })

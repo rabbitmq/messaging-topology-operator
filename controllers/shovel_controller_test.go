@@ -286,4 +286,29 @@ var _ = Describe("shovel-controller", func() {
 			})
 		})
 	})
+	When("the Shovel has DeletionPolicy set to retain", func() {
+		BeforeEach(func() {
+			shovelName = "shovel-with-retain-policy"
+			shovel.Spec.DeletionPolicy = "retain"
+			fakeRabbitMQClient.DeleteShovelReturns(&http.Response{
+				Status:     "200 OK",
+				StatusCode: http.StatusOK,
+			}, nil)
+		})
+
+		It("deletes the k8s resource but preserves the shovel in RabbitMQ server", func() {
+			Expect(k8sClient.Create(ctx, &shovel)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, &shovel)).To(Succeed())
+
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: shovel.Name, Namespace: shovel.Namespace}, &shovel)
+				return apierrors.IsNotFound(err)
+			}).
+				Within(statusEventsUpdateTimeout).
+				WithPolling(time.Second).
+				Should(BeTrue())
+
+			Expect(fakeRabbitMQClient.DeleteShovelCallCount()).To(Equal(0))
+		})
+	})
 })

@@ -25,6 +25,7 @@ var _ = Describe("Federation spec", func() {
 			UriSecret: &corev1.LocalObjectReference{
 				Name: "a-secret",
 			},
+			DeletionPolicy: "delete",
 		}
 
 		federation := Federation{
@@ -121,5 +122,33 @@ var _ = Describe("Federation spec", func() {
 			Expect(k8sClient.Create(ctx, &federation)).To(HaveOccurred())
 			Expect(k8sClient.Create(ctx, &federation)).To(MatchError(`Federation.rabbitmq.com "invalid-federation" is invalid: spec.ackMode: Unsupported value: "non-existing-ackmode": supported values: "on-confirm", "on-publish", "no-ack"`))
 		})
+	})
+
+	It("creates a federation with non-default DeletionPolicy", func() {
+		federation := Federation{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "federation-with-retain-policy",
+				Namespace: namespace,
+			},
+			Spec: FederationSpec{
+				Name:           "federation-with-retain-policy",
+				DeletionPolicy: "retain",
+				UriSecret: &corev1.LocalObjectReference{
+					Name: "a-secret",
+				},
+				RabbitmqClusterReference: RabbitmqClusterReference{
+					Name: "some-cluster",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, &federation)).To(Succeed())
+		fetched := &Federation{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{
+			Name:      federation.Name,
+			Namespace: federation.Namespace,
+		}, fetched)).To(Succeed())
+
+		Expect(fetched.Spec.DeletionPolicy).To(Equal("retain"))
+		Expect(fetched.Spec.Name).To(Equal("federation-with-retain-policy"))
 	})
 })

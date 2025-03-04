@@ -53,6 +53,15 @@ spec:
                 type: boolean
               deleteAfter:
                 type: string
+              deletionPolicy:
+                default: delete
+                description: |-
+                  DeletionPolicy defines the behavior of shovel in the RabbitMQ cluster when the corresponding custom resource is deleted.
+                  Can be set to 'delete' or 'retain'. Default is 'delete'.
+                enum:
+                - delete
+                - retain
+                type: string
               destAddForwardHeaders:
                 type: boolean
               destAddTimestampHeader:

@@ -47,6 +47,9 @@ func (r *QueueReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.
 	logger.Info("Deleting queues from ReconcilerFunc DeleteObj")
 
 	queue := obj.(*topology.Queue)
+	if shouldSkipDeletion(ctx, queue.Spec.DeletionPolicy, queue.Spec.Name) {
+		return nil
+	}
 	queueDeleteOptions, err := internal.GenerateQueueDeleteOptions(queue)
 	if err != nil {
 		return fmt.Errorf("failed to generate queue delete options: %w", err)
