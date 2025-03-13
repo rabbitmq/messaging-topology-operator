@@ -14,7 +14,7 @@ require (
 	github.com/onsi/gomega v1.36.2
 	github.com/rabbitmq/cluster-operator/v2 v2.12.1
 	gopkg.in/ini.v1 v1.67.0
-	k8s.io/api v0.32.2
+	k8s.io/api v0.32.3
 	k8s.io/apimachinery v0.32.3
 	k8s.io/client-go v0.32.2
 	k8s.io/klog/v2 v2.130.1
