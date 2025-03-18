@@ -261,6 +261,14 @@ var _ = Describe("permission-controller", func() {
 				Status:     "204 No Content",
 				StatusCode: http.StatusNoContent,
 			}, nil)
+			fakeRabbitMQClient.PutUserLimitsReturns(&http.Response{
+				Status:     "201 Created",
+				StatusCode: http.StatusCreated,
+			}, nil)
+			fakeRabbitMQClient.DeleteUserLimitsReturns(&http.Response{
+				Status:     "204 No Content",
+				StatusCode: http.StatusNoContent,
+			}, nil)
 		})
 
 		Context("creation", func() {
