@@ -92,4 +92,46 @@ var _ = Describe("user spec", func() {
 		})
 	})
 
+	When("creating a user with limits", func() {
+		var user User
+		var username string
+		var userLimits UserLimits
+
+		JustBeforeEach(func() {
+			user = User{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      username,
+					Namespace: namespace,
+				},
+				Spec: UserSpec{
+					RabbitmqClusterReference: RabbitmqClusterReference{
+						Name: "some-cluster",
+					},
+					UserLimits: userLimits,
+				},
+			}
+		})
+
+		When("creating a user with valid limits", func() {
+			BeforeEach(func() {
+				username = "limits-user"
+				userLimits = UserLimits{
+					Connections: 5,
+					Channels:    10,
+				}
+			})
+			It("successfully creates the user", func() {
+				Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+				fetchedUser := &User{}
+				Expect(k8sClient.Get(ctx, types.NamespacedName{
+					Name:      user.Name,
+					Namespace: user.Namespace,
+				}, fetchedUser)).To(Succeed())
+				Expect(fetchedUser.Spec.RabbitmqClusterReference).To(Equal(RabbitmqClusterReference{
+					Name: "some-cluster",
+				}))
+				Expect(fetchedUser.Spec.UserLimits).To(Equal(UserLimits{Connections: 5, Channels: 10}))
+			})
+		})
+	})
 })

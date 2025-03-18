@@ -221,7 +221,14 @@ func (r *UserReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.
 	}
 	logger.Info("Generated user settings", "user", user.Name, "settings", userSettings)
 
-	return validateResponse(client.PutUser(userSettings.Name, userSettings))
+	err = validateResponse(client.PutUser(userSettings.Name, userSettings))
+	if err != nil {
+		return err
+	}
+
+	userLimits := internal.GenerateUserLimits(user.Spec.UserLimits)
+	logger.Info("Generated user limits", "user", user.Name, "limits", userLimits)
+	return validateResponse(client.PutUserLimits(user.Name, userLimits))
 }
 
 func (r *UserReconciler) getUserCredentials(ctx context.Context, user *topology.User) (*corev1.Secret, error) {
@@ -242,6 +249,14 @@ func (r *UserReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.C
 	err := validateResponseForDeletion(client.DeleteUser(user.Status.Username))
 	if errors.Is(err, NotFound) {
 		logger.Info("cannot find user in rabbitmq server; already deleted", "user", user.Name)
+	} else if err != nil {
+		return err
+	}
+
+	userLimits := []string{"max-connections", "max-channels"}
+	err = validateResponseForDeletion(client.DeleteUserLimits(user.Status.Username, userLimits))
+	if errors.Is(err, NotFound) {
+		logger.Info("cannot find user limits in rabbitmq server; already deleted", "user", user.Name, "limits", userLimits)
 	} else if err != nil {
 		return err
 	}
