@@ -58,6 +58,15 @@ spec:
                 description: when set to true, queues are delete only if they have
                   no consumer.
                 type: boolean
+              deletionPolicy:
+                default: delete
+                description: |-
+                  DeletionPolicy defines the behavior of queue in the RabbitMQ cluster when the corresponding custom resource is deleted.
+                  Can be set to 'delete' or 'retain'. Default is 'delete'.
+                enum:
+                - delete
+                - retain
+                type: string
               durable:
                 description: When set to false queues does not survive server restart.
                 type: boolean

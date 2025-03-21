@@ -49,6 +49,15 @@ spec:
                 - on-publish
                 - no-ack
                 type: string
+              deletionPolicy:
+                default: delete
+                description: |-
+                  DeletionPolicy defines the behavior of federation in the RabbitMQ cluster when the corresponding custom resource is deleted.
+                  Can be set to 'delete' or 'retain'. Default is 'delete'.
+                enum:
+                - delete
+                - retain
+                type: string
               exchange:
                 type: string
               expires:

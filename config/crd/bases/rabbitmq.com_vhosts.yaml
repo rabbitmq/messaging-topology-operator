@@ -50,6 +50,15 @@ spec:
                 - classic
                 - stream
                 type: string
+              deletionPolicy:
+                default: delete
+                description: |-
+                  DeletionPolicy defines the behavior of vhost in the RabbitMQ cluster when the corresponding custom resource is deleted.
+                  Can be set to 'delete' or 'retain'. Default is 'delete'.
+                enum:
+                - delete
+                - retain
+                type: string
               name:
                 description: Name of the vhost; see https://www.rabbitmq.com/vhosts.html.
                 type: string

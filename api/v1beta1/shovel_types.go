@@ -84,6 +84,11 @@ type ShovelSpec struct {
 	SourceConsumerArgs *runtime.RawExtension `json:"srcConsumerArgs,omitempty"`
 	// amqp10 configuration; required if srcProtocol is amqp10
 	SourceAddress string `json:"srcAddress,omitempty"`
+	// DeletionPolicy defines the behavior of shovel in the RabbitMQ cluster when the corresponding custom resource is deleted.
+	// Can be set to 'delete' or 'retain'. Default is 'delete'.
+	// +kubebuilder:validation:Enum=delete;retain
+	// +kubebuilder:default:=delete
+	DeletionPolicy string `json:"deletionPolicy,omitempty"`
 }
 
 // ShovelStatus defines the observed state of Shovel

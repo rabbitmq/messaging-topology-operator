@@ -193,4 +193,36 @@ var _ = Describe("Shovel spec", func() {
 			Expect(k8sClient.Create(ctx, &shovel)).To(MatchError(`Shovel.rabbitmq.com "an-invalid-srcprotocol" is invalid: spec.srcProtocol: Unsupported value: "mqtt": supported values: "amqp091", "amqp10"`))
 		})
 	})
+
+	It("creates a shovel with non-default DeletionPolicy", func() {
+		shovel := Shovel{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "shovel-with-retain-policy",
+				Namespace: namespace,
+			},
+			Spec: ShovelSpec{
+				Name:           "shovel-with-retain-policy",
+				DeletionPolicy: "retain",
+				RabbitmqClusterReference: RabbitmqClusterReference{
+					Name: "some-cluster",
+				},
+				UriSecret: &corev1.LocalObjectReference{
+					Name: "a-secret",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, &shovel)).To(Succeed())
+		fetched := &Shovel{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{
+			Name:      shovel.Name,
+			Namespace: shovel.Namespace,
+		}, fetched)).To(Succeed())
+
+		Expect(fetched.Spec.DeletionPolicy).To(Equal("retain"))
+		Expect(fetched.Spec.Name).To(Equal("shovel-with-retain-policy"))
+		Expect(fetched.Spec.RabbitmqClusterReference).To(Equal(RabbitmqClusterReference{
+			Name: "some-cluster",
+		}))
+		Expect(fetched.Spec.UriSecret.Name).To(Equal("a-secret"))
+	})
 })

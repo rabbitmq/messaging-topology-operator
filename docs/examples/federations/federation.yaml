@@ -9,5 +9,6 @@ spec:
   uriSecret:
     name: federation-uri
   ackMode: "on-confirm"
+  deletionPolicy: retain # delete or retain; default to delete;
   rabbitmqClusterReference:
     name: example-rabbit

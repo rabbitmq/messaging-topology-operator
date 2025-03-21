@@ -222,4 +222,30 @@ var _ = Describe("vhost-controller", func() {
 			})
 		})
 	})
+
+	When("the Vhost has DeletionPolicy set to retain", func() {
+		BeforeEach(func() {
+			vhostName = "vhost-with-retain-policy"
+			vhost.Spec.DeletionPolicy = "retain"
+			fakeRabbitMQClient.DeleteVhostReturns(&http.Response{
+				Status:     "200 OK",
+				StatusCode: http.StatusOK,
+			}, nil)
+		})
+
+		It("deletes the k8s resource but preserves the vhost in RabbitMQ server", func() {
+			Expect(k8sClient.Create(ctx, &vhost)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, &vhost)).To(Succeed())
+
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace}, &vhost)
+				return apierrors.IsNotFound(err)
+			}).
+				Within(statusEventsUpdateTimeout).
+				WithPolling(time.Second).
+				Should(BeTrue())
+
+			Expect(fakeRabbitMQClient.DeleteVhostCallCount()).To(Equal(0))
+		})
+	})
 })

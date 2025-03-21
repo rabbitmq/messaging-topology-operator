@@ -154,5 +154,12 @@ var _ = Describe("queue webhook", func() {
 			_, err = newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
 			Expect(err).To(MatchError(ContainSubstring("queue arguments cannot be updated")))
 		})
+
+		It("allows updates on queue.spec.deletionPolicy", func() {
+			newQueue := queue.DeepCopy()
+			newQueue.Spec.DeletionPolicy = "retain"
+			_, err := newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			Expect(err).ToNot(HaveOccurred())
+		})
 	})
 })
