@@ -33,6 +33,7 @@ var _ = Describe("UserController", func() {
 		managerCtx    context.Context
 		managerCancel context.CancelFunc
 		k8sClient     runtimeClient.Client
+		userLimits    topology.UserLimits
 	)
 
 	BeforeEach(func() {
@@ -91,6 +92,7 @@ var _ = Describe("UserController", func() {
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: "example-rabbit",
 				},
+				UserLimits: userLimits,
 			},
 		}
 	})
@@ -154,6 +156,54 @@ var _ = Describe("UserController", func() {
 					})))
 			})
 		})
+
+		When("the user has limits defined", func() {
+			BeforeEach(func() {
+				userName = "test-user-limits"
+				userLimits = topology.UserLimits{
+					Connections: 5,
+					Channels:    10,
+				}
+				fakeRabbitMQClient.PutUserReturns(&http.Response{
+					Status:     "201 Created",
+					StatusCode: http.StatusCreated,
+				}, nil)
+				fakeRabbitMQClient.PutUserLimitsReturns(&http.Response{
+					Status:     "201 Created",
+					StatusCode: http.StatusCreated,
+				}, nil)
+			})
+
+			It("should create the user limits", func() {
+				Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+				Eventually(func() []topology.Condition {
+					_ = k8sClient.Get(
+						ctx,
+						types.NamespacedName{Name: user.Name, Namespace: user.Namespace},
+						&user,
+					)
+
+					return user.Status.Conditions
+				}).
+					Within(statusEventsUpdateTimeout).
+					WithPolling(time.Second).
+					Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+						"Type":   Equal(topology.ConditionType("Ready")),
+						"Reason": Equal("SuccessfulCreateOrUpdate"),
+						"Status": Equal(corev1.ConditionTrue),
+					})))
+				By("calling PutUserLimits with the correct user limits")
+				Expect(fakeRabbitMQClient.PutUserLimitsCallCount()).To(BeNumerically(">", 0))
+				username, userLimitsValues := fakeRabbitMQClient.PutUserLimitsArgsForCall(0)
+				Expect(username).To(Equal(userName))
+				connectionLimit, ok := userLimitsValues["max-connections"]
+				Expect(ok).To(BeTrue())
+				Expect(connectionLimit).To(Equal(5))
+				channelLimit, ok := userLimitsValues["max-channels"]
+				Expect(ok).To(BeTrue())
+				Expect(channelLimit).To(Equal(10))
+			})
+		})
 	})
 
 	When("deleting a user", func() {
@@ -161,6 +211,14 @@ var _ = Describe("UserController", func() {
 			fakeRabbitMQClient.PutUserReturns(&http.Response{
 				Status:     "201 Created",
 				StatusCode: http.StatusCreated,
+			}, nil)
+			fakeRabbitMQClient.PutUserLimitsReturns(&http.Response{
+				Status:     "201 Created",
+				StatusCode: http.StatusCreated,
+			}, nil)
+			fakeRabbitMQClient.DeleteUserLimitsReturns(&http.Response{
+				Status:     "204 No Content",
+				StatusCode: http.StatusNoContent,
 			}, nil)
 			Expect(k8sClient.Create(ctx, &user)).To(Succeed())
 			Eventually(func() []topology.Condition {
