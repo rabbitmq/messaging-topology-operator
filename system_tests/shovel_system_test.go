@@ -147,44 +147,46 @@ var _ = Describe("Shovel", func() {
 		assertShovelDeleted(shovel)
 	})
 
-	It("with DeletionPolicy=retain, deletes k8s resource but keeps the shovel in RabbitMQ", func() {
-		shovelWithRetain := &topology.Shovel{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "retain-policy-test",
-				Namespace: namespace,
-			},
-			Spec: topology.ShovelSpec{
-				Name:           "retain-policy-test",
-				UriSecret:      &corev1.LocalObjectReference{Name: shovelSecret.Name},
-				DeletionPolicy: "retain",
-				SourceQueue:    "test-queue",
-				RabbitmqClusterReference: topology.RabbitmqClusterReference{
-					Name: rmq.Name,
+	When("deletion policy is retain", func() {
+		It("deletes k8s resource but keeps the shovel in RabbitMQ", func() {
+			shovelWithRetain := &topology.Shovel{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "retain-policy-test",
+					Namespace: namespace,
 				},
-			},
-		}
+				Spec: topology.ShovelSpec{
+					Name:           "retain-policy-test",
+					UriSecret:      &corev1.LocalObjectReference{Name: shovelSecret.Name},
+					DeletionPolicy: "retain",
+					SourceQueue:    "test-queue",
+					RabbitmqClusterReference: topology.RabbitmqClusterReference{
+						Name: rmq.Name,
+					},
+				},
+			}
 
-		By("creating a shovel with retain policy")
-		Expect(k8sClient.Create(ctx, shovelWithRetain, &client.CreateOptions{})).To(Succeed())
+			By("creating a shovel with retain policy")
+			Expect(k8sClient.Create(ctx, shovelWithRetain, &client.CreateOptions{})).To(Succeed())
 
-		By("waiting for the shovel to be created in RabbitMQ")
-		Eventually(func() error {
+			By("waiting for the shovel to be created in RabbitMQ")
+			Eventually(func() error {
+				_, err := rabbitClient.GetShovel("/", shovelWithRetain.Spec.Name)
+				return err
+			}, 30, 2).ShouldNot(HaveOccurred())
+
+			By("deleting the k8s resource")
+			Expect(k8sClient.Delete(ctx, shovelWithRetain)).To(Succeed())
+
+			By("verifying k8s resource is gone")
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: shovelWithRetain.Name, Namespace: shovelWithRetain.Namespace}, &topology.Shovel{})
+				return apierrors.IsNotFound(err)
+			}, 30, 2).Should(BeTrue())
+
+			By("verifying shovel still exists in RabbitMQ")
 			_, err := rabbitClient.GetShovel("/", shovelWithRetain.Spec.Name)
-			return err
-		}, 30, 2).ShouldNot(HaveOccurred())
-
-		By("deleting the k8s resource")
-		Expect(k8sClient.Delete(ctx, shovelWithRetain)).To(Succeed())
-
-		By("verifying k8s resource is gone")
-		Eventually(func() bool {
-			err := k8sClient.Get(ctx, types.NamespacedName{Name: shovelWithRetain.Name, Namespace: shovelWithRetain.Namespace}, &topology.Shovel{})
-			return apierrors.IsNotFound(err)
-		}, 30, 2).Should(BeTrue())
-
-		By("verifying shovel still exists in RabbitMQ")
-		_, err := rabbitClient.GetShovel("/", shovelWithRetain.Spec.Name)
-		Expect(err).NotTo(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
+		})
 	})
 })
 

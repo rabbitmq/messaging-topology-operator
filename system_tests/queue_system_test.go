@@ -103,43 +103,45 @@ var _ = Describe("Queue Controller", func() {
 		Expect(err.Error()).To(ContainSubstring("Object Not Found"))
 	})
 
-	It("with DeletionPolicy=retain, deletes k8s resource but keeps the queue in RabbitMQ", func() {
-		queueWithRetain := &topology.Queue{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "retain-policy-test",
-				Namespace: namespace,
-			},
-			Spec: topology.QueueSpec{
-				Name:           "retain-policy-test",
-				Type:           "classic",
-				Durable:        true,
-				DeletionPolicy: "retain",
-				RabbitmqClusterReference: topology.RabbitmqClusterReference{
-					Name: rmq.Name,
+	When("deletion policy is retain", func() {
+		It("deletes k8s resource but keeps the queue in RabbitMQ", func() {
+			queueWithRetain := &topology.Queue{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "retain-policy-test",
+					Namespace: namespace,
 				},
-			},
-		}
+				Spec: topology.QueueSpec{
+					Name:           "retain-policy-test",
+					Type:           "classic",
+					Durable:        true,
+					DeletionPolicy: "retain",
+					RabbitmqClusterReference: topology.RabbitmqClusterReference{
+						Name: rmq.Name,
+					},
+				},
+			}
 
-		By("creating a queue with retain policy")
-		Expect(k8sClient.Create(ctx, queueWithRetain, &client.CreateOptions{})).To(Succeed())
+			By("creating a queue with retain policy")
+			Expect(k8sClient.Create(ctx, queueWithRetain, &client.CreateOptions{})).To(Succeed())
 
-		By("waiting for the queue to be created in RabbitMQ")
-		Eventually(func() error {
+			By("waiting for the queue to be created in RabbitMQ")
+			Eventually(func() error {
+				_, err := rabbitClient.GetQueue("/", queueWithRetain.Spec.Name)
+				return err
+			}, 30, 2).ShouldNot(HaveOccurred())
+
+			By("deleting the k8s resource")
+			Expect(k8sClient.Delete(ctx, queueWithRetain)).To(Succeed())
+
+			By("verifying k8s resource is gone")
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: queueWithRetain.Name, Namespace: queueWithRetain.Namespace}, &topology.Queue{})
+				return apierrors.IsNotFound(err)
+			}, 30, 2).Should(BeTrue())
+
+			By("verifying queue still exists in RabbitMQ")
 			_, err := rabbitClient.GetQueue("/", queueWithRetain.Spec.Name)
-			return err
-		}, 30, 2).ShouldNot(HaveOccurred())
-
-		By("deleting the k8s resource")
-		Expect(k8sClient.Delete(ctx, queueWithRetain)).To(Succeed())
-
-		By("verifying k8s resource is gone")
-		Eventually(func() bool {
-			err := k8sClient.Get(ctx, types.NamespacedName{Name: queueWithRetain.Name, Namespace: queueWithRetain.Namespace}, &topology.Queue{})
-			return apierrors.IsNotFound(err)
-		}, 30, 2).Should(BeTrue())
-
-		By("verifying queue still exists in RabbitMQ")
-		_, err := rabbitClient.GetQueue("/", queueWithRetain.Spec.Name)
-		Expect(err).NotTo(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
+		})
 	})
 })
