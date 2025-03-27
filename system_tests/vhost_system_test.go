@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 var _ = Describe("vhost", func() {
@@ -97,5 +98,45 @@ var _ = Describe("vhost", func() {
 			return err
 		}, 30).Should(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("Object Not Found"))
+	})
+
+	When("deletion policy is retain", func() {
+		It("deletes k8s resource but keeps the vhost in RabbitMQ", func() {
+			vhostWithRetain := &topology.Vhost{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "retain-policy-test",
+					Namespace: namespace,
+				},
+				Spec: topology.VhostSpec{
+					Name:           "retain-policy-test",
+					DeletionPolicy: "retain",
+					RabbitmqClusterReference: topology.RabbitmqClusterReference{
+						Name: rmq.Name,
+					},
+				},
+			}
+
+			By("creating a vhost with retain policy")
+			Expect(k8sClient.Create(ctx, vhostWithRetain, &client.CreateOptions{})).To(Succeed())
+
+			By("waiting for the vhost to be created in RabbitMQ")
+			Eventually(func() error {
+				_, err := rabbitClient.GetVhost(vhostWithRetain.Spec.Name)
+				return err
+			}, 30, 2).ShouldNot(HaveOccurred())
+
+			By("deleting the k8s resource")
+			Expect(k8sClient.Delete(ctx, vhostWithRetain)).To(Succeed())
+
+			By("verifying k8s resource is gone")
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: vhostWithRetain.Name, Namespace: vhostWithRetain.Namespace}, &topology.Vhost{})
+				return apierrors.IsNotFound(err)
+			}, 30, 2).Should(BeTrue())
+
+			By("verifying vhost still exists in RabbitMQ")
+			_, err := rabbitClient.GetVhost(vhostWithRetain.Spec.Name)
+			Expect(err).NotTo(HaveOccurred())
+		})
 	})
 })

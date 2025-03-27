@@ -221,4 +221,30 @@ var _ = Describe("queue-controller", func() {
 			})
 		})
 	})
+
+	When("the Queue has DeletionPolicy set to retain", func() {
+		BeforeEach(func() {
+			queueName = "queue-with-retain-policy"
+			queue.Spec.DeletionPolicy = "retain"
+			fakeRabbitMQClient.DeleteQueueReturns(&http.Response{
+				Status:     "200 OK",
+				StatusCode: http.StatusOK,
+			}, nil)
+		})
+
+		It("deletes the k8s resource but preserves the queue in RabbitMQ server", func() {
+			Expect(k8sClient.Create(ctx, &queue)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, &queue)).To(Succeed())
+
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: queue.Name, Namespace: queue.Namespace}, &queue)
+				return apierrors.IsNotFound(err)
+			}).
+				Within(statusEventsUpdateTimeout).
+				WithPolling(time.Second).
+				Should(BeTrue())
+
+			Expect(fakeRabbitMQClient.DeleteQueueCallCount()).To(Equal(0))
+		})
+	})
 })

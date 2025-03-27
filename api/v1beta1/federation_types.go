@@ -35,6 +35,11 @@ type FederationSpec struct {
 	TrustUserId    bool   `json:"trustUserId,omitempty"`
 	Exchange       string `json:"exchange,omitempty"`
 	Queue          string `json:"queue,omitempty"`
+	// DeletionPolicy defines the behavior of federation in the RabbitMQ cluster when the corresponding custom resource is deleted.
+	// Can be set to 'delete' or 'retain'. Default is 'delete'.
+	// +kubebuilder:validation:Enum=delete;retain
+	// +kubebuilder:default:=delete
+	DeletionPolicy string `json:"deletionPolicy,omitempty"`
 }
 
 // FederationStatus defines the observed state of Federation

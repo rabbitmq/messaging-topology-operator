@@ -17,10 +17,11 @@ var _ = Describe("Queue spec", func() {
 
 	It("creates a queue with default settings", func() {
 		expectedSpec := QueueSpec{
-			Name:       "test-queue",
-			Vhost:      "/",
-			Durable:    false,
-			AutoDelete: false,
+			Name:           "test-queue",
+			Vhost:          "/",
+			Durable:        false,
+			AutoDelete:     false,
+			DeletionPolicy: "delete",
 			RabbitmqClusterReference: RabbitmqClusterReference{
 				Name: "some-cluster",
 			},
@@ -84,5 +85,30 @@ var _ = Describe("Queue spec", func() {
 				Name: "random-cluster",
 			}))
 		Expect(fetchedQ.Spec.Arguments.Raw).To(Equal([]byte(`{"yoyo":10}`)))
+	})
+
+	It("creates a queue with non-default DeletionPolicy", func() {
+		q := Queue{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "queue-with-retain-policy",
+				Namespace: namespace,
+			},
+			Spec: QueueSpec{
+				Name:           "queue-with-retain-policy",
+				DeletionPolicy: "retain",
+				RabbitmqClusterReference: RabbitmqClusterReference{
+					Name: "random-cluster",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, &q)).To(Succeed())
+		fetchedQ := &Queue{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{
+			Name:      q.Name,
+			Namespace: q.Namespace,
+		}, fetchedQ)).To(Succeed())
+
+		Expect(fetchedQ.Spec.DeletionPolicy).To(Equal("retain"))
+		Expect(fetchedQ.Spec.Name).To(Equal("queue-with-retain-policy"))
 	})
 })
