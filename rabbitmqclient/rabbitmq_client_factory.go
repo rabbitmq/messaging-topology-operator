@@ -22,6 +22,8 @@ import (
 type Client interface {
 	PutUser(string, rabbithole.UserSettings) (*http.Response, error)
 	DeleteUser(string) (*http.Response, error)
+	PutUserLimits(string, rabbithole.UserLimitsValues) (*http.Response, error)
+	DeleteUserLimits(string, rabbithole.UserLimits) (*http.Response, error)
 	DeclareBinding(string, rabbithole.BindingInfo) (*http.Response, error)
 	DeleteBinding(string, rabbithole.BindingInfo) (*http.Response, error)
 	ListQueueBindingsBetween(string, string, string) ([]rabbithole.BindingInfo, error)
