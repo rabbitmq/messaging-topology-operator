@@ -64,14 +64,16 @@ var _ = Describe("Federation spec", func() {
 				UriSecret: &corev1.LocalObjectReference{
 					Name: "a-secret",
 				},
-				Expires:        1000,
-				MessageTTL:     1000,
-				MaxHops:        100,
-				PrefetchCount:  50,
-				ReconnectDelay: 10,
-				TrustUserId:    true,
-				Exchange:       "an-exchange",
-				AckMode:        "no-ack",
+				Expires:             1000,
+				MessageTTL:          1000,
+				MaxHops:             100,
+				PrefetchCount:       50,
+				ReconnectDelay:      10,
+				TrustUserId:         true,
+				Exchange:            "an-exchange",
+				AckMode:             "no-ack",
+				QueueType:           "quorum",
+				ResourceCleanupMode: "never",
 				RabbitmqClusterReference: RabbitmqClusterReference{
 					Name: "some-cluster",
 				},
@@ -99,6 +101,8 @@ var _ = Describe("Federation spec", func() {
 		Expect(fetched.Spec.MaxHops).To(Equal(100))
 		Expect(fetched.Spec.PrefetchCount).To(Equal(50))
 		Expect(fetched.Spec.ReconnectDelay).To(Equal(10))
+		Expect(fetched.Spec.QueueType).To(Equal("quorum"))
+		Expect(fetched.Spec.ResourceCleanupMode).To(Equal("never"))
 	})
 
 	When("creating a federation with an invalid 'AckMode' value", func() {
