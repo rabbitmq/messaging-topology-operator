@@ -43,6 +43,10 @@ var _ = Describe("Policy", func() {
 		}
 	})
 
+	AfterEach(func() {
+		_ = k8sClient.Delete(ctx, policy)
+	})
+
 	It("creates, updates and deletes a policy successfully", func() {
 		By("creating policy")
 		Expect(k8sClient.Create(ctx, policy, &client.CreateOptions{})).To(Succeed())
