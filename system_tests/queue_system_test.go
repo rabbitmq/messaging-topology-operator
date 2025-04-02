@@ -44,6 +44,10 @@ var _ = Describe("Queue Controller", func() {
 		}
 	})
 
+	AfterEach(func() {
+		_ = k8sClient.Delete(ctx, q)
+	})
+
 	It("declares and deletes a queue successfully", func() {
 		By("declaring queue")
 		Expect(k8sClient.Create(ctx, q, &client.CreateOptions{})).To(Succeed())

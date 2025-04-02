@@ -22,6 +22,10 @@ var _ = Describe("Users", func() {
 		user      *topology.User
 	)
 
+	AfterEach(func() {
+		_ = k8sClient.Delete(ctx, user)
+	})
+
 	When("relying on the operator to generate a username and password", func() {
 		BeforeEach(func() {
 			user = &topology.User{
