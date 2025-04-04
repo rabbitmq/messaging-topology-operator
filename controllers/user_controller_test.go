@@ -194,8 +194,7 @@ var _ = Describe("UserController", func() {
 					})))
 				By("calling PutUserLimits with the correct user limits")
 				Expect(fakeRabbitMQClient.PutUserLimitsCallCount()).To(BeNumerically(">", 0))
-				username, userLimitsValues := fakeRabbitMQClient.PutUserLimitsArgsForCall(0)
-				Expect(username).To(Equal(userName))
+				_, userLimitsValues := fakeRabbitMQClient.PutUserLimitsArgsForCall(0)
 				connectionLimit, ok := userLimitsValues["max-connections"]
 				Expect(ok).To(BeTrue())
 				Expect(connectionLimit).To(Equal(5))

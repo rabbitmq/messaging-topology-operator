@@ -395,7 +395,20 @@ var _ = Describe("Users", func() {
 
 	When("providing user limits", func() {
 		const username = "limits-user"
+		var credentialSecret corev1.Secret
 		BeforeEach(func() {
+			credentialSecret = corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-limit-secret",
+					Namespace: namespace,
+				},
+				Type: corev1.SecretTypeOpaque,
+				Data: map[string][]byte{
+					"username": []byte(username),
+				},
+			}
+			Expect(k8sClient.Create(ctx, &credentialSecret, &client.CreateOptions{})).To(Succeed())
+
 			user = &topology.User{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      username,
@@ -405,12 +418,19 @@ var _ = Describe("Users", func() {
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
 						Name: rmq.Name,
 					},
+					ImportCredentialsSecret: &corev1.LocalObjectReference{
+						Name: credentialSecret.Name,
+					},
 					UserLimits: topology.UserLimits{
 						Connections: 4,
 						Channels:    6,
 					},
 				},
 			}
+		})
+
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &credentialSecret)).To(Succeed())
 		})
 
 		It("Creates and deletes a user with the specified limits", func() {

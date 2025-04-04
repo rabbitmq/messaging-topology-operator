@@ -228,7 +228,10 @@ func (r *UserReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.
 
 	userLimits := internal.GenerateUserLimits(user.Spec.UserLimits)
 	logger.Info("Generated user limits", "user", user.Name, "limits", userLimits)
-	return validateResponse(client.PutUserLimits(user.Name, userLimits))
+	if len(userLimits) > 0 {
+		return validateResponse(client.PutUserLimits(string(credentials.Data["username"]), userLimits))
+	}
+	return nil
 }
 
 func (r *UserReconciler) getUserCredentials(ctx context.Context, user *topology.User) (*corev1.Secret, error) {
