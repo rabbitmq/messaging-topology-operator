@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
+	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 )
 

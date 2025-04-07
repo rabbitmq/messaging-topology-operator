@@ -13,7 +13,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
+	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	. "github.com/onsi/gomega"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal/testutils"

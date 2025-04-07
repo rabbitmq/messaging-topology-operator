@@ -10,22 +10,24 @@ This product may include a number of subcomponents with separate copyright notic
 package internal
 
 import (
-	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
+	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"strings"
 )
 
 func GenerateFederationDefinition(f *topology.Federation, uri string) rabbithole.FederationDefinition {
 	return rabbithole.FederationDefinition{
-		Uri:            strings.Split(uri, ","),
-		Expires:        f.Spec.Expires,
-		MessageTTL:     int32(f.Spec.MessageTTL),
-		MaxHops:        f.Spec.MaxHops,
-		PrefetchCount:  f.Spec.PrefetchCount,
-		ReconnectDelay: f.Spec.ReconnectDelay,
-		AckMode:        f.Spec.AckMode,
-		TrustUserId:    f.Spec.TrustUserId,
-		Exchange:       f.Spec.Exchange,
-		Queue:          f.Spec.Queue,
+		Uri:                 strings.Split(uri, ","),
+		Expires:             f.Spec.Expires,
+		MessageTTL:          int32(f.Spec.MessageTTL),
+		MaxHops:             f.Spec.MaxHops,
+		PrefetchCount:       f.Spec.PrefetchCount,
+		ReconnectDelay:      f.Spec.ReconnectDelay,
+		AckMode:             f.Spec.AckMode,
+		TrustUserId:         f.Spec.TrustUserId,
+		Exchange:            f.Spec.Exchange,
+		Queue:               f.Spec.Queue,
+		QueueType:           f.Spec.QueueType,
+		ResourceCleanupMode: f.Spec.ResourceCleanupMode,
 	}
 }

@@ -18,7 +18,7 @@ import (
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
+	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"k8s.io/client-go/kubernetes"
 

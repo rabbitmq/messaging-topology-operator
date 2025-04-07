@@ -17,7 +17,7 @@ import (
 	"reflect"
 
 	"github.com/go-logr/logr"
-	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
+	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"

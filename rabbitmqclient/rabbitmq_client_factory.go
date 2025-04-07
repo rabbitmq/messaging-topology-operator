@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"net/http"
 
-	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
+	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . Client
