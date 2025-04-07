@@ -22,6 +22,10 @@ var _ = Describe("Users", func() {
 		user      *topology.User
 	)
 
+	AfterEach(func() {
+		_ = k8sClient.Delete(ctx, user)
+	})
+
 	When("relying on the operator to generate a username and password", func() {
 		BeforeEach(func() {
 			user = &topology.User{
@@ -386,6 +390,84 @@ var _ = Describe("Users", func() {
 			user, err := rabbitClient.GetUser(username)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(user.PasswordHash).To(Equal(""))
+		})
+	})
+
+	When("providing user limits", func() {
+		const username = "limits-user"
+		var credentialSecret corev1.Secret
+		BeforeEach(func() {
+			credentialSecret = corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "user-limit-secret",
+					Namespace: namespace,
+				},
+				Type: corev1.SecretTypeOpaque,
+				Data: map[string][]byte{
+					"username": []byte(username),
+				},
+			}
+			Expect(k8sClient.Create(ctx, &credentialSecret, &client.CreateOptions{})).To(Succeed())
+
+			user = &topology.User{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      username,
+					Namespace: namespace,
+				},
+				Spec: topology.UserSpec{
+					RabbitmqClusterReference: topology.RabbitmqClusterReference{
+						Name: rmq.Name,
+					},
+					ImportCredentialsSecret: &corev1.LocalObjectReference{
+						Name: credentialSecret.Name,
+					},
+					UserLimits: topology.UserLimits{
+						Connections: 4,
+						Channels:    6,
+					},
+				},
+			}
+		})
+
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &credentialSecret)).To(Succeed())
+		})
+
+		It("Creates and deletes a user with the specified limits", func() {
+			var err error
+			By("declaring user")
+			Expect(k8sClient.Create(ctx, user, &client.CreateOptions{})).To(Succeed())
+
+			By("setting the correct user limits")
+			var userLimitsInfo []rabbithole.UserLimitsInfo
+			Eventually(func() error {
+				userLimitsInfo, err = rabbitClient.GetUserLimits(username)
+				return err
+			}, 30, 2).Should(BeNil())
+			Expect(userLimitsInfo).To(HaveLen(1))
+			Expect(userLimitsInfo[0].User).To(Equal(username))
+			connectionLimit, ok := userLimitsInfo[0].Value["max-connections"]
+			Expect(ok).To(BeTrue())
+			Expect(connectionLimit).To(Equal(4))
+			channelLimit, ok := userLimitsInfo[0].Value["max-channels"]
+			Expect(ok).To(BeTrue())
+			Expect(channelLimit).To(Equal(6))
+
+			By("deleting user")
+			Expect(k8sClient.Delete(ctx, user)).To(Succeed())
+			Eventually(func() error {
+				_, err = rabbitClient.GetUser(username)
+				return err
+			}, 30).Should(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Object Not Found"))
+
+			By("deleting the user limits")
+			Eventually(func() error {
+				userLimitsInfo, err = rabbitClient.GetUserLimits(username)
+				return err
+			}, 10, 2).Should(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Not Found"))
+			Expect(userLimitsInfo).To(BeEmpty())
 		})
 	})
 })

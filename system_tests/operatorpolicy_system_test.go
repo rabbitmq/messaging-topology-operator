@@ -44,6 +44,10 @@ var _ = Describe("OperatorPolicy", func() {
 		}
 	})
 
+	AfterEach(func() {
+		_ = k8sClient.Delete(ctx, policy)
+	})
+
 	It("creates, updates and deletes an operator policy successfully", func() {
 		By("creating operator policy")
 		Expect(k8sClient.Create(ctx, policy, &client.CreateOptions{})).To(Succeed())
