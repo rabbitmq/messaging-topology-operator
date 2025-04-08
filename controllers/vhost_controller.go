@@ -20,9 +20,22 @@ type VhostReconciler struct {
 	client.Client
 }
 
-func (r *VhostReconciler) DeclareFunc(_ context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *VhostReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+	logger := ctrl.LoggerFrom(ctx)
 	vhost := obj.(*topology.Vhost)
-	return validateResponse(client.PutVhost(vhost.Spec.Name, *internal.GenerateVhostSettings(vhost)))
+	settings := internal.GenerateVhostSettings(vhost)
+	logger.Info("generated vhost settings", "vhost", vhost.Spec.Name, "settings", settings)
+	err := validateResponse(client.PutVhost(vhost.Spec.Name, *settings))
+	if err != nil {
+		return err
+	}
+
+	vhostLimits := internal.GenerateVhostLimits(vhost.Spec.VhostLimits)
+	logger.Info("generated vhost limits", "vhost", vhost.Spec.Name, "limits", vhostLimits)
+	if len(vhostLimits) > 0 {
+		err = validateResponse(client.PutVhostLimits(vhost.Spec.Name, vhostLimits))
+	}
+	return err
 }
 
 // DeleteFunc deletes vhost from server
