@@ -236,6 +236,20 @@ type FakeClient struct {
 		result1 *http.Response
 		result2 error
 	}
+	DeleteVhostLimitsStub        func(string, rabbithole.VhostLimits) (*http.Response, error)
+	deleteVhostLimitsMutex       sync.RWMutex
+	deleteVhostLimitsArgsForCall []struct {
+		arg1 string
+		arg2 rabbithole.VhostLimits
+	}
+	deleteVhostLimitsReturns struct {
+		result1 *http.Response
+		result2 error
+	}
+	deleteVhostLimitsReturnsOnCall map[int]struct {
+		result1 *http.Response
+		result2 error
+	}
 	GetQueueStub        func(string, string) (*rabbithole.DetailedQueueInfo, error)
 	getQueueMutex       sync.RWMutex
 	getQueueArgsForCall []struct {
@@ -377,6 +391,20 @@ type FakeClient struct {
 		result2 error
 	}
 	putVhostReturnsOnCall map[int]struct {
+		result1 *http.Response
+		result2 error
+	}
+	PutVhostLimitsStub        func(string, rabbithole.VhostLimitsValues) (*http.Response, error)
+	putVhostLimitsMutex       sync.RWMutex
+	putVhostLimitsArgsForCall []struct {
+		arg1 string
+		arg2 rabbithole.VhostLimitsValues
+	}
+	putVhostLimitsReturns struct {
+		result1 *http.Response
+		result2 error
+	}
+	putVhostLimitsReturnsOnCall map[int]struct {
 		result1 *http.Response
 		result2 error
 	}
@@ -1456,6 +1484,71 @@ func (fake *FakeClient) DeleteVhostReturnsOnCall(i int, result1 *http.Response, 
 	}{result1, result2}
 }
 
+func (fake *FakeClient) DeleteVhostLimits(arg1 string, arg2 rabbithole.VhostLimits) (*http.Response, error) {
+	fake.deleteVhostLimitsMutex.Lock()
+	ret, specificReturn := fake.deleteVhostLimitsReturnsOnCall[len(fake.deleteVhostLimitsArgsForCall)]
+	fake.deleteVhostLimitsArgsForCall = append(fake.deleteVhostLimitsArgsForCall, struct {
+		arg1 string
+		arg2 rabbithole.VhostLimits
+	}{arg1, arg2})
+	stub := fake.DeleteVhostLimitsStub
+	fakeReturns := fake.deleteVhostLimitsReturns
+	fake.recordInvocation("DeleteVhostLimits", []interface{}{arg1, arg2})
+	fake.deleteVhostLimitsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) DeleteVhostLimitsCallCount() int {
+	fake.deleteVhostLimitsMutex.RLock()
+	defer fake.deleteVhostLimitsMutex.RUnlock()
+	return len(fake.deleteVhostLimitsArgsForCall)
+}
+
+func (fake *FakeClient) DeleteVhostLimitsCalls(stub func(string, rabbithole.VhostLimits) (*http.Response, error)) {
+	fake.deleteVhostLimitsMutex.Lock()
+	defer fake.deleteVhostLimitsMutex.Unlock()
+	fake.DeleteVhostLimitsStub = stub
+}
+
+func (fake *FakeClient) DeleteVhostLimitsArgsForCall(i int) (string, rabbithole.VhostLimits) {
+	fake.deleteVhostLimitsMutex.RLock()
+	defer fake.deleteVhostLimitsMutex.RUnlock()
+	argsForCall := fake.deleteVhostLimitsArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeClient) DeleteVhostLimitsReturns(result1 *http.Response, result2 error) {
+	fake.deleteVhostLimitsMutex.Lock()
+	defer fake.deleteVhostLimitsMutex.Unlock()
+	fake.DeleteVhostLimitsStub = nil
+	fake.deleteVhostLimitsReturns = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) DeleteVhostLimitsReturnsOnCall(i int, result1 *http.Response, result2 error) {
+	fake.deleteVhostLimitsMutex.Lock()
+	defer fake.deleteVhostLimitsMutex.Unlock()
+	fake.DeleteVhostLimitsStub = nil
+	if fake.deleteVhostLimitsReturnsOnCall == nil {
+		fake.deleteVhostLimitsReturnsOnCall = make(map[int]struct {
+			result1 *http.Response
+			result2 error
+		})
+	}
+	fake.deleteVhostLimitsReturnsOnCall[i] = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) GetQueue(arg1 string, arg2 string) (*rabbithole.DetailedQueueInfo, error) {
 	fake.getQueueMutex.Lock()
 	ret, specificReturn := fake.getQueueReturnsOnCall[len(fake.getQueueArgsForCall)]
@@ -2110,6 +2203,71 @@ func (fake *FakeClient) PutVhostReturnsOnCall(i int, result1 *http.Response, res
 	}{result1, result2}
 }
 
+func (fake *FakeClient) PutVhostLimits(arg1 string, arg2 rabbithole.VhostLimitsValues) (*http.Response, error) {
+	fake.putVhostLimitsMutex.Lock()
+	ret, specificReturn := fake.putVhostLimitsReturnsOnCall[len(fake.putVhostLimitsArgsForCall)]
+	fake.putVhostLimitsArgsForCall = append(fake.putVhostLimitsArgsForCall, struct {
+		arg1 string
+		arg2 rabbithole.VhostLimitsValues
+	}{arg1, arg2})
+	stub := fake.PutVhostLimitsStub
+	fakeReturns := fake.putVhostLimitsReturns
+	fake.recordInvocation("PutVhostLimits", []interface{}{arg1, arg2})
+	fake.putVhostLimitsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) PutVhostLimitsCallCount() int {
+	fake.putVhostLimitsMutex.RLock()
+	defer fake.putVhostLimitsMutex.RUnlock()
+	return len(fake.putVhostLimitsArgsForCall)
+}
+
+func (fake *FakeClient) PutVhostLimitsCalls(stub func(string, rabbithole.VhostLimitsValues) (*http.Response, error)) {
+	fake.putVhostLimitsMutex.Lock()
+	defer fake.putVhostLimitsMutex.Unlock()
+	fake.PutVhostLimitsStub = stub
+}
+
+func (fake *FakeClient) PutVhostLimitsArgsForCall(i int) (string, rabbithole.VhostLimitsValues) {
+	fake.putVhostLimitsMutex.RLock()
+	defer fake.putVhostLimitsMutex.RUnlock()
+	argsForCall := fake.putVhostLimitsArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeClient) PutVhostLimitsReturns(result1 *http.Response, result2 error) {
+	fake.putVhostLimitsMutex.Lock()
+	defer fake.putVhostLimitsMutex.Unlock()
+	fake.PutVhostLimitsStub = nil
+	fake.putVhostLimitsReturns = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) PutVhostLimitsReturnsOnCall(i int, result1 *http.Response, result2 error) {
+	fake.putVhostLimitsMutex.Lock()
+	defer fake.putVhostLimitsMutex.Unlock()
+	fake.PutVhostLimitsStub = nil
+	if fake.putVhostLimitsReturnsOnCall == nil {
+		fake.putVhostLimitsReturnsOnCall = make(map[int]struct {
+			result1 *http.Response
+			result2 error
+		})
+	}
+	fake.putVhostLimitsReturnsOnCall[i] = struct {
+		result1 *http.Response
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) UpdatePermissionsIn(arg1 string, arg2 string, arg3 rabbithole.Permissions) (*http.Response, error) {
 	fake.updatePermissionsInMutex.Lock()
 	ret, specificReturn := fake.updatePermissionsInReturnsOnCall[len(fake.updatePermissionsInArgsForCall)]
@@ -2277,6 +2435,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.deleteUserMutex.RUnlock()
 	fake.deleteVhostMutex.RLock()
 	defer fake.deleteVhostMutex.RUnlock()
+	fake.deleteVhostLimitsMutex.RLock()
+	defer fake.deleteVhostLimitsMutex.RUnlock()
 	fake.getQueueMutex.RLock()
 	defer fake.getQueueMutex.RUnlock()
 	fake.getVhostMutex.RLock()
@@ -2297,6 +2457,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.putUserMutex.RUnlock()
 	fake.putVhostMutex.RLock()
 	defer fake.putVhostMutex.RUnlock()
+	fake.putVhostLimitsMutex.RLock()
+	defer fake.putVhostLimitsMutex.RUnlock()
 	fake.updatePermissionsInMutex.RLock()
 	defer fake.updatePermissionsInMutex.RUnlock()
 	fake.updateTopicPermissionsInMutex.RLock()

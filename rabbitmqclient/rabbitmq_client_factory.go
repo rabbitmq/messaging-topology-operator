@@ -37,6 +37,8 @@ type Client interface {
 	DeleteExchange(string, string) (*http.Response, error)
 	PutVhost(string, rabbithole.VhostSettings) (*http.Response, error)
 	DeleteVhost(string) (*http.Response, error)
+	PutVhostLimits(string, rabbithole.VhostLimitsValues) (*http.Response, error)
+	DeleteVhostLimits(string, rabbithole.VhostLimits) (*http.Response, error)
 	PutGlobalParameter(name string, value interface{}) (*http.Response, error)
 	DeleteGlobalParameter(name string) (*http.Response, error)
 	PutFederationUpstream(vhost, name string, def rabbithole.FederationDefinition) (res *http.Response, err error)

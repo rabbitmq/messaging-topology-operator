@@ -32,6 +32,7 @@ var _ = Describe("vhost-controller", func() {
 		managerCtx    context.Context
 		managerCancel context.CancelFunc
 		k8sClient     runtimeClient.Client
+		vhostLimits   *topology.VhostLimits
 	)
 
 	BeforeEach(func() {
@@ -90,6 +91,7 @@ var _ = Describe("vhost-controller", func() {
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: "example-rabbit",
 				},
+				VhostLimits: vhostLimits,
 			},
 		}
 	})
@@ -246,6 +248,71 @@ var _ = Describe("vhost-controller", func() {
 				Should(BeTrue())
 
 			Expect(fakeRabbitMQClient.DeleteVhostCallCount()).To(Equal(0))
+		})
+	})
+
+	Context("vhost limits", func() {
+		When("vhost limits are provided", func() {
+			var connections, queues int32
+
+			BeforeEach(func() {
+				connections = 708
+				queues = 509
+				vhostName = "vhost-with-limits"
+				vhostLimits = &topology.VhostLimits{
+					Connections: &connections,
+					Queues:      &queues,
+				}
+				fakeRabbitMQClient.PutVhostReturns(&http.Response{
+					Status:     "201 Created",
+					StatusCode: http.StatusCreated,
+				}, nil)
+				fakeRabbitMQClient.PutVhostLimitsReturns(&http.Response{
+					Status:     "200 OK",
+					StatusCode: http.StatusOK,
+				}, nil)
+			})
+
+			It("puts the vhost limits", func() {
+				Expect(k8sClient.Create(ctx, &vhost)).To(Succeed())
+				Eventually(func() []topology.Condition {
+					_ = k8sClient.Get(
+						ctx,
+						types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace},
+						&vhost,
+					)
+
+					return vhost.Status.Conditions
+				}).
+					Within(statusEventsUpdateTimeout).
+					WithPolling(time.Second).
+					Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+						"Type":   Equal(topology.ConditionType("Ready")),
+						"Reason": Equal("SuccessfulCreateOrUpdate"),
+						"Status": Equal(corev1.ConditionTrue),
+					})))
+
+				Expect(fakeRabbitMQClient.PutVhostLimitsCallCount()).To(BeNumerically(">", 0))
+				_, vhostLimitsValues := fakeRabbitMQClient.PutVhostLimitsArgsForCall(0)
+				Expect(len(vhostLimitsValues)).To(Equal(2))
+				connectionLimit, ok := vhostLimitsValues["max-connections"]
+				Expect(ok).To(BeTrue())
+				Expect(connectionLimit).To(Equal(int(connections)))
+				queueLimit, ok := vhostLimitsValues["max-queues"]
+				Expect(ok).To(BeTrue())
+				Expect(queueLimit).To(Equal(int(queues)))
+			})
+		})
+
+		When("vhost limits are not provided", func() {
+			BeforeEach(func() {
+				vhostName = "vhost-without-limits"
+			})
+
+			It("does not set vhost limits", func() {
+				Expect(k8sClient.Create(ctx, &vhost)).To(Succeed())
+				Expect(fakeRabbitMQClient.PutVhostLimitsCallCount()).To(Equal(0))
+			})
 		})
 	})
 })

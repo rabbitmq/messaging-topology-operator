@@ -1516,6 +1516,24 @@ More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-
 |===
 
 
+[id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhostlimits"]
+==== VhostLimits 
+
+VhostLimits defines limits to be applied to the vhost.
+
+.Appears In:
+****
+- xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhostspec[$$VhostSpec$$]
+****
+
+[cols="25a,75a", options="header"]
+|===
+| Field | Description
+| *`connections`* __integer__ | 
+| *`queues`* __integer__ | 
+|===
+
+
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhostlist"]
 ==== VhostList 
 
@@ -1585,6 +1603,9 @@ Supported in RabbitMQ 3.11.12 or above.
 Required property.
 | *`deletionPolicy`* __string__ | DeletionPolicy defines the behavior of vhost in the RabbitMQ cluster when the corresponding custom resource is deleted.
 Can be set to 'delete' or 'retain'. Default is 'delete'.
+| *`limits`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-vhostlimits[$$VhostLimits$$]__ | Limits defines limits to be applied to the vhost.
+Supported limits include max-connections and max-queues.
+See https://www.rabbitmq.com/docs/vhosts#limits
 |===
 
 
