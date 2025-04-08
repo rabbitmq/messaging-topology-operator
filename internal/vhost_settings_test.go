@@ -39,3 +39,67 @@ var _ = Describe("GenerateVhostSettings", func() {
 		Expect(settings.DefaultQueueType).To(Equal("stream"))
 	})
 })
+
+var _ = Describe("GenerateVhostLimits", func() {
+	var limits topology.VhostLimits
+	var connections, queues int32
+
+	When("limits are configured", func() {
+		BeforeEach(func() {
+			connections = 1312
+			queues = 137
+			limits = topology.VhostLimits{
+				Connections: &connections,
+				Queues:      &queues,
+			}
+		})
+
+		It("generates VhostLimitValues", func() {
+			VhostLimitsValues := internal.GenerateVhostLimits(&limits)
+			Expect(len(VhostLimitsValues)).To(Equal(2))
+			Expect(VhostLimitsValues["max-connections"]).To(Equal(int(connections)))
+			Expect(VhostLimitsValues["max-queues"]).To(Equal(int(queues)))
+		})
+	})
+
+	When("some imits are configured", func() {
+		BeforeEach(func() {
+			queues = 137
+			limits = topology.VhostLimits{
+				Connections: &connections,
+				Queues:      nil,
+			}
+		})
+
+		It("generates VhostLimitValues only for those limits", func() {
+			VhostLimitsValues := internal.GenerateVhostLimits(&limits)
+			Expect(len(VhostLimitsValues)).To(Equal(1))
+			Expect(VhostLimitsValues["max-connections"]).To(Equal(int(connections)))
+		})
+	})
+
+	When("no limits are configured", func() {
+		It("generates VhostLimitValues", func() {
+			VhostLimitsValues := internal.GenerateVhostLimits(nil)
+			Expect(VhostLimitsValues).To(BeEmpty())
+		})
+	})
+
+	When("special values are configured", func() {
+		BeforeEach(func() {
+			connections = 0
+			queues = -1
+			limits = topology.VhostLimits{
+				Connections: &connections,
+				Queues:      &queues,
+			}
+		})
+
+		It("generates VhostLimitValues", func() {
+			VhostLimitsValues := internal.GenerateVhostLimits(&limits)
+			Expect(len(VhostLimitsValues)).To(Equal(2))
+			Expect(VhostLimitsValues["max-connections"]).To(Equal(int(connections)))
+			Expect(VhostLimitsValues["max-queues"]).To(Equal(int(queues)))
+		})
+	})
+})
