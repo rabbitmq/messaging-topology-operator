@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
+	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 )
 
@@ -262,6 +262,19 @@ type FakeClient struct {
 	}
 	getQueueReturnsOnCall map[int]struct {
 		result1 *rabbithole.DetailedQueueInfo
+		result2 error
+	}
+	GetUserLimitsStub        func(string) ([]rabbithole.UserLimitsInfo, error)
+	getUserLimitsMutex       sync.RWMutex
+	getUserLimitsArgsForCall []struct {
+		arg1 string
+	}
+	getUserLimitsReturns struct {
+		result1 []rabbithole.UserLimitsInfo
+		result2 error
+	}
+	getUserLimitsReturnsOnCall map[int]struct {
+		result1 []rabbithole.UserLimitsInfo
 		result2 error
 	}
 	GetVhostStub        func(string) (*rabbithole.VhostInfo, error)
@@ -1614,6 +1627,70 @@ func (fake *FakeClient) GetQueueReturnsOnCall(i int, result1 *rabbithole.Detaile
 	}{result1, result2}
 }
 
+func (fake *FakeClient) GetUserLimits(arg1 string) ([]rabbithole.UserLimitsInfo, error) {
+	fake.getUserLimitsMutex.Lock()
+	ret, specificReturn := fake.getUserLimitsReturnsOnCall[len(fake.getUserLimitsArgsForCall)]
+	fake.getUserLimitsArgsForCall = append(fake.getUserLimitsArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.GetUserLimitsStub
+	fakeReturns := fake.getUserLimitsReturns
+	fake.recordInvocation("GetUserLimits", []interface{}{arg1})
+	fake.getUserLimitsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) GetUserLimitsCallCount() int {
+	fake.getUserLimitsMutex.RLock()
+	defer fake.getUserLimitsMutex.RUnlock()
+	return len(fake.getUserLimitsArgsForCall)
+}
+
+func (fake *FakeClient) GetUserLimitsCalls(stub func(string) ([]rabbithole.UserLimitsInfo, error)) {
+	fake.getUserLimitsMutex.Lock()
+	defer fake.getUserLimitsMutex.Unlock()
+	fake.GetUserLimitsStub = stub
+}
+
+func (fake *FakeClient) GetUserLimitsArgsForCall(i int) string {
+	fake.getUserLimitsMutex.RLock()
+	defer fake.getUserLimitsMutex.RUnlock()
+	argsForCall := fake.getUserLimitsArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeClient) GetUserLimitsReturns(result1 []rabbithole.UserLimitsInfo, result2 error) {
+	fake.getUserLimitsMutex.Lock()
+	defer fake.getUserLimitsMutex.Unlock()
+	fake.GetUserLimitsStub = nil
+	fake.getUserLimitsReturns = struct {
+		result1 []rabbithole.UserLimitsInfo
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) GetUserLimitsReturnsOnCall(i int, result1 []rabbithole.UserLimitsInfo, result2 error) {
+	fake.getUserLimitsMutex.Lock()
+	defer fake.getUserLimitsMutex.Unlock()
+	fake.GetUserLimitsStub = nil
+	if fake.getUserLimitsReturnsOnCall == nil {
+		fake.getUserLimitsReturnsOnCall = make(map[int]struct {
+			result1 []rabbithole.UserLimitsInfo
+			result2 error
+		})
+	}
+	fake.getUserLimitsReturnsOnCall[i] = struct {
+		result1 []rabbithole.UserLimitsInfo
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) GetVhost(arg1 string) (*rabbithole.VhostInfo, error) {
 	fake.getVhostMutex.Lock()
 	ret, specificReturn := fake.getVhostReturnsOnCall[len(fake.getVhostArgsForCall)]
@@ -2439,6 +2516,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.deleteVhostMutex.RUnlock()
 	fake.getQueueMutex.RLock()
 	defer fake.getQueueMutex.RUnlock()
+	fake.getUserLimitsMutex.RLock()
+	defer fake.getUserLimitsMutex.RUnlock()
 	fake.getVhostMutex.RLock()
 	defer fake.getVhostMutex.RUnlock()
 	fake.listExchangeBindingsBetweenMutex.RLock()

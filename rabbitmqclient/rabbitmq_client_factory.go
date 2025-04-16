@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"net/http"
 
-	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
+	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 . Client
@@ -23,6 +23,7 @@ type Client interface {
 	PutUser(string, rabbithole.UserSettings) (*http.Response, error)
 	DeleteUser(string) (*http.Response, error)
 	PutUserLimits(string, rabbithole.UserLimitsValues) (*http.Response, error)
+	GetUserLimits(string) ([]rabbithole.UserLimitsInfo, error)
 	DeleteUserLimits(string, rabbithole.UserLimits) (*http.Response, error)
 	DeclareBinding(string, rabbithole.BindingInfo) (*http.Response, error)
 	DeleteBinding(string, rabbithole.BindingInfo) (*http.Response, error)
