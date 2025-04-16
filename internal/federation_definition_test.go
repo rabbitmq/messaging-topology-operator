@@ -85,4 +85,16 @@ var _ = Describe("GenerationFederationDefinition", func() {
 		definition := GenerateFederationDefinition(f, "")
 		Expect(definition.Queue).To(Equal("a-great-queue"))
 	})
+
+	It("sets 'QueueType' correctly", func() {
+		f.Spec.QueueType = "quorum"
+		definition := GenerateFederationDefinition(f, "")
+		Expect(definition.QueueType).To(Equal("quorum"))
+	})
+
+	It("sets 'ResourceCleanupMode' correctly", func() {
+		f.Spec.ResourceCleanupMode = "never"
+		definition := GenerateFederationDefinition(f, "")
+		Expect(definition.ResourceCleanupMode).To(Equal("never"))
+	})
 })

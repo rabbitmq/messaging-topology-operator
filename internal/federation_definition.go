@@ -17,15 +17,17 @@ import (
 
 func GenerateFederationDefinition(f *topology.Federation, uri string) rabbithole.FederationDefinition {
 	return rabbithole.FederationDefinition{
-		Uri:            strings.Split(uri, ","),
-		Expires:        f.Spec.Expires,
-		MessageTTL:     int32(f.Spec.MessageTTL),
-		MaxHops:        f.Spec.MaxHops,
-		PrefetchCount:  f.Spec.PrefetchCount,
-		ReconnectDelay: f.Spec.ReconnectDelay,
-		AckMode:        f.Spec.AckMode,
-		TrustUserId:    f.Spec.TrustUserId,
-		Exchange:       f.Spec.Exchange,
-		Queue:          f.Spec.Queue,
+		Uri:                 strings.Split(uri, ","),
+		Expires:             f.Spec.Expires,
+		MessageTTL:          int32(f.Spec.MessageTTL),
+		MaxHops:             f.Spec.MaxHops,
+		PrefetchCount:       f.Spec.PrefetchCount,
+		ReconnectDelay:      f.Spec.ReconnectDelay,
+		AckMode:             f.Spec.AckMode,
+		TrustUserId:         f.Spec.TrustUserId,
+		Exchange:            f.Spec.Exchange,
+		Queue:               f.Spec.Queue,
+		QueueType:           f.Spec.QueueType,
+		ResourceCleanupMode: f.Spec.ResourceCleanupMode,
 	}
 }
