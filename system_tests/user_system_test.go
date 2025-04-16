@@ -396,6 +396,7 @@ var _ = Describe("Users", func() {
 	When("providing user limits", func() {
 		const username = "limits-user"
 		var credentialSecret corev1.Secret
+		var connections, channels int32
 		BeforeEach(func() {
 			credentialSecret = corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
@@ -409,6 +410,8 @@ var _ = Describe("Users", func() {
 			}
 			Expect(k8sClient.Create(ctx, &credentialSecret, &client.CreateOptions{})).To(Succeed())
 
+			connections = 4
+			channels = 6
 			user = &topology.User{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      username,
@@ -421,9 +424,9 @@ var _ = Describe("Users", func() {
 					ImportCredentialsSecret: &corev1.LocalObjectReference{
 						Name: credentialSecret.Name,
 					},
-					UserLimits: topology.UserLimits{
-						Connections: 4,
-						Channels:    6,
+					UserLimits: &topology.UserLimits{
+						Connections: &connections,
+						Channels:    &channels,
 					},
 				},
 			}
@@ -446,12 +449,8 @@ var _ = Describe("Users", func() {
 			}, 30, 2).Should(BeNil())
 			Expect(userLimitsInfo).To(HaveLen(1))
 			Expect(userLimitsInfo[0].User).To(Equal(username))
-			connectionLimit, ok := userLimitsInfo[0].Value["max-connections"]
-			Expect(ok).To(BeTrue())
-			Expect(connectionLimit).To(Equal(4))
-			channelLimit, ok := userLimitsInfo[0].Value["max-channels"]
-			Expect(ok).To(BeTrue())
-			Expect(channelLimit).To(Equal(6))
+			Expect(userLimitsInfo[0].Value).To(HaveKeyWithValue("max-connections", int(connections)))
+			Expect(userLimitsInfo[0].Value).To(HaveKeyWithValue("max-channels", int(channels)))
 
 			By("deleting user")
 			Expect(k8sClient.Delete(ctx, user)).To(Succeed())

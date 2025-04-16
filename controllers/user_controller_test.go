@@ -34,6 +34,8 @@ var _ = Describe("UserController", func() {
 		managerCancel context.CancelFunc
 		k8sClient     runtimeClient.Client
 		userLimits    topology.UserLimits
+		connections   int32
+		channels      int32
 	)
 
 	BeforeEach(func() {
@@ -92,7 +94,7 @@ var _ = Describe("UserController", func() {
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: "example-rabbit",
 				},
-				UserLimits: userLimits,
+				UserLimits: &userLimits,
 			},
 		}
 	})
@@ -160,9 +162,11 @@ var _ = Describe("UserController", func() {
 		When("the user has limits defined", func() {
 			BeforeEach(func() {
 				userName = "test-user-limits"
+				connections = 5
+				channels = 10
 				userLimits = topology.UserLimits{
-					Connections: 5,
-					Channels:    10,
+					Connections: &connections,
+					Channels:    &channels,
 				}
 				fakeRabbitMQClient.PutUserReturns(&http.Response{
 					Status:     "201 Created",
@@ -195,12 +199,8 @@ var _ = Describe("UserController", func() {
 				By("calling PutUserLimits with the correct user limits")
 				Expect(fakeRabbitMQClient.PutUserLimitsCallCount()).To(BeNumerically(">", 0))
 				_, userLimitsValues := fakeRabbitMQClient.PutUserLimitsArgsForCall(0)
-				connectionLimit, ok := userLimitsValues["max-connections"]
-				Expect(ok).To(BeTrue())
-				Expect(connectionLimit).To(Equal(5))
-				channelLimit, ok := userLimitsValues["max-channels"]
-				Expect(ok).To(BeTrue())
-				Expect(channelLimit).To(Equal(10))
+				Expect(userLimitsValues).To(HaveKeyWithValue("max-connections", int(connections)))
+				Expect(userLimitsValues).To(HaveKeyWithValue("max-channels", (int(channels))))
 			})
 		})
 	})

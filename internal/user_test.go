@@ -65,28 +65,33 @@ var _ = Describe("GenerateUserSettings", func() {
 	})
 
 	When("user limits are provided", func() {
+		var connections, channels int32
+
 		It("uses the limits to generate the expected rabbithole.UserLimits", func() {
-			limits := internal.GenerateUserLimits(topology.UserLimits{
-				Connections: 3,
-				Channels:    7,
+			connections = 3
+			channels = 7
+			limits := internal.GenerateUserLimits(&topology.UserLimits{
+				Connections: &connections,
+				Channels:    &channels,
 			})
-			Expect(limits["max-connections"]).To(Equal(3))
-			Expect(limits["max-channels"]).To(Equal(7))
+			Expect(limits).To(HaveLen(2))
+			Expect(limits).To(HaveKeyWithValue("max-connections", int(connections)))
+			Expect(limits).To(HaveKeyWithValue("max-channels", int(channels)))
 		})
 
 		It("does not create unspecified limits", func() {
-			limits := internal.GenerateUserLimits(topology.UserLimits{
-				Connections: 5,
+			connections = 5
+			limits := internal.GenerateUserLimits(&topology.UserLimits{
+				Connections: &connections,
 			})
-			Expect(limits["max-connections"]).To(Equal(5))
-			_, ok := limits["max-channels"]
-			Expect(ok).To(BeFalse())
+			Expect(limits).To(HaveKeyWithValue("max-connections", int(connections)))
+			Expect(limits).NotTo(HaveKey("max-channels"))
 		})
 	})
 
 	When("no user limits are provided", func() {
 		It("does not specify limits", func() {
-			limits := internal.GenerateUserLimits(topology.UserLimits{})
+			limits := internal.GenerateUserLimits(&topology.UserLimits{})
 			Expect(limits).To(BeEmpty())
 		})
 	})

@@ -96,6 +96,7 @@ var _ = Describe("user spec", func() {
 		var user User
 		var username string
 		var userLimits UserLimits
+		var connections, channels int32
 
 		JustBeforeEach(func() {
 			user = User{
@@ -107,7 +108,7 @@ var _ = Describe("user spec", func() {
 					RabbitmqClusterReference: RabbitmqClusterReference{
 						Name: "some-cluster",
 					},
-					UserLimits: userLimits,
+					UserLimits: &userLimits,
 				},
 			}
 		})
@@ -115,9 +116,11 @@ var _ = Describe("user spec", func() {
 		When("creating a user with valid limits", func() {
 			BeforeEach(func() {
 				username = "limits-user"
+				connections = 5
+				channels = 10
 				userLimits = UserLimits{
-					Connections: 5,
-					Channels:    10,
+					Connections: &connections,
+					Channels:    &channels,
 				}
 			})
 			It("successfully creates the user", func() {
@@ -130,7 +133,9 @@ var _ = Describe("user spec", func() {
 				Expect(fetchedUser.Spec.RabbitmqClusterReference).To(Equal(RabbitmqClusterReference{
 					Name: "some-cluster",
 				}))
-				Expect(fetchedUser.Spec.UserLimits).To(Equal(UserLimits{Connections: 5, Channels: 10}))
+				Expect(fetchedUser.Spec.UserLimits).NotTo(BeNil())
+				Expect(*fetchedUser.Spec.UserLimits.Connections).To(Equal(connections))
+				Expect(*fetchedUser.Spec.UserLimits.Channels).To(Equal(channels))
 			})
 		})
 	})

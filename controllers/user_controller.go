@@ -255,13 +255,5 @@ func (r *UserReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.C
 	} else if err != nil {
 		return err
 	}
-
-	userLimits := []string{"max-connections", "max-channels"}
-	err = validateResponseForDeletion(client.DeleteUserLimits(user.Status.Username, userLimits))
-	if errors.Is(err, NotFound) {
-		logger.Info("cannot find user limits in rabbitmq server; already deleted", "user", user.Name, "limits", userLimits)
-	} else if err != nil {
-		return err
-	}
 	return nil
 }

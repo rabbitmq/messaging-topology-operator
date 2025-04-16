@@ -41,7 +41,7 @@ type UserSpec struct {
 	// the user can create. These limits can be used as guard rails in environments
 	// where applications cannot be trusted and monitored in detail, for example,
 	// when RabbitMQ clusters are offered as a service. See https://www.rabbitmq.com/docs/user-limits.
-	UserLimits UserLimits `json:"limits,omitempty"`
+	UserLimits *UserLimits `json:"limits,omitempty"`
 }
 
 // UserStatus defines the observed state of User.
@@ -67,9 +67,9 @@ type UserTag string
 // when RabbitMQ clusters are offered as a service. See https://www.rabbitmq.com/docs/user-limits.
 type UserLimits struct {
 	// Limits how many connections the user can open.
-	Connections int32 `json:"connections,omitempty"`
+	Connections *int32 `json:"connections,omitempty"`
 	// Limits how many AMQP 0.9.1 channels the user can open.
-	Channels int32 `json:"channels,omitempty"`
+	Channels *int32 `json:"channels,omitempty"`
 }
 
 // +genclient
