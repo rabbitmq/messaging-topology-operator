@@ -228,20 +228,24 @@ func (r *UserReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.
 	}
 
 	newUserLimits := internal.GenerateUserLimits(user.Spec.UserLimits)
+	logger.Info("Getting existing user limits", "user", user.Name)
 	existingUserLimits, err := r.getUserLimits(client, string(credentials.Data["username"]))
 	if err != nil {
 		return err
 	}
-	logger.Info("Updating user limits", "user", user.Name, "existing limits", existingUserLimits, "new limits", newUserLimits)
 	limitsToDelete := r.userLimitsToDelete(existingUserLimits, newUserLimits)
 	if len(limitsToDelete) > 0 {
+		logger.Info("Deleting outdated user limits", "user", user.Name, "limits", limitsToDelete)
 		err = validateResponseForDeletion(client.DeleteUserLimits(string(credentials.Data["username"]), limitsToDelete))
 		if err != nil && !errors.Is(err, NotFound) {
 			return err
 		}
-		logger.Info("Deleted user limits", "user", user.Name, "limits", limitsToDelete)
 	}
-	return validateResponse(client.PutUserLimits(string(credentials.Data["username"]), newUserLimits))
+	if len(newUserLimits) > 0 {
+		logger.Info("Creating new user limits", "user", user.Name, "limits", newUserLimits)
+		return validateResponse(client.PutUserLimits(string(credentials.Data["username"]), newUserLimits))
+	}
+	return nil
 }
 
 func (r *UserReconciler) userLimitsToDelete(existingUserLimits, newUserLimits rabbithole.UserLimitsValues) (limitsToDelete rabbithole.UserLimits) {
