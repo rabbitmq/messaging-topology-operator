@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	"k8s.io/client-go/tools/record"
@@ -29,6 +30,13 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 )
+
+// returned in some cases as an error when rabbithole encounters a 404 response
+var rabbithole404 = rabbithole.ErrorResponse{
+	StatusCode: 404,
+	Message:    "Object Not Found",
+	Reason:     "Not Found",
+}
 
 // TODO: check possible status code response from RabbitMQ
 // validate status code above 300 might not be all failure case

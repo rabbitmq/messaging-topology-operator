@@ -22,6 +22,9 @@ import (
 type Client interface {
 	PutUser(string, rabbithole.UserSettings) (*http.Response, error)
 	DeleteUser(string) (*http.Response, error)
+	PutUserLimits(string, rabbithole.UserLimitsValues) (*http.Response, error)
+	GetUserLimits(string) ([]rabbithole.UserLimitsInfo, error)
+	DeleteUserLimits(string, rabbithole.UserLimits) (*http.Response, error)
 	DeclareBinding(string, rabbithole.BindingInfo) (*http.Response, error)
 	DeleteBinding(string, rabbithole.BindingInfo) (*http.Response, error)
 	ListQueueBindingsBetween(string, string, string) ([]rabbithole.BindingInfo, error)
@@ -37,6 +40,8 @@ type Client interface {
 	DeleteExchange(string, string) (*http.Response, error)
 	PutVhost(string, rabbithole.VhostSettings) (*http.Response, error)
 	DeleteVhost(string) (*http.Response, error)
+	PutVhostLimits(string, rabbithole.VhostLimitsValues) (*http.Response, error)
+	DeleteVhostLimits(string, rabbithole.VhostLimits) (*http.Response, error)
 	PutGlobalParameter(name string, value interface{}) (*http.Response, error)
 	DeleteGlobalParameter(name string) (*http.Response, error)
 	PutFederationUpstream(vhost, name string, def rabbithole.FederationDefinition) (res *http.Response, err error)

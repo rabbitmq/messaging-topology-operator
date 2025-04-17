@@ -101,6 +101,109 @@ var _ = Describe("Vhost", func() {
 		}))
 	})
 
+	Context("Vhost Limits", func() {
+		var connections, queues int32
+
+		When("vhost limits are configured", func() {
+			It("creates a vhost with limits", func() {
+				connections = 1000
+				queues = 500
+				vhost := Vhost{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "vhost-with-limits",
+						Namespace: namespace,
+					},
+					Spec: VhostSpec{
+						Name: "vhost-with-limits",
+						VhostLimits: &VhostLimits{
+							Connections: &connections,
+							Queues:      &queues,
+						},
+						RabbitmqClusterReference: RabbitmqClusterReference{
+							Name: "random-cluster",
+						},
+					},
+				}
+				Expect(k8sClient.Create(ctx, &vhost)).To(Succeed())
+				fetched := &Vhost{}
+				Expect(k8sClient.Get(ctx, types.NamespacedName{
+					Name:      vhost.Name,
+					Namespace: vhost.Namespace,
+				}, fetched)).To(Succeed())
+
+				Expect(*fetched.Spec.VhostLimits.Connections).To(Equal(connections))
+				Expect(*fetched.Spec.VhostLimits.Queues).To(Equal(queues))
+				Expect(fetched.Spec.Name).To(Equal("vhost-with-limits"))
+				Expect(fetched.Spec.RabbitmqClusterReference).To(Equal(RabbitmqClusterReference{
+					Name: "random-cluster",
+				}))
+			})
+		})
+
+		When("No vhost limits are provided", func() {
+			It("Does not set VhostLimits", func() {
+				vhost := Vhost{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "vhost-with-no-provided-limits",
+						Namespace: namespace,
+					},
+					Spec: VhostSpec{
+						Name: "vhost-with-no-provided-limits",
+						RabbitmqClusterReference: RabbitmqClusterReference{
+							Name: "random-cluster",
+						},
+					},
+				}
+				Expect(k8sClient.Create(ctx, &vhost)).To(Succeed())
+				fetched := &Vhost{}
+				Expect(k8sClient.Get(ctx, types.NamespacedName{
+					Name:      vhost.Name,
+					Namespace: vhost.Namespace,
+				}, fetched)).To(Succeed())
+
+				Expect(fetched.Spec.VhostLimits).To(BeNil())
+				Expect(fetched.Spec.Name).To(Equal("vhost-with-no-provided-limits"))
+				Expect(fetched.Spec.RabbitmqClusterReference).To(Equal(RabbitmqClusterReference{
+					Name: "random-cluster",
+				}))
+			})
+		})
+
+		When("Only some vhost limits are provided", func() {
+			It("Configures those limits and lifts other limits", func() {
+				queues = 800
+				vhost := Vhost{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "vhost-some-limits",
+						Namespace: namespace,
+					},
+					Spec: VhostSpec{
+						Name: "vhost-some-limits",
+						VhostLimits: &VhostLimits{
+							Queues: &queues,
+						},
+						RabbitmqClusterReference: RabbitmqClusterReference{
+							Name: "random-cluster",
+						},
+					},
+				}
+				Expect(k8sClient.Create(ctx, &vhost)).To(Succeed())
+				fetched := &Vhost{}
+				Expect(k8sClient.Get(ctx, types.NamespacedName{
+					Name:      vhost.Name,
+					Namespace: vhost.Namespace,
+				}, fetched)).To(Succeed())
+
+				Expect(fetched.Spec.VhostLimits.Connections).To(BeNil())
+				Expect(*fetched.Spec.VhostLimits.Queues).To(Equal(queues))
+				Expect(fetched.Spec.Name).To(Equal("vhost-some-limits"))
+				Expect(fetched.Spec.RabbitmqClusterReference).To(Equal(RabbitmqClusterReference{
+					Name: "random-cluster",
+				}))
+			})
+		})
+	})
+
 	Context("Default queue types", func() {
 		var qTypeVhost = &Vhost{
 			ObjectMeta: metav1.ObjectMeta{

@@ -21,3 +21,16 @@ func GenerateVhostSettings(v *topology.Vhost) *rabbithole.VhostSettings {
 		DefaultQueueType: v.Spec.DefaultQueueType,
 	}
 }
+
+func GenerateVhostLimits(limits *topology.VhostLimits) rabbithole.VhostLimitsValues {
+	vhostLimitsValues := rabbithole.VhostLimitsValues{}
+	if limits != nil {
+		if limits.Connections != nil {
+			vhostLimitsValues["max-connections"] = int(*limits.Connections)
+		}
+		if limits.Queues != nil {
+			vhostLimitsValues["max-queues"] = int(*limits.Queues)
+		}
+	}
+	return vhostLimitsValues
+}
