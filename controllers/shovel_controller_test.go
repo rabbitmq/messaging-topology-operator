@@ -100,6 +100,10 @@ var _ = Describe("shovel-controller", func() {
 	})
 
 	When("creation", func() {
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &shovel)).To(Succeed())
+		})
+
 		When("the RabbitMQ Client returns a HTTP error response", func() {
 			BeforeEach(func() {
 				shovelName = "test-shovel-http-error"

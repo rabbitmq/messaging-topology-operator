@@ -97,6 +97,10 @@ var _ = Describe("exchange-controller", func() {
 	})
 
 	Context("creation", func() {
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &exchange)).To(Succeed())
+		})
+
 		When("the RabbitMQ Client returns a HTTP error response", func() {
 			BeforeEach(func() {
 				exchangeName = "test-http-error"
@@ -150,6 +154,7 @@ var _ = Describe("exchange-controller", func() {
 			})
 		})
 	})
+
 	Context("LastTransitionTime", func() {
 		BeforeEach(func() {
 			exchangeName = "test-last-transition-time"
@@ -158,6 +163,11 @@ var _ = Describe("exchange-controller", func() {
 				StatusCode: http.StatusCreated,
 			}, nil)
 		})
+
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &exchange)).To(Succeed())
+		})
+
 		It("changes only if status changes", func() {
 			By("setting LastTransitionTime when transitioning to status Ready=true")
 			Expect(k8sClient.Create(ctx, &exchange)).To(Succeed())

@@ -95,6 +95,10 @@ var _ = Describe("bindingController", func() {
 	})
 
 	When("creating a binding", func() {
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &binding)).To(Succeed())
+		})
+
 		When("the RabbitMQ Client returns a HTTP error response", func() {
 			BeforeEach(func() {
 				bindingName = "test-binding-http-error"
