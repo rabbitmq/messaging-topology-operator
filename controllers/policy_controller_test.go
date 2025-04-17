@@ -100,6 +100,10 @@ var _ = Describe("policy-controller", func() {
 	})
 
 	Context("creation", func() {
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &policy)).To(Succeed())
+		})
+
 		When("the RabbitMQ Client returns a HTTP error response", func() {
 			BeforeEach(func() {
 				policyName = "test-http-error"

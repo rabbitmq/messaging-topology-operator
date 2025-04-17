@@ -103,6 +103,10 @@ var _ = Describe("schema-replication-controller", func() {
 	})
 
 	When("creation", func() {
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &replication)).To(Succeed())
+		})
+
 		When("the RabbitMQ Client returns a HTTP error response", func() {
 			BeforeEach(func() {
 				replicationName = "test-replication-http-error"
@@ -257,6 +261,7 @@ var _ = Describe("schema-replication-controller", func() {
 		})
 
 		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &replication)).To(Succeed())
 			rabbitmqclient.SecretStoreClientProvider = rabbitmqclient.GetSecretStoreClient
 		})
 

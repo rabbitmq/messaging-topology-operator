@@ -37,6 +37,11 @@ type UserSpec struct {
 	//
 	// Note that this import only occurs at creation time, and is ignored once a password has been set on a User.
 	ImportCredentialsSecret *corev1.LocalObjectReference `json:"importCredentialsSecret,omitempty"`
+	// Limits to apply to a user to restrict the number of connections and channels
+	// the user can create. These limits can be used as guard rails in environments
+	// where applications cannot be trusted and monitored in detail, for example,
+	// when RabbitMQ clusters are offered as a service. See https://www.rabbitmq.com/docs/user-limits.
+	UserLimits *UserLimits `json:"limits,omitempty"`
 }
 
 // UserStatus defines the observed state of User.
@@ -55,6 +60,17 @@ type UserStatus struct {
 // For more information, see https://www.rabbitmq.com/management.html#permissions.
 // +kubebuilder:validation:Enum=management;policymaker;monitoring;administrator
 type UserTag string
+
+// Limits to apply to a user to restrict the number of connections and channels
+// the user can create. These limits can be used as guard rails in environments
+// where applications cannot be trusted and monitored in detail, for example,
+// when RabbitMQ clusters are offered as a service. See https://www.rabbitmq.com/docs/user-limits.
+type UserLimits struct {
+	// Limits how many connections the user can open.
+	Connections *int32 `json:"connections,omitempty"`
+	// Limits how many AMQP 0.9.1 channels the user can open.
+	Channels *int32 `json:"channels,omitempty"`
+}
 
 // +genclient
 // +kubebuilder:object:root=true
