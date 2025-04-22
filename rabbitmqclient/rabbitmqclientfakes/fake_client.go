@@ -304,6 +304,19 @@ type FakeClient struct {
 		result1 *rabbithole.VhostInfo
 		result2 error
 	}
+	GetVhostLimitsStub        func(string) ([]rabbithole.VhostLimitsInfo, error)
+	getVhostLimitsMutex       sync.RWMutex
+	getVhostLimitsArgsForCall []struct {
+		arg1 string
+	}
+	getVhostLimitsReturns struct {
+		result1 []rabbithole.VhostLimitsInfo
+		result2 error
+	}
+	getVhostLimitsReturnsOnCall map[int]struct {
+		result1 []rabbithole.VhostLimitsInfo
+		result2 error
+	}
 	ListExchangeBindingsBetweenStub        func(string, string, string) ([]rabbithole.BindingInfo, error)
 	listExchangeBindingsBetweenMutex       sync.RWMutex
 	listExchangeBindingsBetweenArgsForCall []struct {
@@ -1848,6 +1861,70 @@ func (fake *FakeClient) GetVhostReturnsOnCall(i int, result1 *rabbithole.VhostIn
 	}{result1, result2}
 }
 
+func (fake *FakeClient) GetVhostLimits(arg1 string) ([]rabbithole.VhostLimitsInfo, error) {
+	fake.getVhostLimitsMutex.Lock()
+	ret, specificReturn := fake.getVhostLimitsReturnsOnCall[len(fake.getVhostLimitsArgsForCall)]
+	fake.getVhostLimitsArgsForCall = append(fake.getVhostLimitsArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	stub := fake.GetVhostLimitsStub
+	fakeReturns := fake.getVhostLimitsReturns
+	fake.recordInvocation("GetVhostLimits", []interface{}{arg1})
+	fake.getVhostLimitsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeClient) GetVhostLimitsCallCount() int {
+	fake.getVhostLimitsMutex.RLock()
+	defer fake.getVhostLimitsMutex.RUnlock()
+	return len(fake.getVhostLimitsArgsForCall)
+}
+
+func (fake *FakeClient) GetVhostLimitsCalls(stub func(string) ([]rabbithole.VhostLimitsInfo, error)) {
+	fake.getVhostLimitsMutex.Lock()
+	defer fake.getVhostLimitsMutex.Unlock()
+	fake.GetVhostLimitsStub = stub
+}
+
+func (fake *FakeClient) GetVhostLimitsArgsForCall(i int) string {
+	fake.getVhostLimitsMutex.RLock()
+	defer fake.getVhostLimitsMutex.RUnlock()
+	argsForCall := fake.getVhostLimitsArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeClient) GetVhostLimitsReturns(result1 []rabbithole.VhostLimitsInfo, result2 error) {
+	fake.getVhostLimitsMutex.Lock()
+	defer fake.getVhostLimitsMutex.Unlock()
+	fake.GetVhostLimitsStub = nil
+	fake.getVhostLimitsReturns = struct {
+		result1 []rabbithole.VhostLimitsInfo
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeClient) GetVhostLimitsReturnsOnCall(i int, result1 []rabbithole.VhostLimitsInfo, result2 error) {
+	fake.getVhostLimitsMutex.Lock()
+	defer fake.getVhostLimitsMutex.Unlock()
+	fake.GetVhostLimitsStub = nil
+	if fake.getVhostLimitsReturnsOnCall == nil {
+		fake.getVhostLimitsReturnsOnCall = make(map[int]struct {
+			result1 []rabbithole.VhostLimitsInfo
+			result2 error
+		})
+	}
+	fake.getVhostLimitsReturnsOnCall[i] = struct {
+		result1 []rabbithole.VhostLimitsInfo
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeClient) ListExchangeBindingsBetween(arg1 string, arg2 string, arg3 string) ([]rabbithole.BindingInfo, error) {
 	fake.listExchangeBindingsBetweenMutex.Lock()
 	ret, specificReturn := fake.listExchangeBindingsBetweenReturnsOnCall[len(fake.listExchangeBindingsBetweenArgsForCall)]
@@ -2680,6 +2757,8 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	defer fake.getUserLimitsMutex.RUnlock()
 	fake.getVhostMutex.RLock()
 	defer fake.getVhostMutex.RUnlock()
+	fake.getVhostLimitsMutex.RLock()
+	defer fake.getVhostLimitsMutex.RUnlock()
 	fake.listExchangeBindingsBetweenMutex.RLock()
 	defer fake.listExchangeBindingsBetweenMutex.RUnlock()
 	fake.listQueueBindingsBetweenMutex.RLock()
