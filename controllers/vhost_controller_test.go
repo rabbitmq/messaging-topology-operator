@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"time"
 
+	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -32,6 +33,7 @@ var _ = Describe("vhost-controller", func() {
 		managerCtx    context.Context
 		managerCancel context.CancelFunc
 		k8sClient     runtimeClient.Client
+		vhostLimits   *topology.VhostLimits
 	)
 
 	BeforeEach(func() {
@@ -87,9 +89,11 @@ var _ = Describe("vhost-controller", func() {
 				Namespace: vhostNamespace,
 			},
 			Spec: topology.VhostSpec{
+				Name: vhostName,
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: "example-rabbit",
 				},
+				VhostLimits: vhostLimits,
 			},
 		}
 	})
@@ -155,6 +159,141 @@ var _ = Describe("vhost-controller", func() {
 						"Status":  Equal(corev1.ConditionFalse),
 						"Message": ContainSubstring("a go failure"),
 					})))
+			})
+		})
+
+		Context("vhost limits", func() {
+			var connections, queues int32
+
+			When("vhost limits are provided", func() {
+				BeforeEach(func() {
+					connections = 708
+					queues = 509
+					vhostName = "vhost-with-limits"
+					vhostLimits = &topology.VhostLimits{
+						Connections: &connections,
+						Queues:      &queues,
+					}
+					fakeRabbitMQClient.PutVhostReturns(&http.Response{
+						Status:     "201 Created",
+						StatusCode: http.StatusCreated,
+					}, nil)
+					fakeRabbitMQClient.PutVhostLimitsReturns(&http.Response{
+						Status:     "200 OK",
+						StatusCode: http.StatusOK,
+					}, nil)
+					fakeRabbitMQClient.GetVhostLimitsReturns(nil, rabbithole.ErrorResponse{
+						StatusCode: 404,
+						Message:    "Object Not Found",
+						Reason:     "Not Found",
+					})
+				})
+
+				It("puts the vhost limits", func() {
+					Expect(k8sClient.Create(ctx, &vhost)).To(Succeed())
+					Eventually(func() []topology.Condition {
+						_ = k8sClient.Get(
+							ctx,
+							types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace},
+							&vhost,
+						)
+
+						return vhost.Status.Conditions
+					}).
+						Within(statusEventsUpdateTimeout).
+						WithPolling(time.Second).
+						Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+							"Type":   Equal(topology.ConditionType("Ready")),
+							"Reason": Equal("SuccessfulCreateOrUpdate"),
+							"Status": Equal(corev1.ConditionTrue),
+						})))
+
+					Expect(fakeRabbitMQClient.PutVhostLimitsCallCount()).To(BeNumerically(">", 0))
+					_, vhostLimitsValues := fakeRabbitMQClient.PutVhostLimitsArgsForCall(0)
+					Expect(len(vhostLimitsValues)).To(Equal(2))
+					Expect(vhostLimitsValues).To(HaveKeyWithValue("max-connections", int(connections)))
+					Expect(vhostLimitsValues).To(HaveKeyWithValue("max-queues", int(queues)))
+				})
+			})
+
+			When("vhost limits are not provided", func() {
+				BeforeEach(func() {
+					vhostName = "vhost-without-limits"
+					fakeRabbitMQClient.GetVhostLimitsReturns(nil, rabbithole.ErrorResponse{
+						StatusCode: 404,
+						Message:    "Object Not Found",
+						Reason:     "Not Found",
+					})
+				})
+
+				It("does not set vhost limits", func() {
+					Expect(k8sClient.Create(ctx, &vhost)).To(Succeed())
+					Expect(fakeRabbitMQClient.PutVhostLimitsCallCount()).To(Equal(0))
+				})
+			})
+
+			When("vhost limits are updated", func() {
+				BeforeEach(func() {
+					vhostName = "vhost-updated-limits"
+					queues = 613
+					vhostLimits = &topology.VhostLimits{
+						Connections: nil,
+						Queues:      &queues,
+					}
+
+					var vhostLimitsInfo []rabbithole.VhostLimitsInfo
+					vhostLimitsInfo = append(vhostLimitsInfo, rabbithole.VhostLimitsInfo{
+						Vhost: vhostName,
+						Value: rabbithole.VhostLimitsValues{"max-queues": 10, "max-connections": 300},
+					})
+
+					fakeRabbitMQClient.PutVhostReturns(&http.Response{
+						Status:     "201 Created",
+						StatusCode: http.StatusCreated,
+					}, nil)
+					fakeRabbitMQClient.PutVhostLimitsReturns(&http.Response{
+						Status:     "201 Created",
+						StatusCode: http.StatusCreated,
+					}, nil)
+					fakeRabbitMQClient.GetVhostLimitsReturns(vhostLimitsInfo, nil)
+					fakeRabbitMQClient.DeleteVhostLimitsReturns(&http.Response{
+						Status:     "204 No Content",
+						StatusCode: http.StatusNoContent,
+					}, nil)
+				})
+
+				It("updates the provided limits and removes unspecified limits", func() {
+					Expect(k8sClient.Create(ctx, &vhost)).To(Succeed())
+					Eventually(func() []topology.Condition {
+						_ = k8sClient.Get(
+							ctx,
+							types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace},
+							&vhost,
+						)
+
+						return vhost.Status.Conditions
+					}).
+						Within(statusEventsUpdateTimeout).
+						WithPolling(time.Second).
+						Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+							"Type":   Equal(topology.ConditionType("Ready")),
+							"Reason": Equal("SuccessfulCreateOrUpdate"),
+							"Status": Equal(corev1.ConditionTrue),
+						})))
+
+					By("deleting the outdated limits")
+					Expect(fakeRabbitMQClient.DeleteVhostLimitsCallCount()).To(BeNumerically(">", 0))
+					vhostname, limits := fakeRabbitMQClient.DeleteVhostLimitsArgsForCall(0)
+					Expect(vhostname).To(Equal(vhostName))
+					Expect(len(limits)).To(Equal(1))
+					Expect(limits).To(ContainElement("max-connections"))
+
+					By("updating the new limits")
+					Expect(fakeRabbitMQClient.PutVhostLimitsCallCount()).To(BeNumerically(">", 0))
+					_, vhostLimitsValues := fakeRabbitMQClient.PutVhostLimitsArgsForCall(0)
+					Expect(len(vhostLimitsValues)).To(Equal(1))
+					Expect(vhostLimitsValues).To(HaveKeyWithValue("max-queues", int(queues)))
+				})
 			})
 		})
 	})

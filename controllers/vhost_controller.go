@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -20,9 +21,35 @@ type VhostReconciler struct {
 	client.Client
 }
 
-func (r *VhostReconciler) DeclareFunc(_ context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *VhostReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+	logger := ctrl.LoggerFrom(ctx)
 	vhost := obj.(*topology.Vhost)
-	return validateResponse(client.PutVhost(vhost.Spec.Name, *internal.GenerateVhostSettings(vhost)))
+	settings := internal.GenerateVhostSettings(vhost)
+	logger.Info("generated vhost settings", "vhost", vhost.Spec.Name, "settings", settings)
+	err := validateResponse(client.PutVhost(vhost.Spec.Name, *settings))
+	if err != nil {
+		return err
+	}
+
+	newVhostLimits := internal.GenerateVhostLimits(vhost.Spec.VhostLimits)
+	logger.Info("getting existing vhost limits", vhost, vhost.Spec.Name)
+	existingVhostLimits, err := r.getVhostLimits(client, vhost.Spec.Name)
+	if err != nil {
+		return err
+	}
+	limitsToDelete := r.vhostLimitsToDelete(existingVhostLimits, newVhostLimits)
+	if len(limitsToDelete) > 0 {
+		logger.Info("Deleting outdated vhost limits", "vhost", vhost.Spec.Name, "limits", limitsToDelete)
+		err = validateResponseForDeletion(client.DeleteVhostLimits(vhost.Spec.Name, limitsToDelete))
+		if err != nil && !errors.Is(err, NotFound) {
+			return err
+		}
+	}
+	if len(newVhostLimits) > 0 {
+		logger.Info("creating new vhost limits", "vhost", vhost.Spec.Name, "limits", newVhostLimits)
+		return validateResponse(client.PutVhostLimits(vhost.Spec.Name, newVhostLimits))
+	}
+	return nil
 }
 
 // DeleteFunc deletes vhost from server
@@ -40,4 +67,29 @@ func (r *VhostReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.
 		return err
 	}
 	return nil
+}
+
+func (r *VhostReconciler) vhostLimitsToDelete(existingVhostLimits, newVhostLimits rabbithole.VhostLimitsValues) (limitsToDelete rabbithole.VhostLimits) {
+	vhostLimitKeys := []string{"max-connections", "max-queues"}
+	for _, limit := range vhostLimitKeys {
+		_, oldExists := existingVhostLimits[limit]
+		_, newExists := newVhostLimits[limit]
+		if oldExists && !newExists {
+			limitsToDelete = append(limitsToDelete, limit)
+		}
+	}
+	return limitsToDelete
+}
+
+func (r *VhostReconciler) getVhostLimits(client rabbitmqclient.Client, vhost string) (rabbithole.VhostLimitsValues, error) {
+	vhostLimitsInfo, err := client.GetVhostLimits(vhost)
+	if errors.Is(err, error(rabbithole404)) {
+		return rabbithole.VhostLimitsValues{}, nil
+	} else if err != nil {
+		return rabbithole.VhostLimitsValues{}, err
+	}
+	if len(vhostLimitsInfo) == 0 {
+		return rabbithole.VhostLimitsValues{}, nil
+	}
+	return vhostLimitsInfo[0].Value, nil
 }

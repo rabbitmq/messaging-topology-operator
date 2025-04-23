@@ -143,4 +143,61 @@ var _ = Describe("vhost", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
+
+	When("vhost limits are provided", func() {
+		var connections, queues int32
+		var vhostWithLimits *topology.Vhost
+
+		BeforeEach(func() {
+			connections = 108
+			queues = 212
+			vhostWithLimits = &topology.Vhost{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "vhost-limits-test",
+					Namespace: namespace,
+				},
+				Spec: topology.VhostSpec{
+					Name: "vhost-limits-test",
+					RabbitmqClusterReference: topology.RabbitmqClusterReference{
+						Name: rmq.Name,
+					},
+					VhostLimits: &topology.VhostLimits{
+						Connections: &connections,
+						Queues:      &queues,
+					},
+				},
+			}
+		})
+
+		JustBeforeEach(func() {
+			Expect(k8sClient.Create(ctx, vhostWithLimits, &client.CreateOptions{})).To(Succeed())
+			Eventually(func() error {
+				_, err := rabbitClient.GetVhost(vhostWithLimits.Spec.Name)
+				return err
+			}, 30, 2).ShouldNot(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, vhostWithLimits)).To(Succeed())
+		})
+
+		It("configures the limits", func() {
+			var err error
+			var vhostLimitsInfoResponse []rabbithole.VhostLimitsInfo
+			Eventually(func() error {
+				vhostLimitsInfoResponse, err = rabbitClient.GetVhostLimits(vhostWithLimits.Spec.Name)
+				return err
+			}, 30, 2).ShouldNot(HaveOccurred())
+			Expect(len(vhostLimitsInfoResponse)).To(Equal(1))
+			Expect(vhostLimitsInfoResponse[0].Vhost).To(Equal(vhostWithLimits.Spec.Name))
+			vhostLimitsValues := vhostLimitsInfoResponse[0].Value
+			Expect(len(vhostLimitsValues)).To(Equal(2))
+			connectionLimit, ok := vhostLimitsValues["max-connections"]
+			Expect(ok).To(BeTrue())
+			Expect(connectionLimit).To(Equal(int(connections)))
+			queueLimit, ok := vhostLimitsValues["max-queues"]
+			Expect(ok).To(BeTrue())
+			Expect(queueLimit).To(Equal(int(queues)))
+		})
+	})
 })
