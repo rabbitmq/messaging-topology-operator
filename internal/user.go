@@ -62,3 +62,16 @@ func GenerateUserSettings(credentials *corev1.Secret, tags []topology.UserTag) (
 		HashingAlgorithm: rabbithole.HashingAlgorithmSHA512,
 	}, nil
 }
+
+func GenerateUserLimits(userLimits *topology.UserLimits) rabbithole.UserLimitsValues {
+	userLimitsValues := rabbithole.UserLimitsValues{}
+	if userLimits != nil {
+		if userLimits.Connections != nil {
+			userLimitsValues["max-connections"] = int(*userLimits.Connections)
+		}
+		if userLimits.Channels != nil {
+			userLimitsValues["max-channels"] = int(*userLimits.Channels)
+		}
+	}
+	return userLimitsValues
+}

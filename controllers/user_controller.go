@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 
+	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
@@ -221,7 +222,55 @@ func (r *UserReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.
 	}
 	logger.Info("Generated user settings", "user", user.Name, "settings", userSettings)
 
-	return validateResponse(client.PutUser(userSettings.Name, userSettings))
+	err = validateResponse(client.PutUser(userSettings.Name, userSettings))
+	if err != nil {
+		return err
+	}
+
+	newUserLimits := internal.GenerateUserLimits(user.Spec.UserLimits)
+	logger.Info("Getting existing user limits", "user", user.Name)
+	existingUserLimits, err := r.getUserLimits(client, string(credentials.Data["username"]))
+	if err != nil {
+		return err
+	}
+	limitsToDelete := r.userLimitsToDelete(existingUserLimits, newUserLimits)
+	if len(limitsToDelete) > 0 {
+		logger.Info("Deleting outdated user limits", "user", user.Name, "limits", limitsToDelete)
+		err = validateResponseForDeletion(client.DeleteUserLimits(string(credentials.Data["username"]), limitsToDelete))
+		if err != nil && !errors.Is(err, NotFound) {
+			return err
+		}
+	}
+	if len(newUserLimits) > 0 {
+		logger.Info("Creating new user limits", "user", user.Name, "limits", newUserLimits)
+		return validateResponse(client.PutUserLimits(string(credentials.Data["username"]), newUserLimits))
+	}
+	return nil
+}
+
+func (r *UserReconciler) userLimitsToDelete(existingUserLimits, newUserLimits rabbithole.UserLimitsValues) (limitsToDelete rabbithole.UserLimits) {
+	userLimitKeys := []string{"max-connections", "max-channels"}
+	for _, limit := range userLimitKeys {
+		_, oldExists := existingUserLimits[limit]
+		_, newExists := newUserLimits[limit]
+		if oldExists && !newExists {
+			limitsToDelete = append(limitsToDelete, limit)
+		}
+	}
+	return limitsToDelete
+}
+
+func (r *UserReconciler) getUserLimits(client rabbitmqclient.Client, username string) (rabbithole.UserLimitsValues, error) {
+	userLimitsInfo, err := client.GetUserLimits(username)
+	if errors.Is(err, error(rabbithole404)) {
+		return rabbithole.UserLimitsValues{}, nil
+	} else if err != nil {
+		return rabbithole.UserLimitsValues{}, err
+	}
+	if len(userLimitsInfo) == 0 {
+		return rabbithole.UserLimitsValues{}, nil
+	}
+	return userLimitsInfo[0].Value, nil
 }
 
 func (r *UserReconciler) getUserCredentials(ctx context.Context, user *topology.User) (*corev1.Secret, error) {

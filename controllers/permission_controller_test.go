@@ -101,6 +101,10 @@ var _ = Describe("permission-controller", func() {
 		})
 
 		Context("creation", func() {
+			AfterEach(func() {
+				Expect(k8sClient.Delete(ctx, &permission)).To(Succeed())
+			})
+
 			When("the RabbitMQ Client returns a HTTP error response", func() {
 				BeforeEach(func() {
 					permissionName = "test-with-username-http-error"
@@ -261,9 +265,21 @@ var _ = Describe("permission-controller", func() {
 				Status:     "204 No Content",
 				StatusCode: http.StatusNoContent,
 			}, nil)
+			fakeRabbitMQClient.PutUserLimitsReturns(&http.Response{
+				Status:     "201 Created",
+				StatusCode: http.StatusCreated,
+			}, nil)
+			fakeRabbitMQClient.DeleteUserLimitsReturns(&http.Response{
+				Status:     "204 No Content",
+				StatusCode: http.StatusNoContent,
+			}, nil)
 		})
 
 		Context("creation", func() {
+			AfterEach(func() {
+				Expect(k8sClient.Delete(ctx, &permission)).To(Succeed())
+			})
+
 			When("user not exist", func() {
 				BeforeEach(func() {
 					permissionName = "test-with-userref-create-not-exist"
@@ -407,10 +423,14 @@ var _ = Describe("permission-controller", func() {
 			})
 		})
 
-		Context("ownerref", func() {
+		When("the user already exists", func() {
 			BeforeEach(func() {
 				permissionName = "ownerref-with-userref-test"
 				userName = "example-ownerref"
+			})
+
+			AfterEach(func() {
+				Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
 			})
 
 			It("sets the correct deletion ownerref to the object", func() {

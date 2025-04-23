@@ -39,6 +39,10 @@ var _ = Describe("vhost", func() {
 		}
 	})
 
+	AfterEach(func() {
+		_ = k8sClient.Delete(ctx, vhost)
+	})
+
 	It("creates and deletes a vhost successfully", func() {
 		By("creating a vhost")
 		Expect(k8sClient.Create(ctx, vhost, &client.CreateOptions{})).To(Succeed())

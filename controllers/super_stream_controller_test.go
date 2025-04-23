@@ -124,6 +124,10 @@ var _ = Describe("super-stream-controller", func() {
 		})
 
 		Context("creation", func() {
+			AfterEach(func() {
+				Expect(k8sClient.Delete(ctx, &superStream)).To(Succeed())
+			})
+
 			When("an underlying resource is deleted", func() {
 				JustBeforeEach(func() {
 					Expect(k8sClient.Create(ctx, &superStream)).To(Succeed())

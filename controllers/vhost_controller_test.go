@@ -95,6 +95,10 @@ var _ = Describe("vhost-controller", func() {
 	})
 
 	Context("creation", func() {
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &vhost)).To(Succeed())
+		})
+
 		When("the RabbitMQ Client returns a HTTP error response", func() {
 			BeforeEach(func() {
 				vhostName = "test-http-error"

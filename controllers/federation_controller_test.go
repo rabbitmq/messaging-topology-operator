@@ -98,6 +98,10 @@ var _ = Describe("federation-controller", func() {
 	})
 
 	When("creation", func() {
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &federation)).To(Succeed())
+		})
+
 		When("the RabbitMQ Client returns a HTTP error response", func() {
 			BeforeEach(func() {
 				federationName = "test-federation-http-error"

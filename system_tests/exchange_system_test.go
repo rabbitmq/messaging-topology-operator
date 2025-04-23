@@ -44,6 +44,10 @@ var _ = Describe("Exchange", func() {
 		}
 	})
 
+	AfterEach(func() {
+		_ = k8sClient.Delete(ctx, exchange)
+	})
+
 	It("declares and deletes a exchange successfully", func() {
 		By("declaring exchange")
 		Expect(k8sClient.Create(ctx, exchange, &client.CreateOptions{})).To(Succeed())

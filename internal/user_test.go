@@ -63,4 +63,36 @@ var _ = Describe("GenerateUserSettings", func() {
 		// Password should not be sent, even if provided
 		Expect(settings.Password).To(BeEmpty())
 	})
+
+	When("user limits are provided", func() {
+		var connections, channels int32
+
+		It("uses the limits to generate the expected rabbithole.UserLimits", func() {
+			connections = 3
+			channels = 7
+			limits := internal.GenerateUserLimits(&topology.UserLimits{
+				Connections: &connections,
+				Channels:    &channels,
+			})
+			Expect(limits).To(HaveLen(2))
+			Expect(limits).To(HaveKeyWithValue("max-connections", int(connections)))
+			Expect(limits).To(HaveKeyWithValue("max-channels", int(channels)))
+		})
+
+		It("does not create unspecified limits", func() {
+			connections = 5
+			limits := internal.GenerateUserLimits(&topology.UserLimits{
+				Connections: &connections,
+			})
+			Expect(limits).To(HaveKeyWithValue("max-connections", int(connections)))
+			Expect(limits).NotTo(HaveKey("max-channels"))
+		})
+	})
+
+	When("no user limits are provided", func() {
+		It("does not specify limits", func() {
+			limits := internal.GenerateUserLimits(&topology.UserLimits{})
+			Expect(limits).To(BeEmpty())
+		})
+	})
 })

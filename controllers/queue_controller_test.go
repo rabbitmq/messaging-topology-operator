@@ -96,6 +96,10 @@ var _ = Describe("queue-controller", func() {
 	})
 
 	Context("creation", func() {
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &queue)).To(Succeed())
+		})
+
 		When("the RabbitMQ Client returns a HTTP error response", func() {
 			BeforeEach(func() {
 				queueName = "test-http-error"
