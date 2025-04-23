@@ -78,7 +78,9 @@ jobs:
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: rabbitmqoperator/messaging-topology-operator
+        images: |
+          rabbitmqoperator/messaging-topology-operator
+          quay.io/rabbitmqoperator/messaging-topology-operator
         # generate Docker tags based on the following events/attributes
         tags: |
           type=sha
@@ -96,6 +98,13 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Login to Quay.io
+      if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.QUAY_USERNAME }}
+        password: ${{ secrets.QUAY_ROBOT_TOKEN }}
 
     - name: Build and push
       if: ${{ startsWith(github.ref, 'refs/tags/v') }}
@@ -138,7 +147,7 @@ jobs:
         kustomize edit set image \
         rabbitmqoperator/messaging-topology-operator-dev=rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}"
         popd
-        make generate-manifests
+        make generate-manifests QUAY_IO_OPERATOR_IMAGE=quay.io/rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}"
 
     - name: Upload operator manifests
       uses: actions/upload-artifact@v4
@@ -248,6 +257,8 @@ jobs:
         files: |
           messaging-topology-operator.yaml
           messaging-topology-operator-with-certmanager.yaml
+          messaging-topology-operator-quay-io.yaml
+          messaging-topology-operator-with-certmanager-quay-io.yaml
         generate_release_notes: true
         draft: true
         fail_on_unmatched_files: true
