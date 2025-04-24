@@ -96,7 +96,7 @@ integration-tests::manifests
 integration-tests::just-integration-tests
 
 just-integration-tests: $(KUBEBUILDER_ASSETS)
-	ginkgo --randomize-all -r -p $(GINKGO_EXTRA) controllers/
+	ginkgo --randomize-all -r $(GINKGO_EXTRA) controllers/
 
 .PHONY: local-tests
 local-tests: unit-tests integration-tests ## Run all local tests (unit & integration)

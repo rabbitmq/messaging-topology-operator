@@ -46,7 +46,7 @@ jobs:
       run: make install-tools kubebuilder-assets just-unit-tests
 
     - name: Integration tests
-      run: GINKGO_EXTRA="--flake-attempts=3" make integration-tests
+      run: make integration-tests
 
     - name: Notify Google Chat
       if: failure()
