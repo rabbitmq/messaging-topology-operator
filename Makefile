@@ -163,7 +163,7 @@ generate-manifests: | $(YTT)
 	sed '/CERTIFICATE_NAMESPACE.*CERTIFICATE_NAME/d' releases/messaging-topology-operator.bak > releases/messaging-topology-operator.yaml
 	$(YTT) -f releases/messaging-topology-operator.yaml -f config/ytt_overlays/change_deployment_image.yml --data-value operator_image=$(QUAY_IO_OPERATOR_IMAGE) > releases/messaging-topology-operator-quay-io.yaml
 	kustomize build config/installation/cert-manager/ > releases/messaging-topology-operator-with-certmanager.yaml
-	$(YTT) -f releases/messaging-topology-with-certmanager.yaml -f config/ytt_overlays/change_deployment_image.yml --data-value operator_image=$(QUAY_IO_OPERATOR_IMAGE) > releases/messaging-topology-operator-with-certmanager-quay-io.yaml
+	$(YTT) -f releases/messaging-topology-operator-with-certmanager.yaml -f config/ytt_overlays/change_deployment_image.yml --data-value operator_image=$(QUAY_IO_OPERATOR_IMAGE) > releases/messaging-topology-operator-with-certmanager-quay-io.yaml
 
 # Run go fmt against code
 fmt:
