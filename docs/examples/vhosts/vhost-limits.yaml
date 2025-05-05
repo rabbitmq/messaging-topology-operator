@@ -1,0 +1,11 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: Vhost
+metadata:
+  name: test-vhost
+spec:
+  name: myvhost
+  rabbitmqClusterReference:
+    name: test
+  limits:
+    connections: 100
+    queues: 50
