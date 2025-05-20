@@ -54,6 +54,7 @@ export KUBEBUILDER_ASSETS = $(LOCAL_TESTBIN)/k8s/$(ENVTEST_K8S_VERSION)-$(platfo
 
 .PHONY: kubebuilder-assets
 kubebuilder-assets: $(KUBEBUILDER_ASSETS)
+	@echo "export KUBEBUILDER_ASSETS = $(LOCAL_TESTBIN)/k8s/$(ENVTEST_K8S_VERSION)-$(platform)-$(ARCHITECTURE)"
 
 $(KUBEBUILDER_ASSETS):
 	setup-envtest --os $(platform) --arch $(ARCHITECTURE) --bin-dir $(LOCAL_TESTBIN) use $(ENVTEST_K8S_VERSION)
@@ -73,6 +74,8 @@ $(YTT): | $(LOCAL_BIN)
 ##############
 #### Tests ###
 ##############
+GINKGO := go run github.com/onsi/ginkgo/v2/ginkgo
+
 .PHONY: unit-tests
 unit-tests::install-tools ## Run unit tests
 unit-tests::$(KUBEBUILDER_ASSETS)
@@ -84,7 +87,7 @@ unit-tests::just-unit-tests
 
 .PHONY: just-unit-tests
 just-unit-tests:
-	ginkgo -r --randomize-all api/ internal/ rabbitmqclient/
+	$(GINKGO) -r --randomize-all api/ internal/ rabbitmqclient/
 
 .PHONY: integration-tests
 integration-tests::install-tools ## Run integration tests. Use GINKGO_EXTRA="-some-arg" to append arguments to 'ginkgo run'
@@ -96,14 +99,14 @@ integration-tests::manifests
 integration-tests::just-integration-tests
 
 just-integration-tests: $(KUBEBUILDER_ASSETS)
-	ginkgo --randomize-all -r -p $(GINKGO_EXTRA) controllers/
+	$(GINKGO) --randomize-all -r -p $(GINKGO_EXTRA) controllers/
 
 .PHONY: local-tests
 local-tests: unit-tests integration-tests ## Run all local tests (unit & integration)
 
 .PHONY: system-tests
 system-tests: ## Run E2E tests using current context in ~/.kube/config. Expects cluster operator and topology operator to be installed in the cluster
-	NAMESPACE="rabbitmq-system" ginkgo --randomize-all -r $(GINKGO_EXTRA) system_tests/
+	NAMESPACE="rabbitmq-system" $(GINKGO) --randomize-all -r $(GINKGO_EXTRA) system_tests/
 
 
 ###################

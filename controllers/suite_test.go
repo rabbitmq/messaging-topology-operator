@@ -112,7 +112,7 @@ var _ = BeforeSuite(func() {
 		CRDDirectoryPaths:     operatorCrds,
 		ErrorIfCRDPathMissing: true,
 		Config: &rest.Config{
-			Host: fmt.Sprintf("localhost:818%d", GinkgoParallelProcess()),
+			Host: fmt.Sprintf("localhost:218%d", GinkgoParallelProcess()),
 		},
 	}
 
