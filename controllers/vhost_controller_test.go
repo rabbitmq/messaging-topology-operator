@@ -369,26 +369,31 @@ var _ = Describe("vhost-controller", func() {
 	When("the Vhost has DeletionPolicy set to retain", func() {
 		BeforeEach(func() {
 			vhostName = "vhost-with-retain-policy"
-			vhost.Spec.DeletionPolicy = "retain"
 			fakeRabbitMQClient.DeleteVhostReturns(&http.Response{
 				Status:     "200 OK",
 				StatusCode: http.StatusOK,
 			}, nil)
+			fakeRabbitMQClient.PutVhostReturns(&http.Response{StatusCode: http.StatusCreated, Status: "201 Created"}, nil)
 		})
 
 		It("deletes the k8s resource but preserves the vhost in RabbitMQ server", func() {
+			vhost.Spec.DeletionPolicy = "retain"
 			Expect(k8sClient.Create(ctx, &vhost)).To(Succeed())
-			Expect(k8sClient.Delete(ctx, &vhost)).To(Succeed())
+			Eventually(fakeRabbitMQClient.PutVhostCallCount).
+				WithPolling(time.Second).
+				Within(time.Second*3).
+				Should(BeNumerically(">=", 1), "Expected to call RMQ API to create vhost")
 
+			Expect(k8sClient.Delete(ctx, &vhost)).To(Succeed())
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, types.NamespacedName{Name: vhost.Name, Namespace: vhost.Namespace}, &vhost)
 				return apierrors.IsNotFound(err)
 			}).
 				Within(statusEventsUpdateTimeout).
 				WithPolling(time.Second).
-				Should(BeTrue())
+				Should(BeTrue(), "vhost should not be found")
 
-			Expect(fakeRabbitMQClient.DeleteVhostCallCount()).To(Equal(0))
+			Expect(fakeRabbitMQClient.DeleteVhostCallCount()).To(Equal(0), "Expected vhost to be deleted and no calls to RMQ API")
 		})
 	})
 })

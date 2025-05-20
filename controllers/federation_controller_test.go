@@ -233,26 +233,31 @@ var _ = Describe("federation-controller", func() {
 	When("the Federation has DeletionPolicy set to retain", func() {
 		BeforeEach(func() {
 			federationName = "federation-with-retain-policy"
-			federation.Spec.DeletionPolicy = "retain"
 			fakeRabbitMQClient.DeleteFederationUpstreamReturns(&http.Response{
 				Status:     "200 OK",
 				StatusCode: http.StatusOK,
 			}, nil)
+			fakeRabbitMQClient.PutFederationUpstreamReturns(&http.Response{StatusCode: http.StatusCreated, Status: "201 Created"}, nil)
 		})
 
 		It("deletes the k8s resource but preserves the federation in RabbitMQ server", func() {
+			federation.Spec.DeletionPolicy = "retain"
 			Expect(k8sClient.Create(ctx, &federation)).To(Succeed())
-			Expect(k8sClient.Delete(ctx, &federation)).To(Succeed())
+			Eventually(fakeRabbitMQClient.PutFederationUpstreamCallCount).
+				WithPolling(time.Second).
+				Within(time.Second*3).
+				Should(BeNumerically(">=", 1), "Expected to call RMQ API to create federation")
 
+			Expect(k8sClient.Delete(ctx, &federation)).To(Succeed())
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, types.NamespacedName{Name: federation.Name, Namespace: federation.Namespace}, &federation)
 				return apierrors.IsNotFound(err)
 			}).
 				Within(statusEventsUpdateTimeout).
 				WithPolling(time.Second).
-				Should(BeTrue())
+				Should(BeTrue(), "Federation should not be found")
 
-			Expect(fakeRabbitMQClient.DeleteFederationUpstreamCallCount()).To(Equal(0))
+			Expect(fakeRabbitMQClient.DeleteFederationUpstreamCallCount()).To(Equal(0), "Expected Federation to be deleted and no calls to RMQ API")
 		})
 	})
 })

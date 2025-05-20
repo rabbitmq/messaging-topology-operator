@@ -290,18 +290,24 @@ var _ = Describe("shovel-controller", func() {
 			})
 		})
 	})
+
 	When("the Shovel has DeletionPolicy set to retain", func() {
 		BeforeEach(func() {
 			shovelName = "shovel-with-retain-policy"
-			shovel.Spec.DeletionPolicy = "retain"
 			fakeRabbitMQClient.DeleteShovelReturns(&http.Response{
 				Status:     "200 OK",
 				StatusCode: http.StatusOK,
 			}, nil)
+			fakeRabbitMQClient.DeclareShovelReturns(&http.Response{StatusCode: http.StatusCreated, Status: "201 Created"}, nil)
 		})
 
 		It("deletes the k8s resource but preserves the shovel in RabbitMQ server", func() {
+			shovel.Spec.DeletionPolicy = "retain"
 			Expect(k8sClient.Create(ctx, &shovel)).To(Succeed())
+			Eventually(fakeRabbitMQClient.DeclareShovelCallCount).
+				WithPolling(time.Second).
+				Within(time.Second*3).
+				Should(BeNumerically(">=", 1), "Expected to call RMQ API to declare shovel")
 			Expect(k8sClient.Delete(ctx, &shovel)).To(Succeed())
 
 			Eventually(func() bool {
@@ -310,9 +316,9 @@ var _ = Describe("shovel-controller", func() {
 			}).
 				Within(statusEventsUpdateTimeout).
 				WithPolling(time.Second).
-				Should(BeTrue())
+				Should(BeTrue(), "Expected shovel to not be found")
 
-			Expect(fakeRabbitMQClient.DeleteShovelCallCount()).To(Equal(0))
+			Expect(fakeRabbitMQClient.DeleteShovelCallCount()).To(Equal(0), "Shovel object should have been deleted and no calls to RMQ API")
 		})
 	})
 })
