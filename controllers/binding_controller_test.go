@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
 	"io"
+	"k8s.io/apimachinery/pkg/labels"
 	"net/http"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -34,14 +37,28 @@ var _ = Describe("bindingController", func() {
 		k8sClient     runtimeClient.Client
 	)
 
-	BeforeEach(func() {
+	initialiseManager := func(keyValPair ...string) {
+		var sel labels.Selector
+		if len(keyValPair) == 2 {
+			var err error
+			sel, err = labels.Parse(fmt.Sprintf("%s == %s", keyValPair[0], keyValPair[1]))
+			Expect(err).NotTo(HaveOccurred())
+		}
+
 		var err error
 		bindingMgr, err = ctrl.NewManager(testEnv.Config, ctrl.Options{
 			Metrics: server.Options{
 				BindAddress: "0", // To avoid MacOS firewall pop-up every time you run this suite
 			},
 			Cache: cache.Options{
-				DefaultNamespaces: map[string]cache.Config{bindingNamespace: {}},
+				DefaultNamespaces: map[string]cache.Config{bindingNamespace: {
+					LabelSelector: sel,
+				}},
+				ByObject: map[runtimeClient.Object]cache.ByObject{
+					&v1beta1.RabbitmqCluster{}: {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+					&corev1.Secret{}:           {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+					&corev1.Service{}:          {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+				},
 			},
 			Logger: GinkgoLogr,
 			Controller: config.Controller{
@@ -66,21 +83,9 @@ var _ = Describe("bindingController", func() {
 			RabbitmqClientFactory: fakeRabbitMQClientFactory,
 			ReconcileFunc:         &controllers.BindingReconciler{},
 		}).SetupWithManager(bindingMgr)).To(Succeed())
-	})
+	}
 
-	AfterEach(func() {
-		managerCancel()
-		// Sad workaround to avoid controllers racing for the reconciliation of other's
-		// test cases. Without this wait, the last run test consistently fails because
-		// the previous cancelled manager is just in time to reconcile the Queue of the
-		// new/last test, and use the wrong/unexpected arguments in the queue declare call
-		//
-		// Eventual consistency is nice when you have good means of awaiting. That's not the
-		// case with testenv and kubernetes controllers.
-		<-time.After(time.Second)
-	})
-
-	JustBeforeEach(func() {
+	initialiseBinding := func() {
 		binding = topology.Binding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      bindingName,
@@ -92,6 +97,18 @@ var _ = Describe("bindingController", func() {
 				},
 			},
 		}
+	}
+
+	AfterEach(func() {
+		managerCancel()
+		// Sad workaround to avoid controllers racing for the reconciliation of other's
+		// test cases. Without this wait, the last run test consistently fails because
+		// the previous cancelled manager is just in time to reconcile the Queue of the
+		// new/last test, and use the wrong/unexpected arguments in the queue declare call
+		//
+		// Eventual consistency is nice when you have good means of awaiting. That's not the
+		// case with testenv and kubernetes controllers.
+		<-time.After(time.Second)
 	})
 
 	When("creating a binding", func() {
@@ -106,6 +123,9 @@ var _ = Describe("bindingController", func() {
 					Status:     "418 I'm a teapot",
 					StatusCode: 418,
 				}, errors.New("some HTTP error"))
+				initialiseBinding()
+				binding.Labels = map[string]string{"test": "test-binding-http-error"}
+				initialiseManager("test", "test-binding-http-error")
 			})
 
 			It("sets the status condition to indicate a failure to reconcile", func() {
@@ -131,6 +151,9 @@ var _ = Describe("bindingController", func() {
 			BeforeEach(func() {
 				bindingName = "test-binding-go-error"
 				fakeRabbitMQClient.DeclareBindingReturns(nil, errors.New("hit a exception"))
+				initialiseBinding()
+				binding.Labels = map[string]string{"test": "test-binding-go-error"}
+				initialiseManager("test", "test-binding-go-error")
 			})
 
 			It("sets the status condition to indicate a failure to reconcile", func() {
@@ -155,6 +178,8 @@ var _ = Describe("bindingController", func() {
 
 	When("Deleting a binding", func() {
 		JustBeforeEach(func() {
+			// Must use a JustBeforeEach to extract this common behaviour
+			// JustBeforeEach runs AFTER all BeforeEach have completed
 			fakeRabbitMQClient.DeclareBindingReturns(&http.Response{
 				Status:     "201 Created",
 				StatusCode: http.StatusCreated,
@@ -183,6 +208,9 @@ var _ = Describe("bindingController", func() {
 					StatusCode: http.StatusBadGateway,
 					Body:       io.NopCloser(bytes.NewBufferString("Hello World")),
 				}, nil)
+				initialiseBinding()
+				binding.Labels = map[string]string{"test": "delete-binding-http-error"}
+				initialiseManager("test", "delete-binding-http-error")
 			})
 
 			It("raises an event to indicate a failure to delete", func() {
@@ -199,6 +227,9 @@ var _ = Describe("bindingController", func() {
 			BeforeEach(func() {
 				bindingName = "delete-binding-go-error"
 				fakeRabbitMQClient.DeleteBindingReturns(nil, errors.New("some error"))
+				initialiseBinding()
+				binding.Labels = map[string]string{"test": "delete-binding-go-error"}
+				initialiseManager("test", "delete-binding-go-error")
 			})
 
 			It("raises an event to indicate a failure to delete", func() {

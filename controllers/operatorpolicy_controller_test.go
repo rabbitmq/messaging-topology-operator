@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	"io"
+	"k8s.io/apimachinery/pkg/labels"
 	"net/http"
 	"time"
 
@@ -37,14 +40,28 @@ var _ = Describe("operatorpolicy-controller", func() {
 		k8sClient     runtimeClient.Client
 	)
 
-	BeforeEach(func() {
+	initialiseManager := func(keyValPair ...string) {
+		var sel labels.Selector
+		if len(keyValPair) == 2 {
+			var err error
+			sel, err = labels.Parse(fmt.Sprintf("%s == %s", keyValPair[0], keyValPair[1]))
+			Expect(err).NotTo(HaveOccurred())
+		}
+
 		var err error
 		policyMgr, err = ctrl.NewManager(testEnv.Config, ctrl.Options{
 			Metrics: server.Options{
 				BindAddress: "0", // To avoid MacOS firewall pop-up every time you run this suite
 			},
 			Cache: cache.Options{
-				DefaultNamespaces: map[string]cache.Config{policyNamespace: {}},
+				DefaultNamespaces: map[string]cache.Config{policyNamespace: {
+					LabelSelector: sel,
+				}},
+				ByObject: map[runtimeClient.Object]cache.ByObject{
+					&v1beta1.RabbitmqCluster{}: {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+					&corev1.Secret{}:           {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+					&corev1.Service{}:          {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+				},
 			},
 			Logger: GinkgoLogr,
 			Controller: config.Controller{
@@ -69,21 +86,9 @@ var _ = Describe("operatorpolicy-controller", func() {
 			RabbitmqClientFactory: fakeRabbitMQClientFactory,
 			ReconcileFunc:         &controllers.OperatorPolicyReconciler{},
 		}).SetupWithManager(policyMgr)).To(Succeed())
-	})
+	}
 
-	AfterEach(func() {
-		managerCancel()
-		// Sad workaround to avoid controllers racing for the reconciliation of other's
-		// test cases. Without this wait, the last run test consistently fails because
-		// the previous cancelled manager is just in time to reconcile the Queue of the
-		// new/last test, and use the wrong/unexpected arguments in the queue declare call
-		//
-		// Eventual consistency is nice when you have good means of awaiting. That's not the
-		// case with testenv and kubernetes controllers.
-		<-time.After(time.Second)
-	})
-
-	JustBeforeEach(func() {
+	initialisePolicy := func() {
 		policy = topology.OperatorPolicy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      policyName,
@@ -98,6 +103,18 @@ var _ = Describe("operatorpolicy-controller", func() {
 				},
 			},
 		}
+	}
+
+	AfterEach(func() {
+		managerCancel()
+		// Sad workaround to avoid controllers racing for the reconciliation of other's
+		// test cases. Without this wait, the last run test consistently fails because
+		// the previous cancelled manager is just in time to reconcile the Queue of the
+		// new/last test, and use the wrong/unexpected arguments in the queue declare call
+		//
+		// Eventual consistency is nice when you have good means of awaiting. That's not the
+		// case with testenv and kubernetes controllers.
+		<-time.After(time.Second)
 	})
 
 	Context("creation", func() {
@@ -112,6 +129,9 @@ var _ = Describe("operatorpolicy-controller", func() {
 					Status:     "418 I'm a teapot",
 					StatusCode: 418,
 				}, errors.New("a failure"))
+				initialisePolicy()
+				policy.Labels = map[string]string{"test": "test-http-error"}
+				initialiseManager("test", "test-http-error")
 			})
 
 			It("sets the status condition", func() {
@@ -140,6 +160,9 @@ var _ = Describe("operatorpolicy-controller", func() {
 			BeforeEach(func() {
 				policyName = "test-go-error"
 				fakeRabbitMQClient.PutOperatorPolicyReturns(nil, errors.New("a go failure"))
+				initialisePolicy()
+				policy.Labels = map[string]string{"test": "test-go-error"}
+				initialiseManager("test", "test-go-error")
 			})
 
 			It("sets the status condition to indicate a failure to reconcile", func() {
@@ -167,11 +190,13 @@ var _ = Describe("operatorpolicy-controller", func() {
 
 	Context("deletion", func() {
 		JustBeforeEach(func() {
+			// Must use a JustBeforeEach to extract this common behaviour
+			// JustBeforeEach runs AFTER all BeforeEach have completed
 			fakeRabbitMQClient.PutOperatorPolicyReturns(&http.Response{
 				Status:     "201 Created",
 				StatusCode: http.StatusCreated,
 			}, nil)
-			Expect(k8sClient.Create(ctx, &policy)).To(Succeed())
+			Expect(k8sClient.Create(context.TODO(), &policy)).To(Succeed())
 			Eventually(func() []topology.Condition {
 				_ = k8sClient.Get(
 					ctx,
@@ -198,6 +223,9 @@ var _ = Describe("operatorpolicy-controller", func() {
 					StatusCode: http.StatusBadGateway,
 					Body:       io.NopCloser(bytes.NewBufferString("Hello World")),
 				}, nil)
+				initialisePolicy()
+				policy.Labels = map[string]string{"test": "delete-policy-http-error"}
+				initialiseManager("test", "delete-policy-http-error")
 			})
 
 			It("publishes a 'warning' event", func() {
@@ -216,6 +244,9 @@ var _ = Describe("operatorpolicy-controller", func() {
 			BeforeEach(func() {
 				policyName = "delete-go-error"
 				fakeRabbitMQClient.DeleteOperatorPolicyReturns(nil, errors.New("some error"))
+				initialisePolicy()
+				policy.Labels = map[string]string{"test": policyName}
+				initialiseManager("test", policyName)
 			})
 
 			It("publishes a 'warning' event", func() {

@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	"io"
+	"k8s.io/apimachinery/pkg/labels"
 	"net/http"
 	"time"
 
@@ -37,14 +40,28 @@ var _ = Describe("permission-controller", func() {
 		k8sClient      runtimeClient.Client
 	)
 
-	BeforeEach(func() {
+	initialiseManager := func(keyValPair ...string) {
+		var sel labels.Selector
+		if len(keyValPair) == 2 {
+			var err error
+			sel, err = labels.Parse(fmt.Sprintf("%s == %s", keyValPair[0], keyValPair[1]))
+			Expect(err).NotTo(HaveOccurred())
+		}
+
 		var err error
 		permissionMgr, err = ctrl.NewManager(testEnv.Config, ctrl.Options{
 			Metrics: server.Options{
 				BindAddress: "0", // To avoid MacOS firewall pop-up every time you run this suite
 			},
 			Cache: cache.Options{
-				DefaultNamespaces: map[string]cache.Config{permissionNamespace: {}},
+				DefaultNamespaces: map[string]cache.Config{permissionNamespace: {
+					LabelSelector: sel,
+				}},
+				ByObject: map[runtimeClient.Object]cache.ByObject{
+					&v1beta1.RabbitmqCluster{}: {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+					&corev1.Secret{}:           {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+					&corev1.Service{}:          {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+				},
 			},
 			Logger: GinkgoLogr,
 			Controller: config.Controller{
@@ -69,7 +86,23 @@ var _ = Describe("permission-controller", func() {
 			RabbitmqClientFactory: fakeRabbitMQClientFactory,
 			ReconcileFunc:         &controllers.PermissionReconciler{Client: permissionMgr.GetClient(), Scheme: permissionMgr.GetScheme()},
 		}).SetupWithManager(permissionMgr)).To(Succeed())
-	})
+	}
+
+	initialisePermission := func() {
+		permission = topology.Permission{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      permissionName,
+				Namespace: permissionNamespace,
+			},
+			Spec: topology.PermissionSpec{
+				RabbitmqClusterReference: topology.RabbitmqClusterReference{
+					Name: "example-rabbit",
+				},
+				User:  "example",
+				Vhost: "example",
+			},
+		}
+	}
 
 	AfterEach(func() {
 		managerCancel()
@@ -84,22 +117,6 @@ var _ = Describe("permission-controller", func() {
 	})
 
 	When("validating RabbitMQ Client failures with username", func() {
-		JustBeforeEach(func() {
-			permission = topology.Permission{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      permissionName,
-					Namespace: permissionNamespace,
-				},
-				Spec: topology.PermissionSpec{
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name: "example-rabbit",
-					},
-					User:  "example",
-					Vhost: "example",
-				},
-			}
-		})
-
 		Context("creation", func() {
 			AfterEach(func() {
 				Expect(k8sClient.Delete(ctx, &permission)).To(Succeed())
@@ -112,6 +129,9 @@ var _ = Describe("permission-controller", func() {
 						Status:     "418 I'm a teapot",
 						StatusCode: 418,
 					}, errors.New("a failure"))
+					initialisePermission()
+					permission.Labels = map[string]string{"test": "test-with-username-http-error"}
+					initialiseManager("test", "test-with-username-http-error")
 				})
 
 				It("sets the status condition", func() {
@@ -137,6 +157,9 @@ var _ = Describe("permission-controller", func() {
 				BeforeEach(func() {
 					permissionName = "test-with-username-go-error"
 					fakeRabbitMQClient.UpdatePermissionsInReturns(nil, errors.New("a go failure"))
+					initialisePermission()
+					permission.Labels = map[string]string{"test": "test-with-username-go-error"}
+					initialiseManager("test", "test-with-username-go-error")
 				})
 
 				It("sets the status condition to indicate a failure to reconcile", func() {
@@ -161,6 +184,8 @@ var _ = Describe("permission-controller", func() {
 
 		Context("deletion", func() {
 			JustBeforeEach(func() {
+				// Must use a JustBeforeEach to extract this common behaviour
+				// JustBeforeEach runs AFTER all BeforeEach have completed
 				fakeRabbitMQClient.UpdatePermissionsInReturns(&http.Response{
 					Status:     "201 Created",
 					StatusCode: http.StatusCreated,
@@ -189,6 +214,9 @@ var _ = Describe("permission-controller", func() {
 						StatusCode: http.StatusBadGateway,
 						Body:       io.NopCloser(bytes.NewBufferString("Hello World")),
 					}, nil)
+					initialisePermission()
+					permission.Labels = map[string]string{"test": "delete-with-username-permission-http-error"}
+					initialiseManager("test", "delete-with-username-permission-http-error")
 				})
 
 				It("publishes a 'warning' event", func() {
@@ -205,6 +233,9 @@ var _ = Describe("permission-controller", func() {
 				BeforeEach(func() {
 					permissionName = "delete-with-username-go-error"
 					fakeRabbitMQClient.ClearPermissionsInReturns(nil, errors.New("some error"))
+					initialisePermission()
+					permission.Labels = map[string]string{"test": "delete-with-username-go-error"}
+					initialiseManager("test", "delete-with-username-go-error")
 				})
 
 				It("publishes a 'warning' event", func() {
@@ -221,10 +252,13 @@ var _ = Describe("permission-controller", func() {
 
 	When("validating RabbitMQ Client failures with userRef", func() {
 		JustBeforeEach(func() {
+			// Must use a JustBeforeEach to extract this common behaviour
+			// JustBeforeEach runs AFTER all BeforeEach have completed
 			user = topology.User{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      userName,
 					Namespace: permissionNamespace,
+					Labels:    map[string]string{"test": permissionName},
 				},
 				Spec: topology.UserSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
@@ -237,6 +271,7 @@ var _ = Describe("permission-controller", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      permissionName,
 					Namespace: permissionNamespace,
+					Labels:    map[string]string{"test": permissionName},
 				},
 				Spec: topology.PermissionSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
@@ -284,6 +319,9 @@ var _ = Describe("permission-controller", func() {
 				BeforeEach(func() {
 					permissionName = "test-with-userref-create-not-exist"
 					userName = "example-create-not-exist"
+					initialisePermission()
+					permission.Labels = map[string]string{"test": "test-with-userref-create-not-exist"}
+					initialiseManager("test", "test-with-userref-create-not-exist")
 				})
 
 				It("sets the status condition 'Ready' to 'true' ", func() {
@@ -309,6 +347,9 @@ var _ = Describe("permission-controller", func() {
 				BeforeEach(func() {
 					permissionName = "test-with-userref-create-success"
 					userName = "example-create-success"
+					initialisePermission()
+					permission.Labels = map[string]string{"test": "test-with-userref-create-success"}
+					initialiseManager("test", "test-with-userref-create-success")
 				})
 
 				It("sets the status condition 'Ready' to 'true' ", func() {
@@ -358,6 +399,9 @@ var _ = Describe("permission-controller", func() {
 				BeforeEach(func() {
 					permissionName = "test-with-userref-delete-secret"
 					userName = "example-delete-secret-first"
+					initialisePermission()
+					permission.Labels = map[string]string{"test": permissionName}
+					initialiseManager("test", permissionName)
 				})
 
 				It("publishes a 'warning' event", func() {
@@ -385,6 +429,9 @@ var _ = Describe("permission-controller", func() {
 				BeforeEach(func() {
 					permissionName = "test-with-userref-delete-user"
 					userName = "example-delete-user-first"
+					initialisePermission()
+					permission.Labels = map[string]string{"test": permissionName}
+					initialiseManager("test", permissionName)
 				})
 
 				It("publishes a 'warning' event", func() {
@@ -408,6 +455,9 @@ var _ = Describe("permission-controller", func() {
 				BeforeEach(func() {
 					permissionName = "test-with-userref-delete-success"
 					userName = "example-delete-success"
+					initialisePermission()
+					permission.Labels = map[string]string{"test": "test-with-userref-delete-success"}
+					initialiseManager("test", "test-with-userref-delete-success")
 				})
 
 				It("publishes a 'warning' event", func() {
@@ -427,6 +477,9 @@ var _ = Describe("permission-controller", func() {
 			BeforeEach(func() {
 				permissionName = "ownerref-with-userref-test"
 				userName = "example-ownerref"
+				initialisePermission()
+				permission.Labels = map[string]string{"test": permissionName}
+				initialiseManager("test", permissionName)
 			})
 
 			AfterEach(func() {

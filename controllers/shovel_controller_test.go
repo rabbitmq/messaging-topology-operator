@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	"io"
+	"k8s.io/apimachinery/pkg/labels"
 	"net/http"
 	"time"
 
@@ -36,14 +39,28 @@ var _ = Describe("shovel-controller", func() {
 		k8sClient     runtimeClient.Client
 	)
 
-	BeforeEach(func() {
+	initialiseManager := func(keyValPair ...string) {
+		var sel labels.Selector
+		if len(keyValPair) == 2 {
+			var err error
+			sel, err = labels.Parse(fmt.Sprintf("%s == %s", keyValPair[0], keyValPair[1]))
+			Expect(err).NotTo(HaveOccurred())
+		}
+
 		var err error
 		shovelMgr, err = ctrl.NewManager(testEnv.Config, ctrl.Options{
 			Metrics: server.Options{
 				BindAddress: "0", // To avoid MacOS firewall pop-up every time you run this suite
 			},
 			Cache: cache.Options{
-				DefaultNamespaces: map[string]cache.Config{shovelNamespace: {}},
+				DefaultNamespaces: map[string]cache.Config{shovelNamespace: {
+					LabelSelector: sel,
+				}},
+				ByObject: map[runtimeClient.Object]cache.ByObject{
+					&v1beta1.RabbitmqCluster{}: {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+					&corev1.Secret{}:           {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+					&corev1.Service{}:          {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+				},
 			},
 			Logger: GinkgoLogr,
 			Controller: config.Controller{
@@ -68,21 +85,9 @@ var _ = Describe("shovel-controller", func() {
 			RabbitmqClientFactory: fakeRabbitMQClientFactory,
 			ReconcileFunc:         &controllers.ShovelReconciler{Client: shovelMgr.GetClient()},
 		}).SetupWithManager(shovelMgr)).To(Succeed())
-	})
+	}
 
-	AfterEach(func() {
-		managerCancel()
-		// Sad workaround to avoid controllers racing for the reconciliation of other's
-		// test cases. Without this wait, the last run test consistently fails because
-		// the previous cancelled manager is just in time to reconcile the Queue of the
-		// new/last test, and use the wrong/unexpected arguments in the queue declare call
-		//
-		// Eventual consistency is nice when you have good means of awaiting. That's not the
-		// case with testenv and kubernetes controllers.
-		<-time.After(time.Second)
-	})
-
-	JustBeforeEach(func() {
+	initialiseShovel := func() {
 		shovel = topology.Shovel{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      shovelName,
@@ -97,6 +102,18 @@ var _ = Describe("shovel-controller", func() {
 				},
 			},
 		}
+	}
+
+	AfterEach(func() {
+		managerCancel()
+		// Sad workaround to avoid controllers racing for the reconciliation of other's
+		// test cases. Without this wait, the last run test consistently fails because
+		// the previous cancelled manager is just in time to reconcile the Queue of the
+		// new/last test, and use the wrong/unexpected arguments in the queue declare call
+		//
+		// Eventual consistency is nice when you have good means of awaiting. That's not the
+		// case with testenv and kubernetes controllers.
+		<-time.After(time.Second)
 	})
 
 	When("creation", func() {
@@ -111,6 +128,9 @@ var _ = Describe("shovel-controller", func() {
 					Status:     "418 I'm a teapot",
 					StatusCode: 418,
 				}, errors.New("some HTTP error"))
+				initialiseShovel()
+				shovel.Labels = map[string]string{"test": "test-shovel-http-error"}
+				initialiseManager("test", "test-shovel-http-error")
 			})
 
 			It("sets the status condition to indicate a failure to reconcile", func() {
@@ -139,6 +159,9 @@ var _ = Describe("shovel-controller", func() {
 			BeforeEach(func() {
 				shovelName = "test-shovel-go-error"
 				fakeRabbitMQClient.DeclareShovelReturns(nil, errors.New("a go failure"))
+				initialiseShovel()
+				shovel.Labels = map[string]string{"test": "test-shovel-go-error"}
+				initialiseManager("test", "test-shovel-go-error")
 			})
 
 			It("sets the status condition to indicate a failure to reconcile", func() {
@@ -170,6 +193,9 @@ var _ = Describe("shovel-controller", func() {
 					Status:     "201 Created",
 					StatusCode: http.StatusCreated,
 				}, nil)
+				initialiseShovel()
+				shovel.Labels = map[string]string{"test": "test-shovel-success"}
+				initialiseManager("test", "test-shovel-success")
 			})
 
 			It("works", func() {
@@ -178,6 +204,7 @@ var _ = Describe("shovel-controller", func() {
 				Eventually(komega.Object(&shovel)).WithTimeout(2 * time.Second).Should(HaveField("ObjectMeta.Finalizers", ConsistOf("deletion.finalizers.shovels.rabbitmq.com")))
 
 				By("sets the status condition 'Ready' to 'true'")
+				// TODO rewrite this using komega.Object
 				Eventually(func() []topology.Condition {
 					_ = k8sClient.Get(
 						ctx,
@@ -200,6 +227,8 @@ var _ = Describe("shovel-controller", func() {
 
 	When("deletion", func() {
 		JustBeforeEach(func() {
+			// Must use a JustBeforeEach to extract this common behaviour
+			// JustBeforeEach runs AFTER all BeforeEach have completed
 			fakeRabbitMQClient.DeclareShovelReturns(&http.Response{
 				Status:     "201 Created",
 				StatusCode: http.StatusCreated,
@@ -231,6 +260,9 @@ var _ = Describe("shovel-controller", func() {
 					StatusCode: http.StatusBadGateway,
 					Body:       io.NopCloser(bytes.NewBufferString("Hello World")),
 				}, nil)
+				initialiseShovel()
+				shovel.Labels = map[string]string{"test": "delete-shovel-http-error"}
+				initialiseManager("test", "delete-shovel-http-error")
 			})
 
 			It("raises an event to indicate a failure to delete", func() {
@@ -250,6 +282,9 @@ var _ = Describe("shovel-controller", func() {
 			BeforeEach(func() {
 				shovelName = "delete-shovel-go-error"
 				fakeRabbitMQClient.DeleteShovelReturns(nil, errors.New("some error"))
+				initialiseShovel()
+				shovel.Labels = map[string]string{"test": "delete-shovel-go-error"}
+				initialiseManager("test", "delete-shovel-go-error")
 			})
 
 			It("publishes a 'warning' event", func() {
@@ -272,6 +307,9 @@ var _ = Describe("shovel-controller", func() {
 					Status:     "204 No Content",
 					StatusCode: http.StatusNoContent,
 				}, nil)
+				initialiseShovel()
+				shovel.Labels = map[string]string{"test": "delete-shovel-success"}
+				initialiseManager("test", "delete-shovel-success")
 			})
 
 			It("publishes a normal event", func() {
@@ -299,6 +337,9 @@ var _ = Describe("shovel-controller", func() {
 				StatusCode: http.StatusOK,
 			}, nil)
 			fakeRabbitMQClient.DeclareShovelReturns(&http.Response{StatusCode: http.StatusCreated, Status: "201 Created"}, nil)
+			initialiseShovel()
+			shovel.Labels = map[string]string{"test": "shovel-with-retain-policy"}
+			initialiseManager("test", "shovel-with-retain-policy")
 		})
 
 		It("deletes the k8s resource but preserves the shovel in RabbitMQ server", func() {

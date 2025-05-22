@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	"io"
+	"k8s.io/apimachinery/pkg/labels"
 	"net/http"
 	"time"
 
@@ -35,14 +38,28 @@ var _ = Describe("queue-controller", func() {
 		k8sClient     runtimeClient.Client
 	)
 
-	BeforeEach(func() {
+	initialiseManager := func(keyValPair ...string) {
+		var sel labels.Selector
+		if len(keyValPair) == 2 {
+			var err error
+			sel, err = labels.Parse(fmt.Sprintf("%s == %s", keyValPair[0], keyValPair[1]))
+			Expect(err).NotTo(HaveOccurred())
+		}
+
 		var err error
 		queueMgr, err = ctrl.NewManager(testEnv.Config, ctrl.Options{
 			Metrics: server.Options{
 				BindAddress: "0", // To avoid MacOS firewall pop-up every time you run this suite
 			},
 			Cache: cache.Options{
-				DefaultNamespaces: map[string]cache.Config{queueNamespace: {}},
+				DefaultNamespaces: map[string]cache.Config{queueNamespace: {
+					LabelSelector: sel,
+				}},
+				ByObject: map[runtimeClient.Object]cache.ByObject{
+					&v1beta1.RabbitmqCluster{}: {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+					&corev1.Secret{}:           {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+					&corev1.Service{}:          {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+				},
 			},
 			Logger: GinkgoLogr,
 			Controller: config.Controller{
@@ -67,21 +84,9 @@ var _ = Describe("queue-controller", func() {
 			RabbitmqClientFactory: fakeRabbitMQClientFactory,
 			ReconcileFunc:         &controllers.QueueReconciler{},
 		}).SetupWithManager(queueMgr)).To(Succeed())
-	})
+	}
 
-	AfterEach(func() {
-		managerCancel()
-		// Sad workaround to avoid controllers racing for the reconciliation of other's
-		// test cases. Without this wait, the last run test consistently fails because
-		// the previous cancelled manager is just in time to reconcile the Queue of the
-		// new/last test, and use the wrong/unexpected arguments in the queue declare call
-		//
-		// Eventual consistency is nice when you have good means of awaiting. That's not the
-		// case with testenv and kubernetes controllers.
-		<-time.After(time.Second)
-	})
-
-	JustBeforeEach(func() {
+	initialiseQueue := func() {
 		queue = topology.Queue{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      queueName,
@@ -93,6 +98,18 @@ var _ = Describe("queue-controller", func() {
 				},
 			},
 		}
+	}
+
+	AfterEach(func() {
+		managerCancel()
+		// Sad workaround to avoid controllers racing for the reconciliation of other's
+		// test cases. Without this wait, the last run test consistently fails because
+		// the previous cancelled manager is just in time to reconcile the Queue of the
+		// new/last test, and use the wrong/unexpected arguments in the queue declare call
+		//
+		// Eventual consistency is nice when you have good means of awaiting. That's not the
+		// case with testenv and kubernetes controllers.
+		<-time.After(time.Second)
 	})
 
 	Context("creation", func() {
@@ -107,6 +124,9 @@ var _ = Describe("queue-controller", func() {
 					Status:     "418 I'm a teapot",
 					StatusCode: 418,
 				}, errors.New("a failure"))
+				initialiseQueue()
+				queue.Labels = map[string]string{"test": "test-http-error"}
+				initialiseManager("test", "test-http-error")
 			})
 
 			It("sets the status condition", func() {
@@ -135,6 +155,9 @@ var _ = Describe("queue-controller", func() {
 			BeforeEach(func() {
 				queueName = "test-go-error"
 				fakeRabbitMQClient.DeclareQueueReturns(nil, errors.New("a go failure"))
+				initialiseQueue()
+				queue.Labels = map[string]string{"test": "test-go-error"}
+				initialiseManager("test", "test-go-error")
 			})
 
 			It("sets the status condition to indicate a failure to reconcile", func() {
@@ -162,6 +185,8 @@ var _ = Describe("queue-controller", func() {
 
 	Context("deletion", func() {
 		JustBeforeEach(func() {
+			// Must use a JustBeforeEach to extract this common behaviour
+			// JustBeforeEach runs AFTER all BeforeEach have completed
 			fakeRabbitMQClient.DeclareQueueReturns(&http.Response{
 				Status:     "201 Created",
 				StatusCode: http.StatusCreated,
@@ -193,6 +218,9 @@ var _ = Describe("queue-controller", func() {
 					StatusCode: http.StatusBadGateway,
 					Body:       io.NopCloser(bytes.NewBufferString("Hello World")),
 				}, nil)
+				initialiseQueue()
+				queue.Labels = map[string]string{"test": "delete-queue-http-error"}
+				initialiseManager("test", "delete-queue-http-error")
 			})
 
 			It("publishes a 'warning' event", func() {
@@ -211,6 +239,9 @@ var _ = Describe("queue-controller", func() {
 			BeforeEach(func() {
 				queueName = "delete-go-error"
 				fakeRabbitMQClient.DeleteQueueReturns(nil, errors.New("some error"))
+				initialiseQueue()
+				queue.Labels = map[string]string{"test": "delete-go-error"}
+				initialiseManager("test", "delete-go-error")
 			})
 
 			It("publishes a 'warning' event", func() {
@@ -233,6 +264,9 @@ var _ = Describe("queue-controller", func() {
 				Status:     "200 OK",
 				StatusCode: http.StatusOK,
 			}, nil)
+			initialiseQueue()
+			queue.Labels = map[string]string{"test": "queue-with-retain-policy"}
+			initialiseManager("test", "queue-with-retain-policy")
 		})
 
 		It("deletes the k8s resource but preserves the queue in RabbitMQ server", func() {

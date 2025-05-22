@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
 	"io"
+	"k8s.io/apimachinery/pkg/labels"
 	"net/http"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -36,14 +39,28 @@ var _ = Describe("topicpermission-controller", func() {
 		k8sClient          runtimeClient.Client
 	)
 
-	BeforeEach(func() {
+	initialiseManager := func(keyValPair ...string) {
+		var sel labels.Selector
+		if len(keyValPair) == 2 {
+			var err error
+			sel, err = labels.Parse(fmt.Sprintf("%s == %s", keyValPair[0], keyValPair[1]))
+			Expect(err).NotTo(HaveOccurred())
+		}
+
 		var err error
 		topicPermissionMgr, err = ctrl.NewManager(testEnv.Config, ctrl.Options{
 			Metrics: server.Options{
 				BindAddress: "0", // To avoid MacOS firewall pop-up every time you run this suite
 			},
 			Cache: cache.Options{
-				DefaultNamespaces: map[string]cache.Config{topicPermissionNamespace: {}},
+				DefaultNamespaces: map[string]cache.Config{topicPermissionNamespace: {
+					LabelSelector: sel,
+				}},
+				ByObject: map[runtimeClient.Object]cache.ByObject{
+					&v1beta1.RabbitmqCluster{}: {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+					&corev1.Secret{}:           {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+					&corev1.Service{}:          {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+				},
 			},
 			Logger: GinkgoLogr,
 			Controller: config.Controller{
@@ -68,7 +85,26 @@ var _ = Describe("topicpermission-controller", func() {
 			RabbitmqClientFactory: fakeRabbitMQClientFactory,
 			ReconcileFunc:         &controllers.TopicPermissionReconciler{Client: topicPermissionMgr.GetClient(), Scheme: topicPermissionMgr.GetScheme()},
 		}).SetupWithManager(topicPermissionMgr)).To(Succeed())
-	})
+	}
+
+	initialiseTopicPermission := func() {
+		topicperm = topology.TopicPermission{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: topicPermissionNamespace,
+			},
+			Spec: topology.TopicPermissionSpec{
+				RabbitmqClusterReference: topology.RabbitmqClusterReference{
+					Name: "example-rabbit",
+				},
+				User:  "example",
+				Vhost: "example",
+				Permissions: topology.TopicPermissionConfig{
+					Exchange: "some",
+				},
+			},
+		}
+	}
 
 	AfterEach(func() {
 		managerCancel()
@@ -83,25 +119,6 @@ var _ = Describe("topicpermission-controller", func() {
 	})
 
 	When("validating RabbitMQ Client failures with username", func() {
-		JustBeforeEach(func() {
-			topicperm = topology.TopicPermission{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      name,
-					Namespace: topicPermissionNamespace,
-				},
-				Spec: topology.TopicPermissionSpec{
-					RabbitmqClusterReference: topology.RabbitmqClusterReference{
-						Name: "example-rabbit",
-					},
-					User:  "example",
-					Vhost: "example",
-					Permissions: topology.TopicPermissionConfig{
-						Exchange: "some",
-					},
-				},
-			}
-		})
-
 		Context("creation", func() {
 			AfterEach(func() {
 				Expect(k8sClient.Delete(ctx, &topicperm)).To(Succeed())
@@ -114,6 +131,9 @@ var _ = Describe("topicpermission-controller", func() {
 						Status:     "418 I'm a teapot",
 						StatusCode: 418,
 					}, errors.New("a failure"))
+					initialiseTopicPermission()
+					topicperm.Labels = map[string]string{"test": name}
+					initialiseManager("test", name)
 				})
 
 				It("sets the status condition", func() {
@@ -142,6 +162,9 @@ var _ = Describe("topicpermission-controller", func() {
 				BeforeEach(func() {
 					name = "test-with-username-go-error"
 					fakeRabbitMQClient.UpdateTopicPermissionsInReturns(nil, errors.New("a go failure"))
+					initialiseTopicPermission()
+					topicperm.Labels = map[string]string{"test": name}
+					initialiseManager("test", name)
 				})
 
 				It("sets the status condition to indicate a failure to reconcile", func() {
@@ -169,6 +192,8 @@ var _ = Describe("topicpermission-controller", func() {
 
 		Context("deletion", func() {
 			JustBeforeEach(func() {
+				// Must use a JustBeforeEach to extract this common behaviour
+				// JustBeforeEach runs AFTER all BeforeEach have completed
 				fakeRabbitMQClient.UpdateTopicPermissionsInReturns(&http.Response{
 					Status:     "201 Created",
 					StatusCode: http.StatusCreated,
@@ -200,6 +225,9 @@ var _ = Describe("topicpermission-controller", func() {
 						StatusCode: http.StatusBadGateway,
 						Body:       io.NopCloser(bytes.NewBufferString("Hello World")),
 					}, nil)
+					initialiseTopicPermission()
+					topicperm.Labels = map[string]string{"test": name}
+					initialiseManager("test", name)
 				})
 
 				It("publishes a 'warning' event", func() {
@@ -219,6 +247,9 @@ var _ = Describe("topicpermission-controller", func() {
 				BeforeEach(func() {
 					name = "delete-with-username-go-error"
 					fakeRabbitMQClient.DeleteTopicPermissionsInReturns(nil, errors.New("some error"))
+					initialiseTopicPermission()
+					topicperm.Labels = map[string]string{"test": name}
+					initialiseManager("test", name)
 				})
 
 				It("publishes a 'warning' event", func() {
@@ -242,6 +273,7 @@ var _ = Describe("topicpermission-controller", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      userName,
 					Namespace: topicPermissionNamespace,
+					Labels:    map[string]string{"test": name},
 				},
 				Spec: topology.UserSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
@@ -254,6 +286,7 @@ var _ = Describe("topicpermission-controller", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      name,
 					Namespace: topicPermissionNamespace,
+					Labels:    map[string]string{"test": name},
 				},
 				Spec: topology.TopicPermissionSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
@@ -296,6 +329,9 @@ var _ = Describe("topicpermission-controller", func() {
 				BeforeEach(func() {
 					name = "test-with-userref-create-not-exist"
 					userName = "topic-perm-example-create-not-exist"
+					initialiseTopicPermission()
+					topicperm.Labels = map[string]string{"test": name}
+					initialiseManager("test", name)
 				})
 
 				It("sets the status condition 'Ready' to 'true' ", func() {
@@ -324,6 +360,9 @@ var _ = Describe("topicpermission-controller", func() {
 				BeforeEach(func() {
 					name = "test-with-userref-create-success"
 					userName = "topic-perm-example-create-success"
+					initialiseTopicPermission()
+					topicperm.Labels = map[string]string{"test": name}
+					initialiseManager("test", name)
 				})
 
 				It("sets the status condition 'Ready' to 'true' ", func() {
@@ -353,6 +392,8 @@ var _ = Describe("topicpermission-controller", func() {
 
 		Context("deletion", func() {
 			JustBeforeEach(func() {
+				// Must use a JustBeforeEach to extract this common behaviour
+				// JustBeforeEach runs AFTER all BeforeEach have completed
 				Expect(k8sClient.Create(ctx, &user)).To(Succeed())
 				user.Status.Username = userName
 				Expect(k8sClient.Status().Update(ctx, &user)).To(Succeed())
@@ -379,6 +420,9 @@ var _ = Describe("topicpermission-controller", func() {
 				BeforeEach(func() {
 					name = "test-with-userref-delete-secret"
 					userName = "topic-perm-example-delete-secret-first"
+					initialiseTopicPermission()
+					topicperm.Labels = map[string]string{"test": name}
+					initialiseManager("test", name)
 				})
 
 				It("publishes a 'warning' event", func() {
@@ -409,6 +453,9 @@ var _ = Describe("topicpermission-controller", func() {
 				BeforeEach(func() {
 					name = "test-with-userref-delete-user"
 					userName = "topic-perm-example-delete-user-first"
+					initialiseTopicPermission()
+					topicperm.Labels = map[string]string{"test": name}
+					initialiseManager("test", name)
 				})
 
 				It("publishes a 'warning' event", func() {
@@ -440,6 +487,9 @@ var _ = Describe("topicpermission-controller", func() {
 				BeforeEach(func() {
 					name = "test-with-userref-delete-success"
 					userName = "topic-perm-example-delete-success"
+					initialiseTopicPermission()
+					topicperm.Labels = map[string]string{"test": name}
+					initialiseManager("test", name)
 				})
 
 				It("publishes a 'warning' event", func() {
@@ -463,6 +513,9 @@ var _ = Describe("topicpermission-controller", func() {
 			BeforeEach(func() {
 				name = "ownerref-with-userref-test"
 				userName = "topic-perm-topic-perm-user"
+				initialiseTopicPermission()
+				topicperm.Labels = map[string]string{"test": name}
+				initialiseManager("test", name)
 			})
 
 			AfterEach(func() {

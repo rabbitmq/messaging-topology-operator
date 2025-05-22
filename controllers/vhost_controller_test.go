@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/controllers"
 	"io"
+	"k8s.io/apimachinery/pkg/labels"
 	"net/http"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -36,14 +39,28 @@ var _ = Describe("vhost-controller", func() {
 		vhostLimits   *topology.VhostLimits
 	)
 
-	BeforeEach(func() {
+	initialiseManager := func(keyValPair ...string) {
+		var sel labels.Selector
+		if len(keyValPair) == 2 {
+			var err error
+			sel, err = labels.Parse(fmt.Sprintf("%s == %s", keyValPair[0], keyValPair[1]))
+			Expect(err).NotTo(HaveOccurred())
+		}
+
 		var err error
 		vhostMgr, err = ctrl.NewManager(testEnv.Config, ctrl.Options{
 			Metrics: server.Options{
 				BindAddress: "0", // To avoid MacOS firewall pop-up every time you run this suite
 			},
 			Cache: cache.Options{
-				DefaultNamespaces: map[string]cache.Config{vhostNamespace: {}},
+				DefaultNamespaces: map[string]cache.Config{vhostNamespace: {
+					LabelSelector: sel,
+				}},
+				ByObject: map[runtimeClient.Object]cache.ByObject{
+					&v1beta1.RabbitmqCluster{}: {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+					&corev1.Secret{}:           {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+					&corev1.Service{}:          {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+				},
 			},
 			Logger: GinkgoLogr,
 			Controller: config.Controller{
@@ -68,21 +85,9 @@ var _ = Describe("vhost-controller", func() {
 			RabbitmqClientFactory: fakeRabbitMQClientFactory,
 			ReconcileFunc:         &controllers.VhostReconciler{Client: vhostMgr.GetClient()},
 		}).SetupWithManager(vhostMgr)).To(Succeed())
-	})
+	}
 
-	AfterEach(func() {
-		managerCancel()
-		// Sad workaround to avoid controllers racing for the reconciliation of other's
-		// test cases. Without this wait, the last run test consistently fails because
-		// the previous cancelled manager is just in time to reconcile the Queue of the
-		// new/last test, and use the wrong/unexpected arguments in the queue declare call
-		//
-		// Eventual consistency is nice when you have good means of awaiting. That's not the
-		// case with testenv and kubernetes controllers.
-		<-time.After(time.Second)
-	})
-
-	JustBeforeEach(func() {
+	initialiseVhost := func() {
 		vhost = topology.Vhost{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      vhostName,
@@ -96,6 +101,18 @@ var _ = Describe("vhost-controller", func() {
 				VhostLimits: vhostLimits,
 			},
 		}
+	}
+
+	AfterEach(func() {
+		managerCancel()
+		// Sad workaround to avoid controllers racing for the reconciliation of other's
+		// test cases. Without this wait, the last run test consistently fails because
+		// the previous cancelled manager is just in time to reconcile the Queue of the
+		// new/last test, and use the wrong/unexpected arguments in the queue declare call
+		//
+		// Eventual consistency is nice when you have good means of awaiting. That's not the
+		// case with testenv and kubernetes controllers.
+		<-time.After(time.Second)
 	})
 
 	Context("creation", func() {
@@ -110,6 +127,9 @@ var _ = Describe("vhost-controller", func() {
 					Status:     "418 I'm a teapot",
 					StatusCode: 418,
 				}, errors.New("a failure"))
+				initialiseVhost()
+				vhost.Labels = map[string]string{"test": "creation-http-error"}
+				initialiseManager("test", "creation-http-error")
 			})
 
 			It("sets the status condition", func() {
@@ -138,6 +158,9 @@ var _ = Describe("vhost-controller", func() {
 			BeforeEach(func() {
 				vhostName = "test-go-error"
 				fakeRabbitMQClient.PutVhostReturns(nil, errors.New("a go failure"))
+				initialiseVhost()
+				vhost.Labels = map[string]string{"test": "creation-go-error"}
+				initialiseManager("test", "creation-go-error")
 			})
 
 			It("sets the status condition to indicate a failure to reconcile", func() {
@@ -187,6 +210,9 @@ var _ = Describe("vhost-controller", func() {
 						Message:    "Object Not Found",
 						Reason:     "Not Found",
 					})
+					initialiseVhost()
+					vhost.Labels = map[string]string{"test": "vhost-with-limits"}
+					initialiseManager("test", "vhost-with-limits")
 				})
 
 				It("puts the vhost limits", func() {
@@ -224,6 +250,9 @@ var _ = Describe("vhost-controller", func() {
 						Message:    "Object Not Found",
 						Reason:     "Not Found",
 					})
+					initialiseVhost()
+					vhost.Labels = map[string]string{"test": "vhost-without-limits"}
+					initialiseManager("test", "vhost-without-limits")
 				})
 
 				It("does not set vhost limits", func() {
@@ -260,6 +289,9 @@ var _ = Describe("vhost-controller", func() {
 						Status:     "204 No Content",
 						StatusCode: http.StatusNoContent,
 					}, nil)
+					initialiseVhost()
+					vhost.Labels = map[string]string{"test": "vhost-updated-limits"}
+					initialiseManager("test", "vhost-updated-limits")
 				})
 
 				It("updates the provided limits and removes unspecified limits", func() {
@@ -299,7 +331,7 @@ var _ = Describe("vhost-controller", func() {
 	})
 
 	Context("deletion", func() {
-		JustBeforeEach(func() {
+		createVhost := func() {
 			fakeRabbitMQClient.PutVhostReturns(&http.Response{
 				Status:     "201 Created",
 				StatusCode: http.StatusCreated,
@@ -321,11 +353,17 @@ var _ = Describe("vhost-controller", func() {
 					"Reason": Equal("SuccessfulCreateOrUpdate"),
 					"Status": Equal(corev1.ConditionTrue),
 				})))
-		})
+		}
 
 		When("the RabbitMQ Client returns a HTTP error response", func() {
 			BeforeEach(func() {
 				vhostName = "delete-vhost-http-error"
+				initialiseVhost()
+				vhost.Labels = map[string]string{"test": vhostName}
+				initialiseManager("test", vhostName)
+
+				createVhost()
+
 				fakeRabbitMQClient.DeleteVhostReturns(&http.Response{
 					Status:     "502 Bad Gateway",
 					StatusCode: http.StatusBadGateway,
@@ -349,6 +387,12 @@ var _ = Describe("vhost-controller", func() {
 		When("the RabbitMQ Client returns a Go error response", func() {
 			BeforeEach(func() {
 				vhostName = "delete-go-error"
+				initialiseVhost()
+				vhost.Labels = map[string]string{"test": vhostName}
+				initialiseManager("test", vhostName)
+
+				createVhost()
+
 				fakeRabbitMQClient.DeleteVhostReturns(nil, errors.New("some error"))
 			})
 
@@ -374,6 +418,9 @@ var _ = Describe("vhost-controller", func() {
 				StatusCode: http.StatusOK,
 			}, nil)
 			fakeRabbitMQClient.PutVhostReturns(&http.Response{StatusCode: http.StatusCreated, Status: "201 Created"}, nil)
+			initialiseVhost()
+			vhost.Labels = map[string]string{"test": "vhost-with-retain-policy"}
+			initialiseManager("test", "vhost-with-retain-policy")
 		})
 
 		It("deletes the k8s resource but preserves the vhost in RabbitMQ server", func() {
