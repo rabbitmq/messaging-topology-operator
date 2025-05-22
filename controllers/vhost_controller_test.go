@@ -116,10 +116,6 @@ var _ = Describe("vhost-controller", func() {
 	})
 
 	Context("creation", func() {
-		AfterEach(func() {
-			Expect(k8sClient.Delete(ctx, &vhost)).To(Succeed())
-		})
-
 		When("the RabbitMQ Client returns a HTTP error response", func() {
 			BeforeEach(func() {
 				vhostName = "test-http-error"
@@ -187,6 +183,11 @@ var _ = Describe("vhost-controller", func() {
 
 		Context("vhost limits", func() {
 			var connections, queues int32
+
+			AfterEach(func() {
+				// Must reset the vhost limits to avoid test pollution
+				vhostLimits = nil
+			})
 
 			When("vhost limits are provided", func() {
 				BeforeEach(func() {
