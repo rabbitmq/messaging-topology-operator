@@ -210,7 +210,7 @@ K8S_OPERATOR_NAMESPACE ?= rabbitmq-system
 .PHONY: docker-registry-secret
 docker-registry-secret:
 	$(call check_defined, DOCKER_REGISTRY_USERNAME, Username for accessing the docker registry)
-	$(call check_defined, DOCKER_REGISTRY_PASSWORD. Password for accessing the docker registry)
+	$(call check_defined, DOCKER_REGISTRY_PASSWORD, Password for accessing the docker registry)
 	$(call check_defined, DOCKER_REGISTRY_SECRET, Name of Kubernetes secret in which to store the Docker registry username and password)
 	$(call check_defined, DOCKER_REGISTRY_SERVER, URL of docker registry containing the Operator image (e.g. registry.my-company.com))
 	@echo "Creating registry secret and patching default service account"
@@ -235,7 +235,7 @@ destroy: ## Delete all resources of this Operator
 .PHONY: deploy-dev
 deploy-dev: cmctl docker-build-dev manifests deploy-rbac docker-registry-secret ## Build current code as a Docker image, push the image, and deploy to current Kubernetes context
 	$(call check_defined, DOCKER_REGISTRY_USERNAME, Username for accessing the docker registry)
-	$(call check_defined, DOCKER_REGISTRY_PASSWORD. Password for accessing the docker registry)
+	$(call check_defined, DOCKER_REGISTRY_PASSWORD, Password for accessing the docker registry)
 	$(call check_defined, DOCKER_REGISTRY_SECRET, Name of Kubernetes secret in which to store the Docker registry username and password)
 	$(call check_defined, DOCKER_REGISTRY_SERVER, URL of docker registry containing the Operator image (e.g. registry.my-company.com))
 	$(CMCTL) check api --wait=2m

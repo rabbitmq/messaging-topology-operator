@@ -25,14 +25,14 @@ func (r *VhostReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient
 	logger := ctrl.LoggerFrom(ctx)
 	vhost := obj.(*topology.Vhost)
 	settings := internal.GenerateVhostSettings(vhost)
-	logger.Info("generated vhost settings", "vhost", vhost.Spec.Name, "settings", settings)
+	logger.V(1).Info("generated vhost settings", "vhost", vhost.Spec.Name, "settings", settings)
 	err := validateResponse(client.PutVhost(vhost.Spec.Name, *settings))
 	if err != nil {
 		return err
 	}
 
 	newVhostLimits := internal.GenerateVhostLimits(vhost.Spec.VhostLimits)
-	logger.Info("getting existing vhost limits", vhost, vhost.Spec.Name)
+	logger.V(1).Info("getting existing vhost limits", "vhost", vhost.Spec.Name)
 	existingVhostLimits, err := r.getVhostLimits(client, vhost.Spec.Name)
 	if err != nil {
 		return err
