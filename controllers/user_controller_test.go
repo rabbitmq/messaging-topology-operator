@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	"io"
+	"k8s.io/apimachinery/pkg/labels"
 	"net/http"
 	"time"
 
@@ -39,14 +42,28 @@ var _ = Describe("UserController", func() {
 		channels      int32
 	)
 
-	BeforeEach(func() {
+	initialiseManager := func(keyValPair ...string) {
+		var sel labels.Selector
+		if len(keyValPair) == 2 {
+			var err error
+			sel, err = labels.Parse(fmt.Sprintf("%s == %s", keyValPair[0], keyValPair[1]))
+			Expect(err).NotTo(HaveOccurred())
+		}
+
 		var err error
 		userMgr, err = ctrl.NewManager(testEnv.Config, ctrl.Options{
 			Metrics: server.Options{
 				BindAddress: "0", // To avoid MacOS firewall pop-up every time you run this suite
 			},
 			Cache: cache.Options{
-				DefaultNamespaces: map[string]cache.Config{userNamespace: {}},
+				DefaultNamespaces: map[string]cache.Config{userNamespace: {
+					LabelSelector: sel,
+				}},
+				ByObject: map[runtimeClient.Object]cache.ByObject{
+					&v1beta1.RabbitmqCluster{}: {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+					&corev1.Secret{}:           {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+					&corev1.Service{}:          {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+				},
 			},
 			Logger: GinkgoLogr,
 			Controller: config.Controller{
@@ -71,21 +88,9 @@ var _ = Describe("UserController", func() {
 			RabbitmqClientFactory: fakeRabbitMQClientFactory,
 			ReconcileFunc:         &controllers.UserReconciler{Client: userMgr.GetClient(), Scheme: userMgr.GetScheme()},
 		}).SetupWithManager(userMgr)).To(Succeed())
-	})
+	}
 
-	AfterEach(func() {
-		managerCancel()
-		// Sad workaround to avoid controllers racing for the reconciliation of other's
-		// test cases. Without this wait, the last run test consistently fails because
-		// the previous cancelled manager is just in time to reconcile the Queue of the
-		// new/last test, and use the wrong/unexpected arguments in the queue declare call
-		//
-		// Eventual consistency is nice when you have good means of awaiting. That's not the
-		// case with testenv and kubernetes controllers.
-		<-time.After(time.Second)
-	})
-
-	JustBeforeEach(func() {
+	initialiseUser := func() {
 		user = topology.User{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      userName,
@@ -98,6 +103,18 @@ var _ = Describe("UserController", func() {
 				UserLimits: &userLimits,
 			},
 		}
+	}
+
+	AfterEach(func() {
+		managerCancel()
+		// Sad workaround to avoid controllers racing for the reconciliation of other's
+		// test cases. Without this wait, the last run test consistently fails because
+		// the previous cancelled manager is just in time to reconcile the Queue of the
+		// new/last test, and use the wrong/unexpected arguments in the queue declare call
+		//
+		// Eventual consistency is nice when you have good means of awaiting. That's not the
+		// case with testenv and kubernetes controllers.
+		<-time.After(time.Second)
 	})
 
 	When("creating a user", func() {
@@ -112,6 +129,9 @@ var _ = Describe("UserController", func() {
 					Status:     "418 I'm a teapot",
 					StatusCode: 418,
 				}, errors.New("some HTTP error"))
+				initialiseUser()
+				user.Labels = map[string]string{"test": userName}
+				initialiseManager("test", userName)
 			})
 
 			It("sets the status condition to indicate a failure to reconcile", func() {
@@ -140,6 +160,9 @@ var _ = Describe("UserController", func() {
 			BeforeEach(func() {
 				userName = "test-user-go-error"
 				fakeRabbitMQClient.PutUserReturns(nil, errors.New("hit a exception"))
+				initialiseUser()
+				user.Labels = map[string]string{"test": userName}
+				initialiseManager("test", userName)
 			})
 
 			It("sets the status condition to indicate a failure to reconcile", func() {
@@ -187,6 +210,9 @@ var _ = Describe("UserController", func() {
 						Message:    "Object Not Found",
 						Reason:     "Not Found",
 					})
+					initialiseUser()
+					user.Labels = map[string]string{"test": userName}
+					initialiseManager("test", userName)
 				})
 
 				It("should create the user limits", func() {
@@ -241,6 +267,9 @@ var _ = Describe("UserController", func() {
 						Status:     "204 No Content",
 						StatusCode: http.StatusNoContent,
 					}, nil)
+					initialiseUser()
+					user.Labels = map[string]string{"test": userName}
+					initialiseManager("test", userName)
 				})
 
 				It("should update the existing user limit and delete the unused old limit", func() {
@@ -277,6 +306,8 @@ var _ = Describe("UserController", func() {
 
 	When("deleting a user", func() {
 		JustBeforeEach(func() {
+			// Must use a JustBeforeEach to extract this common behaviour
+			// JustBeforeEach runs AFTER all BeforeEach have completed
 			fakeRabbitMQClient.PutUserReturns(&http.Response{
 				Status:     "201 Created",
 				StatusCode: http.StatusCreated,
@@ -316,6 +347,9 @@ var _ = Describe("UserController", func() {
 					StatusCode: http.StatusBadGateway,
 					Body:       io.NopCloser(bytes.NewBufferString("Hello World")),
 				}, nil)
+				initialiseUser()
+				user.Labels = map[string]string{"test": userName}
+				initialiseManager("test", userName)
 			})
 
 			It("raises an event to indicate a failure to delete", func() {
@@ -335,6 +369,9 @@ var _ = Describe("UserController", func() {
 			BeforeEach(func() {
 				userName = "delete-user-go-error"
 				fakeRabbitMQClient.DeleteUserReturns(nil, errors.New("some error"))
+				initialiseUser()
+				user.Labels = map[string]string{"test": userName}
+				initialiseManager("test", userName)
 			})
 
 			It("raises an event to indicate a failure to delete", func() {
@@ -357,6 +394,9 @@ var _ = Describe("UserController", func() {
 					Status:     "204 No Content",
 					StatusCode: http.StatusNoContent,
 				}, nil)
+				initialiseUser()
+				user.Labels = map[string]string{"test": userName}
+				initialiseManager("test", userName)
 			})
 
 			It("raises an event to indicate a successful deletion", func() {
