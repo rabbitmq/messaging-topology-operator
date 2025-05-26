@@ -8,6 +8,7 @@ import (
 	"github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	"io"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/utils/ptr"
 	"net/http"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/config"
+	k "sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
@@ -103,6 +105,15 @@ var _ = Describe("UserController", func() {
 				UserLimits: &userLimits,
 			},
 		}
+	}
+
+	objectStatus := func() []topology.Condition {
+		_ = k8sClient.Get(
+			ctx,
+			types.NamespacedName{Name: user.Name, Namespace: user.Namespace},
+			&user,
+		)
+		return user.Status.Conditions
 	}
 
 	AfterEach(func() {
@@ -421,5 +432,40 @@ var _ = Describe("UserController", func() {
 				))
 			})
 		})
+	})
+
+	It("sets an owner reference and does not block owner deletion", func() {
+		userName = "test-owner-reference"
+		initialiseUser()
+		user.Labels = map[string]string{"test": userName}
+		fakeRabbitMQClient.PutUserReturns(&http.Response{Status: "201 Created", StatusCode: http.StatusCreated}, nil)
+		initialiseManager("test", userName)
+
+		Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+		Eventually(objectStatus).
+			Within(statusEventsUpdateTimeout).
+			WithPolling(time.Second).
+			Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":   Equal(topology.ConditionType("Ready")),
+				"Reason": Equal("SuccessfulCreateOrUpdate"),
+				"Status": Equal(corev1.ConditionTrue),
+			})), "User should have been created and have a True Ready condition")
+
+		generatedSecret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: user.Name + "-user-credentials", Namespace: user.Namespace}}
+		Eventually(k.Get(generatedSecret)).
+			Within(10 * time.Second).
+			Should(Succeed())
+
+		idFn := func(e any) string {
+			ownRef := e.(metav1.OwnerReference)
+			return ownRef.Kind
+		}
+		Expect(generatedSecret.OwnerReferences).To(MatchElements(idFn, IgnoreExtras,
+			Elements{
+				"User": MatchFields(IgnoreExtras, Fields{
+					"BlockOwnerDeletion": Equal(ptr.To(false)),
+				}),
+			},
+		))
 	})
 })

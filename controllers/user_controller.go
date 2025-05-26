@@ -97,7 +97,9 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.
 			// https://github.com/rabbitmq/cluster-operator/blob/057b61eb50102a66f504b31464e5956526cbdc90/internal/resource/statefulset.go#L220-L226
 			// https://github.com/rabbitmq/messaging-topology-operator/issues/194
 			for i := range credentialSecret.ObjectMeta.OwnerReferences {
-				credentialSecret.ObjectMeta.OwnerReferences[i].BlockOwnerDeletion = ptr.To(false)
+				if credentialSecret.ObjectMeta.OwnerReferences[i].Kind == user.Kind {
+					credentialSecret.ObjectMeta.OwnerReferences[i].BlockOwnerDeletion = ptr.To(false)
+				}
 			}
 			return nil
 		})
