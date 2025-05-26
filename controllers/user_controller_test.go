@@ -199,6 +199,11 @@ var _ = Describe("UserController", func() {
 		})
 
 		Context("user limits", func() {
+			AfterEach(func() {
+				userLimits.Connections = nil
+				userLimits.Channels = nil
+			})
+
 			When("the user has limits defined", func() {
 				BeforeEach(func() {
 					userName = "test-user-limits"
