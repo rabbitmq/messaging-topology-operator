@@ -54,7 +54,7 @@ export KUBEBUILDER_ASSETS = $(LOCAL_TESTBIN)/k8s/$(ENVTEST_K8S_VERSION)-$(platfo
 
 .PHONY: kubebuilder-assets
 kubebuilder-assets: $(KUBEBUILDER_ASSETS)
-	@echo "export KUBEBUILDER_ASSETS = $(LOCAL_TESTBIN)/k8s/$(ENVTEST_K8S_VERSION)-$(platform)-$(ARCHITECTURE)"
+	@echo "export KUBEBUILDER_ASSETS=$(LOCAL_TESTBIN)/k8s/$(ENVTEST_K8S_VERSION)-$(platform)-$(ARCHITECTURE)"
 
 $(KUBEBUILDER_ASSETS):
 	setup-envtest --os $(platform) --arch $(ARCHITECTURE) --bin-dir $(LOCAL_TESTBIN) use $(ENVTEST_K8S_VERSION)
