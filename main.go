@@ -10,6 +10,7 @@ This product may include a number of subcomponents with separate copyright notic
 package main
 
 import (
+	"crypto/fips140"
 	"flag"
 	"fmt"
 	"os"
@@ -387,6 +388,7 @@ func main() {
 		log.Error(err, "unable to create controller", "controller", controllers.SuperStreamControllerName)
 		os.Exit(1)
 	}
+	// +kubebuilder:scaffold:builder
 
 	if os.Getenv(controllers.EnableWebhooksEnvVar) != "false" {
 		if err = (&topology.Binding{}).SetupWebhookWithManager(mgr); err != nil {
@@ -443,7 +445,9 @@ func main() {
 		}
 	}
 
-	// +kubebuilder:scaffold:builder
+	if fips140.Enabled() {
+		log.Info("FIPS 140-3 mode enabled")
+	}
 
 	log.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
