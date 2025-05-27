@@ -8,7 +8,6 @@ import (
 	"github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	"io"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/utils/ptr"
 	"net/http"
 	"time"
 
@@ -468,7 +467,7 @@ var _ = Describe("UserController", func() {
 		Expect(generatedSecret.OwnerReferences).To(MatchElements(idFn, IgnoreExtras,
 			Elements{
 				"User": MatchFields(IgnoreExtras, Fields{
-					"BlockOwnerDeletion": Equal(ptr.To(false)),
+					"BlockOwnerDeletion": HaveValue(BeFalseBecause("it should not block owner deletion")),
 				}),
 			},
 		))
