@@ -192,10 +192,11 @@ generate-client-set:
 
 GIT_COMMIT=$(shell git rev-parse --short HEAD)-dev
 OPERATOR_IMAGE ?= rabbitmqoperator/messaging-topology-operator
+GOFIPS140 ?= off
 .PHONY: docker-build-dev
 docker-build-dev:
 	$(call check_defined, DOCKER_REGISTRY_SERVER, URL of docker registry containing the Operator image (e.g. registry.my-company.com))
-	$(BUILD_KIT) buildx build --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .
+	$(BUILD_KIT) buildx build --build-arg=FIPS_MODE=$(GOFIPS140) --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .
 	$(BUILD_KIT) push $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)
 
 # docker-build-local and deploy-local work in local Kubernetes installations where the Kubernetes API
