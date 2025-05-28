@@ -6,7 +6,7 @@ toolchain go1.24.2
 
 require (
 	github.com/cloudflare/cfssl v1.6.5
-	github.com/go-logr/logr v1.4.2
+	github.com/go-logr/logr v1.4.3
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/vault/api v1.16.0
 	github.com/michaelklishin/rabbit-hole/v3 v3.2.0
