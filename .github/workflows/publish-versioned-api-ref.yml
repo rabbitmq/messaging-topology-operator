@@ -26,6 +26,11 @@ jobs:
           repository: ${{ github.repository }}.wiki
           path: wiki
 
+      - uses: actions/setup-go@v5
+        name: Install Go
+        with:
+          go-version-file: messaging-topology-operator/go.mod
+
       - name: Generate API reference
         run: make -C messaging-topology-operator api-reference
 
@@ -42,4 +47,5 @@ jobs:
           echo "$REGENERATED_SIDEBAR" > Wiki_Sidebar.md
           git add ./API_Reference_${{ steps.get_version.outputs.VERSION }}.asciidoc
           git add ./Wiki_Sidebar.md
-          git commit -m "Publish version ${{ steps.get_version.outputs.VERSION }} API Reference" && git push
+          git commit -m "Publish version ${{ steps.get_version.outputs.VERSION }} API Reference"
+          git push

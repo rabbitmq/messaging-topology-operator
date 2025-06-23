@@ -149,7 +149,7 @@ manifests: install-tools
 
 # Generate API reference documentation
 .PHONY: api-reference
-api-reference:
+api-reference: install-tools
 	crd-ref-docs \
 		--source-path ./api \
 		--config ./docs/api/autogen/config.yaml \
