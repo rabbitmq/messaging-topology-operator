@@ -143,8 +143,8 @@ github.com/prometheus/procfs v0.16.1 h1:hZ15bTNuirocR6u0JZ6BAHHmwS1p8B4P6MRqxtzM
 github.com/prometheus/procfs v0.16.1/go.mod h1:teAbpZRB1iIAJYREa1LsoWUXykVXA1KlTmWl8x/U+Is=
 github.com/rabbitmq/amqp091-go v1.10.0 h1:STpn5XsHlHGcecLmMFCtg7mqq0RnD+zFr4uzukfVhBw=
 github.com/rabbitmq/amqp091-go v1.10.0/go.mod h1:Hy4jKW5kQART1u+JkDTF9YYOQUHXqMuhrgxOEeS7G4o=
-github.com/rabbitmq/cluster-operator/v2 v2.14.0 h1:Nq8KgHsex0ID5LF8Ug6hgnwOMfC3c9EWqlhP3AyH7ZU=
-github.com/rabbitmq/cluster-operator/v2 v2.14.0/go.mod h1:PgG7KxyTASHoey6opu5DTrxcKzabqE8uDE5BJXmqgHM=
+github.com/rabbitmq/cluster-operator/v2 v2.15.0 h1:Vpqmu+jq+3FYcPF96lUuQrklXqJq2ynkEpwk67H3wto=
+github.com/rabbitmq/cluster-operator/v2 v2.15.0/go.mod h1:e7smi4vV3aJAnuIRccNYL2etO1ThU++yFpzdd2zpZ4Y=
 github.com/rogpeppe/go-internal v1.13.1 h1:KvO1DLK/DRN07sQ1LQKScxyZJuNnedQ5/wKSR38lUII=
 github.com/rogpeppe/go-internal v1.13.1/go.mod h1:uMEvuHeurkdAXX61udpOXGD/AzZDWNMNyH2VO9fmH0o=
 github.com/ryanuber/go-glob v1.0.0 h1:iQh3xXAumdQ+4Ufa5b25cRpC5TYKlno6hsv6Cb3pkBk=
