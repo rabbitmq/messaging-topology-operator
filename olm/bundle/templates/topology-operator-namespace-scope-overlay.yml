@@ -1,0 +1,18 @@
+#@ load("@ytt:data", "data")
+#@ load("@ytt:overlay", "overlay")
+#@ deployment = overlay.subset({"kind": "Deployment"})
+#@ topology_operator = overlay.subset({"metadata": {"name": "messaging-topology-operator"}})
+#@overlay/match by=overlay.and_op(deployment, topology_operator),expects="1+"
+---
+spec:
+  template:
+    spec:
+      containers:
+      #@overlay/match by=overlay.subset({"name": "manager"}),expects="1+"
+      -
+        #@overlay/match missing_ok=True
+        env:
+        - name: OPERATOR_SCOPE_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.annotations['olm.targetNamespaces']
