@@ -104,9 +104,10 @@ just-integration-tests: $(KUBEBUILDER_ASSETS)
 .PHONY: local-tests
 local-tests: unit-tests integration-tests ## Run all local tests (unit & integration)
 
+SYSTEM_TEST_NS ?= rabbitmq-system
 .PHONY: system-tests
 system-tests: ## Run E2E tests using current context in ~/.kube/config. Expects cluster operator and topology operator to be installed in the cluster
-	NAMESPACE="rabbitmq-system" $(GINKGO) --randomize-all -r $(GINKGO_EXTRA) system_tests/
+	NAMESPACE="$(SYSTEM_TEST_NS)" $(GINKGO) --randomize-all -r $(GINKGO_EXTRA) system_tests/
 
 
 ###################

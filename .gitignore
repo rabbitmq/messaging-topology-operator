@@ -10,3 +10,7 @@ testbin/
 bin/
 tmp/
 *.iml
+## OLM
+olm/bundle/crds
+olm/bundle/manifests
+olm/catalog/cool-catalog/
