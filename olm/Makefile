@@ -34,7 +34,7 @@ $(TMP_DIR) :
 $(TMP_DIR)/_all_manifests.yaml: $(TMP_DIR)
 	kustomize build $(REPO_ROOT)/config/installation/ > $(TMP_DIR)/_all_manifests.yaml
 
-crds: $(TMP_DIR)/_all_manifests.yaml $(TMP_DIR)
+crds: $(TMP_DIR)/_all_manifests.yaml $(TMP_DIR) $(OLM_MANIFEST_DIR)
 	yq 'select(.kind == "CustomResourceDefinition")' -s '"rabbitmq.com_" + .spec.names.singular' $(TMP_DIR)/_all_manifests.yaml
 	mv -v $(CURDIR)/rabbitmq.com_*.y*ml $(REPO_ROOT)/olm/bundle/manifests/
 
@@ -42,7 +42,7 @@ rbac: $(OLM_TMP_DIR) ## Extract RBAC rules to a temporary file
 	yq '{"rules": .rules}' $(REPO_ROOT)/config/rbac/role.yaml > $(TMP_DIR)/role-rules.yaml
 
 QUAY_IO_OPERATOR_IMAGE ?= quay.io/rabbitmqoperator/messaging-topology-operator:latest
-deployment: $(TMP_DIR)/_all_manifests.yaml $(TMP_DIR) ## Extract Deployment spec. Customise using QUAY_IO_OPERATOR_IMAGE
+deployment: $(TMP_DIR)/_all_manifests.yaml $(TMP_DIR) $(OLM_MANIFEST_DIR) ## Extract Deployment spec. Customise using QUAY_IO_OPERATOR_IMAGE
 	kustomize build $(REPO_ROOT)/config/installation/ | \
 		ytt -f- -f $(REPO_ROOT)/config/ytt_overlays/change_deployment_image.yml \
 			--data-value operator_image=$(QUAY_IO_OPERATOR_IMAGE) \
@@ -75,8 +75,8 @@ all::webhooks
 all::olm-manifests
 
 clean:
-	rm -f -v $(REPO_ROOT)/olm/bundle/manifests/*.y*ml
-	rm -f -v $(REPO_ROOT)/olm/bundle/crds/*.y*ml
+	rm -r -f -v $(REPO_ROOT)/olm/bundle/manifests/
+	rm -r -f -v $(REPO_ROOT)/olm/bundle/crds/
 
 ###########
 ## Build ##
@@ -107,13 +107,14 @@ CO_CATALOG_DIR = $(REPO_ROOT)/olm/catalog/cool-catalog/rabbitmq-cluster-operator
 $(CO_CATALOG_DIR) :
 	mkdir -p $@
 
+.PHONY: catalog-replace-bundle catalog-build catalog-push catalog-deploy catalog-undeploy catalog-clean catalog-all
+
 # Cluster Operator related variables
 # Cluster Op is required here because it's a dependency of the top-op
 CO_BUNDLE_NAME ?= rabbitmq-cluster-operator
 CO_BUNDLE_VERSION ?= 2.15.0
 CO_BUNDLE_IMAGE ?= quay.io/rabbitmqoperator/rabbitmq-for-kubernetes-olm-cluster-operator:$(CO_BUNDLE_VERSION)
-.PHONY: catalog-*
-catalog-replace-bundle: $(CATALOG_DIR) ## Generate catalog manifest. Customise using BUNDLE_IMAGE and BUNDLE_VERSION
+catalog-replace-bundle: $(CATALOG_DIR) $(CO_CATALOG_DIR) ## Generate catalog manifest. Customise using BUNDLE_IMAGE and BUNDLE_VERSION
 	ytt -f $(REPO_ROOT)/olm/catalog/templates/catalog-template.yaml \
 		--data-value name="rabbitmq-messaging-topology-operator" \
 		--data-value image="$(BUNDLE_IMAGE)" \
