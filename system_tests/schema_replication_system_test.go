@@ -7,6 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -57,25 +58,27 @@ var _ = Describe("schema replication", func() {
 	})
 
 	It("works", func() {
+		SetDefaultEventuallyPollingInterval(2 * time.Second)
+		SetDefaultEventuallyTimeout(30 * time.Second)
+		getRabbitGlobalParams := func() ([]rabbithole.GlobalRuntimeParameter, error) {
+			return rabbitClient.ListGlobalParameters()
+		}
+
 		By("setting schema replication upstream global parameters successfully")
 		Expect(k8sClient.Create(ctx, replication, &client.CreateOptions{})).To(Succeed())
-		var allGlobalParams []rabbithole.GlobalRuntimeParameter
-		Eventually(func() []rabbithole.GlobalRuntimeParameter {
-			var err error
-			allGlobalParams, err = rabbitClient.ListGlobalParameters()
-			Expect(err).NotTo(HaveOccurred())
-			return allGlobalParams
-		}, 30, 2).Should(HaveLen(3)) // cluster_name and internal_cluster_id are set by default by RabbitMQ
-
-		Expect(allGlobalParams).To(ContainElement(
-			rabbithole.GlobalRuntimeParameter{
-				Name: "schema_definition_sync_upstream",
-				Value: map[string]interface{}{
-					"endpoints": []interface{}{"abc.endpoints.local:5672", "efg.endpoints.local:1234"},
-					"username":  "some-username",
-					"password":  "some-password",
-				},
-			}))
+		DeferCleanup(func() {
+			// leaving a cleanup step in case the test fails, so that it does not leave behind resources
+			// In the happy path, the schemareplication object is deleted, and the following command is a no-op
+			_ = k8sClient.Delete(ctx, replication, &client.DeleteOptions{})
+		})
+		Eventually(getRabbitGlobalParams).Should(ContainElement(And(
+			HaveField("Name", "schema_definition_sync_upstream"),
+			HaveField("Value", And(
+				HaveKeyWithValue("endpoints", ContainElements("abc.endpoints.local:5672", "efg.endpoints.local:1234")),
+				HaveKeyWithValue("username", "some-username"),
+				HaveKeyWithValue("password", "some-password"),
+			)),
+		)))
 
 		By("updating status condition 'Ready'")
 		updatedReplication := topology.SchemaReplication{}
@@ -83,13 +86,13 @@ var _ = Describe("schema replication", func() {
 		Eventually(func() []topology.Condition {
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace}, &updatedReplication)).To(Succeed())
 			return updatedReplication.Status.Conditions
-		}, waitUpdatedStatusCondition, 2).Should(HaveLen(1), "Schema Replication status condition should be present")
+		}, waitUpdatedStatusCondition).Should(HaveLen(1), "Schema Replication status condition should be present")
 
 		readyCondition := updatedReplication.Status.Conditions[0]
 		Expect(string(readyCondition.Type)).To(Equal("Ready"))
 		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))
 		Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
-		Expect(readyCondition.LastTransitionTime).NotTo(Equal(metav1.Time{}))
+		Expect(readyCondition.LastTransitionTime).NotTo(BeZero())
 
 		By("setting correct finalizer")
 		Expect(updatedReplication.ObjectMeta.Finalizers).To(ConsistOf("deletion.finalizers.schemareplications.rabbitmq.com"))
@@ -105,11 +108,6 @@ var _ = Describe("schema replication", func() {
 
 		By("unsetting schema replication upstream global parameters on deletion")
 		Expect(k8sClient.Delete(ctx, replication)).To(Succeed())
-		Eventually(func() []rabbithole.GlobalRuntimeParameter {
-			var err error
-			allGlobalParams, err = rabbitClient.ListGlobalParameters()
-			Expect(err).NotTo(HaveOccurred())
-			return allGlobalParams
-		}, 30, 2).Should(HaveLen(2)) // cluster_name and internal_cluster_id are set by default by RabbitMQ
+		Eventually(getRabbitGlobalParams).ShouldNot(ContainElement(HaveField("Name", "schema_definition_sync_upstream")))
 	})
 })

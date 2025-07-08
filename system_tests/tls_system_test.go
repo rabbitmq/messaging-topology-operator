@@ -3,6 +3,8 @@ package system_tests
 import (
 	"context"
 	"fmt"
+	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
+	"time"
 
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
@@ -12,7 +14,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -119,6 +120,8 @@ var _ = Describe("RabbitMQ Cluster with TLS enabled", func() {
 	})
 
 	It("works", func() {
+		k := komega.New(k8sClient)
+
 		By("successfully creating object when rabbitmqClusterReference.name is set")
 		policy = topology.Policy{
 			ObjectMeta: metav1.ObjectMeta{
@@ -130,20 +133,19 @@ var _ = Describe("RabbitMQ Cluster with TLS enabled", func() {
 				Pattern: ".*",
 				ApplyTo: "queues",
 				Definition: &runtime.RawExtension{
-					Raw: []byte(`{"ha-mode":"all"}`),
+					Raw: []byte(`{"max-length": 10000}`),
 				},
 				RabbitmqClusterReference: targetClusterRef,
 			},
 		}
 		Expect(k8sClient.Create(ctx, &policy)).To(Succeed())
 
-		var fetchedPolicy topology.Policy
-		Eventually(func() []topology.Condition {
-			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &fetchedPolicy)).To(Succeed())
-			return fetchedPolicy.Status.Conditions
-		}, waitUpdatedStatusCondition, 2).Should(HaveLen(1), "policy status condition should be present")
+		Eventually(k.Object(&policy)).
+			WithTimeout(waitUpdatedStatusCondition).
+			WithPolling(2*time.Second).
+			Should(HaveField("Status.Conditions", HaveLen(1)), "policy status condition should be present")
 
-		readyCondition := fetchedPolicy.Status.Conditions[0]
+		readyCondition := policy.Status.Conditions[0]
 		Expect(string(readyCondition.Type)).To(Equal("Ready"))
 		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))
 		Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
@@ -177,13 +179,12 @@ var _ = Describe("RabbitMQ Cluster with TLS enabled", func() {
 		}
 		Expect(k8sClient.Create(ctx, &exchange)).To(Succeed())
 
-		var fetched topology.Exchange
-		Eventually(func() []topology.Condition {
-			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &fetched)).To(Succeed())
-			return fetched.Status.Conditions
-		}, 10, 2).Should(HaveLen(1))
+		Eventually(k.Object(&exchange)).
+			WithTimeout(waitUpdatedStatusCondition).
+			WithPolling(2*time.Second).
+			Should(HaveField("Status.Conditions", HaveLen(1)), "exchange status condition should be present")
 
-		readyCondition = fetched.Status.Conditions[0]
+		readyCondition = exchange.Status.Conditions[0]
 		Expect(string(readyCondition.Type)).To(Equal("Ready"))
 		Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))
 		Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))

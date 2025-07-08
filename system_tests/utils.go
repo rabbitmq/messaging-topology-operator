@@ -195,6 +195,7 @@ func basicTestRabbitmqCluster(name, namespace string) *rabbitmqv1beta1.RabbitmqC
 			},
 			Rabbitmq: rabbitmqv1beta1.RabbitmqClusterConfigurationSpec{
 				AdditionalPlugins: []rabbitmqv1beta1.Plugin{"rabbitmq_federation", "rabbitmq_shovel", "rabbitmq_stream"},
+				AdditionalConfig:  "log.console.level = debug",
 			},
 		},
 	}
