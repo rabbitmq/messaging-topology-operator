@@ -184,7 +184,7 @@ func basicTestRabbitmqCluster(name, namespace string) *rabbitmqv1beta1.RabbitmqC
 		},
 		Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
 			Replicas: ptr.To(int32(1)),
-			Image:    "rabbitmq:3-management",
+			Image:    "rabbitmq:4-management",
 			Resources: &corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceMemory: resource.MustParse("100Mi"),
