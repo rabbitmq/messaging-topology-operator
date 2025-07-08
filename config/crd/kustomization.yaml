@@ -1,6 +1,39 @@
 # This kustomization.yaml is not intended to be run by itself,
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/default
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+#patches:
+#  - path: patches/webhook_in_bindings.yaml
+#  - path: patches/webhook_in_queues.yaml
+#  - path: patches/webhook_in_exchanges.yaml
+#  - path: patches/webhook_in_vhosts.yaml
+#  - path: patches/webhook_in_policies.yaml
+#  - path: patches/webhook_in_operatorpolicies.yaml
+#  - path: patches/webhook_in_users.yaml
+#  - path: patches/webhook_in_permissions.yaml
+#  - path: patches/webhook_in_schemareplications.yaml
+#  - path: patches/webhook_in_federations.yaml
+#  - path: patches/webhook_in_shovels.yaml
+#  - path: patches/webhook_in_superstreams.yaml
+#  - path: patches/webhook_in_topicpermissions.yaml
+# +kubebuilder:scaffold:crdkustomizewebhookpatch
+
+#  - path: patches/cainjection_in_bindings.yaml
+#  - path: patches/cainjection_in_queues.yaml
+#  - path: patches/cainjection_in_exchanges.yaml
+#  - path: patches/cainjection_in_vhosts.yaml
+#  - path: patches/cainjection_in_policies.yaml
+#  - path: patches/cainjection_in_operatorpolicies.yaml
+#  - path: patches/cainjection_in_users.yaml
+#  - path: patches/cainjection_in_permissions.yaml
+#  - path: patches/cainjection_in_schemareplications.yaml
+#  - path: patches/cainjection_in_federations.yaml
+#  - path: patches/cainjection_in_shovels.yaml
+#  - path: patches/cainjection_in_superstreams.yaml
+#  - path: patches/cainjection_in_topicpermissions.yaml
+# +kubebuilder:scaffold:crdkustomizecainjectionpatch
+
 resources:
 - bases/rabbitmq.com_queues.yaml
 - bases/rabbitmq.com_exchanges.yaml
@@ -16,37 +49,6 @@ resources:
 - bases/rabbitmq.com_superstreams.yaml
 - bases/rabbitmq.com_topicpermissions.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
-
-#patchesStrategicMerge:
-#- patches/webhook_in_bindings.yaml
-#- patches/webhook_in_queues.yaml
-#- patches/webhook_in_exchanges.yaml
-#- patches/webhook_in_vhosts.yaml
-#- patches/webhook_in_policies.yaml
-#- patches/webhook_in_operatorpolicies.yaml
-#- patches/webhook_in_users.yaml
-#- patches/webhook_in_permissions.yaml
-#- patches/webhook_in_schemareplications.yaml
-#- patches/webhook_in_federations.yaml
-#- patches/webhook_in_shovels.yaml
-#- patches/webhook_in_superstreams.yaml
-#- patches/webhook_in_topicpermissions.yaml
-# +kubebuilder:scaffold:crdkustomizewebhookpatch
-
-#- patches/cainjection_in_bindings.yaml
-#- patches/cainjection_in_queues.yaml
-#- patches/cainjection_in_exchanges.yaml
-#- patches/cainjection_in_vhosts.yaml
-#- patches/cainjection_in_policies.yaml
-#- patches/cainjection_in_operatorpolicies.yaml
-#- patches/cainjection_in_users.yaml
-#- patches/cainjection_in_permissions.yaml
-#- patches/cainjection_in_schemareplications.yaml
-#- patches/cainjection_in_federations.yaml
-#- patches/cainjection_in_shovels.yaml
-#- patches/cainjection_in_superstreams.yaml
-#- patches/cainjection_in_topicpermissions.yaml
-# +kubebuilder:scaffold:crdkustomizecainjectionpatch
 
 configurations:
 - kustomizeconfig.yaml

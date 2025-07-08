@@ -142,7 +142,9 @@ uninstall: manifests
 .PHONY: deploy-manager
 deploy-manager: cmctl
 	$(CMCTL) check api --wait=2m
-	kustomize build config/default/overlays/cert-manager/ | kubectl apply -f -
+	kustomize build config/default/overlays/cert-manager/ \
+		| ytt -f config/ytt_overlays/change_svc_name_webhooks.yml -f- \
+		| kubectl apply -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: install-tools
@@ -163,11 +165,21 @@ QUAY_IO_OPERATOR_IMAGE ?= quay.io/rabbitmqoperator/messaging-topology-operator:l
 .PHONY: generate-manifests
 generate-manifests: | $(YTT)
 	mkdir -p releases
-	kustomize build config/installation/  > releases/messaging-topology-operator.bak
+	kustomize build config/installation/ \
+		| ytt -f config/ytt_overlays/change_svc_name_webhooks.yml -f- \
+		> releases/messaging-topology-operator.bak
 	sed '/CERTIFICATE_NAMESPACE.*CERTIFICATE_NAME/d' releases/messaging-topology-operator.bak > releases/messaging-topology-operator.yaml
-	$(YTT) -f releases/messaging-topology-operator.yaml -f config/ytt_overlays/change_deployment_image.yml --data-value operator_image=$(QUAY_IO_OPERATOR_IMAGE) > releases/messaging-topology-operator-quay-io.yaml
-	kustomize build config/installation/cert-manager/ > releases/messaging-topology-operator-with-certmanager.yaml
-	$(YTT) -f releases/messaging-topology-operator-with-certmanager.yaml -f config/ytt_overlays/change_deployment_image.yml --data-value operator_image=$(QUAY_IO_OPERATOR_IMAGE) > releases/messaging-topology-operator-with-certmanager-quay-io.yaml
+	$(YTT) -f releases/messaging-topology-operator.yaml \
+		-f config/ytt_overlays/change_deployment_image.yml \
+		--data-value operator_image=$(QUAY_IO_OPERATOR_IMAGE) \
+		> releases/messaging-topology-operator-quay-io.yaml
+	kustomize build config/installation/cert-manager/ \
+		| ytt -f config/ytt_overlays/change_svc_name_webhooks.yml -f- \
+		> releases/messaging-topology-operator-with-certmanager.yaml
+	$(YTT) -f releases/messaging-topology-operator-with-certmanager.yaml \
+		-f config/ytt_overlays/change_deployment_image.yml \
+		--data-value operator_image=$(QUAY_IO_OPERATOR_IMAGE) \
+		> releases/messaging-topology-operator-with-certmanager-quay-io.yaml
 
 # Run go fmt against code
 fmt:
@@ -241,7 +253,10 @@ deploy-dev: cmctl docker-build-dev manifests deploy-rbac docker-registry-secret 
 	$(call check_defined, DOCKER_REGISTRY_SECRET, Name of Kubernetes secret in which to store the Docker registry username and password)
 	$(call check_defined, DOCKER_REGISTRY_SERVER, URL of docker registry containing the Operator image (e.g. registry.my-company.com))
 	$(CMCTL) check api --wait=2m
-	kustomize build config/default/overlays/dev | sed 's@((operator_docker_image))@"$(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)"@' | kubectl apply -f -
+	kustomize build config/default/overlays/dev \
+		| ytt -f config/ytt_overlays/change_svc_name_webhooks.yml -f- \
+		| sed 's@((operator_docker_image))@"$(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)"@' \
+		| kubectl apply -f -
 
 # Load operator image and deploy operator into current KinD cluster
 .PHONY: deploy-kind
@@ -249,14 +264,20 @@ deploy-kind: manifests cmctl deploy-rbac
 	$(BUILD_KIT) buildx build --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .
 	kind load docker-image $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)
 	$(CMCTL) check api --wait=2m
-	kustomize build config/default/overlays/kind | sed 's@((operator_docker_image))@"$(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)"@' | kubectl apply -f -
+	kustomize build config/default/overlays/kind \
+		| ytt -f config/ytt_overlays/change_svc_name_webhooks.yml -f- \
+		| sed 's@((operator_docker_image))@"$(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)"@' \
+		| kubectl apply -f -
 
 .PHONY: deploy-local
 deploy-local: cmctl deploy-rbac $(YTT)
 	$(CMCTL) check api --wait=2m
-	kustomize build config/default/overlays/cert-manager | $(YTT) -f- -f config/ytt_overlays/change_deployment_image.yml \
-		--data-value operator_image="localhost/topology-operator:$(GIT_COMMIT)" \
-		-f config/ytt_overlays/never_pull.yml | kubectl apply -f-
+	kustomize build config/default/overlays/cert-manager \
+		| $(YTT) -f- -f config/ytt_overlays/change_deployment_image.yml \
+			--data-value operator_image="localhost/topology-operator:$(GIT_COMMIT)" \
+			-f config/ytt_overlays/never_pull.yml \
+			-f config/ytt_overlays/change_svc_name_webhooks.yml \
+		| kubectl apply -f-
 
 .PHONY: deploy-rbac
 deploy-rbac:

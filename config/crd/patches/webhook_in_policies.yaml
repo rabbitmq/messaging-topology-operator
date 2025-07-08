@@ -10,8 +10,7 @@ spec:
     webhook:
       conversionReviewVersions: ["v1", "v1beta1"]
       clientConfig:
-        caBundle: Cg==
         service:
           namespace: system
-          name: webhook-service
+          name: messaging-topology-operator-webhook
           path: /convert

@@ -107,6 +107,7 @@ jobs:
     - name: System tests
       env:
         IMG: local/rabbitmq-topology-operator:pr
+      shell: bash # important: because it sets pipefail, so that the job fails if there are failures in the command pipe
       run: |
         kind load image-archive /tmp/operator.tar --name topology-operator-testing
         make cert-manager cmctl
@@ -115,6 +116,7 @@ jobs:
         kustomize build config/default/overlays/cert-manager | \
           ytt -f- -f config/ytt_overlays/never_pull.yml \
             -f config/ytt_overlays/change_deployment_image.yml \
+            -f config/ytt_overlays/change_svc_name_webhooks.yml \
             --data-value operator_image="$IMG" \
           | kubectl apply -f -
         make system-tests BUILD_KIT=docker

@@ -1,0 +1,10 @@
+#@ load("@ytt:overlay", "overlay")
+
+#! Matching by ValidatingWebhookConfiguration is acceptable because we have only one ValidatingWebhookConfiguration :-)
+#@overlay/match by=overlay.subset({"kind": "ValidatingWebhookConfiguration"})
+---
+webhooks:
+  #@overlay/match by=overlay.all, expects="1+"
+  - clientConfig:
+      service:
+        name: messaging-topology-operator-webhook
