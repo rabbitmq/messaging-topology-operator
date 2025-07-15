@@ -11,6 +11,7 @@ resources:
 patches:
 - path: manager_webhook_patch.yaml
 - path: webhookcainjection_patch.yaml
+# TODO: remove webhook ca injection? we remove it using sed in Makefile
 
 images:
 - name: controller

@@ -138,6 +138,7 @@ jobs:
     - name: Build manifest
       env:
         RELEASE_VERSION: ${{ steps.meta.outputs.version }}
+      shell: bash # important: because it sets pipefail, so that the job fails if there are failures in the command pipe
       run: |
         make install-tools
         pushd config/installation

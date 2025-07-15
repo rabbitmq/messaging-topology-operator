@@ -1,0 +1,243 @@
+---
+name: Test & Publish OLM bundle
+
+on:
+  release:
+    types: [published]
+
+  workflow_dispatch:
+    inputs:
+      bundle_version:
+        description: version in format {major}.{minor}.{patch} (do not prefix with "v")
+        required: true
+        type: string
+      previous_version:
+        description: version N-1 in format v{major}.{minor}.{patch} (WITH prefix "v")
+        required: true
+        type: string
+      release:
+        default: false
+        type: boolean
+        required: false
+        description: Make a release PR to operatorhub?
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    create-olm-package:
+        name: Create the OLM Packaging
+        runs-on: ubuntu-latest
+        outputs:
+          olm_package_version: ${{ steps.set_bundle_version.outputs.BUNDLE_VERSION }}
+        env:
+          REGISTRY: quay.io
+
+        steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+
+        - name: Set image tag to tagged release
+          id: set_bundle_version
+          shell: bash
+          run: scripts/print-tag-version.bash ${{ inputs.bundle_version }} | tee -a "$GITHUB_OUTPUT"
+
+        - name: Set previous version
+          id: set_previous_version
+          shell: bash
+          env:
+            GH_TOKEN: ${{ github.token }}
+          run: scripts/print-previous-tag-version.bash ${{ inputs.previous_version }} | tee -a "$GITHUB_OUTPUT"
+
+        - name: OpenShift Tools Installer
+          uses: redhat-actions/openshift-tools-installer@v1
+          with:
+            # Using GitHub source because the Openshift mirror source binary file does not match the expected name
+            # pattern. In the mirror, the filename is opm-rhel8, and the Action is expecting the name as opm-${OS}-${ARCH}
+            source: github
+            github_pat: ${{ github.token }}
+            opm: "latest"
+
+        - name: Install Carvel tooling
+          uses: carvel-dev/setup-action@v2.0.1
+          with:
+            token: ${{ github.token }}
+            only: ytt
+
+        - name: Login to quay.io
+          uses: docker/login-action@v3
+          with:
+            registry: ${{ env.REGISTRY }}
+            # secret_rabbitmq/kv/oss%2Frabbitmq-cluster-operator%2Fsecrets/details
+            username: ${{ secrets.QUAY_USERNAME }}
+            password: ${{ secrets.QUAY_ROBOT_TOKEN }}
+
+          # TODO: Set auto-expiry in DEV images: https://idbs-engineering.com/containers/2019/08/27/auto-expiry-quayio-tags.html
+        - name: Create OLM bundle manifests
+          env:
+            QUAY_IO_OPERATOR_IMAGE: quay.io/rabbitmqoperator/messaging-topology-operator:${{ steps.set_bundle_version.outputs.BUNDLE_VERSION }}
+            BUNDLE_VERSION: ${{ steps.set_bundle_version.outputs.BUNDLE_VERSION }}
+            BUNDLE_REPLACES: messaging-topology-operator.${{ steps.set_previous_version.outputs.PREVIOUS_VERSION }}
+          run: make -C olm/ all
+
+        - name: Create OLM Package
+          env:
+            IMAGE: ${{ vars.UNTESTED_BUNDLE_IMAGE }}:${{ steps.set_bundle_version.outputs.BUNDLE_VERSION }}
+          run: make -C olm/ docker-build docker-push
+
+        - name: Validate bundle manifests
+          env:
+            IMAGE: ${{ vars.UNTESTED_BUNDLE_IMAGE }}:${{ steps.set_bundle_version.outputs.BUNDLE_VERSION }}
+          run: opm alpha bundle validate --tag ${{ env.REGISTRY }}/${{ env.IMAGE }} --image-builder docker
+
+        - name: upload-olm-package
+          uses: actions/upload-artifact@v4
+          with:
+            name: olm-artifact
+            path: |
+              olm/bundle/manifests
+              olm/bundle/metadata
+              olm/bundle/bundle.Dockerfile
+            if-no-files-found: error
+            retention-days: 1
+
+    test-olm-package:
+        name: Tests the OLM packaging
+        runs-on: ubuntu-latest
+        needs: create-olm-package
+        outputs:
+          # Required to pass on the OLM bundle version to publish job
+          olm_package_version: ${{ needs.create-olm-package.outputs.olm_package_version }}
+        steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+
+        - name: Install Go
+          uses: actions/setup-go@v5
+          with:
+            go-version-file: "go.mod"
+
+        - name: Install Carvel tooling
+          uses: carvel-dev/setup-action@v2.0.1
+          with:
+            token: ${{ github.token }}
+            only: ytt, imgpkg
+
+        - name: Login to quay.io
+          uses: docker/login-action@v3
+          with:
+            registry: quay.io
+            # secret_rabbitmq/kv/oss%2Frabbitmq-cluster-operator%2Fsecrets/details
+            username: ${{ secrets.QUAY_USERNAME }}
+            password: ${{ secrets.QUAY_ROBOT_TOKEN }}
+
+        - name: Kind Cluster
+          uses: helm/kind-action@v1
+          with:
+            cluster_name: top-op-testing
+
+        - name: Install OLM
+          run: |
+            curl -L https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.32.0/install.sh -o install.sh
+            chmod +x install.sh
+            ./install.sh v0.32.0
+
+        - name: Deploy test catalog
+          env:
+            IMAGE: ${{ vars.UNTESTED_BUNDLE_IMAGE }}:${{ needs.create-olm-package.outputs.olm_package_version }}
+            BUNDLE_VERSION: ${{ needs.create-olm-package.outputs.olm_package_version }}
+            CATALOG_IMAGE: ${{ vars.TEST_CATALOG_IMAGE }}
+          run: make -C olm/ catalog-all
+
+        - name: Run Operator System Tests
+          env:
+            ENVIRONMENT: "openshift"
+            K8S_OPERATOR_NAMESPACE: ns-1
+            SYSTEM_TEST_NAMESPACE: ns-1
+            NAMESPACE: ns-1
+          run: |
+            kubectl wait -n "$K8S_OPERATOR_NAMESPACE" sub --all  --for=jsonpath='{.status.state}'=AtLatestKnown --timeout=2m
+            go run github.com/onsi/ginkgo/v2/ginkgo --randomize-all -r --skip "RabbitMQ Cluster with TLS enabled" system_tests/
+
+        - name: Promote tested image
+          if: ${{ github.event_name == 'release' || inputs.release == true }}
+          run: imgpkg copy --image quay.io/${{ vars.UNTESTED_BUNDLE_IMAGE }}:${{ needs.create-olm-package.outputs.olm_package_version }} --to-repo quay.io/${{ vars.FINAL_BUNDLE_IMAGE }}
+
+    publish-bundle-operatorhub:
+      name: Create branch for OperatorHub PR
+      runs-on: ubuntu-latest
+      needs: test-olm-package
+      if: ${{ github.event_name == 'release' || inputs.release == true }}
+      steps:
+        - name: Checkout community-operators fork (OperatorHub)
+          uses: actions/checkout@v4
+          with:
+            repository: rabbitmq/community-operators
+            # secret_rabbitmq/kv/Shared-Shared-RabbitMQ%2Frabbitmq-ci/details
+            token: ${{ secrets.RABBITMQ_CI_TOKEN }}
+
+        - name: Download OLM artifact
+          uses: actions/download-artifact@v4
+          with:
+            name: olm-artifact
+            path: olm-package-ci
+
+        - name: Create branch for OperatorHub PR
+          env:
+            BUNDLE_VERSION: ${{ needs.test-olm-package.outputs.olm_package_version }}
+            GH_PROMPT_DISABLED: 1
+            GH_TOKEN: ${{ secrets.RABBITMQ_CI_TOKEN }}
+          run: |
+            git config user.name "rabbitmq-ci"
+            git config user.email ${{ secrets.RABBITMQ_CI_EMAIL }}
+            git branch rabbitmq-messaging-topology-operator-$BUNDLE_VERSION
+            git checkout rabbitmq-messaging-topology-operator-$BUNDLE_VERSION
+
+            mkdir -pv operators/rabbitmq-messaging-topology-operator/"$BUNDLE_VERSION"
+            cp -v -fR olm-package-ci/* ./operators/rabbitmq-messaging-topology-operator/"$BUNDLE_VERSION"/
+            git add operators/rabbitmq-messaging-topology-operator
+            git commit -s -m "RabbitMQ Topology Operator release $BUNDLE_VERSION"
+            git push --set-upstream origin "rabbitmq-messaging-topology-operator-$BUNDLE_VERSION"
+
+            gh pr create --title "operator messaging-topology-operator (${{ env.BUNDLE_VERSION }})" \
+              --body "Update operator messaging-topology-operator (${{ needs.test-olm-package.outputs.olm_package_version }})" \
+              --repo k8s-operatorhub/community-operators
+
+    publish-bundle-redhat-marketplace:
+      name: Create branch for Openshift Marketplace PR
+      runs-on: ubuntu-latest
+      needs: test-olm-package
+      if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+      steps:
+        - name: Checkout community-operators-prod fork (Openshift Ecosystem)
+          uses: actions/checkout@v4
+          with:
+            repository: rabbitmq/community-operators-prod
+            # secret_rabbitmq/kv/Shared-Shared-RabbitMQ%2Frabbitmq-ci/details
+            token: ${{ secrets.RABBITMQ_CI_TOKEN }}
+
+        - name: Download OLM artifact
+          uses: actions/download-artifact@v4
+          with:
+            name: olm-artifact
+            path: olm-package-ci
+
+        - name: Create branch for Openshift Ecosystem PR
+          env:
+            BUNDLE_VERSION: ${{ needs.test-olm-package.outputs.olm_package_version }}
+          run: |
+            git config user.name "rabbitmq-ci"
+            git config user.email ${{ secrets.RABBITMQ_CI_EMAIL }}
+            git branch rabbitmq-messaging-topology-operator-$BUNDLE_VERSION
+            git checkout rabbitmq-messaging-topology-operator-$BUNDLE_VERSION
+
+            mkdir -pv operators/rabbitmq-messaging-topology-operator/"$BUNDLE_VERSION"
+            cp -v -fR olm-package-ci/* ./operators/rabbitmq-messaging-topology-operator/"$BUNDLE_VERSION"/
+            git add operators/rabbitmq-messaging-topology-operator
+            git commit -s -m "RabbitMQ Topology Operator release $BUNDLE_VERSION"
+            git push --set-upstream origin "rabbitmq-messaging-topology-operator-$BUNDLE_VERSION"
+
+            gh pr create --title "operator messaging-topology-operator (${{ env.BUNDLE_VERSION }})" \
+              --body "Update operator messaging-topology-operator (${{ needs.test-olm-package.outputs.olm_package_version }})" \
+              --repo k8s-operatorhub/community-operators-prod

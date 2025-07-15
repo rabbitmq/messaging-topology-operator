@@ -38,13 +38,20 @@ var _ = Describe("OperatorPolicy", func() {
 				Pattern: "test-queue",
 				ApplyTo: "queues",
 				Definition: &runtime.RawExtension{
-					Raw: []byte(`{"ha-mode":"all"}`),
+					Raw: []byte(`{"delivery-limit": 5}`),
 				},
 			},
 		}
 	})
 
 	AfterEach(func() {
+		if CurrentSpecReport().Failed() {
+			out, err := kubectl("logs", "-n", "rabbitmq-system", rmq.Name+"server-0")
+			if err != nil {
+				GinkgoWriter.Printf("error getting rabbitmq logs: %v\n", err)
+			}
+			GinkgoWriter.Printf("rabbitmq logs:\n%s\n", string(out))
+		}
 		_ = k8sClient.Delete(ctx, policy)
 	})
 
@@ -66,7 +73,7 @@ var _ = Describe("OperatorPolicy", func() {
 			"Priority": Equal(0),
 		}))
 
-		Expect(fetchedPolicy.Definition).To(HaveKeyWithValue("ha-mode", "all"))
+		Expect(fetchedPolicy.Definition).To(HaveKeyWithValue("delivery-limit", BeEquivalentTo(5)))
 
 		By("updating status condition 'Ready'")
 		updatedPolicy := topology.OperatorPolicy{}
@@ -97,9 +104,7 @@ var _ = Describe("OperatorPolicy", func() {
 		By("updating operator policy definitions successfully")
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, policy)).To(Succeed())
 		policy.Spec.Definition = &runtime.RawExtension{
-			Raw: []byte(`{"ha-mode":"exactly",
-"ha-params": 2
-}`)}
+			Raw: []byte(`{"delivery-limit": 3, "expires": 1800}`)}
 		Expect(k8sClient.Update(ctx, policy, &client.UpdateOptions{})).To(Succeed())
 
 		Eventually(func() rabbithole.PolicyDefinition {
@@ -109,8 +114,8 @@ var _ = Describe("OperatorPolicy", func() {
 			return fetchedPolicy.Definition
 		}, 10, 2).Should(HaveLen(2))
 
-		Expect(fetchedPolicy.Definition).To(HaveKeyWithValue("ha-mode", "exactly"))
-		Expect(fetchedPolicy.Definition).To(HaveKeyWithValue("ha-params", float64(2)))
+		Expect(fetchedPolicy.Definition).To(HaveKeyWithValue("delivery-limit", BeEquivalentTo(3)))
+		Expect(fetchedPolicy.Definition).To(HaveKeyWithValue("expires", BeEquivalentTo(1800)))
 
 		By("deleting policy")
 		Expect(k8sClient.Delete(ctx, policy)).To(Succeed())

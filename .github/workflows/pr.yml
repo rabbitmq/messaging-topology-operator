@@ -107,6 +107,7 @@ jobs:
     - name: System tests
       env:
         IMG: local/rabbitmq-topology-operator:pr
+      shell: bash # important: because it sets pipefail, so that the job fails if there are failures in the command pipe
       run: |
         kind load image-archive /tmp/operator.tar --name topology-operator-testing
         make cert-manager cmctl

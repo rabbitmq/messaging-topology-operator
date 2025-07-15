@@ -178,10 +178,18 @@ var _ = Describe("vhost", func() {
 		})
 
 		AfterEach(func() {
+			if CurrentSpecReport().Failed() {
+				out, err := kubectl("logs", "-n", "rabbitmq-system", rmq.Name+"server-0")
+				if err != nil {
+					GinkgoWriter.Printf("error getting rabbitmq logs: %v\n", err)
+				}
+				GinkgoWriter.Printf("rabbitmq logs:\n%s\n", string(out))
+			}
 			Expect(k8sClient.Delete(ctx, vhostWithLimits)).To(Succeed())
 		})
 
 		It("configures the limits", func() {
+			// TODO: this test seems flaky, perhaps it's racy to create the vhost, get the vhost and set/get vhost limits
 			var err error
 			var vhostLimitsInfoResponse []rabbithole.VhostLimitsInfo
 			Eventually(func() error {
