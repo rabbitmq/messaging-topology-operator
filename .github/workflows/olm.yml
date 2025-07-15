@@ -151,6 +151,7 @@ jobs:
           run: make -C olm/ catalog-all
 
         - name: Run Operator System Tests
+          id: system_tests
           env:
             ENVIRONMENT: "openshift"
             K8S_OPERATOR_NAMESPACE: ns-1
@@ -159,6 +160,18 @@ jobs:
           run: |
             kubectl wait -n "$K8S_OPERATOR_NAMESPACE" sub --all  --for=jsonpath='{.status.state}'=AtLatestKnown --timeout=2m
             go run github.com/onsi/ginkgo/v2/ginkgo --randomize-all -r --skip "RabbitMQ Cluster with TLS enabled" system_tests/
+
+        - name: Collect operator logs on failure
+          if: ${{ !cancelled() && steps.system_tests.outcome == 'failure' }}
+          run: kubectl logs -n "$K8S_OPERATOR_NAMESPACE" deployment/messaging-topology-operator > topology-operator.log
+
+        - name: Upload topology operator log
+          if: ${{ !cancelled() && steps.system_tests.outcome == 'failure' }}
+          uses: actions/upload-artifact@v4
+          with:
+            path: topology-operator.log
+            name: top-op-log
+            retention-days: 4
 
         - name: Promote tested image
           if: ${{ github.event_name == 'release' || inputs.release == true }}

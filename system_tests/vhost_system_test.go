@@ -179,7 +179,7 @@ var _ = Describe("vhost", func() {
 
 		AfterEach(func() {
 			if CurrentSpecReport().Failed() {
-				out, err := kubectl("logs", "-n", "rabbitmq-system", rmq.Name+"server-0")
+				out, err := kubectl("logs", "-n", namespace, rmq.Name+"-server-0")
 				if err != nil {
 					GinkgoWriter.Printf("error getting rabbitmq logs: %v\n", err)
 				}
