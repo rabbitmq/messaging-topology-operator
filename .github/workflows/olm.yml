@@ -78,7 +78,7 @@ jobs:
           env:
             QUAY_IO_OPERATOR_IMAGE: quay.io/rabbitmqoperator/messaging-topology-operator:${{ steps.set_bundle_version.outputs.BUNDLE_VERSION }}
             BUNDLE_VERSION: ${{ steps.set_bundle_version.outputs.BUNDLE_VERSION }}
-            BUNDLE_REPLACES: messaging-topology-operator.${{ steps.set_previous_version.outputs.PREVIOUS_VERSION }}
+            BUNDLE_REPLACES: rabbitmq-messaging-topology-operator.${{ steps.set_previous_version.outputs.PREVIOUS_VERSION }}
           run: make -C olm/ all
 
         - name: Create OLM Package
@@ -200,8 +200,8 @@ jobs:
             git commit -s -m "RabbitMQ Topology Operator release $BUNDLE_VERSION"
             git push --set-upstream origin "rabbitmq-messaging-topology-operator-$BUNDLE_VERSION"
 
-            gh pr create --title "operator messaging-topology-operator (${{ env.BUNDLE_VERSION }})" \
-              --body "Update operator messaging-topology-operator (${{ needs.test-olm-package.outputs.olm_package_version }})" \
+            gh pr create --title "operator rabbitmq-messaging-topology-operator (${{ env.BUNDLE_VERSION }})" \
+              --body "Update operator rabbitmq-messaging-topology-operator (${{ needs.test-olm-package.outputs.olm_package_version }})" \
               --repo k8s-operatorhub/community-operators
 
     publish-bundle-redhat-marketplace:
@@ -238,6 +238,6 @@ jobs:
             git commit -s -m "RabbitMQ Topology Operator release $BUNDLE_VERSION"
             git push --set-upstream origin "rabbitmq-messaging-topology-operator-$BUNDLE_VERSION"
 
-            gh pr create --title "operator messaging-topology-operator (${{ env.BUNDLE_VERSION }})" \
-              --body "Update operator messaging-topology-operator (${{ needs.test-olm-package.outputs.olm_package_version }})" \
+            gh pr create --title "operator rabbitmq-messaging-topology-operator (${{ env.BUNDLE_VERSION }})" \
+              --body "Update operator rabbitmq-messaging-topology-operator (${{ needs.test-olm-package.outputs.olm_package_version }})" \
               --repo k8s-operatorhub/community-operators-prod
