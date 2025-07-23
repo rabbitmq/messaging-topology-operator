@@ -9,7 +9,7 @@ require (
 	github.com/hashicorp/vault/api v1.20.0
 	github.com/michaelklishin/rabbit-hole/v3 v3.2.0
 	github.com/onsi/ginkgo/v2 v2.23.4
-	github.com/onsi/gomega v1.37.0
+	github.com/onsi/gomega v1.38.0
 	github.com/rabbitmq/cluster-operator/v2 v2.15.0
 	gopkg.in/ini.v1 v1.67.0
 	k8s.io/api v0.33.3
