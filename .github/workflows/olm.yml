@@ -239,6 +239,8 @@ jobs:
         - name: Create branch for Openshift Ecosystem PR
           env:
             BUNDLE_VERSION: ${{ needs.test-olm-package.outputs.olm_package_version }}
+            GH_PROMPT_DISABLED: 1
+            GH_TOKEN: ${{ secrets.RABBITMQ_CI_TOKEN }}
           run: |
             git config user.name "rabbitmq-ci"
             git config user.email ${{ secrets.RABBITMQ_CI_EMAIL }}
