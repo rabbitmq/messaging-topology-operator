@@ -15,7 +15,7 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         name: Checkout code
 
       - uses: actions/setup-go@v5
@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check out code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Install Go
       uses: actions/setup-go@v5
@@ -76,7 +76,7 @@ jobs:
         k8s: [v1.26.6, v1.30.4]
     steps:
     - name: Check out code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - uses: actions/setup-go@v5
       name: Setup Go
