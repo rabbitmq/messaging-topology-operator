@@ -1,8 +1,6 @@
 module tools
 
-go 1.23.0
-
-toolchain go1.23.4
+go 1.24.6
 
 require (
 	github.com/elastic/crd-ref-docs v0.1.0
