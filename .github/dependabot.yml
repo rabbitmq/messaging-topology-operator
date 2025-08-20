@@ -4,8 +4,12 @@ updates:
   directory: "/"
   groups:
     all:
-      patterns: 
+      patterns:
       - '*'
+  schedule:
+    interval: "daily"
+- package-ecosystem: "gomod"
+  directory: "/internal/tools/"
   schedule:
     interval: "daily"
 - package-ecosystem: "github-actions"
