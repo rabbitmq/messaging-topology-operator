@@ -5,7 +5,7 @@ go 1.24.6
 require (
 	github.com/elastic/crd-ref-docs v0.2.0
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.11.3
-	github.com/onsi/ginkgo/v2 v2.24.0
+	github.com/onsi/ginkgo/v2 v2.25.0
 	github.com/sclevine/yj v0.0.0-20210612025309-737bdf40a5d1
 	golang.org/x/vuln v1.1.4
 	k8s.io/client-go v0.33.4
