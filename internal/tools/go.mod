@@ -9,7 +9,7 @@ require (
 	github.com/sclevine/yj v0.0.0-20210612025309-737bdf40a5d1
 	golang.org/x/vuln v1.1.4
 	k8s.io/client-go v0.34.0
-	k8s.io/code-generator v0.33.4
+	k8s.io/code-generator v0.34.0
 	k8s.io/kube-openapi v0.0.0-20250710124328-f3f2b991d03b
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20250122230437-09740a350f8a
 	sigs.k8s.io/controller-tools v0.18.0
