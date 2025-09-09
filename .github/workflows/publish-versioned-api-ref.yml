@@ -26,7 +26,7 @@ jobs:
           repository: ${{ github.repository }}.wiki
           path: wiki
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         name: Install Go
         with:
           go-version-file: messaging-topology-operator/go.mod
