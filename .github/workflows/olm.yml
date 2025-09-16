@@ -255,4 +255,4 @@ jobs:
 
             gh pr create --title "operator rabbitmq-messaging-topology-operator (${{ env.BUNDLE_VERSION }})" \
               --body "Update operator rabbitmq-messaging-topology-operator (${{ needs.test-olm-package.outputs.olm_package_version }})" \
-              --repo k8s-operatorhub/community-operators-prod
+              --repo redhat-openshift-ecosystem/community-operators-prod
