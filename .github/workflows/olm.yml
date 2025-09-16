@@ -163,6 +163,8 @@ jobs:
 
         - name: Collect operator logs on failure
           if: ${{ !cancelled() && steps.system_tests.outcome == 'failure' }}
+          env:
+            K8S_OPERATOR_NAMESPACE: ns-1
           run: kubectl logs -n "$K8S_OPERATOR_NAMESPACE" deployment/messaging-topology-operator > topology-operator.log
 
         - name: Upload topology operator log
