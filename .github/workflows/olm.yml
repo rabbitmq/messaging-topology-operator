@@ -92,7 +92,7 @@ jobs:
           run: opm alpha bundle validate --tag ${{ env.REGISTRY }}/${{ env.IMAGE }} --image-builder docker
 
         - name: upload-olm-package
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v5
           with:
             name: olm-artifact
             path: |
@@ -167,7 +167,7 @@ jobs:
 
         - name: Upload topology operator log
           if: ${{ !cancelled() && steps.system_tests.outcome == 'failure' }}
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v5
           with:
             path: topology-operator.log
             name: top-op-log
