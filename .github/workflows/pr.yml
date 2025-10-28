@@ -62,7 +62,7 @@ jobs:
           outputs: type=docker,dest=/tmp/operator.tar
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: operator_image
           path: /tmp/operator.tar

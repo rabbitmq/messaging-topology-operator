@@ -130,7 +130,7 @@ jobs:
           type=docker,dest=./operator.tar
 
     - name: Upload Operator artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: operator_image
         path: ./operator.tar
@@ -152,7 +152,7 @@ jobs:
         make generate-manifests QUAY_IO_OPERATOR_IMAGE=quay.io/rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}"
 
     - name: Upload operator manifests
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: operator-manifests
         path: releases/messaging-topology-operator*.yaml
