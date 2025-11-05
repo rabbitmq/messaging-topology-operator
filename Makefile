@@ -159,6 +159,7 @@ api-reference: install-tools
 		--max-depth 30
 
 QUAY_IO_OPERATOR_IMAGE ?= quay.io/rabbitmqoperator/messaging-topology-operator:latest
+GHCR_IO_OPERATOR_IMAGE ?= ghcr.io/rabbitmq/messaging-topology-operator:latest
 ## used in CI pipeline to create release artifact
 .PHONY: generate-manifests
 generate-manifests: | $(YTT)
@@ -166,8 +167,10 @@ generate-manifests: | $(YTT)
 	kustomize build config/installation/  > releases/messaging-topology-operator.bak
 	sed '/CERTIFICATE_NAMESPACE.*CERTIFICATE_NAME/d' releases/messaging-topology-operator.bak > releases/messaging-topology-operator.yaml
 	$(YTT) -f releases/messaging-topology-operator.yaml -f config/ytt_overlays/change_deployment_image.yml --data-value operator_image=$(QUAY_IO_OPERATOR_IMAGE) > releases/messaging-topology-operator-quay-io.yaml
+	$(YTT) -f releases/messaging-topology-operator.yaml -f config/ytt_overlays/change_deployment_image.yml --data-value operator_image=$(GHCR_IO_OPERATOR_IMAGE) > releases/messaging-topology-operator-ghcr-io.yaml
 	kustomize build config/installation/cert-manager/ > releases/messaging-topology-operator-with-certmanager.yaml
 	$(YTT) -f releases/messaging-topology-operator-with-certmanager.yaml -f config/ytt_overlays/change_deployment_image.yml --data-value operator_image=$(QUAY_IO_OPERATOR_IMAGE) > releases/messaging-topology-operator-with-certmanager-quay-io.yaml
+	$(YTT) -f releases/messaging-topology-operator-with-certmanager.yaml -f config/ytt_overlays/change_deployment_image.yml --data-value operator_image=$(GHCR_IO_OPERATOR_IMAGE) > releases/messaging-topology-operator-with-certmanager-ghcr-io.yaml
 
 # Run go fmt against code
 fmt:
