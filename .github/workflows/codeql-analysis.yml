@@ -27,7 +27,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     # Manually install the right version of Go
     # See https://github.com/github/codeql-action/issues/1842 and https://github.com/github/codeql/issues/13992
