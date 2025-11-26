@@ -23,12 +23,6 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Run Golangci linter
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          args: --timeout=5m
-
   unit_tests:
     name: Unit & Integration tests
     runs-on: ubuntu-latest

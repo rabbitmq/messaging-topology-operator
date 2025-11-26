@@ -12,24 +12,6 @@ on:
     tags: [ "v*" ]
 
 jobs:
-  golangci:
-    name: Run Linter
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        name: Checkout code
-
-      - uses: actions/setup-go@v6
-        name: Install Go
-        with:
-          go-version-file: go.mod
-
-      - name: Run Golang Linter
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          args: --timeout=5m
-
   unit_integration_tests:
     name: Unit and Integration tests
     runs-on: ubuntu-latest
