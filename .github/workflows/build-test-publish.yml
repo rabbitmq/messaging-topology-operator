@@ -128,7 +128,7 @@ jobs:
           GO_TAG=${{ steps.set-go.outputs.go-version }}
 
     - name: Upload Operator artifact
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: operator_image
         path: ./operator.tar
@@ -150,7 +150,7 @@ jobs:
         make generate-manifests QUAY_IO_OPERATOR_IMAGE=quay.io/rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}" GHCR_IO_OPERATOR_IMAGE=ghcr.io/rabbitmq/messaging-topology-operator:"${RELEASE_VERSION}"
 
     - name: Upload operator manifests
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: operator-manifests
         path: releases/messaging-topology-operator*.yaml
