@@ -8,8 +8,8 @@ require (
 	github.com/onsi/ginkgo/v2 v2.27.3
 	github.com/sclevine/yj v0.0.0-20210612025309-737bdf40a5d1
 	golang.org/x/vuln v1.1.4
-	k8s.io/client-go v0.34.2
-	k8s.io/code-generator v0.34.2
+	k8s.io/client-go v0.34.3
+	k8s.io/code-generator v0.34.3
 	k8s.io/kube-openapi v0.0.0-20251125145642-4e65d59e963e
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20251125063837-7e0e84b83840
 	sigs.k8s.io/controller-tools v0.19.0
@@ -90,7 +90,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.34.2 // indirect
+	k8s.io/api v0.34.3 // indirect
 	k8s.io/apiextensions-apiserver v0.34.2 // indirect
 	k8s.io/apimachinery v0.35.0-beta.0 // indirect
 	k8s.io/gengo/v2 v2.0.0-20250922181213-ec3ebc5fd46b // indirect
