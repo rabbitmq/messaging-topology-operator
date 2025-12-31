@@ -144,8 +144,8 @@ github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D
 github.com/mattn/go-sqlite3 v1.14.22/go.mod h1:Uh1q+B4BYcTPb+yiD3kU8Ct7aC0hY9fxUwlHK0RXw+Y=
 github.com/mfridman/tparse v0.18.0 h1:wh6dzOKaIwkUGyKgOntDW4liXSo37qg5AXbIhkMV3vE=
 github.com/mfridman/tparse v0.18.0/go.mod h1:gEvqZTuCgEhPbYk/2lS3Kcxg1GmTxxU7kTC8DvP0i/A=
-github.com/michaelklishin/rabbit-hole/v3 v3.2.0 h1:N4YdHFj36MP5059Csze9B4TTZPS6j6HPJm9bBeZgvJk=
-github.com/michaelklishin/rabbit-hole/v3 v3.2.0/go.mod h1:LTyucfaAV/Y++Y6aVfAmsc6lvKw3y0WEyQa+yPAXcXc=
+github.com/michaelklishin/rabbit-hole/v3 v3.5.0 h1:20tB41aYKz4PKoKAIawO7HwP0shkkxhCBuZps3v/47M=
+github.com/michaelklishin/rabbit-hole/v3 v3.5.0/go.mod h1:FZHuHJe3h5B9OLM1q8dYWrXFr1eOhgDAiXinxlZ0Bns=
 github.com/mitchellh/go-homedir v1.1.0 h1:lukF9ziXFxDFPkA1vsr5zpc1XuPDn/wFntq5mG+4E0Y=
 github.com/mitchellh/go-homedir v1.1.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
 github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
