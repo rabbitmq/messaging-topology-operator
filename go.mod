@@ -8,10 +8,10 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/vault/api v1.22.0
 	github.com/michaelklishin/rabbit-hole/v3 v3.5.0
-	github.com/onsi/ginkgo/v2 v2.27.4
+	github.com/onsi/ginkgo/v2 v2.27.5
 	github.com/onsi/gomega v1.39.0
-	github.com/rabbitmq/cluster-operator/v2 v2.18.0
-	gopkg.in/ini.v1 v1.67.0
+	github.com/rabbitmq/cluster-operator/v2 v2.19.0
+	gopkg.in/ini.v1 v1.67.1
 	k8s.io/api v0.35.0
 	k8s.io/apimachinery v0.35.0
 	k8s.io/client-go v0.35.0
