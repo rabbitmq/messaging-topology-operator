@@ -11,47 +11,32 @@ package v1alpha1
 
 import (
 	"context"
-	"fmt"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
+// Implements admission.Validator
+type SuperStreamValidator struct{}
+
 func (s *SuperStream) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(s).
+	var superStreamValidator SuperStreamValidator
+	return ctrl.NewWebhookManagedBy(mgr, &SuperStream{}).
+		WithValidator(superStreamValidator).
 		Complete()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1alpha1-superstream,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=superstreams,versions=v1alpha1,name=vsuperstream.kb.io,sideEffects=none,admissionReviewVersions=v1
 
-var _ webhook.CustomValidator = &SuperStream{}
-
 // ValidateCreate - either rabbitmqClusterReference.name or
 // rabbitmqClusterReference.connectionSecret must be provided but not both
-func (s *SuperStream) ValidateCreate(_ context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
-	ss, ok := obj.(*SuperStream)
-	if !ok {
-		return nil, fmt.Errorf("expected a RabbitMQ super stream but got a %T", obj)
-	}
-	return ss.Spec.RabbitmqClusterReference.ValidateOnCreate(ss.GroupResource(), ss.Name)
+func (sv SuperStreamValidator) ValidateCreate(_ context.Context, superStream *SuperStream) (warnings admission.Warnings, err error) {
+	return superStream.Spec.RabbitmqClusterReference.ValidateOnCreate(superStream.GroupResource(), superStream.Name)
 }
 
 // ValidateUpdate returns error type 'forbidden' for updates on superstream name, vhost and rabbitmqClusterReference
-func (s *SuperStream) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	oldSuperStream, ok := oldObj.(*SuperStream)
-	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a superstream but got a %T", oldObj))
-	}
-
-	newSuperStream, ok := newObj.(*SuperStream)
-	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a superstream but got a %T", newObj))
-	}
-
+func (sv SuperStreamValidator) ValidateUpdate(_ context.Context, oldSuperStream, newSuperStream *SuperStream) (warnings admission.Warnings, err error) {
 	const detailMsg = "updates on name, vhost and rabbitmqClusterReference are all forbidden"
 	if newSuperStream.Spec.Name != oldSuperStream.Spec.Name {
 		return nil, apierrors.NewForbidden(newSuperStream.GroupResource(), newSuperStream.Name,
@@ -81,7 +66,7 @@ func (s *SuperStream) ValidateUpdate(_ context.Context, oldObj, newObj runtime.O
 }
 
 // ValidateDelete no validation on delete
-func (s *SuperStream) ValidateDelete(_ context.Context, _ runtime.Object) (warnings admission.Warnings, err error) {
+func (sv SuperStreamValidator) ValidateDelete(_ context.Context, _ *SuperStream) (warnings admission.Warnings, err error) {
 	return nil, nil
 }
 

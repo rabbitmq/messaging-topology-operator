@@ -124,6 +124,8 @@ SuperStream's generation, which is updated on mutation by the API Server.
 
 
 
+
+
 [id="{anchor_prefix}-rabbitmq-com-v1beta1"]
 == rabbitmq.com/v1beta1
 
@@ -257,6 +259,8 @@ BindingStatus defines the observed state of Binding
 Binding's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
+
+
 
 
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition"]
@@ -405,6 +409,8 @@ Exchange's generation, which is updated on mutation by the API Server.
 |===
 
 
+
+
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-federation"]
 ==== Federation 
 
@@ -527,6 +533,8 @@ Federation's generation, which is updated on mutation by the API Server.
 |===
 
 
+
+
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-operatorpolicy"]
 ==== OperatorPolicy 
 
@@ -632,6 +640,8 @@ OperatorPolicy's generation, which is updated on mutation by the API Server.
 |===
 
 
+
+
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-permission"]
 ==== Permission 
 
@@ -730,6 +740,8 @@ PermissionStatus defines the observed state of Permission
 Permission's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
+
+
 
 
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-policy"]
@@ -837,6 +849,8 @@ Policy's generation, which is updated on mutation by the API Server.
 |===
 
 
+
+
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-queue"]
 ==== Queue 
 
@@ -941,6 +955,8 @@ QueueStatus defines the observed state of Queue
 Queue's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
+
+
 
 
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-rabbitmqclusterreference"]
@@ -1080,6 +1096,8 @@ SchemaReplicationStatus defines the observed state of SchemaReplication
 Queue's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
+
+
 
 
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-secretbackend"]
@@ -1230,6 +1248,8 @@ Shovel's generation, which is updated on mutation by the API Server.
 |===
 
 
+
+
 [id="{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-topicpermission"]
 ==== TopicPermission 
 
@@ -1346,6 +1366,8 @@ TopicPermissionStatus defines the observed state of TopicPermission
 TopicPermission's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
+
+
 
 
 
@@ -1496,6 +1518,8 @@ For more information, see https://www.rabbitmq.com/management.html#permissions.
 ****
 - xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-userspec[$$UserSpec$$]
 ****
+
+
 
 
 
@@ -1660,5 +1684,7 @@ VhostStatus defines the observed state of Vhost
 Vhost's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 |===
+
+
 
 

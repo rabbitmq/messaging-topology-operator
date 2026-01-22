@@ -2,52 +2,36 @@ package v1beta1
 
 import (
 	"context"
-	"fmt"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
+// Implements admission.Validator
+type ShovelValidator struct{}
+
 func (s *Shovel) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		WithValidator(s).
-		For(s).
+	var shovelValidator ShovelValidator
+	return ctrl.NewWebhookManagedBy(mgr, &Shovel{}).
+		WithValidator(shovelValidator).
 		Complete()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1beta1-shovel,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=shovels,versions=v1beta1,name=vshovel.kb.io,sideEffects=none,admissionReviewVersions=v1
 
-var _ webhook.CustomValidator = &Shovel{}
-
 // ValidateCreate - either rabbitmqClusterReference.name or
 // rabbitmqClusterReference.connectionSecret must be provided, but not both
-func (s *Shovel) ValidateCreate(_ context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
-	shovel, ok := obj.(*Shovel)
-	if !ok {
-		return nil, fmt.Errorf("expected a RabbitMQ shovel but got a %T", obj)
-	}
+func (sv ShovelValidator) ValidateCreate(_ context.Context, shovel *Shovel) (warnings admission.Warnings, err error) {
 	if err := shovel.amqp10Validate(); err != nil {
 		return nil, err
 	}
 
-	return nil, s.Spec.RabbitmqClusterReference.validate(shovel.RabbitReference())
+	return nil, shovel.Spec.RabbitmqClusterReference.validate(shovel.RabbitReference())
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (s *Shovel) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	oldShovel, ok := oldObj.(*Shovel)
-	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a shovel but got a %T", oldShovel))
-	}
-
-	newShovel, ok := newObj.(*Shovel)
-	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a shovel but got a %T", newObj))
-	}
-
+func (sv ShovelValidator) ValidateUpdate(_ context.Context, oldShovel, newShovel *Shovel) (warnings admission.Warnings, err error) {
 	if err := newShovel.amqp10Validate(); err != nil {
 		return nil, err
 	}
@@ -70,7 +54,7 @@ func (s *Shovel) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object
 	return nil, nil
 }
 
-func (s *Shovel) ValidateDelete(_ context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
+func (sv ShovelValidator) ValidateDelete(_ context.Context, obj *Shovel) (warnings admission.Warnings, err error) {
 	return nil, nil
 }
 

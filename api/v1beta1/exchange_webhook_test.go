@@ -27,14 +27,15 @@ var _ = Describe("exchange webhook", func() {
 				},
 			},
 		}
-		rootCtx = context.Background()
+		rootCtx           = context.Background()
+		exchangeValidator ExchangeValidator
 	)
 
 	Context("ValidateCreate", func() {
 		It("does not allow both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret be configured", func() {
 			notAllowed := exchange.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = &corev1.LocalObjectReference{Name: "some-secret"}
-			_, err := notAllowed.ValidateCreate(rootCtx, notAllowed)
+			_, err := exchangeValidator.ValidateCreate(rootCtx, notAllowed)
 			Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: do not provide both name and connectionSecret")))
 		})
 
@@ -42,7 +43,7 @@ var _ = Describe("exchange webhook", func() {
 			notAllowed := exchange.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.Name = ""
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			_, err := notAllowed.ValidateCreate(rootCtx, notAllowed)
+			_, err := exchangeValidator.ValidateCreate(rootCtx, notAllowed)
 			Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: must provide either name or connectionSecret")))
 		})
 	})
@@ -51,14 +52,14 @@ var _ = Describe("exchange webhook", func() {
 		It("does not allow updates on exchange name", func() {
 			newExchange := exchange.DeepCopy()
 			newExchange.Spec.Name = "new-name"
-			_, err := newExchange.ValidateUpdate(rootCtx, &exchange, newExchange)
+			_, err := exchangeValidator.ValidateUpdate(rootCtx, &exchange, newExchange)
 			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost, and rabbitmqClusterReference are all forbidden")))
 		})
 
 		It("does not allow updates on vhost", func() {
 			newExchange := exchange.DeepCopy()
 			newExchange.Spec.Vhost = "/a-new-vhost"
-			_, err := newExchange.ValidateUpdate(rootCtx, &exchange, newExchange)
+			_, err := exchangeValidator.ValidateUpdate(rootCtx, &exchange, newExchange)
 			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost, and rabbitmqClusterReference are all forbidden")))
 		})
 
@@ -67,7 +68,7 @@ var _ = Describe("exchange webhook", func() {
 			newExchange.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
 				Name: "new-cluster",
 			}
-			_, err := newExchange.ValidateUpdate(rootCtx, &exchange, newExchange)
+			_, err := exchangeValidator.ValidateUpdate(rootCtx, &exchange, newExchange)
 			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost, and rabbitmqClusterReference are all forbidden")))
 		})
 
@@ -89,35 +90,35 @@ var _ = Describe("exchange webhook", func() {
 			}
 			newExchange := connectionScr.DeepCopy()
 			newExchange.Spec.RabbitmqClusterReference.ConnectionSecret.Name = "new-secret"
-			_, err := newExchange.ValidateUpdate(rootCtx, &connectionScr, newExchange)
+			_, err := exchangeValidator.ValidateUpdate(rootCtx, &connectionScr, newExchange)
 			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost, and rabbitmqClusterReference are all forbidden")))
 		})
 
 		It("does not allow updates on exchange type", func() {
 			newExchange := exchange.DeepCopy()
 			newExchange.Spec.Type = "direct"
-			_, err := newExchange.ValidateUpdate(rootCtx, &exchange, newExchange)
+			_, err := exchangeValidator.ValidateUpdate(rootCtx, &exchange, newExchange)
 			Expect(err).To(MatchError(ContainSubstring("exchange type cannot be updated")))
 		})
 
 		It("does not allow updates on durable", func() {
 			newExchange := exchange.DeepCopy()
 			newExchange.Spec.Durable = true
-			_, err := newExchange.ValidateUpdate(rootCtx, &exchange, newExchange)
+			_, err := exchangeValidator.ValidateUpdate(rootCtx, &exchange, newExchange)
 			Expect(err).To(MatchError(ContainSubstring("durable cannot be updated")))
 		})
 
 		It("does not allow updates on autoDelete", func() {
 			newExchange := exchange.DeepCopy()
 			newExchange.Spec.AutoDelete = false
-			_, err := newExchange.ValidateUpdate(rootCtx, &exchange, newExchange)
+			_, err := exchangeValidator.ValidateUpdate(rootCtx, &exchange, newExchange)
 			Expect(err).To(MatchError(ContainSubstring("autoDelete cannot be updated")))
 		})
 
 		It("allows updates on arguments", func() {
 			newExchange := exchange.DeepCopy()
 			newExchange.Spec.Arguments = &runtime.RawExtension{Raw: []byte(`{"new":"new-value"}`)}
-			_, err := newExchange.ValidateUpdate(rootCtx, &exchange, newExchange)
+			_, err := exchangeValidator.ValidateUpdate(rootCtx, &exchange, newExchange)
 			Expect(err).To(Succeed())
 		})
 	})

@@ -7,37 +7,32 @@ import (
 	"maps"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
+// Implememnts admission.Validator
+type QueueValidator struct{}
+
 func (q *Queue) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		WithValidator(q).
-		For(q).
+	var queueValidator QueueValidator
+	return ctrl.NewWebhookManagedBy(mgr, &Queue{}).
+		WithValidator(queueValidator).
 		Complete()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1beta1-queue,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=queues,versions=v1beta1,name=vqueue.kb.io,sideEffects=none,admissionReviewVersions=v1sideEffects=none,admissionReviewVersions=v1
 
-var _ webhook.CustomValidator = &Queue{}
-
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 // Either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
-func (q *Queue) ValidateCreate(_ context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
-	inQueue, ok := obj.(*Queue)
-	if !ok {
-		return nil, fmt.Errorf("expected RabbitMQ queue, got %T", obj)
-	}
+func (qv QueueValidator) ValidateCreate(_ context.Context, inQueue *Queue) (warnings admission.Warnings, err error) {
 	if inQueue.Spec.Type == "quorum" && !inQueue.Spec.Durable {
 		return nil, apierrors.NewForbidden(inQueue.GroupResource(), inQueue.Name,
 			field.Forbidden(field.NewPath("spec", "durable"),
 				"Quorum queues must have durable set to true"))
 	}
-	return nil, q.Spec.RabbitmqClusterReference.validate(inQueue.RabbitReference())
+	return nil, inQueue.Spec.RabbitmqClusterReference.validate(inQueue.RabbitReference())
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
@@ -45,17 +40,7 @@ func (q *Queue) ValidateCreate(_ context.Context, obj runtime.Object) (warnings 
 // Returns error type 'forbidden' for updates that the controller chooses to disallow: queue name/vhost/rabbitmqClusterReference
 //
 // Returns error type 'invalid' for updates that will be rejected by rabbitmq server: queue types/autoDelete/durable
-func (q *Queue) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	oldQueue, ok := oldObj.(*Queue)
-	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a queue but got a %T", oldObj))
-	}
-
-	newQueue, ok := newObj.(*Queue)
-	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a queue but got a %T", newObj))
-	}
-
+func (qv QueueValidator) ValidateUpdate(_ context.Context, oldQueue, newQueue *Queue) (warnings admission.Warnings, err error) {
 	var allErrs field.ErrorList
 	const detailMsg = "updates on name, vhost, and rabbitmqClusterReference are all forbidden"
 	if newQueue.Spec.Name != oldQueue.Spec.Name {
@@ -143,6 +128,6 @@ func (q *Queue) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object)
 	return nil, allErrs.ToAggregate()
 }
 
-func (q *Queue) ValidateDelete(_ context.Context, _ runtime.Object) (warnings admission.Warnings, err error) {
+func (qv QueueValidator) ValidateDelete(_ context.Context, _ *Queue) (warnings admission.Warnings, err error) {
 	return nil, nil
 }

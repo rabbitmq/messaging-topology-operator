@@ -21,14 +21,15 @@ var _ = Describe("user webhook", func() {
 				},
 			},
 		}
-		rootCtx = context.Background()
+		rootCtx       = context.Background()
+		userValidator UserValidator
 	)
 
 	Context("ValidateCreate", func() {
 		It("does not allow both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret be configured", func() {
 			notAllowed := user.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = &corev1.LocalObjectReference{Name: "some-secret"}
-			_, err := notAllowed.ValidateCreate(rootCtx, notAllowed)
+			_, err := userValidator.ValidateCreate(rootCtx, notAllowed)
 			Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: do not provide both name and connectionSecret")))
 		})
 
@@ -36,7 +37,7 @@ var _ = Describe("user webhook", func() {
 			notAllowed := user.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.Name = ""
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			_, err := notAllowed.ValidateCreate(rootCtx, notAllowed)
+			_, err := userValidator.ValidateCreate(rootCtx, notAllowed)
 			Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: must provide either name or connectionSecret")))
 		})
 	})
@@ -47,7 +48,7 @@ var _ = Describe("user webhook", func() {
 			newUser.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
 				Name: "newUser-cluster",
 			}
-			_, err := newUser.ValidateUpdate(rootCtx, &user, newUser)
+			_, err := userValidator.ValidateUpdate(rootCtx, &user, newUser)
 			Expect(err).To(MatchError(ContainSubstring("update on rabbitmqClusterReference is forbidden")))
 		})
 
@@ -68,14 +69,14 @@ var _ = Describe("user webhook", func() {
 			newUser := connectionScr.DeepCopy()
 			newUser.Spec.RabbitmqClusterReference.Name = "a-name"
 			newUser.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			_, err := newUser.ValidateUpdate(rootCtx, &connectionScr, newUser)
+			_, err := userValidator.ValidateUpdate(rootCtx, &connectionScr, newUser)
 			Expect(err).To(MatchError(ContainSubstring("update on rabbitmqClusterReference is forbidden")))
 		})
 
 		It("allows update on tags", func() {
 			newUser := user.DeepCopy()
 			newUser.Spec.Tags = []UserTag{"monitoring"}
-			_, err := newUser.ValidateUpdate(rootCtx, &user, newUser)
+			_, err := userValidator.ValidateUpdate(rootCtx, &user, newUser)
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})

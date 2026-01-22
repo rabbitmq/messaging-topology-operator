@@ -50,14 +50,15 @@ var _ = Describe("shovel webhook", func() {
 				},
 			},
 		}
-		rootCtx = context.Background()
+		rootCtx         = context.Background()
+		shovelValidator ShovelValidator
 	)
 
 	Context("ValidateCreate", func() {
 		It("does not allow both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret be configured", func() {
 			notAllowed := shovel.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = &corev1.LocalObjectReference{Name: "some-secret"}
-			_, err := notAllowed.ValidateCreate(rootCtx, notAllowed)
+			_, err := shovelValidator.ValidateCreate(rootCtx, notAllowed)
 			Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: do not provide both name and connectionSecret")))
 		})
 
@@ -65,7 +66,7 @@ var _ = Describe("shovel webhook", func() {
 			notAllowed := shovel.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.Name = ""
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			_, err := notAllowed.ValidateCreate(rootCtx, notAllowed)
+			_, err := shovelValidator.ValidateCreate(rootCtx, notAllowed)
 			Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: must provide either name or connectionSecret")))
 		})
 
@@ -73,7 +74,7 @@ var _ = Describe("shovel webhook", func() {
 			notValid := shovel.DeepCopy()
 			notValid.Spec.SourceProtocol = "amqp10"
 			notValid.Spec.SourceAddress = ""
-			_, err := notValid.ValidateCreate(rootCtx, notValid)
+			_, err := shovelValidator.ValidateCreate(rootCtx, notValid)
 			Expect(err).To(MatchError(ContainSubstring("must specify spec.srcAddress when spec.srcProtocol is amqp10")))
 		})
 
@@ -81,7 +82,7 @@ var _ = Describe("shovel webhook", func() {
 			notValid := shovel.DeepCopy()
 			notValid.Spec.DestinationProtocol = "amqp10"
 			notValid.Spec.DestinationAddress = ""
-			_, err := notValid.ValidateCreate(rootCtx, notValid)
+			_, err := shovelValidator.ValidateCreate(rootCtx, notValid)
 			Expect(err).To(MatchError(ContainSubstring("must specify spec.destAddress when spec.destProtocol is amqp10")))
 		})
 	})
@@ -90,14 +91,14 @@ var _ = Describe("shovel webhook", func() {
 		It("does not allow updates on name", func() {
 			newShovel := shovel.DeepCopy()
 			newShovel.Spec.Name = "another-shovel"
-			_, err := newShovel.ValidateUpdate(rootCtx, &shovel, newShovel)
+			_, err := shovelValidator.ValidateUpdate(rootCtx, &shovel, newShovel)
 			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost and rabbitmqClusterReference are all forbidden")))
 		})
 
 		It("does not allow updates on vhost", func() {
 			newShovel := shovel.DeepCopy()
 			newShovel.Spec.Vhost = "another-vhost"
-			_, err := newShovel.ValidateUpdate(rootCtx, &shovel, newShovel)
+			_, err := shovelValidator.ValidateUpdate(rootCtx, &shovel, newShovel)
 			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost and rabbitmqClusterReference are all forbidden")))
 		})
 
@@ -106,7 +107,7 @@ var _ = Describe("shovel webhook", func() {
 			newShovel.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
 				Name: "another-cluster",
 			}
-			_, err := newShovel.ValidateUpdate(rootCtx, &shovel, newShovel)
+			_, err := shovelValidator.ValidateUpdate(rootCtx, &shovel, newShovel)
 			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost and rabbitmqClusterReference are all forbidden")))
 		})
 
@@ -114,7 +115,7 @@ var _ = Describe("shovel webhook", func() {
 			newShovel := shovel.DeepCopy()
 			newShovel.Spec.SourceProtocol = "amqp10"
 			newShovel.Spec.SourceAddress = ""
-			_, err := newShovel.ValidateCreate(rootCtx, newShovel)
+			_, err := shovelValidator.ValidateCreate(rootCtx, newShovel)
 			Expect(err).To(MatchError(ContainSubstring("must specify spec.srcAddress when spec.srcProtocol is amqp10")))
 		})
 
@@ -122,7 +123,7 @@ var _ = Describe("shovel webhook", func() {
 			newShovel := shovel.DeepCopy()
 			newShovel.Spec.DestinationProtocol = "amqp10"
 			newShovel.Spec.DestinationAddress = ""
-			_, err := newShovel.ValidateCreate(rootCtx, newShovel)
+			_, err := shovelValidator.ValidateCreate(rootCtx, newShovel)
 			Expect(err).To(MatchError(ContainSubstring("must specify spec.destAddress when spec.destProtocol is amqp10")))
 		})
 
@@ -146,7 +147,7 @@ var _ = Describe("shovel webhook", func() {
 			}
 			newShovel := connectionScr.DeepCopy()
 			newShovel.Spec.RabbitmqClusterReference.ConnectionSecret.Name = "new-secret"
-			_, err := newShovel.ValidateUpdate(rootCtx, &connectionScr, newShovel)
+			_, err := shovelValidator.ValidateUpdate(rootCtx, &connectionScr, newShovel)
 			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost and rabbitmqClusterReference are all forbidden")))
 		})
 
@@ -176,14 +177,14 @@ var _ = Describe("shovel webhook", func() {
 			newShovel.Spec.SourceProtocol = "another-protocol"
 			newShovel.Spec.SourceQueue = "another-queue"
 			newShovel.Spec.SourceConsumerArgs = &runtime.RawExtension{Raw: []byte(`{"x-priority": 10}`)}
-			_, err := newShovel.ValidateUpdate(rootCtx, &shovel, newShovel)
+			_, err := shovelValidator.ValidateUpdate(rootCtx, &shovel, newShovel)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("allows updates on shovel.spec.deletionPolicy", func() {
 			newShovel := shovel.DeepCopy()
 			newShovel.Spec.DeletionPolicy = "retain"
-			_, err := newShovel.ValidateUpdate(rootCtx, &shovel, newShovel)
+			_, err := shovelValidator.ValidateUpdate(rootCtx, &shovel, newShovel)
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})

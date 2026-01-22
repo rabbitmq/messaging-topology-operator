@@ -24,14 +24,15 @@ var _ = Describe("vhost webhook", func() {
 				},
 			},
 		}
-		rootCtx = context.Background()
+		rootCtx        = context.Background()
+		vhostValidator VhostValidator
 	)
 
 	Context("ValidateCreate", func() {
 		It("does not allow both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret be configured", func() {
 			notAllowed := vhost.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = &corev1.LocalObjectReference{Name: "some-secret"}
-			_, err := notAllowed.ValidateCreate(rootCtx, notAllowed)
+			_, err := vhostValidator.ValidateCreate(rootCtx, notAllowed)
 			Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: do not provide both name and connectionSecret")))
 		})
 
@@ -39,7 +40,7 @@ var _ = Describe("vhost webhook", func() {
 			notAllowed := vhost.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.Name = ""
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			_, err := notAllowed.ValidateCreate(rootCtx, notAllowed)
+			_, err := vhostValidator.ValidateCreate(rootCtx, notAllowed)
 			Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: must provide either name or connectionSecret")))
 		})
 	})
@@ -48,7 +49,7 @@ var _ = Describe("vhost webhook", func() {
 		It("does not allow updates on vhost name", func() {
 			newVhost := vhost.DeepCopy()
 			newVhost.Spec.Name = "new-name"
-			_, err := newVhost.ValidateUpdate(rootCtx, &vhost, newVhost)
+			_, err := vhostValidator.ValidateUpdate(rootCtx, &vhost, newVhost)
 			Expect(err).To(MatchError(ContainSubstring("updates on name and rabbitmqClusterReference are all forbidden")))
 		})
 
@@ -57,7 +58,7 @@ var _ = Describe("vhost webhook", func() {
 			newVhost.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
 				Name: "new-cluster",
 			}
-			_, err := newVhost.ValidateUpdate(rootCtx, &vhost, newVhost)
+			_, err := vhostValidator.ValidateUpdate(rootCtx, &vhost, newVhost)
 			Expect(err).To(MatchError(ContainSubstring("updates on name and rabbitmqClusterReference are all forbidden")))
 		})
 
@@ -78,35 +79,35 @@ var _ = Describe("vhost webhook", func() {
 			newVhost := connectionScr.DeepCopy()
 			newVhost.Spec.RabbitmqClusterReference.Name = "a-name"
 			newVhost.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			_, err := newVhost.ValidateUpdate(rootCtx, &connectionScr, newVhost)
+			_, err := vhostValidator.ValidateUpdate(rootCtx, &connectionScr, newVhost)
 			Expect(err).To(MatchError(ContainSubstring("updates on name and rabbitmqClusterReference are all forbidden")))
 		})
 
 		It("allows updates on vhost.spec.tracing", func() {
 			newVhost := vhost.DeepCopy()
 			newVhost.Spec.Tracing = true
-			_, err := newVhost.ValidateUpdate(rootCtx, &vhost, newVhost)
+			_, err := vhostValidator.ValidateUpdate(rootCtx, &vhost, newVhost)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("allows updates on vhost.spec.tags", func() {
 			newVhost := vhost.DeepCopy()
 			newVhost.Spec.Tags = []string{"new-tag"}
-			_, err := newVhost.ValidateUpdate(rootCtx, &vhost, newVhost)
+			_, err := vhostValidator.ValidateUpdate(rootCtx, &vhost, newVhost)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("allows updates on vhost.spec.defaultQueueType", func() {
 			newVhost := vhost.DeepCopy()
 			newVhost.Spec.DefaultQueueType = "quorum"
-			_, err := newVhost.ValidateUpdate(rootCtx, &vhost, newVhost)
+			_, err := vhostValidator.ValidateUpdate(rootCtx, &vhost, newVhost)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("allows updates on vhost.spec.deletionPolicy", func() {
 			newVhost := vhost.DeepCopy()
 			newVhost.Spec.DeletionPolicy = "retain"
-			_, err := newVhost.ValidateUpdate(rootCtx, &vhost, newVhost)
+			_, err := vhostValidator.ValidateUpdate(rootCtx, &vhost, newVhost)
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})
