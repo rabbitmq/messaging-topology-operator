@@ -33,14 +33,15 @@ var _ = Describe("federation webhook", func() {
 				},
 			},
 		}
-		rootCtx = context.Background()
+		rootCtx             = context.Background()
+		federationValidator FederationValidator
 	)
 
 	Context("ValidateCreate", func() {
 		It("does not allow both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret be configured", func() {
 			notAllowed := federation.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = &corev1.LocalObjectReference{Name: "some-secret"}
-			_, err := notAllowed.ValidateCreate(rootCtx, notAllowed)
+			_, err := federationValidator.ValidateCreate(rootCtx, notAllowed)
 			Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: do not provide both name and connectionSecret")))
 		})
 
@@ -48,7 +49,7 @@ var _ = Describe("federation webhook", func() {
 			notAllowed := federation.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.Name = ""
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			_, err := notAllowed.ValidateCreate(rootCtx, notAllowed)
+			_, err := federationValidator.ValidateCreate(rootCtx, notAllowed)
 			Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: must provide either name or connectionSecret")))
 		})
 	})
@@ -57,14 +58,14 @@ var _ = Describe("federation webhook", func() {
 		It("does not allow updates on name", func() {
 			newFederation := federation.DeepCopy()
 			newFederation.Spec.Name = "new-upstream"
-			_, err := newFederation.ValidateUpdate(rootCtx, &federation, newFederation)
+			_, err := federationValidator.ValidateUpdate(rootCtx, &federation, newFederation)
 			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost and rabbitmqClusterReference are all forbidden")))
 		})
 
 		It("does not allow updates on vhost", func() {
 			newFederation := federation.DeepCopy()
 			newFederation.Spec.Vhost = "new-vhost"
-			_, err := newFederation.ValidateUpdate(rootCtx, &federation, newFederation)
+			_, err := federationValidator.ValidateUpdate(rootCtx, &federation, newFederation)
 			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost and rabbitmqClusterReference are all forbidden")))
 		})
 
@@ -73,7 +74,7 @@ var _ = Describe("federation webhook", func() {
 			newFederation.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
 				Name: "new-cluster",
 			}
-			_, err := newFederation.ValidateUpdate(rootCtx, &federation, newFederation)
+			_, err := federationValidator.ValidateUpdate(rootCtx, &federation, newFederation)
 			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost and rabbitmqClusterReference are all forbidden")))
 		})
 
@@ -97,7 +98,7 @@ var _ = Describe("federation webhook", func() {
 			}
 			newFederation := connectionScr.DeepCopy()
 			newFederation.Spec.RabbitmqClusterReference.ConnectionSecret.Name = "new-secret"
-			_, err := newFederation.ValidateUpdate(rootCtx, &connectionScr, newFederation)
+			_, err := federationValidator.ValidateUpdate(rootCtx, &connectionScr, newFederation)
 			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost and rabbitmqClusterReference are all forbidden")))
 		})
 
@@ -112,14 +113,14 @@ var _ = Describe("federation webhook", func() {
 			newFederation.Spec.TrustUserId = false
 			newFederation.Spec.Exchange = "new-exchange"
 			newFederation.Spec.AckMode = "no-ack"
-			_, err := newFederation.ValidateUpdate(rootCtx, &federation, newFederation)
+			_, err := federationValidator.ValidateUpdate(rootCtx, &federation, newFederation)
 			Expect(err).To(Succeed())
 		})
 
 		It("allows updates on federation.spec.deletionPolicy", func() {
 			newFederation := federation.DeepCopy()
 			newFederation.Spec.DeletionPolicy = "retain"
-			_, err := newFederation.ValidateUpdate(rootCtx, &federation, newFederation)
+			_, err := federationValidator.ValidateUpdate(rootCtx, &federation, newFederation)
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})

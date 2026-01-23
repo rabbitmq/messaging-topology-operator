@@ -2,35 +2,28 @@ package v1beta1
 
 import (
 	"context"
-	"fmt"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
+// Implements admission.Validator
+type PermissionValidator struct{}
+
 func (p *Permission) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		WithValidator(p).
-		For(p).
+	var permissionValidator PermissionValidator
+	return ctrl.NewWebhookManagedBy(mgr, &Permission{}).
+		WithValidator(permissionValidator).
 		Complete()
 }
 
 // +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1beta1-permission,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=permissions,versions=v1beta1,name=vpermission.kb.io,sideEffects=none,admissionReviewVersions=v1
 
-var _ webhook.CustomValidator = &Permission{}
-
 // ValidateCreate checks if only one of spec.user and spec.userReference is specified
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
-func (p *Permission) ValidateCreate(_ context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
-	pe, ok := obj.(*Permission)
-	if !ok {
-		return nil, fmt.Errorf("expected a RabbitMQ permission but got a %T", obj)
-	}
-
+func (pv PermissionValidator) ValidateCreate(_ context.Context, pe *Permission) (warnings admission.Warnings, err error) {
 	if pe.Spec.User == "" && pe.Spec.UserReference == nil {
 		return nil, field.Required(field.NewPath("spec", "user and userReference"),
 			"must specify either spec.user or spec.userReference")
@@ -47,17 +40,7 @@ func (p *Permission) ValidateCreate(_ context.Context, obj runtime.Object) (warn
 // ValidateUpdate do not allow updates on spec.vhost, spec.user, spec.userReference, and spec.rabbitmqClusterReference
 // updates on spec.permissions are allowed
 // only one of spec.user and spec.userReference can be specified
-func (p *Permission) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	oldPermission, ok := oldObj.(*Permission)
-	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a permission but got a %T", oldObj))
-	}
-
-	newPermission, ok := newObj.(*Permission)
-	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a permission but got a %T", newObj))
-	}
-
+func (pv PermissionValidator) ValidateUpdate(_ context.Context, oldPermission, newPermission *Permission) (warnings admission.Warnings, err error) {
 	var errorList field.ErrorList
 	if newPermission.Spec.User == "" && newPermission.Spec.UserReference == nil {
 		errorList = append(errorList, field.Required(field.NewPath("spec", "user and userReference"),
@@ -94,7 +77,7 @@ func (p *Permission) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Ob
 	return nil, nil
 }
 
-func (p *Permission) ValidateDelete(_ context.Context, _ runtime.Object) (warnings admission.Warnings, err error) {
+func (pv PermissionValidator) ValidateDelete(_ context.Context, _ *Permission) (warnings admission.Warnings, err error) {
 	return nil, nil
 }
 

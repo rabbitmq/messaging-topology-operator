@@ -24,14 +24,15 @@ var _ = Describe("schema-replication webhook", func() {
 				},
 			},
 		}
-		rootCtx = context.Background()
+		rootCtx                    = context.Background()
+		schemaReplicationValidator SchemaReplicationValidator
 	)
 
 	Context("ValidateCreate", func() {
 		It("does not allow both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret be configured", func() {
 			notAllowed := replication.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = &corev1.LocalObjectReference{Name: "some-secret"}
-			_, err := notAllowed.ValidateCreate(rootCtx, notAllowed)
+			_, err := schemaReplicationValidator.ValidateCreate(rootCtx, notAllowed)
 			Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: do not provide both name and connectionSecret")))
 		})
 
@@ -39,7 +40,7 @@ var _ = Describe("schema-replication webhook", func() {
 			notAllowed := replication.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.Name = ""
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			_, err := notAllowed.ValidateCreate(rootCtx, notAllowed)
+			_, err := schemaReplicationValidator.ValidateCreate(rootCtx, notAllowed)
 			Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: must provide either name or connectionSecret")))
 		})
 
@@ -50,7 +51,7 @@ var _ = Describe("schema-replication webhook", func() {
 					SecretPath: "not-good",
 				},
 			}
-			_, err := notAllowed.ValidateCreate(rootCtx, notAllowed)
+			_, err := schemaReplicationValidator.ValidateCreate(rootCtx, notAllowed)
 			Expect(err).To(MatchError(ContainSubstring("do not provide both secretBackend.vault.secretPath and upstreamSecret")))
 		})
 
@@ -60,7 +61,7 @@ var _ = Describe("schema-replication webhook", func() {
 				Vault: &VaultSpec{},
 			}
 			notAllowed.Spec.UpstreamSecret.Name = ""
-			_, err := notAllowed.ValidateCreate(rootCtx, notAllowed)
+			_, err := schemaReplicationValidator.ValidateCreate(rootCtx, notAllowed)
 			Expect(err).To(MatchError(ContainSubstring("must provide either secretBackend.vault.secretPath or upstreamSecret")))
 		})
 	})
@@ -71,7 +72,7 @@ var _ = Describe("schema-replication webhook", func() {
 			updated.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
 				Name: "different-cluster",
 			}
-			_, err := updated.ValidateUpdate(rootCtx, &replication, updated)
+			_, err := schemaReplicationValidator.ValidateUpdate(rootCtx, &replication, updated)
 			Expect(err).To(MatchError(ContainSubstring("update on rabbitmqClusterReference is forbidden")))
 		})
 
@@ -82,7 +83,7 @@ var _ = Describe("schema-replication webhook", func() {
 					SecretPath: "not-good",
 				},
 			}
-			_, err := updated.ValidateUpdate(rootCtx, &replication, updated)
+			_, err := schemaReplicationValidator.ValidateUpdate(rootCtx, &replication, updated)
 			Expect(err).To(MatchError(ContainSubstring("do not provide both secretBackend.vault.secretPath and upstreamSecret")))
 		})
 
@@ -92,7 +93,7 @@ var _ = Describe("schema-replication webhook", func() {
 				Vault: &VaultSpec{},
 			}
 			updated.Spec.UpstreamSecret.Name = ""
-			_, err := updated.ValidateUpdate(rootCtx, &replication, updated)
+			_, err := schemaReplicationValidator.ValidateUpdate(rootCtx, &replication, updated)
 			Expect(err).To(MatchError(ContainSubstring("must provide either secretBackend.vault.secretPath or upstreamSecret")))
 		})
 
@@ -104,7 +105,7 @@ var _ = Describe("schema-replication webhook", func() {
 				},
 			}
 			updated.Spec.UpstreamSecret.Name = ""
-			_, err := updated.ValidateUpdate(rootCtx, &replication, updated)
+			_, err := schemaReplicationValidator.ValidateUpdate(rootCtx, &replication, updated)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -127,7 +128,7 @@ var _ = Describe("schema-replication webhook", func() {
 			}
 			newObj := connectionScr.DeepCopy()
 			newObj.Spec.RabbitmqClusterReference.ConnectionSecret.Name = "newObj-secret"
-			_, err := newObj.ValidateUpdate(rootCtx, &connectionScr, newObj)
+			_, err := schemaReplicationValidator.ValidateUpdate(rootCtx, &connectionScr, newObj)
 			Expect(err).To(MatchError(ContainSubstring("update on rabbitmqClusterReference is forbidden")))
 		})
 
@@ -136,14 +137,14 @@ var _ = Describe("schema-replication webhook", func() {
 			updated.Spec.UpstreamSecret = &corev1.LocalObjectReference{
 				Name: "a-different-secret",
 			}
-			_, err := updated.ValidateUpdate(rootCtx, &replication, updated)
+			_, err := schemaReplicationValidator.ValidateUpdate(rootCtx, &replication, updated)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("allows updates on spec.endpoints", func() {
 			updated := replication.DeepCopy()
 			updated.Spec.Endpoints = "abc.new-rmq:1111"
-			_, err := updated.ValidateUpdate(rootCtx, &replication, updated)
+			_, err := schemaReplicationValidator.ValidateUpdate(rootCtx, &replication, updated)
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})

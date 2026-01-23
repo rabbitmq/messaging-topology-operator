@@ -26,14 +26,15 @@ var _ = Describe("policy webhook", func() {
 				},
 			},
 		}
-		rootCtx = context.Background()
+		rootCtx                 = context.Background()
+		operatorPolicyValidator OperatorPolicyValidator
 	)
 
 	Context("ValidateCreate", func() {
 		It("does not allow both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret be configured", func() {
 			notAllowed := policy.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = &corev1.LocalObjectReference{Name: "some-secret"}
-			_, err := notAllowed.ValidateCreate(rootCtx, notAllowed)
+			_, err := operatorPolicyValidator.ValidateCreate(rootCtx, notAllowed)
 			Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: do not provide both name and connectionSecret")))
 		})
 
@@ -41,7 +42,7 @@ var _ = Describe("policy webhook", func() {
 			notAllowed := policy.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.Name = ""
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			_, err := notAllowed.ValidateCreate(rootCtx, notAllowed)
+			_, err := operatorPolicyValidator.ValidateCreate(rootCtx, notAllowed)
 			Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: must provide either name or connectionSecret")))
 		})
 	})
@@ -50,14 +51,14 @@ var _ = Describe("policy webhook", func() {
 		It("does not allow updates on operator policy name", func() {
 			newPolicy := policy.DeepCopy()
 			newPolicy.Spec.Name = "new-name"
-			_, err := newPolicy.ValidateUpdate(rootCtx, &policy, newPolicy)
+			_, err := operatorPolicyValidator.ValidateUpdate(rootCtx, &policy, newPolicy)
 			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost and rabbitmqClusterReference are all forbidden")))
 		})
 
 		It("does not allow updates on vhost", func() {
 			newPolicy := policy.DeepCopy()
 			newPolicy.Spec.Vhost = "new-vhost"
-			_, err := newPolicy.ValidateUpdate(rootCtx, &policy, newPolicy)
+			_, err := operatorPolicyValidator.ValidateUpdate(rootCtx, &policy, newPolicy)
 			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost and rabbitmqClusterReference are all forbidden")))
 		})
 
@@ -66,7 +67,7 @@ var _ = Describe("policy webhook", func() {
 			newPolicy.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
 				Name: "new-cluster",
 			}
-			_, err := newPolicy.ValidateUpdate(rootCtx, &policy, newPolicy)
+			_, err := operatorPolicyValidator.ValidateUpdate(rootCtx, &policy, newPolicy)
 			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost and rabbitmqClusterReference are all forbidden")))
 		})
 
@@ -90,35 +91,35 @@ var _ = Describe("policy webhook", func() {
 			}
 			newOperatorPolicy := connectionScr.DeepCopy()
 			newOperatorPolicy.Spec.RabbitmqClusterReference.ConnectionSecret.Name = "new-secret"
-			_, err := newOperatorPolicy.ValidateUpdate(rootCtx, &connectionScr, newOperatorPolicy)
+			_, err := operatorPolicyValidator.ValidateUpdate(rootCtx, &connectionScr, newOperatorPolicy)
 			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost and rabbitmqClusterReference are all forbidden")))
 		})
 
 		It("allows updates on operator policy.spec.pattern", func() {
 			newPolicy := policy.DeepCopy()
 			newPolicy.Spec.Pattern = "new-pattern"
-			_, err := newPolicy.ValidateUpdate(rootCtx, &policy, newPolicy)
+			_, err := operatorPolicyValidator.ValidateUpdate(rootCtx, &policy, newPolicy)
 			Expect(err).To(Succeed())
 		})
 
 		It("allows updates on operator policy.spec.applyTo", func() {
 			newPolicy := policy.DeepCopy()
 			newPolicy.Spec.ApplyTo = "queues"
-			_, err := newPolicy.ValidateUpdate(rootCtx, &policy, newPolicy)
+			_, err := operatorPolicyValidator.ValidateUpdate(rootCtx, &policy, newPolicy)
 			Expect(err).To(Succeed())
 		})
 
 		It("allows updates on operator policy.spec.priority", func() {
 			newPolicy := policy.DeepCopy()
 			newPolicy.Spec.Priority = 1000
-			_, err := newPolicy.ValidateUpdate(rootCtx, &policy, newPolicy)
+			_, err := operatorPolicyValidator.ValidateUpdate(rootCtx, &policy, newPolicy)
 			Expect(err).To(Succeed())
 		})
 
 		It("allows updates on operator policy.spec.definition", func() {
 			newPolicy := policy.DeepCopy()
 			newPolicy.Spec.Definition = &runtime.RawExtension{Raw: []byte(`{"key":"new-definition-value"}`)}
-			_, err := newPolicy.ValidateUpdate(rootCtx, &policy, newPolicy)
+			_, err := operatorPolicyValidator.ValidateUpdate(rootCtx, &policy, newPolicy)
 			Expect(err).To(Succeed())
 		})
 	})

@@ -2,34 +2,27 @@ package v1beta1
 
 import (
 	"context"
-	"fmt"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
+// Implements admission.Validator
+type TopicPermissionValidator struct{}
+
 func (t *TopicPermission) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		WithValidator(t).
-		For(t).
+	var topicPermissionValidator TopicPermissionValidator
+	return ctrl.NewWebhookManagedBy(mgr, &TopicPermission{}).
+		WithValidator(topicPermissionValidator).
 		Complete()
 }
 
 //+kubebuilder:webhook:path=/validate-rabbitmq-com-v1beta1-topicpermission,mutating=false,failurePolicy=fail,sideEffects=None,groups=rabbitmq.com,resources=topicpermissions,verbs=create;update,versions=v1beta1,name=vtopicpermission.kb.io,admissionReviewVersions={v1,v1beta1}
 
-var _ webhook.CustomValidator = &TopicPermission{}
-
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (t *TopicPermission) ValidateCreate(_ context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
-	tp, ok := obj.(*TopicPermission)
-	if !ok {
-		return nil, fmt.Errorf("expected a RabbitMQ permission but got a %T", obj)
-	}
-
+func (tpv TopicPermissionValidator) ValidateCreate(_ context.Context, tp *TopicPermission) (warnings admission.Warnings, err error) {
 	if tp.Spec.User == "" && tp.Spec.UserReference == nil {
 		return nil, field.Required(field.NewPath("spec", "user and userReference"),
 			"must specify either spec.user or spec.userReference")
@@ -43,17 +36,7 @@ func (t *TopicPermission) ValidateCreate(_ context.Context, obj runtime.Object) 
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (t *TopicPermission) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	oldPermission, ok := oldObj.(*TopicPermission)
-	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a permission but got a %T", oldObj))
-	}
-
-	newPermission, ok := newObj.(*TopicPermission)
-	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a permission but got a %T", newObj))
-	}
-
+func (tpv TopicPermissionValidator) ValidateUpdate(_ context.Context, oldPermission, newPermission *TopicPermission) (warnings admission.Warnings, err error) {
 	var errorList field.ErrorList
 	if newPermission.Spec.User == "" && newPermission.Spec.UserReference == nil {
 		errorList = append(errorList, field.Required(field.NewPath("spec", "user and userReference"),
@@ -96,6 +79,6 @@ func (t *TopicPermission) ValidateUpdate(_ context.Context, oldObj, newObj runti
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (t *TopicPermission) ValidateDelete(_ context.Context, _ runtime.Object) (warnings admission.Warnings, err error) {
+func (tpv TopicPermissionValidator) ValidateDelete(_ context.Context, _ *TopicPermission) (warnings admission.Warnings, err error) {
 	return nil, nil
 }

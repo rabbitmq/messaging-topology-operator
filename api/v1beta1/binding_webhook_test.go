@@ -26,7 +26,8 @@ var _ = Describe("Binding webhook", func() {
 				},
 			},
 		}
-		rootCtx = context.Background()
+		rootCtx          = context.Background()
+		bindingValidator BindingValidator
 	)
 
 	Context("ValidateCreate", func() {
@@ -34,7 +35,7 @@ var _ = Describe("Binding webhook", func() {
 			notAllowed := oldBinding.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = &corev1.LocalObjectReference{Name: "some-secret"}
 
-			_, err := notAllowed.ValidateCreate(rootCtx, notAllowed)
+			_, err := bindingValidator.ValidateCreate(rootCtx, notAllowed)
 			Expect(err).
 				To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: do not provide both name and connectionSecret")))
 		})
@@ -44,7 +45,7 @@ var _ = Describe("Binding webhook", func() {
 			notAllowed.Spec.RabbitmqClusterReference.Name = ""
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = nil
 
-			_, err := notAllowed.ValidateCreate(rootCtx, notAllowed)
+			_, err := bindingValidator.ValidateCreate(rootCtx, notAllowed)
 			Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: must provide either name or connectionSecret")))
 		})
 	})
@@ -54,7 +55,7 @@ var _ = Describe("Binding webhook", func() {
 			newBinding := oldBinding.DeepCopy()
 			newBinding.Spec.Vhost = "/new-vhost"
 
-			_, err := newBinding.ValidateUpdate(rootCtx, &oldBinding, newBinding)
+			_, err := bindingValidator.ValidateUpdate(rootCtx, &oldBinding, newBinding)
 			Expect(err).To(MatchError(ContainSubstring("updates on vhost and rabbitmqClusterReference are all forbidden")))
 		})
 
@@ -63,7 +64,7 @@ var _ = Describe("Binding webhook", func() {
 			newBinding.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
 				Name: "new-cluster",
 			}
-			_, err := newBinding.ValidateUpdate(rootCtx, &oldBinding, newBinding)
+			_, err := bindingValidator.ValidateUpdate(rootCtx, &oldBinding, newBinding)
 			Expect(err).To(MatchError(ContainSubstring("updates on vhost and rabbitmqClusterReference are all forbidden")))
 		})
 
@@ -82,42 +83,42 @@ var _ = Describe("Binding webhook", func() {
 			}
 			newConnSrc := connectionScr.DeepCopy()
 			newConnSrc.Spec.RabbitmqClusterReference.ConnectionSecret.Name = "new-secret"
-			_, err := newConnSrc.ValidateUpdate(rootCtx, &connectionScr, newConnSrc)
+			_, err := bindingValidator.ValidateUpdate(rootCtx, &connectionScr, newConnSrc)
 			Expect(err).To(MatchError(ContainSubstring("updates on vhost and rabbitmqClusterReference are all forbidden")))
 		})
 
 		It("does not allow updates on source", func() {
 			newBinding := oldBinding.DeepCopy()
 			newBinding.Spec.Source = "updated-source"
-			_, err := newBinding.ValidateUpdate(rootCtx, &oldBinding, newBinding)
+			_, err := bindingValidator.ValidateUpdate(rootCtx, &oldBinding, newBinding)
 			Expect(err).To(MatchError(ContainSubstring("source cannot be updated")))
 		})
 
 		It("does not allow updates on destination", func() {
 			newBinding := oldBinding.DeepCopy()
 			newBinding.Spec.Destination = "updated-des"
-			_, err := newBinding.ValidateUpdate(rootCtx, &oldBinding, newBinding)
+			_, err := bindingValidator.ValidateUpdate(rootCtx, &oldBinding, newBinding)
 			Expect(err).To(MatchError(ContainSubstring("destination cannot be updated")))
 		})
 
 		It("does not allow updates on destination type", func() {
 			newBinding := oldBinding.DeepCopy()
 			newBinding.Spec.DestinationType = "exchange"
-			_, err := newBinding.ValidateUpdate(rootCtx, &oldBinding, newBinding)
+			_, err := bindingValidator.ValidateUpdate(rootCtx, &oldBinding, newBinding)
 			Expect(err).To(MatchError(ContainSubstring("destinationType cannot be updated")))
 		})
 
 		It("does not allow updates on routing key", func() {
 			newBinding := oldBinding.DeepCopy()
 			newBinding.Spec.RoutingKey = "not-allowed"
-			_, err := newBinding.ValidateUpdate(rootCtx, &oldBinding, newBinding)
+			_, err := bindingValidator.ValidateUpdate(rootCtx, &oldBinding, newBinding)
 			Expect(err).To(MatchError(ContainSubstring("routingKey cannot be updated")))
 		})
 
 		It("does not allow updates on binding arguments", func() {
 			newBinding := oldBinding.DeepCopy()
 			newBinding.Spec.Arguments = &runtime.RawExtension{Raw: []byte(`{"new":"new-value"}`)}
-			_, err := newBinding.ValidateUpdate(rootCtx, &oldBinding, newBinding)
+			_, err := bindingValidator.ValidateUpdate(rootCtx, &oldBinding, newBinding)
 			Expect(err).To(MatchError(ContainSubstring("arguments cannot be updated")))
 		})
 	})

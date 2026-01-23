@@ -27,7 +27,8 @@ var _ = Describe("topic permission webhook", func() {
 				},
 			},
 		}
-		rootCtx = context.Background()
+		rootCtx                  = context.Background()
+		topicPermissionValidator TopicPermissionValidator
 	)
 
 	Context("ValidateCreate", func() {
@@ -35,7 +36,7 @@ var _ = Describe("topic permission webhook", func() {
 			invalidPermission := permission.DeepCopy()
 			invalidPermission.Spec.UserReference = &corev1.LocalObjectReference{Name: "invalid"}
 			invalidPermission.Spec.User = "test-user"
-			_, err := invalidPermission.ValidateCreate(rootCtx, invalidPermission)
+			_, err := topicPermissionValidator.ValidateCreate(rootCtx, invalidPermission)
 			Expect(err).To(MatchError(ContainSubstring("cannot specify spec.user and spec.userReference at the same time")))
 		})
 
@@ -43,14 +44,14 @@ var _ = Describe("topic permission webhook", func() {
 			invalidPermission := permission.DeepCopy()
 			invalidPermission.Spec.UserReference = nil
 			invalidPermission.Spec.User = ""
-			_, err := invalidPermission.ValidateCreate(rootCtx, invalidPermission)
+			_, err := topicPermissionValidator.ValidateCreate(rootCtx, invalidPermission)
 			Expect(err).To(MatchError(ContainSubstring("must specify either spec.user or spec.userReference")))
 		})
 
 		It("does not allow both spec.rabbitmqClusterReference.name and spec.rabbitmqClusterReference.connectionSecret be configured", func() {
 			notAllowed := permission.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = &corev1.LocalObjectReference{Name: "some-secret"}
-			_, err := notAllowed.ValidateCreate(rootCtx, notAllowed)
+			_, err := topicPermissionValidator.ValidateCreate(rootCtx, notAllowed)
 			Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: do not provide both name and connectionSecret")))
 		})
 
@@ -58,7 +59,7 @@ var _ = Describe("topic permission webhook", func() {
 			notAllowed := permission.DeepCopy()
 			notAllowed.Spec.RabbitmqClusterReference.Name = ""
 			notAllowed.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			_, err := notAllowed.ValidateCreate(rootCtx, notAllowed)
+			_, err := topicPermissionValidator.ValidateCreate(rootCtx, notAllowed)
 			Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: must provide either name or connectionSecret")))
 		})
 	})
@@ -67,7 +68,7 @@ var _ = Describe("topic permission webhook", func() {
 		It("does not allow updates on user", func() {
 			newPermission := permission.DeepCopy()
 			newPermission.Spec.User = "new-user"
-			_, err := newPermission.ValidateUpdate(rootCtx, &permission, newPermission)
+			_, err := topicPermissionValidator.ValidateUpdate(rootCtx, &permission, newPermission)
 			Expect(err).To(MatchError(ContainSubstring("updates on exchange, user, userReference, vhost and rabbitmqClusterReference are all forbidden")))
 		})
 
@@ -77,14 +78,14 @@ var _ = Describe("topic permission webhook", func() {
 			permissionWithUserRef.Spec.UserReference = &corev1.LocalObjectReference{Name: "a-user"}
 			newPermission := permissionWithUserRef.DeepCopy()
 			newPermission.Spec.UserReference = &corev1.LocalObjectReference{Name: "a-new-user"}
-			_, err := newPermission.ValidateUpdate(rootCtx, permissionWithUserRef, newPermission)
+			_, err := topicPermissionValidator.ValidateUpdate(rootCtx, permissionWithUserRef, newPermission)
 			Expect(err).To(MatchError(ContainSubstring("updates on exchange, user, userReference, vhost and rabbitmqClusterReference are all forbidden")))
 		})
 
 		It("does not allow updates on vhost", func() {
 			newPermission := permission.DeepCopy()
 			newPermission.Spec.Vhost = "new-vhost"
-			_, err := newPermission.ValidateUpdate(rootCtx, &permission, newPermission)
+			_, err := topicPermissionValidator.ValidateUpdate(rootCtx, &permission, newPermission)
 			Expect(err).To(MatchError(ContainSubstring("updates on exchange, user, userReference, vhost and rabbitmqClusterReference are all forbidden")))
 		})
 
@@ -93,7 +94,7 @@ var _ = Describe("topic permission webhook", func() {
 			newPermission.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
 				Name: "new-cluster",
 			}
-			_, err := newPermission.ValidateUpdate(rootCtx, &permission, newPermission)
+			_, err := topicPermissionValidator.ValidateUpdate(rootCtx, &permission, newPermission)
 			Expect(err).To(MatchError(ContainSubstring("updates on exchange, user, userReference, vhost and rabbitmqClusterReference are all forbidden")))
 		})
 
@@ -119,35 +120,35 @@ var _ = Describe("topic permission webhook", func() {
 			newTopicPermissions := connectionScr.DeepCopy()
 			Expect(newTopicPermissions).ToNot(BeNil())
 			newTopicPermissions.Spec.RabbitmqClusterReference.ConnectionSecret.Name = "new-secret"
-			_, err := newTopicPermissions.ValidateUpdate(rootCtx, &connectionScr, newTopicPermissions)
+			_, err := topicPermissionValidator.ValidateUpdate(rootCtx, &connectionScr, newTopicPermissions)
 			Expect(err).To(MatchError(ContainSubstring("updates on exchange, user, userReference, vhost and rabbitmqClusterReference are all forbidden")))
 		})
 
 		It("does not allow updates on spec.permissions.exchange", func() {
 			newPermission := permission.DeepCopy()
 			newPermission.Spec.Permissions.Exchange = "a-different-exchange"
-			_, err := newPermission.ValidateUpdate(rootCtx, &permission, newPermission)
+			_, err := topicPermissionValidator.ValidateUpdate(rootCtx, &permission, newPermission)
 			Expect(err).To(MatchError(ContainSubstring("updates on exchange, user, userReference, vhost and rabbitmqClusterReference are all forbidden")))
 		})
 
 		It("allows updates on permission.spec.permissions.read", func() {
 			newPermission := permission.DeepCopy()
 			newPermission.Spec.Permissions.Read = "?"
-			_, err := newPermission.ValidateUpdate(rootCtx, &permission, newPermission)
+			_, err := topicPermissionValidator.ValidateUpdate(rootCtx, &permission, newPermission)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("allows updates on permission.spec.permissions.write", func() {
 			newPermission := permission.DeepCopy()
 			newPermission.Spec.Permissions.Write = "?"
-			_, err := newPermission.ValidateUpdate(rootCtx, &permission, newPermission)
+			_, err := topicPermissionValidator.ValidateUpdate(rootCtx, &permission, newPermission)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("does not allow user and userReference to be specified at the same time", func() {
 			newPermission := permission.DeepCopy()
 			newPermission.Spec.UserReference = &corev1.LocalObjectReference{Name: "invalid"}
-			_, err := newPermission.ValidateUpdate(rootCtx, &permission, newPermission)
+			_, err := topicPermissionValidator.ValidateUpdate(rootCtx, &permission, newPermission)
 			Expect(err).To(MatchError(ContainSubstring("cannot specify spec.user and spec.userReference at the same time")))
 		})
 
@@ -155,7 +156,7 @@ var _ = Describe("topic permission webhook", func() {
 			newPermission := permission.DeepCopy()
 			newPermission.Spec.User = ""
 			newPermission.Spec.UserReference = nil
-			_, err := newPermission.ValidateUpdate(rootCtx, &permission, newPermission)
+			_, err := topicPermissionValidator.ValidateUpdate(rootCtx, &permission, newPermission)
 			Expect(err).To(MatchError(ContainSubstring("must specify either spec.user or spec.userReference")))
 		})
 	})

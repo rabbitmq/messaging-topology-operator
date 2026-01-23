@@ -30,7 +30,8 @@ var _ = Describe("queue webhook", func() {
 				},
 			},
 		}
-		rootCtx = context.Background()
+		rootCtx        = context.Background()
+		queueValidator QueueValidator
 	)
 
 	Context("ValidateCreate", func() {
@@ -38,7 +39,7 @@ var _ = Describe("queue webhook", func() {
 			notAllowedQ := queue.DeepCopy()
 			notAllowedQ.Spec.Durable = true
 			notAllowedQ.Spec.RabbitmqClusterReference.ConnectionSecret = &corev1.LocalObjectReference{Name: "some-secret"}
-			_, err := notAllowedQ.ValidateCreate(rootCtx, notAllowedQ)
+			_, err := queueValidator.ValidateCreate(rootCtx, notAllowedQ)
 			Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: do not provide both name and connectionSecret")))
 		})
 
@@ -47,14 +48,14 @@ var _ = Describe("queue webhook", func() {
 			notAllowedQ.Spec.Durable = true
 			notAllowedQ.Spec.RabbitmqClusterReference.Name = ""
 			notAllowedQ.Spec.RabbitmqClusterReference.ConnectionSecret = nil
-			_, err := notAllowedQ.ValidateCreate(rootCtx, notAllowedQ)
+			_, err := queueValidator.ValidateCreate(rootCtx, notAllowedQ)
 			Expect(err).To(MatchError(ContainSubstring("invalid RabbitmqClusterReference: must provide either name or connectionSecret")))
 		})
 
 		It("does not allow non-durable quorum queues", func() {
 			notAllowedQ := queue.DeepCopy()
 			notAllowedQ.Spec.Durable = false
-			_, err := notAllowedQ.ValidateCreate(rootCtx, notAllowedQ)
+			_, err := queueValidator.ValidateCreate(rootCtx, notAllowedQ)
 			Expect(err).To(MatchError(ContainSubstring("Quorum queues must have durable set to true")))
 		})
 	})
@@ -63,14 +64,14 @@ var _ = Describe("queue webhook", func() {
 		It("does not allow updates on queue name", func() {
 			newQueue := queue.DeepCopy()
 			newQueue.Spec.Name = "new-name"
-			_, err := newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			_, err := queueValidator.ValidateUpdate(rootCtx, &queue, newQueue)
 			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost, and rabbitmqClusterReference are all forbidden")))
 		})
 
 		It("does not allow updates on vhost", func() {
 			newQueue := queue.DeepCopy()
 			newQueue.Spec.Vhost = "/new-vhost"
-			_, err := newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			_, err := queueValidator.ValidateUpdate(rootCtx, &queue, newQueue)
 			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost, and rabbitmqClusterReference are all forbidden")))
 		})
 
@@ -79,7 +80,7 @@ var _ = Describe("queue webhook", func() {
 			newQueue.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
 				Name: "new-cluster",
 			}
-			_, err := newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			_, err := queueValidator.ValidateUpdate(rootCtx, &queue, newQueue)
 			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost, and rabbitmqClusterReference are all forbidden")))
 		})
 
@@ -88,7 +89,7 @@ var _ = Describe("queue webhook", func() {
 			newQueue.Spec.RabbitmqClusterReference = RabbitmqClusterReference{
 				Namespace: "new-ns",
 			}
-			_, err := newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			_, err := queueValidator.ValidateUpdate(rootCtx, &queue, newQueue)
 			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost, and rabbitmqClusterReference are all forbidden")))
 		})
 
@@ -108,28 +109,28 @@ var _ = Describe("queue webhook", func() {
 			}
 			newQueue := connectionScrQ.DeepCopy()
 			newQueue.Spec.RabbitmqClusterReference.ConnectionSecret.Name = "new-secret"
-			_, err := newQueue.ValidateUpdate(rootCtx, &connectionScrQ, newQueue)
+			_, err := queueValidator.ValidateUpdate(rootCtx, &connectionScrQ, newQueue)
 			Expect(err).To(MatchError(ContainSubstring("updates on name, vhost, and rabbitmqClusterReference are all forbidden")))
 		})
 
 		It("does not allow updates on queue type", func() {
 			newQueue := queue.DeepCopy()
 			newQueue.Spec.Type = "classic"
-			_, err := newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			_, err := queueValidator.ValidateUpdate(rootCtx, &queue, newQueue)
 			Expect(err).To(MatchError(ContainSubstring("queue type cannot be updated")))
 		})
 
 		It("does not allow updates on durable", func() {
 			newQueue := queue.DeepCopy()
 			newQueue.Spec.Durable = true
-			_, err := newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			_, err := queueValidator.ValidateUpdate(rootCtx, &queue, newQueue)
 			Expect(err).To(MatchError(ContainSubstring("durable cannot be updated")))
 		})
 
 		It("does not allow updates on autoDelete", func() {
 			newQueue := queue.DeepCopy()
 			newQueue.Spec.AutoDelete = false
-			_, err := newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			_, err := queueValidator.ValidateUpdate(rootCtx, &queue, newQueue)
 			Expect(err).To(MatchError(ContainSubstring("autoDelete cannot be updated")))
 		})
 
@@ -139,26 +140,26 @@ var _ = Describe("queue webhook", func() {
 			newQueue.Spec.Arguments = &runtime.RawExtension{
 				Raw: []byte(`{"this-argument": "really cant be updated", "adding-args": "not possible"}`),
 			}
-			_, err := newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			_, err := queueValidator.ValidateUpdate(rootCtx, &queue, newQueue)
 			Expect(err).To(MatchError(ContainSubstring("queue arguments cannot be updated")))
 
 			By("not allowing removal")
 			newQueue.Spec.Arguments = nil
-			_, err = newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			_, err = queueValidator.ValidateUpdate(rootCtx, &queue, newQueue)
 			Expect(err).To(MatchError(ContainSubstring("queue arguments cannot be updated")))
 
 			By("not allowing emptying the arguments")
 			newQueue.Spec.Arguments = &runtime.RawExtension{
 				Raw: []byte(`{}`),
 			}
-			_, err = newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			_, err = queueValidator.ValidateUpdate(rootCtx, &queue, newQueue)
 			Expect(err).To(MatchError(ContainSubstring("queue arguments cannot be updated")))
 		})
 
 		It("allows updates on queue.spec.deletionPolicy", func() {
 			newQueue := queue.DeepCopy()
 			newQueue.Spec.DeletionPolicy = "retain"
-			_, err := newQueue.ValidateUpdate(rootCtx, &queue, newQueue)
+			_, err := queueValidator.ValidateUpdate(rootCtx, &queue, newQueue)
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})
