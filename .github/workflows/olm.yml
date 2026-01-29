@@ -99,6 +99,7 @@ jobs:
               olm/bundle/manifests
               olm/bundle/metadata
               olm/bundle/bundle.Dockerfile
+              olm/release-config.yaml
             if-no-files-found: error
             retention-days: 1
 
@@ -163,6 +164,8 @@ jobs:
 
         - name: Collect operator logs on failure
           if: ${{ !cancelled() && steps.system_tests.outcome == 'failure' }}
+          env:
+            K8S_OPERATOR_NAMESPACE: ns-1
           run: kubectl logs -n "$K8S_OPERATOR_NAMESPACE" deployment/messaging-topology-operator > topology-operator.log
 
         - name: Upload topology operator log
@@ -201,6 +204,7 @@ jobs:
             BUNDLE_VERSION: ${{ needs.test-olm-package.outputs.olm_package_version }}
             GH_PROMPT_DISABLED: 1
             GH_TOKEN: ${{ secrets.RABBITMQ_CI_TOKEN }}
+          # remove release config because this file is Red Hat marketplace specific
           run: |
             git config user.name "rabbitmq-ci"
             git config user.email ${{ secrets.RABBITMQ_CI_EMAIL }}
@@ -208,6 +212,7 @@ jobs:
             git checkout rabbitmq-messaging-topology-operator-$BUNDLE_VERSION
 
             mkdir -pv operators/rabbitmq-messaging-topology-operator/"$BUNDLE_VERSION"
+            rm -v -f olm-package-ci/release-config.yaml
             cp -v -fR olm-package-ci/* ./operators/rabbitmq-messaging-topology-operator/"$BUNDLE_VERSION"/
             git add operators/rabbitmq-messaging-topology-operator
             git commit -s -m "RabbitMQ Topology Operator release $BUNDLE_VERSION"
@@ -241,6 +246,15 @@ jobs:
             BUNDLE_VERSION: ${{ needs.test-olm-package.outputs.olm_package_version }}
             GH_PROMPT_DISABLED: 1
             GH_TOKEN: ${{ secrets.RABBITMQ_CI_TOKEN }}
+          # IMPORTANT: as of Jan 2026, the operator OLM manifests use File-Based-Catalog (FBC) format
+          # https://redhat-openshift-ecosystem.github.io/operator-pipelines/users/fbc_workflow/
+          # https://k8s-operatorhub.github.io/community-operators/operator-ci-yaml/
+          #
+          # This enables us to use the auto-release workflow. Notice how the below `run` section does not
+          # `rm` the release config file.
+          # https://redhat-openshift-ecosystem.github.io/operator-pipelines/users/fbc_autorelease/
+          #
+          # The script removed the bundle.Dockerfile file because it is not needed for the FBC workflow.
           run: |
             git config user.name "rabbitmq-ci"
             git config user.email ${{ secrets.RABBITMQ_CI_EMAIL }}
@@ -248,6 +262,7 @@ jobs:
             git checkout rabbitmq-messaging-topology-operator-$BUNDLE_VERSION
 
             mkdir -pv operators/rabbitmq-messaging-topology-operator/"$BUNDLE_VERSION"
+            rm -v -f olm-package-ci/bundle.Dockerfile
             cp -v -fR olm-package-ci/* ./operators/rabbitmq-messaging-topology-operator/"$BUNDLE_VERSION"/
             git add operators/rabbitmq-messaging-topology-operator
             git commit -s -m "RabbitMQ Topology Operator release $BUNDLE_VERSION"

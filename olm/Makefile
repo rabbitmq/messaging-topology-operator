@@ -21,7 +21,7 @@ help: ## Display this help.
 ## Bundle manifests ##
 ######################
 
-.PHONY: all crds rbac deployment webhooks olm-manifests clean
+.PHONY: all crds rbac deployment webhooks olm-manifests olm-release-config clean
 
 OLM_MANIFEST_DIR = $(REPO_ROOT)/olm/bundle/manifests
 $(OLM_MANIFEST_DIR) :
@@ -68,11 +68,18 @@ olm-manifests: $(OLM_MANIFEST_DIR) ## Render bundle manifests. Customise version
 		--data-value replaces="$(BUNDLE_REPLACES)" \
 		> $(OLM_MANIFEST_DIR)/rabbitmq-messaging-topology-operator.clusterserviceversion.yaml
 
+olm-release-config: ## Render release config manifests. Set replaces using BUNDLE_REPLACES
+	ytt -f $(REPO_ROOT)/olm/release-config-template.yaml \
+		--data-value replaces="$(BUNDLE_REPLACES)" \
+		--data-values-file $(REPO_ROOT)/olm/values-release.yaml \
+		> $(REPO_ROOT)/olm/release-config.yaml
+
 all::crds ## Default goal. Generates bundle manifests
 all::rbac
 all::deployment
 all::webhooks
 all::olm-manifests
+all::olm-release-config
 
 clean:
 	rm -r -f -v $(REPO_ROOT)/olm/bundle/manifests/
