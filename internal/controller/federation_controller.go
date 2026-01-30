@@ -1,63 +1,67 @@
-/*
-Copyright 2026.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package controller
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
-	"k8s.io/apimachinery/pkg/runtime"
+	"github.com/rabbitmq/messaging-topology-operator/internal"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
 
-// FederationReconciler reconciles a Federation object
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=federations,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=federations/finalizers,verbs=update
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=federations/status,verbs=get;update;patch
+
 type FederationReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=rabbitmq.com.rabbitmq.com,resources=federations,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=rabbitmq.com.rabbitmq.com,resources=federations/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=rabbitmq.com.rabbitmq.com,resources=federations/finalizers,verbs=update
-
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the Federation object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.23.1/pkg/reconcile
-func (r *FederationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = logf.FromContext(ctx)
-
-	// TODO(user): your logic here
-
-	return ctrl.Result{}, nil
+func (r *FederationReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+	federation := obj.(*topology.Federation)
+	uri, err := r.getUri(ctx, federation)
+	if err != nil {
+		return fmt.Errorf("failed to parse federation uri secret; secret name: %s, error: %w", federation.Spec.UriSecret.Name, err)
+	}
+	return validateResponse(client.PutFederationUpstream(federation.Spec.Vhost, federation.Spec.Name, internal.GenerateFederationDefinition(federation, uri)))
 }
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *FederationReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&rabbitmqcomv1beta1.Federation{}).
-		Named("federation").
-		Complete(r)
+func (r *FederationReconciler) getUri(ctx context.Context, federation *topology.Federation) (string, error) {
+	if federation.Spec.UriSecret == nil {
+		return "", fmt.Errorf("no uri secret provided")
+	}
+	secret := &corev1.Secret{}
+	if err := r.Get(ctx, types.NamespacedName{Name: federation.Spec.UriSecret.Name, Namespace: federation.Namespace}, secret); err != nil {
+		return "", err
+	}
+
+	uri, ok := secret.Data["uri"]
+	if !ok {
+		return "", fmt.Errorf("could not find key 'uri' in secret %s", secret.Name)
+	}
+
+	return string(uri), nil
+}
+
+// DeleteFunc deletes federation from rabbitmq server
+// if server responds with '404' Not Found, it logs and does not requeue on error
+func (r *FederationReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+	logger := ctrl.LoggerFrom(ctx)
+	federation := obj.(*topology.Federation)
+	if shouldSkipDeletion(ctx, federation.Spec.DeletionPolicy, federation.Spec.Name) {
+		return nil
+	}
+	err := validateResponseForDeletion(client.DeleteFederationUpstream(federation.Spec.Vhost, federation.Spec.Name))
+	if errors.Is(err, NotFound) {
+		logger.Info("cannot find federation upstream parameter; no need to delete it", "federation", federation.Spec.Name)
+	} else if err != nil {
+		return err
+	}
+	return nil
 }

@@ -1,0 +1,21 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: Permission
+metadata:
+  name: testuser-permission
+spec:
+  vhost: "/" # name of a vhost
+  user: "test-user" # name of a RabbitMQ user
+  permissions:
+    write: ".*"
+    configure: ".*"
+    read: ".*"
+  rabbitmqClusterReference:
+    name: sample  # rabbitmqCluster must exist in the same namespace as this resource
+# status:
+#   conditions:
+#   - lastTransitionTime: ""
+#     status: "True" # true, false, or unknown
+#     type: Ready
+#     Reason: "SuccessfulCreateOrUpdate" # status false result in reason FailedCreateOrUpdate
+#     Message: "" # set when status is false
+

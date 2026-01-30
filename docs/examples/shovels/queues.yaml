@@ -1,0 +1,25 @@
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Queue
+metadata:
+  name: source-queue
+spec:
+  name: source-queue
+  vhost: "source"
+  autoDelete: false
+  durable: true
+  rabbitmqClusterReference:
+    name: example-rabbit
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Queue
+metadata:
+  name: destination-queue
+spec:
+  name: destination-queue
+  vhost: "destination"
+  type: quorum
+  autoDelete: false
+  durable: true
+  rabbitmqClusterReference:
+    name: example-rabbit

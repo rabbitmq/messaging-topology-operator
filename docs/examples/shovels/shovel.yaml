@@ -1,0 +1,19 @@
+# for more information, see: https://www.rabbitmq.com/shovel-dynamic.html
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Shovel
+metadata:
+  name: shovel-example
+spec:
+  name: "shovel-example"
+  uriSecret:
+    name: shovel-secret
+  srcQueue: "source-queue"
+  srcConsumerArgs: # optional consume arguments
+    x-priority: 10
+  destQueue: "destination-queue"
+  destPublishProperties: # optional map of properties to overwrite when shovelling messages
+    delivery_mode: 2
+  deletionPolicy: retain # delete or retain; default to delete;
+  rabbitmqClusterReference:
+    name: example-rabbit

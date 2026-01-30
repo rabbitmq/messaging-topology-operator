@@ -1,0 +1,9 @@
+apiVersion: rabbitmq.com/v1alpha1
+kind: SuperStream
+metadata:
+  name: orders
+spec:
+  name: orders
+  partitions: 3
+  rabbitmqClusterReference:
+    name: billing

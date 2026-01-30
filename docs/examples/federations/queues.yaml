@@ -1,0 +1,26 @@
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Queue
+metadata:
+  name: downstream-queue
+spec:
+  name: downstream-queue
+  vhost: "downstream"
+  type: quorum
+  autoDelete: false
+  durable: true
+  rabbitmqClusterReference:
+    name: example-rabbit
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Queue
+metadata:
+  name: upstream-queue
+spec:
+  name: upstream-queue
+  vhost: "upstream"
+  type: quorum
+  autoDelete: false
+  durable: true
+  rabbitmqClusterReference:
+    name: example-rabbit

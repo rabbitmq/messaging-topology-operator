@@ -1,63 +1,75 @@
-/*
-Copyright 2026.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package controller
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
-	"k8s.io/apimachinery/pkg/runtime"
+	"github.com/rabbitmq/messaging-topology-operator/internal"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
 
-// ShovelReconciler reconciles a Shovel object
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=shovels,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=shovels/finalizers,verbs=update
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=shovels/status,verbs=get;update;patch
+
 type ShovelReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=rabbitmq.com.rabbitmq.com,resources=shovels,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=rabbitmq.com.rabbitmq.com,resources=shovels/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=rabbitmq.com.rabbitmq.com,resources=shovels/finalizers,verbs=update
+func (r *ShovelReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+	shovel := obj.(*topology.Shovel)
+	srcUri, destUri, err := r.getUris(ctx, shovel)
+	if err != nil {
+		return fmt.Errorf("failed to parse shovel uri secret; secret name: %s, error: %w", shovel.Spec.UriSecret.Name, err)
+	}
+	definition, err := internal.GenerateShovelDefinition(shovel, srcUri, destUri)
+	if err != nil {
+		return fmt.Errorf("failed to generate shovel definition: %w", err)
+	}
+	return validateResponse(client.DeclareShovel(shovel.Spec.Vhost, shovel.Spec.Name, *definition))
+}
+func (r *ShovelReconciler) getUris(ctx context.Context, shovel *topology.Shovel) (string, string, error) {
+	if shovel.Spec.UriSecret == nil {
+		return "", "", fmt.Errorf("no uri secret provided")
+	}
+	secret := &corev1.Secret{}
+	if err := r.Get(ctx, types.NamespacedName{Name: shovel.Spec.UriSecret.Name, Namespace: shovel.Namespace}, secret); err != nil {
+		return "", "", err
+	}
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the Shovel object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.23.1/pkg/reconcile
-func (r *ShovelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = logf.FromContext(ctx)
+	srcUri, ok := secret.Data["srcUri"]
+	if !ok {
+		return "", "", fmt.Errorf("could not find key 'srcUri' in secret %s", secret.Name)
+	}
 
-	// TODO(user): your logic here
+	destUri, ok := secret.Data["destUri"]
+	if !ok {
+		return "", "", fmt.Errorf("could not find key 'destUri' in secret %s", secret.Name)
+	}
 
-	return ctrl.Result{}, nil
+	return string(srcUri), string(destUri), nil
 }
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *ShovelReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&rabbitmqcomv1beta1.Shovel{}).
-		Named("shovel").
-		Complete(r)
+// DeleteFunc deletes shovel configuration from rabbitmq server
+// if server responds with '404' Not Found, it logs and does not requeue on error
+func (r *ShovelReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+	logger := ctrl.LoggerFrom(ctx)
+	shovel := obj.(*topology.Shovel)
+	if shouldSkipDeletion(ctx, shovel.Spec.DeletionPolicy, shovel.Spec.Name) {
+		return nil
+	}
+	err := validateResponseForDeletion(client.DeleteShovel(shovel.Spec.Vhost, shovel.Spec.Name))
+	if errors.Is(err, NotFound) {
+		logger.Info("cannot find shovel parameter; no need to delete it", "shovel", shovel.Spec.Name)
+	} else if err != nil {
+		return err
+	}
+	return nil
 }

@@ -1,0 +1,24 @@
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Binding
+metadata:
+  name: upstream-binding
+spec:
+  vhost: "upstream"
+  source: fanout
+  destination: upstream-queue
+  destinationType: queue
+  rabbitmqClusterReference:
+    name: example-rabbit
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Binding
+metadata:
+  name: downstream-binding
+spec:
+  vhost: "downstream"
+  source: fanout
+  destination: downstream-queue
+  destinationType: queue
+  rabbitmqClusterReference:
+    name: example-rabbit

@@ -1,0 +1,14 @@
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Policy
+metadata:
+  name: federation-policy
+spec:
+  name: federation-policy # name of the policy
+  vhost: "downstream"
+  pattern: "fanout"
+  applyTo: exchanges
+  definition: # policy definition
+    federation-upstream: origin
+  rabbitmqClusterReference:
+    name: example-rabbit

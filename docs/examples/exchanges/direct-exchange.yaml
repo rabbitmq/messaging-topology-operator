@@ -1,0 +1,14 @@
+# More on direct exchange and other exchange types, see: https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchanges.
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Exchange
+metadata:
+  name: direct # name of the object in kubernetes
+spec:
+  name: direct-exchange # name of the exchange
+  vhost: "/test-vhost" # default to '/' if not provided
+  type: direct
+  autoDelete: false
+  durable: true
+  rabbitmqClusterReference:
+    name: test

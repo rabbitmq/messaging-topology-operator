@@ -1,0 +1,29 @@
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: TopicPermission
+metadata:
+  name: permission-example-a
+spec:
+  vhost: "/" # name of a vhost; required
+  userReference:
+    name: "topic-exchange-example" # name of a user.rabbitmq.com in the same namespace; must specify either spec.userReference or spec.user
+  permissions:
+    exchange: "topic-a"
+    write: ".*"
+    read: ".*"
+  rabbitmqClusterReference:
+    name: test
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: TopicPermission
+metadata:
+  name: permission-example-b
+spec:
+  vhost: "/" # name of a vhost; required
+  user: "example"
+  permissions:
+    exchange: "topic-b"
+    write: ".*"
+    read: ".*"
+  rabbitmqClusterReference:
+    name: test

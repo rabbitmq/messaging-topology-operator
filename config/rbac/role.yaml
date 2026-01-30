@@ -1,11 +1,107 @@
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  labels:
-    app.kubernetes.io/name: messaging-topology-operator
-    app.kubernetes.io/managed-by: kustomize
   name: manager-role
 rules:
-- apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["get", "list", "watch"]
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - get
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - bindings
+  - exchanges
+  - federations
+  - operatorpolicies
+  - permissions
+  - policies
+  - queues
+  - schemareplications
+  - shovels
+  - superstreams
+  - topicpermissions
+  - users
+  - vhosts
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - bindings/finalizers
+  - exchanges/finalizers
+  - federations/finalizers
+  - operatorpolicies/finalizers
+  - permissions/finalizers
+  - policies/finalizers
+  - queues/finalizers
+  - schemareplications/finalizers
+  - shovels/finalizers
+  - superstreams/finalizers
+  - topicpermissions/finalizers
+  - users/finalizers
+  - vhosts/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - bindings/status
+  - exchanges/status
+  - federations/status
+  - operatorpolicies/status
+  - permissions/status
+  - policies/status
+  - queues/status
+  - schemareplications/status
+  - shovels/status
+  - superstreams/status
+  - topicpermissions/status
+  - users/status
+  - vhosts/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - rabbitmqclusters
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - rabbitmq.com
+  resources:
+  - rabbitmqclusters/status
+  verbs:
+  - get

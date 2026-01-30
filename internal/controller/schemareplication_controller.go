@@ -1,63 +1,77 @@
-/*
-Copyright 2026.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package controller
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
-	"k8s.io/apimachinery/pkg/runtime"
+	"github.com/rabbitmq/messaging-topology-operator/internal"
+	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
 
-// SchemaReplicationReconciler reconciles a SchemaReplication object
+const SchemaReplicationParameterName = "schema_definition_sync_upstream"
+
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=schemareplications,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=schemareplications/finalizers,verbs=update
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=schemareplications/status,verbs=get;update;patch
+
 type SchemaReplicationReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=rabbitmq.com.rabbitmq.com,resources=schemareplications,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=rabbitmq.com.rabbitmq.com,resources=schemareplications/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=rabbitmq.com.rabbitmq.com,resources=schemareplications/finalizers,verbs=update
-
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the SchemaReplication object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.23.1/pkg/reconcile
-func (r *SchemaReplicationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = logf.FromContext(ctx)
-
-	// TODO(user): your logic here
-
-	return ctrl.Result{}, nil
+func (r *SchemaReplicationReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+	replication := obj.(*topology.SchemaReplication)
+	endpoints, err := r.getUpstreamEndpoints(ctx, replication)
+	if err != nil {
+		return fmt.Errorf("failed to generate upstream endpoints: %w", err)
+	}
+	return validateResponse(client.PutGlobalParameter(SchemaReplicationParameterName, endpoints))
 }
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *SchemaReplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&rabbitmqcomv1beta1.SchemaReplication{}).
-		Named("schemareplication").
-		Complete(r)
+func (r *SchemaReplicationReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, _ topology.TopologyResource) error {
+	logger := ctrl.LoggerFrom(ctx)
+	err := validateResponseForDeletion(client.DeleteGlobalParameter(SchemaReplicationParameterName))
+	if errors.Is(err, NotFound) {
+		logger.Info("cannot find global parameter; no need to delete it", "parameter", SchemaReplicationParameterName)
+	} else if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *SchemaReplicationReconciler) getUpstreamEndpoints(ctx context.Context, replication *topology.SchemaReplication) (internal.UpstreamEndpoints, error) {
+	secret := &corev1.Secret{}
+	if replication.Spec.SecretBackend.Vault != nil && replication.Spec.SecretBackend.Vault.SecretPath != "" {
+		secretStoreClient, err := rabbitmqclient.SecretStoreClientProvider()
+		if err != nil {
+			return internal.UpstreamEndpoints{}, fmt.Errorf("unable to create a vault client connection to secret store: %w", err)
+		}
+
+		user, pass, err := secretStoreClient.ReadCredentials(replication.Spec.SecretBackend.Vault.SecretPath)
+		if err != nil {
+			return internal.UpstreamEndpoints{}, fmt.Errorf("unable to retrieve credentials from secret store: %w", err)
+		}
+		secret.Data = make(map[string][]byte)
+		secret.Data["username"] = []byte(user)
+		secret.Data["password"] = []byte(pass)
+	} else if replication.Spec.UpstreamSecret == nil {
+		return internal.UpstreamEndpoints{}, fmt.Errorf("no upstream secret or secretBackend provided")
+	} else {
+		if err := r.Get(ctx, types.NamespacedName{Name: replication.Spec.UpstreamSecret.Name, Namespace: replication.Namespace}, secret); err != nil {
+			return internal.UpstreamEndpoints{}, err
+		}
+	}
+
+	endpoints, err := internal.GenerateSchemaReplicationParameters(secret, replication.Spec.Endpoints)
+	if err != nil {
+		return internal.UpstreamEndpoints{}, err
+	}
+
+	return endpoints, nil
 }

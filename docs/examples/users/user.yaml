@@ -1,0 +1,16 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: User
+metadata:
+  name: user-sample
+spec:
+  tags:
+  - management # available tags are 'management', 'policymaker', 'monitoring' and 'administrator'
+  rabbitmqClusterReference:
+    name: sample  # rabbitmqCluster must exist in the same namespace as this resource
+# status:
+#   conditions:
+#   - lastTransitionTime: ""
+#     status: "True" # true, false, or unknown
+#     type: Ready
+#     Reason: "SuccessfulCreateOrUpdate" # status false result in reason FailedCreateOrUpdate
+#     Message: "" # set when status is false

@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: credentials-secret
+type: Opaque
+stringData:
+  username: import-user-sample # Note that Messaging Topology Operator does not watch this secret. Updating this secret object won't update actual user credentials.
+  password: whyareyoulookinghere # As a workaround, you can add a label or annotation to the User object to trigger a Reconile loop and credentials will be updated.
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: User
+metadata:
+  name: import-user-sample
+spec:
+  tags:
+  - management # available tags are 'management', 'policymaker', 'monitoring' and 'administrator'
+  - policymaker
+  rabbitmqClusterReference:
+    name: test # rabbitmqCluster must exist in the same namespace as this resource
+  importCredentialsSecret:
+    name: credentials-secret
