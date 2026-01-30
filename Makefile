@@ -87,7 +87,7 @@ unit-tests::just-unit-tests
 
 .PHONY: just-unit-tests
 just-unit-tests:
-	$(GINKGO) -r --randomize-all api/ internal/ rabbitmqclient/
+	$(GINKGO) -r --randomize-all --label-filter="!controller-suite" api/ internal/ rabbitmqclient/
 
 .PHONY: integration-tests
 integration-tests::install-tools ## Run integration tests. Use GINKGO_EXTRA="-some-arg" to append arguments to 'ginkgo run'
@@ -99,7 +99,7 @@ integration-tests::manifests
 integration-tests::just-integration-tests
 
 just-integration-tests: $(KUBEBUILDER_ASSETS)
-	$(GINKGO) --randomize-all -r -p $(GINKGO_EXTRA) controllers/
+	$(GINKGO) --randomize-all -r -p $(GINKGO_EXTRA) internal/controller/
 
 .PHONY: local-tests
 local-tests: unit-tests integration-tests ## Run all local tests (unit & integration)
