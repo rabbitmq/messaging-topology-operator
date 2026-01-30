@@ -1,6 +1,9 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
+  labels:
+    app.kubernetes.io/name: messaging-topology-operator
+    app.kubernetes.io/managed-by: kustomize
   name: manager-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -8,5 +11,5 @@ roleRef:
   name: manager-role
 subjects:
 - kind: ServiceAccount
-  name: messaging-topology-operator
-  namespace: rabbitmq-system
+  name: controller-manager
+  namespace: system

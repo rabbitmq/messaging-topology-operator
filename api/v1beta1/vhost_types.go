@@ -1,65 +1,81 @@
 /*
-RabbitMQ Messaging Topology Kubernetes Operator
-Copyright 2021 VMware, Inc.
+Copyright 2026.
 
-This product is licensed to you under the Mozilla Public License 2.0 license (the "License").  You may not use this product except in compliance with the Mozilla 2.0 License.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-This product may include a number of subcomponents with separate copyright notices and license terms. Your use of these subcomponents is subject to the terms and conditions of the subcomponent's license, as noted in the LICENSE file.
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 
 package v1beta1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
+
+// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // VhostSpec defines the desired state of Vhost
 type VhostSpec struct {
-	// Name of the vhost; see https://www.rabbitmq.com/vhosts.html.
-	// +kubebuilder:validation:Required
-	Name    string   `json:"name"`
-	Tracing bool     `json:"tracing,omitempty"`
-	Tags    []string `json:"tags,omitempty"`
-	// Default queue type for this vhost; can be set to quorum, classic or stream.
-	// Supported in RabbitMQ 3.11.12 or above.
-	// +kubebuilder:validation:Enum=quorum;classic;stream
-	DefaultQueueType string `json:"defaultQueueType,omitempty"`
-	// Reference to the RabbitmqCluster that the vhost will be created in.
-	// Required property.
-	// +kubebuilder:validation:Required
-	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
-	// DeletionPolicy defines the behavior of vhost in the RabbitMQ cluster when the corresponding custom resource is deleted.
-	// Can be set to 'delete' or 'retain'. Default is 'delete'.
-	// +kubebuilder:validation:Enum=delete;retain
-	// +kubebuilder:default:=delete
-	DeletionPolicy string `json:"deletionPolicy,omitempty"`
-	// Limits defines limits to be applied to the vhost.
-	// Supported limits include max-connections and max-queues.
-	// See https://www.rabbitmq.com/docs/vhosts#limits
-	VhostLimits *VhostLimits `json:"limits,omitempty"`
+	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+	// The following markers will use OpenAPI v3 schema to validate the value
+	// More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
+
+	// foo is an example field of Vhost. Edit vhost_types.go to remove/update
+	// +optional
+	Foo *string `json:"foo,omitempty"`
 }
 
-// VhostStatus defines the observed state of Vhost
+// VhostStatus defines the observed state of Vhost.
 type VhostStatus struct {
-	// observedGeneration is the most recent successful generation observed for this Vhost. It corresponds to the
-	// Vhost's generation, which is updated on mutation by the API Server.
-	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
-	Conditions         []Condition `json:"conditions,omitempty"`
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+
+	// For Kubernetes API conventions, see:
+	// https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
+
+	// conditions represent the current state of the Vhost resource.
+	// Each condition has a unique type and reflects the status of a specific aspect of the resource.
+	//
+	// Standard condition types include:
+	// - "Available": the resource is fully functional
+	// - "Progressing": the resource is being created or updated
+	// - "Degraded": the resource failed to reach or maintain its desired state
+	//
+	// The status of each condition is one of True, False, or Unknown.
+	// +listType=map
+	// +listMapKey=type
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
-// +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=rabbitmq
 // +kubebuilder:subresource:status
 
 // Vhost is the Schema for the vhosts API
 type Vhost struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
 
-	Spec   VhostSpec   `json:"spec,omitempty"`
-	Status VhostStatus `json:"status,omitempty"`
+	// metadata is a standard object metadata
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitzero"`
+
+	// spec defines the desired state of Vhost
+	// +required
+	Spec VhostSpec `json:"spec"`
+
+	// status defines the observed state of Vhost
+	// +optional
+	Status VhostStatus `json:"status,omitzero"`
 }
 
 // +kubebuilder:object:root=true
@@ -67,29 +83,8 @@ type Vhost struct {
 // VhostList contains a list of Vhost
 type VhostList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata,omitzero"`
 	Items           []Vhost `json:"items"`
-}
-
-// VhostLimits defines limits to be applied to the vhost.
-type VhostLimits struct {
-	Connections *int32 `json:"connections,omitempty"`
-	Queues      *int32 `json:"queues,omitempty"`
-}
-
-func (v *Vhost) GroupResource() schema.GroupResource {
-	return schema.GroupResource{
-		Group:    v.GroupVersionKind().Group,
-		Resource: v.GroupVersionKind().Kind,
-	}
-}
-
-func (v *Vhost) RabbitReference() RabbitmqClusterReference {
-	return v.Spec.RabbitmqClusterReference
-}
-
-func (v *Vhost) SetStatusConditions(c []Condition) {
-	v.Status.Conditions = c
 }
 
 func init() {

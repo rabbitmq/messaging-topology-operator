@@ -1,51 +1,63 @@
 /*
-RabbitMQ Messaging Topology Kubernetes Operator
-Copyright 2021 VMware, Inc.
+Copyright 2026.
 
-This product is licensed to you under the Mozilla Public License 2.0 license (the "License").  You may not use this product except in compliance with the Mozilla 2.0 License.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-This product may include a number of subcomponents with separate copyright notices and license terms. Your use of these subcomponents is subject to the terms and conditions of the subcomponent's license, as noted in the LICENSE file.
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 
 package controller
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
-	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	"github.com/rabbitmq/messaging-topology-operator/internal"
-	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
+	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+
+	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
 
-// +kubebuilder:rbac:groups=rabbitmq.com,resources=policies,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=rabbitmq.com,resources=policies/finalizers,verbs=update
-// +kubebuilder:rbac:groups=rabbitmq.com,resources=policies/status,verbs=get;update;patch
-
-type PolicyReconciler struct{}
-
-// DeclareFunc creates or updates a given policy using rabbithole client.PutPolicy
-func (r *PolicyReconciler) DeclareFunc(_ context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
-	policy := obj.(*topology.Policy)
-	generatePolicy, err := internal.GeneratePolicy(policy)
-	if err != nil {
-		return fmt.Errorf("failed to generate Policy: %w", err)
-	}
-	return validateResponse(client.PutPolicy(policy.Spec.Vhost, policy.Spec.Name, *generatePolicy))
+// PolicyReconciler reconciles a Policy object
+type PolicyReconciler struct {
+	client.Client
+	Scheme *runtime.Scheme
 }
 
-// DeleteFunc deletes policy from rabbitmq server
-// if server responds with '404' Not Found, it logs and does not requeue on error
-func (r *PolicyReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
-	logger := ctrl.LoggerFrom(ctx)
-	policy := obj.(*topology.Policy)
-	err := validateResponseForDeletion(client.DeletePolicy(policy.Spec.Vhost, policy.Spec.Name))
-	if errors.Is(err, NotFound) {
-		logger.Info("cannot find policy in rabbitmq server; already deleted", "policy", policy.Spec.Name)
-	} else if err != nil {
-		return err
-	}
-	return nil
+// +kubebuilder:rbac:groups=rabbitmq.com.rabbitmq.com,resources=policies,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rabbitmq.com.rabbitmq.com,resources=policies/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=rabbitmq.com.rabbitmq.com,resources=policies/finalizers,verbs=update
+
+// Reconcile is part of the main kubernetes reconciliation loop which aims to
+// move the current state of the cluster closer to the desired state.
+// TODO(user): Modify the Reconcile function to compare the state specified by
+// the Policy object against the actual cluster state, and then
+// perform operations to make the cluster state reflect the state specified by
+// the user.
+//
+// For more details, check Reconcile and its Result here:
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.23.1/pkg/reconcile
+func (r *PolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	_ = logf.FromContext(ctx)
+
+	// TODO(user): your logic here
+
+	return ctrl.Result{}, nil
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *PolicyReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&rabbitmqcomv1beta1.Policy{}).
+		Named("policy").
+		Complete(r)
 }

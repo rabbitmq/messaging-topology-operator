@@ -1,80 +1,90 @@
 /*
-RabbitMQ Messaging Topology Kubernetes Operator
-Copyright 2021 VMware, Inc.
+Copyright 2026.
 
-This product is licensed to you under the Mozilla Public License 2.0 license (the "License").  You may not use this product except in compliance with the Mozilla 2.0 License.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-This product may include a number of subcomponents with separate copyright notices and license terms. Your use of these subcomponents is subject to the terms and conditions of the subcomponent's license, as noted in the LICENSE file.
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 
 package v1alpha1
 
 import (
-	topologyv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
+
+// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // SuperStreamSpec defines the desired state of SuperStream
 type SuperStreamSpec struct {
-	// Name of the queue; required property.
-	// +kubebuilder:validation:Required
-	Name string `json:"name"`
-	// Default to vhost '/'; cannot be updated
-	// +kubebuilder:default:=/
-	Vhost string `json:"vhost,omitempty"`
-	// Number of partitions to create within this super stream.
-	// Defaults to '3'.
-	// +kubebuilder:default:=3
-	Partitions int `json:"partitions,omitempty"`
-	// Routing keys to use for each of the partitions in the SuperStream
-	// If unset, the routing keys for the partitions will be set to the index of the partitions
-	// +kubebuilder:validation:Optional
-	RoutingKeys []string `json:"routingKeys,omitempty"`
-	// Reference to the RabbitmqCluster that the SuperStream will be created in.
-	// Required property.
-	// +kubebuilder:validation:Required
-	RabbitmqClusterReference topologyv1beta1.RabbitmqClusterReference `json:"rabbitmqClusterReference"`
+	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+	// The following markers will use OpenAPI v3 schema to validate the value
+	// More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
+
+	// foo is an example field of SuperStream. Edit superstream_types.go to remove/update
+	// +optional
+	Foo *string `json:"foo,omitempty"`
 }
 
-// SuperStreamStatus defines the observed state of SuperStream
+// SuperStreamStatus defines the observed state of SuperStream.
 type SuperStreamStatus struct {
-	// observedGeneration is the most recent successful generation observed for this SuperStream. It corresponds to the
-	// SuperStream's generation, which is updated on mutation by the API Server.
-	ObservedGeneration int64                       `json:"observedGeneration,omitempty"`
-	Conditions         []topologyv1beta1.Condition `json:"conditions,omitempty"`
-	// Partitions are a list of the stream queue names which form the partitions of this SuperStream.
-	Partitions []string `json:"partitions,omitempty"`
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+
+	// For Kubernetes API conventions, see:
+	// https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
+
+	// conditions represent the current state of the SuperStream resource.
+	// Each condition has a unique type and reflects the status of a specific aspect of the resource.
+	//
+	// Standard condition types include:
+	// - "Available": the resource is fully functional
+	// - "Progressing": the resource is being created or updated
+	// - "Degraded": the resource failed to reach or maintain its desired state
+	//
+	// The status of each condition is one of True, False, or Unknown.
+	// +listType=map
+	// +listMapKey=type
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
-// +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=rabbitmq
 // +kubebuilder:subresource:status
 
-// SuperStream is the Schema for the queues API
+// SuperStream is the Schema for the superstreams API
 type SuperStream struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
 
-	Spec   SuperStreamSpec   `json:"spec,omitempty"`
-	Status SuperStreamStatus `json:"status,omitempty"`
+	// metadata is a standard object metadata
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitzero"`
+
+	// spec defines the desired state of SuperStream
+	// +required
+	Spec SuperStreamSpec `json:"spec"`
+
+	// status defines the observed state of SuperStream
+	// +optional
+	Status SuperStreamStatus `json:"status,omitzero"`
 }
 
 // +kubebuilder:object:root=true
 
-// SuperStreamList contains a list of SuperStreams
+// SuperStreamList contains a list of SuperStream
 type SuperStreamList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata,omitzero"`
 	Items           []SuperStream `json:"items"`
-}
-
-func (s *SuperStream) GroupResource() schema.GroupResource {
-	return schema.GroupResource{
-		Group:    s.GroupVersionKind().Group,
-		Resource: s.GroupVersionKind().Kind,
-	}
 }
 
 func init() {

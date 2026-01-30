@@ -1,105 +1,63 @@
 /*
-RabbitMQ Messaging Topology Kubernetes Operator
-Copyright 2021 VMware, Inc.
+Copyright 2026.
 
-This product is licensed to you under the Mozilla Public License 2.0 license (the "License").  You may not use this product except in compliance with the Mozilla 2.0 License.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-This product may include a number of subcomponents with separate copyright notices and license terms. Your use of these subcomponents is subject to the terms and conditions of the subcomponent's license, as noted in the LICENSE file.
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 
 package controller
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"reflect"
 
-	"github.com/go-logr/logr"
-	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
-	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	"github.com/rabbitmq/messaging-topology-operator/internal"
-	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
+	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+
+	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
 
-// +kubebuilder:rbac:groups=rabbitmq.com,resources=bindings,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=rabbitmq.com,resources=bindings/finalizers,verbs=update
-// +kubebuilder:rbac:groups=rabbitmq.com,resources=bindings/status,verbs=get;update;patch
-
-type BindingReconciler struct{}
-
-func (r *BindingReconciler) DeclareFunc(_ context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
-	binding := obj.(*topology.Binding)
-	info, err := internal.GenerateBindingInfo(binding)
-	if err != nil {
-		return fmt.Errorf("failed to generate binding info: %w", err)
-	}
-	return validateResponse(client.DeclareBinding(binding.Spec.Vhost, *info))
+// BindingReconciler reconciles a Binding object
+type BindingReconciler struct {
+	client.Client
+	Scheme *runtime.Scheme
 }
 
-// DeleteFunc deletes binding from rabbitmq server; bindings have no name; server needs BindingInfo to delete them
-// when server responds with '404' Not Found, it logs and does not requeue on error
-// if no binding argument is set, generating properties key by using internal.GeneratePropertiesKey
-// if binding arguments are set, list all bindings between source/destination to find the binding; if it failed to find corresponding binding, it assumes that the binding is already deleted and returns no error
-func (r *BindingReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
-	logger := ctrl.LoggerFrom(ctx)
-	binding := obj.(*topology.Binding)
-	var info *rabbithole.BindingInfo
-	var err error
-	if binding.Spec.Arguments != nil {
-		info, err = r.findBindingInfo(logger, binding, client)
-		if err != nil {
-			return err
-		}
-		if info == nil {
-			logger.Info("cannot find the corresponding binding info in rabbitmq server; binding already deleted")
-			return nil
-		}
-	} else {
-		info, err = internal.GenerateBindingInfo(binding)
-		if err != nil {
-			return fmt.Errorf("failed to generate binding info: %w", err)
-		}
-		info.PropertiesKey = internal.GeneratePropertiesKey(binding)
-	}
+// +kubebuilder:rbac:groups=rabbitmq.com.rabbitmq.com,resources=bindings,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rabbitmq.com.rabbitmq.com,resources=bindings/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=rabbitmq.com.rabbitmq.com,resources=bindings/finalizers,verbs=update
 
-	err = validateResponseForDeletion(client.DeleteBinding(binding.Spec.Vhost, *info))
-	if errors.Is(err, NotFound) {
-		logger.Info("cannot find binding in rabbitmq server; already deleted")
-	} else if err != nil {
-		return err
-	}
+// Reconcile is part of the main kubernetes reconciliation loop which aims to
+// move the current state of the cluster closer to the desired state.
+// TODO(user): Modify the Reconcile function to compare the state specified by
+// the Binding object against the actual cluster state, and then
+// perform operations to make the cluster state reflect the state specified by
+// the user.
+//
+// For more details, check Reconcile and its Result here:
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.23.1/pkg/reconcile
+func (r *BindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	_ = logf.FromContext(ctx)
 
-	return nil
+	// TODO(user): your logic here
+
+	return ctrl.Result{}, nil
 }
 
-func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topology.Binding, client rabbitmqclient.Client) (*rabbithole.BindingInfo, error) {
-	logger.Info("binding arguments set; listing bindings from server to complete deletion")
-	arguments := make(map[string]interface{})
-	if binding.Spec.Arguments != nil {
-		if err := json.Unmarshal(binding.Spec.Arguments.Raw, &arguments); err != nil {
-			logger.Error(err, "failed to unmarshall binding arguments")
-			return nil, err
-		}
-	}
-	var bindingInfos []rabbithole.BindingInfo
-	var err error
-	if binding.Spec.DestinationType == "queue" {
-		bindingInfos, err = client.ListQueueBindingsBetween(binding.Spec.Vhost, binding.Spec.Source, binding.Spec.Destination)
-	} else {
-		bindingInfos, err = client.ListExchangeBindingsBetween(binding.Spec.Vhost, binding.Spec.Source, binding.Spec.Destination)
-	}
-	if err != nil {
-		logger.Error(err, "failed to list binding infos")
-		return nil, err
-	}
-	var info *rabbithole.BindingInfo
-	for i, b := range bindingInfos {
-		if binding.Spec.RoutingKey == b.RoutingKey && reflect.DeepEqual(b.Arguments, arguments) {
-			info = &bindingInfos[i]
-		}
-	}
-	return info, nil
+// SetupWithManager sets up the controller with the Manager.
+func (r *BindingReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&rabbitmqcomv1beta1.Binding{}).
+		Named("binding").
+		Complete(r)
 }

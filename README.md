@@ -1,78 +1,135 @@
-# RabbitMQ Messaging Topology Kubernetes Operator
+# messaging-topology-operator
+// TODO(user): Add simple overview of use/purpose
 
-Kubernetes operator to allow developers to create and manage [RabbitMQ](https://www.rabbitmq.com/) messaging topologies within a RabbitMQ cluster using a declarative Kubernetes API.
-A Messaging topology is the collection of objects such as exchanges, queues, bindings and policies that provides specific messaging or streaming scenario. 
-This operator is used with RabbitMQ clusters deployed via the [RabbitMQ Cluster Kubernetes Operator](https://github.com/rabbitmq/cluster-operator/). This repository contains [custom controllers](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/#custom-controllers) and [custom resource definitions (CRDs)](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/#customresourcedefinitions) enabling a declarative API for RabbitMQ messaging topologies.
+## Description
+// TODO(user): An in-depth paragraph about your project and overview of use
 
-## Quickstart
+## Getting Started
 
-Before deploying Messaging Topology Operator, you need to have:
+### Prerequisites
+- go version v1.24.6+
+- docker version 17.03+.
+- kubectl version v1.11.3+.
+- Access to a Kubernetes v1.11.3+ cluster.
 
-1. A Running k8s cluster
-2. RabbitMQ [Cluster Operator](https://github.com/rabbitmq/cluster-operator) installed in the k8s cluster
-3. A [RabbitMQ cluster](https://github.com/rabbitmq/cluster-operator/tree/main/docs/examples) deployed using the Cluster Operator
+### To Deploy on the cluster
+**Build and push your image to the location specified by `IMG`:**
 
-If you have [cert-manager](https://cert-manager.io/docs/installation/kubernetes/) `1.2.0` or above installed in your k8s cluster, and `kubectl` configured to access your running k8s cluster, you can then run the following command to install the Messaging Topology Operator:
-
-```bash
-kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/latest/download/messaging-topology-operator-with-certmanager.yaml
+```sh
+make docker-build docker-push IMG=<some-registry>/messaging-topology-operator:tag
 ```
 
-If you do not have cert-manager installed in your k8s cluster, you will need to generate certificates used by admission webhooks yourself and include them in the operator and webhooks manifests.
-You can follow [this doc](https://www.rabbitmq.com/kubernetes/operator/install-topology-operator.html).
+**NOTE:** This image ought to be published in the personal registry you specified.
+And it is required to have access to pull the image from the working environment.
+Make sure you have the proper permission to the registry if the above commands don’t work.
 
-You can create RabbitMQ resources:
+**Install the CRDs into the cluster:**
 
-1. [Queue](./docs/examples/queues)
-2. [Exchange](./docs/examples/exchanges)
-3. [Binding](./docs/examples/bindings)
-4. [User](./docs/examples/users)
-5. [Vhost](./docs/examples/vhosts)
-6. [Policy](./docs/examples/policies)
-7. [Permissions](./docs/examples/permissions)
-8. [Federations](./docs/examples/federations)
-9. [Shovels](./docs/examples/shovels)
+```sh
+make install
+```
 
-## Documentation
+**Deploy the Manager to the cluster with the image specified by `IMG`:**
 
-Messaging Topology Operator is covered in several guides:
+```sh
+make deploy IMG=<some-registry>/messaging-topology-operator:tag
+```
 
- - [Operator overview](https://www.rabbitmq.com/kubernetes/operator/operator-overview.html#topology-operator)
- - [Installation](https://www.rabbitmq.com/kubernetes/operator/install-topology-operator.html)
- - [Using Messaging Topology Operator](https://www.rabbitmq.com/kubernetes/operator/using-topology-operator.html)
- - [TLS](https://www.rabbitmq.com/kubernetes/operator/tls-topology-operator.html)
- - [Troubleshooting Messaging Topology Operator](https://www.rabbitmq.com/kubernetes/operator/troubleshooting-topology-operator.html)
+> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
+privileges or be logged in as admin.
 
-In addition, a number of [examples](./docs/examples), [Operator API reference](https://github.com/rabbitmq/messaging-topology-operator/blob/main/docs/api/rabbitmq.com.ref.asciidoc), and a quick [tutorial](./docs/tutorial) can be found in this repository.
+**Create instances of your solution**
+You can apply the samples (examples) from the config/sample:
 
-The doc guides are open source. The source can be found in the [RabbitMQ website repository](https://github.com/rabbitmq/rabbitmq-website/)
-under `site/kubernetes`.
+```sh
+kubectl apply -k config/samples/
+```
 
-## RabbitMQCluster requirements
+>**NOTE**: Ensure that the samples has default values to test it out.
 
-Messaging Topology Operator is tested with the latest release of RabbitMQ [Cluster Operator](https://github.com/rabbitmq/cluster-operator).
-It uses the generated default user secret from RabbitmqCluster (set in `rabbitmqcluster.status.binding`) to authenticate with RabbitMQ server.
-If your RabbitmqCluster is deployed with import definitions or provided default user credentials,
-the default user secret from `rabbitmqcluster.status.binding` may not be correct and Messaging Topology Operator will fail with authentication error.
-If your RabbitmqCluster is configured to serve management traffic over TLS, you may need to configure the Messaging Topology Operator to trust the CA that signed the server's certificates. For more information, see [this doc](https://www.rabbitmq.com/kubernetes/operator/tls-topology-operator.html).
+### To Uninstall
+**Delete the instances (CRs) from the cluster:**
 
-## Releasing
+```sh
+kubectl delete -k config/samples/
+```
 
-To release a new version of the Messaging Topology Operator, create a versioned tag (e.g. `v1.2.3`) of the repo, and the release pipeline will
-generate a new draft release, alongside release artefacts.
+**Delete the APIs(CRDs) from the cluster:**
+
+```sh
+make uninstall
+```
+
+**UnDeploy the controller from the cluster:**
+
+```sh
+make undeploy
+```
+
+## Project Distribution
+
+Following the options to release and provide this solution to the users.
+
+### By providing a bundle with all YAML files
+
+1. Build the installer for the image built and published in the registry:
+
+```sh
+make build-installer IMG=<some-registry>/messaging-topology-operator:tag
+```
+
+**NOTE:** The makefile target mentioned above generates an 'install.yaml'
+file in the dist directory. This file contains all the resources built
+with Kustomize, which are necessary to install this project without its
+dependencies.
+
+2. Using the installer
+
+Users can just run 'kubectl apply -f <URL for YAML BUNDLE>' to install
+the project, i.e.:
+
+```sh
+kubectl apply -f https://raw.githubusercontent.com/<org>/messaging-topology-operator/<tag or branch>/dist/install.yaml
+```
+
+### By providing a Helm Chart
+
+1. Build the chart using the optional helm plugin
+
+```sh
+kubebuilder edit --plugins=helm/v2-alpha
+```
+
+2. See that a chart was generated under 'dist/chart', and users
+can obtain this solution from there.
+
+**NOTE:** If you change the project, you need to update the Helm Chart
+using the same command above to sync the latest changes. Furthermore,
+if you create webhooks, you need to use the above command with
+the '--force' flag and manually ensure that any custom configuration
+previously added to 'dist/chart/values.yaml' or 'dist/chart/manager/manager.yaml'
+is manually re-applied afterwards.
 
 ## Contributing
+// TODO(user): Add detailed information on how you would like others to contribute to this project
 
-This project follows the typical GitHub pull request model. Before starting any work, please either comment on an [existing issue](https://github.com/rabbitmq/messaging-topology-operator/issues), or file a new one.
+**NOTE:** Run `make help` for more information on all potential `make` targets
 
-Please read [contribution guidelines](CONTRIBUTING.md) if you are interested in contributing to this project.
+More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
 
 ## License
 
-[Licensed under the MPL](LICENSE.txt), same as RabbitMQ server and cluster operator.
+Copyright 2026.
 
-## Copyright
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-Copyright 2021-2022 VMware, Inc. All Rights Reserved.
+    http://www.apache.org/licenses/LICENSE-2.0
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/rabbitmq/messaging-topology-operator)](https://goreportcard.com/report/github.com/rabbitmq/messaging-topology-operator)
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+

@@ -1,116 +1,81 @@
+/*
+Copyright 2026.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package v1beta1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+
 // ShovelSpec defines the desired state of Shovel
-// For how to configure Shovel, see: https://www.rabbitmq.com/shovel.html.
 type ShovelSpec struct {
-	// Required property; cannot be updated
-	// +kubebuilder:validation:Required
-	Name string `json:"name"`
-	// Default to vhost '/'; cannot be updated
-	// +kubebuilder:default:=/
-	Vhost string `json:"vhost,omitempty"`
-	// Reference to the RabbitmqCluster that this Shovel will be created in.
-	// Required property.
-	// +kubebuilder:validation:Required
-	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
-	// Secret contains the AMQP URI(s) to configure Shovel destination and source.
-	// The Secret must contain the key `destUri` and `srcUri` or operator will error.
-	// Both fields should be one or multiple uris separated by ','.
-	// Required property.
-	// +kubebuilder:validation:Required
-	UriSecret *corev1.LocalObjectReference `json:"uriSecret"`
-	// +kubebuilder:validation:Enum=on-confirm;on-publish;no-ack
-	AckMode                       string `json:"ackMode,omitempty"`
-	PrefetchCount                 int    `json:"prefetchCount,omitempty"`
-	ReconnectDelay                int    `json:"reconnectDelay,omitempty"`
-	AddForwardHeaders             bool   `json:"addForwardHeaders,omitempty"`
-	DeleteAfter                   string `json:"deleteAfter,omitempty"`
-	SourceDeleteAfter             string `json:"srcDeleteAfter,omitempty"`
-	SourcePrefetchCount           int    `json:"srcPrefetchCount,omitempty"`
-	DestinationAddForwardHeaders  bool   `json:"destAddForwardHeaders,omitempty"`
-	DestinationAddTimestampHeader bool   `json:"destAddTimestampHeader,omitempty"`
-	// +kubebuilder:validation:Type=object
-	// +kubebuilder:pruning:PreserveUnknownFields
-	SourceQueueArgs *runtime.RawExtension `json:"srcQueueArgs,omitempty"`
-	// +kubebuilder:validation:Type=object
-	// +kubebuilder:pruning:PreserveUnknownFields
-	DestinationQueueArgs *runtime.RawExtension `json:"destQueueArgs,omitempty"`
+	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+	// The following markers will use OpenAPI v3 schema to validate the value
+	// More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
 
-	// +kubebuilder:validation:Enum=amqp091;amqp10
-	DestinationProtocol string `json:"destProtocol,omitempty"`
-	// amqp091 configuration
-	DestinationQueue string `json:"destQueue,omitempty"`
-	// amqp091 configuration
-	DestinationExchange string `json:"destExchange,omitempty"`
-	// amqp091 configuration
-	DestinationExchangeKey string `json:"destExchangeKey,omitempty"`
-	// amqp091 configuration
-	// +kubebuilder:validation:Type=object
-	// +kubebuilder:pruning:PreserveUnknownFields
-	DestinationPublishProperties *runtime.RawExtension `json:"destPublishProperties,omitempty"`
-	// amqp10 configuration; required if destProtocol is amqp10
-	DestinationAddress string `json:"destAddress,omitempty"`
-	// amqp10 configuration
-	// +kubebuilder:validation:Type=object
-	// +kubebuilder:pruning:PreserveUnknownFields
-	DestinationApplicationProperties *runtime.RawExtension `json:"destApplicationProperties,omitempty"`
-	// amqp10 configuration
-	// +kubebuilder:validation:Type=object
-	// +kubebuilder:pruning:PreserveUnknownFields
-	DestinationProperties *runtime.RawExtension `json:"destProperties,omitempty"`
-	// amqp10 configuration
-	// +kubebuilder:validation:Type=object
-	// +kubebuilder:pruning:PreserveUnknownFields
-	DestinationMessageAnnotations *runtime.RawExtension `json:"destMessageAnnotations,omitempty"`
-
-	// +kubebuilder:validation:Enum=amqp091;amqp10
-	SourceProtocol string `json:"srcProtocol,omitempty"`
-	// amqp091 configuration
-	SourceQueue string `json:"srcQueue,omitempty"`
-	// amqp091 configuration
-	SourceExchange string `json:"srcExchange,omitempty"`
-	// amqp091 configuration
-	SourceExchangeKey string `json:"srcExchangeKey,omitempty"`
-	// amqp091 configuration
-	// +kubebuilder:validation:Type=object
-	// +kubebuilder:pruning:PreserveUnknownFields
-	SourceConsumerArgs *runtime.RawExtension `json:"srcConsumerArgs,omitempty"`
-	// amqp10 configuration; required if srcProtocol is amqp10
-	SourceAddress string `json:"srcAddress,omitempty"`
-	// DeletionPolicy defines the behavior of shovel in the RabbitMQ cluster when the corresponding custom resource is deleted.
-	// Can be set to 'delete' or 'retain'. Default is 'delete'.
-	// +kubebuilder:validation:Enum=delete;retain
-	// +kubebuilder:default:=delete
-	DeletionPolicy string `json:"deletionPolicy,omitempty"`
+	// foo is an example field of Shovel. Edit shovel_types.go to remove/update
+	// +optional
+	Foo *string `json:"foo,omitempty"`
 }
 
-// ShovelStatus defines the observed state of Shovel
+// ShovelStatus defines the observed state of Shovel.
 type ShovelStatus struct {
-	// observedGeneration is the most recent successful generation observed for this Shovel. It corresponds to the
-	// Shovel's generation, which is updated on mutation by the API Server.
-	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
-	Conditions         []Condition `json:"conditions,omitempty"`
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+
+	// For Kubernetes API conventions, see:
+	// https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
+
+	// conditions represent the current state of the Shovel resource.
+	// Each condition has a unique type and reflects the status of a specific aspect of the resource.
+	//
+	// Standard condition types include:
+	// - "Available": the resource is fully functional
+	// - "Progressing": the resource is being created or updated
+	// - "Degraded": the resource failed to reach or maintain its desired state
+	//
+	// The status of each condition is one of True, False, or Unknown.
+	// +listType=map
+	// +listMapKey=type
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
-// +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=rabbitmq
 // +kubebuilder:subresource:status
 
 // Shovel is the Schema for the shovels API
 type Shovel struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
 
-	Spec   ShovelSpec   `json:"spec,omitempty"`
-	Status ShovelStatus `json:"status,omitempty"`
+	// metadata is a standard object metadata
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitzero"`
+
+	// spec defines the desired state of Shovel
+	// +required
+	Spec ShovelSpec `json:"spec"`
+
+	// status defines the observed state of Shovel
+	// +optional
+	Status ShovelStatus `json:"status,omitzero"`
 }
 
 // +kubebuilder:object:root=true
@@ -118,23 +83,8 @@ type Shovel struct {
 // ShovelList contains a list of Shovel
 type ShovelList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata,omitzero"`
 	Items           []Shovel `json:"items"`
-}
-
-func (s *Shovel) GroupResource() schema.GroupResource {
-	return schema.GroupResource{
-		Group:    s.GroupVersionKind().Group,
-		Resource: s.GroupVersionKind().Kind,
-	}
-}
-
-func (s *Shovel) RabbitReference() RabbitmqClusterReference {
-	return s.Spec.RabbitmqClusterReference
-}
-
-func (s *Shovel) SetStatusConditions(c []Condition) {
-	s.Status.Conditions = c
 }
 
 func init() {

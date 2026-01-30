@@ -1,64 +1,81 @@
+/*
+Copyright 2026.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package v1beta1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+
 // PolicySpec defines the desired state of Policy
-// https://www.rabbitmq.com/parameters.html#policies
 type PolicySpec struct {
-	// Required property; cannot be updated
-	// +kubebuilder:validation:Required
-	Name string `json:"name"`
-	// Default to vhost '/'; cannot be updated
-	// +kubebuilder:default:=/
-	Vhost string `json:"vhost,omitempty"`
-	// Regular expression pattern used to match queues and exchanges, e.g. "^amq.".
-	// Required property.
-	// +kubebuilder:validation:Required
-	Pattern string `json:"pattern"`
-	// What this policy applies to: 'queues', 'classic_queues', 'quorum_queues', 'streams', 'exchanges', or 'all'.
-	// Default to 'all'.
-	// +kubebuilder:validation:Enum=queues;classic_queues;quorum_queues;streams;exchanges;all
-	// +kubebuilder:default:=all
-	ApplyTo string `json:"applyTo,omitempty"`
-	// Default to '0'.
-	// In the event that more than one policy can match a given exchange or queue, the policy with the greatest priority applies.
-	// +kubebuilder:default:=0
-	Priority int `json:"priority,omitempty"`
-	// Policy definition. Required property.
-	// +kubebuilder:validation:Type=object
-	// +kubebuilder:pruning:PreserveUnknownFields
-	// +kubebuilder:validation:Required
-	Definition *runtime.RawExtension `json:"definition"`
-	// Reference to the RabbitmqCluster that the policy will be created in.
-	// Required property.
-	// +kubebuilder:validation:Required
-	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
+	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+	// The following markers will use OpenAPI v3 schema to validate the value
+	// More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
+
+	// foo is an example field of Policy. Edit policy_types.go to remove/update
+	// +optional
+	Foo *string `json:"foo,omitempty"`
 }
 
-// PolicyStatus defines the observed state of Policy
+// PolicyStatus defines the observed state of Policy.
 type PolicyStatus struct {
-	// observedGeneration is the most recent successful generation observed for this Policy. It corresponds to the
-	// Policy's generation, which is updated on mutation by the API Server.
-	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
-	Conditions         []Condition `json:"conditions,omitempty"`
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+
+	// For Kubernetes API conventions, see:
+	// https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
+
+	// conditions represent the current state of the Policy resource.
+	// Each condition has a unique type and reflects the status of a specific aspect of the resource.
+	//
+	// Standard condition types include:
+	// - "Available": the resource is fully functional
+	// - "Progressing": the resource is being created or updated
+	// - "Degraded": the resource failed to reach or maintain its desired state
+	//
+	// The status of each condition is one of True, False, or Unknown.
+	// +listType=map
+	// +listMapKey=type
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
-// +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=rabbitmq
 // +kubebuilder:subresource:status
 
 // Policy is the Schema for the policies API
 type Policy struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
 
-	Spec   PolicySpec   `json:"spec,omitempty"`
-	Status PolicyStatus `json:"status,omitempty"`
+	// metadata is a standard object metadata
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitzero"`
+
+	// spec defines the desired state of Policy
+	// +required
+	Spec PolicySpec `json:"spec"`
+
+	// status defines the observed state of Policy
+	// +optional
+	Status PolicyStatus `json:"status,omitzero"`
 }
 
 // +kubebuilder:object:root=true
@@ -66,23 +83,8 @@ type Policy struct {
 // PolicyList contains a list of Policy
 type PolicyList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata,omitzero"`
 	Items           []Policy `json:"items"`
-}
-
-func (p *Policy) GroupResource() schema.GroupResource {
-	return schema.GroupResource{
-		Group:    p.GroupVersionKind().Group,
-		Resource: p.GroupVersionKind().Kind,
-	}
-}
-
-func (p *Policy) RabbitReference() RabbitmqClusterReference {
-	return p.Spec.RabbitmqClusterReference
-}
-
-func (p *Policy) SetStatusConditions(c []Condition) {
-	p.Status.Conditions = c
 }
 
 func init() {

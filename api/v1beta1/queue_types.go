@@ -1,77 +1,81 @@
 /*
-RabbitMQ Messaging Topology Kubernetes Operator
-Copyright 2021 VMware, Inc.
+Copyright 2026.
 
-This product is licensed to you under the Mozilla Public License 2.0 license (the "License").  You may not use this product except in compliance with the Mozilla 2.0 License.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-This product may include a number of subcomponents with separate copyright notices and license terms. Your use of these subcomponents is subject to the terms and conditions of the subcomponent's license, as noted in the LICENSE file.
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 
 package v1beta1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// using runtime.RawExtension to represent queue arguments
-// interface{} is not currently supported by controller runtime
-// recommendation is to use json.RawMessage or runtime.RawExtension to represent interface{}
+// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // QueueSpec defines the desired state of Queue
 type QueueSpec struct {
-	// Name of the queue; required property.
-	// +kubebuilder:validation:Required
-	Name string `json:"name"`
-	// Default to vhost '/'
-	// +kubebuilder:default:=/
-	Vhost string `json:"vhost,omitempty"`
-	Type  string `json:"type,omitempty"`
-	// When set to false queues does not survive server restart.
-	Durable bool `json:"durable,omitempty"`
-	// when set to true, queues that have had at least one consumer before are deleted after the last consumer unsubscribes.
-	AutoDelete bool `json:"autoDelete,omitempty"`
-	// when set to true, queues are deleted only if empty.
-	DeleteIfEmpty bool `json:"deleteIfEmpty,omitempty"`
-	// when set to true, queues are delete only if they have no consumer.
-	DeleteIfUnused bool `json:"deleteIfUnused,omitempty"`
-	// Queue arguments in the format of KEY: VALUE. e.g. x-delivery-limit: 10000.
-	// Configuring queues through arguments is not recommended because they cannot be updated once set; we recommend configuring queues through policies instead.
-	// +kubebuilder:validation:Type=object
-	// +kubebuilder:pruning:PreserveUnknownFields
-	Arguments *runtime.RawExtension `json:"arguments,omitempty"`
-	// Reference to the RabbitmqCluster that the queue will be created in.
-	// Required property.
-	// +kubebuilder:validation:Required
-	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
-	// DeletionPolicy defines the behavior of queue in the RabbitMQ cluster when the corresponding custom resource is deleted.
-	// Can be set to 'delete' or 'retain'. Default is 'delete'.
-	// +kubebuilder:validation:Enum=delete;retain
-	// +kubebuilder:default:=delete
-	DeletionPolicy string `json:"deletionPolicy,omitempty"`
+	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+	// The following markers will use OpenAPI v3 schema to validate the value
+	// More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
+
+	// foo is an example field of Queue. Edit queue_types.go to remove/update
+	// +optional
+	Foo *string `json:"foo,omitempty"`
 }
 
-// QueueStatus defines the observed state of Queue
+// QueueStatus defines the observed state of Queue.
 type QueueStatus struct {
-	// observedGeneration is the most recent successful generation observed for this Queue. It corresponds to the
-	// Queue's generation, which is updated on mutation by the API Server.
-	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
-	Conditions         []Condition `json:"conditions,omitempty"`
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+
+	// For Kubernetes API conventions, see:
+	// https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
+
+	// conditions represent the current state of the Queue resource.
+	// Each condition has a unique type and reflects the status of a specific aspect of the resource.
+	//
+	// Standard condition types include:
+	// - "Available": the resource is fully functional
+	// - "Progressing": the resource is being created or updated
+	// - "Degraded": the resource failed to reach or maintain its desired state
+	//
+	// The status of each condition is one of True, False, or Unknown.
+	// +listType=map
+	// +listMapKey=type
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
-// +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=rabbitmq
 // +kubebuilder:subresource:status
 
 // Queue is the Schema for the queues API
 type Queue struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
 
-	Spec   QueueSpec   `json:"spec,omitempty"`
-	Status QueueStatus `json:"status,omitempty"`
+	// metadata is a standard object metadata
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitzero"`
+
+	// spec defines the desired state of Queue
+	// +required
+	Spec QueueSpec `json:"spec"`
+
+	// status defines the observed state of Queue
+	// +optional
+	Status QueueStatus `json:"status,omitzero"`
 }
 
 // +kubebuilder:object:root=true
@@ -79,23 +83,8 @@ type Queue struct {
 // QueueList contains a list of Queue
 type QueueList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata,omitzero"`
 	Items           []Queue `json:"items"`
-}
-
-func (q *Queue) GroupResource() schema.GroupResource {
-	return schema.GroupResource{
-		Group:    q.GroupVersionKind().Group,
-		Resource: q.GroupVersionKind().Kind,
-	}
-}
-
-func (q *Queue) RabbitReference() RabbitmqClusterReference {
-	return q.Spec.RabbitmqClusterReference
-}
-
-func (q *Queue) SetStatusConditions(c []Condition) {
-	q.Status.Conditions = c
 }
 
 func init() {

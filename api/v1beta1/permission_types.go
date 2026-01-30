@@ -1,61 +1,81 @@
+/*
+Copyright 2026.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package v1beta1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
+
+// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // PermissionSpec defines the desired state of Permission
 type PermissionSpec struct {
-	// Name of an existing user; must provide user or userReference, else create/update will fail; cannot be updated
-	User string `json:"user,omitempty"`
-	// Reference to an existing user.rabbitmq.com object; must provide user or userReference, else create/update will fail; cannot be updated
-	UserReference *corev1.LocalObjectReference `json:"userReference,omitempty"`
-	// Name of an existing vhost; required property; cannot be updated
-	// +kubebuilder:validation:Required
-	Vhost string `json:"vhost"`
-	// Permissions to grant to the user in the specific vhost; required property.
-	// See RabbitMQ doc for more information: https://www.rabbitmq.com/access-control.html#user-management
-	// +kubebuilder:validation:Required
-	Permissions VhostPermissions `json:"permissions"`
-	// Reference to the RabbitmqCluster that both the provided user and vhost are.
-	// Required property.
-	// +kubebuilder:validation:Required
-	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
+	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+	// The following markers will use OpenAPI v3 schema to validate the value
+	// More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
+
+	// foo is an example field of Permission. Edit permission_types.go to remove/update
+	// +optional
+	Foo *string `json:"foo,omitempty"`
 }
 
-// Set of RabbitMQ permissions: configure, read and write.
-// By not setting a property (configure/write/read), it result in an empty string which does not not match any permission.
-type VhostPermissions struct {
-	// +kubebuilder:validation:Optional
-	Configure string `json:"configure,omitempty"`
-	// +kubebuilder:validation:Optional
-	Write string `json:"write,omitempty"`
-	// +kubebuilder:validation:Optional
-	Read string `json:"read,omitempty"`
-}
-
-// PermissionStatus defines the observed state of Permission
+// PermissionStatus defines the observed state of Permission.
 type PermissionStatus struct {
-	// observedGeneration is the most recent successful generation observed for this Permission. It corresponds to the
-	// Permission's generation, which is updated on mutation by the API Server.
-	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
-	Conditions         []Condition `json:"conditions,omitempty"`
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+
+	// For Kubernetes API conventions, see:
+	// https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
+
+	// conditions represent the current state of the Permission resource.
+	// Each condition has a unique type and reflects the status of a specific aspect of the resource.
+	//
+	// Standard condition types include:
+	// - "Available": the resource is fully functional
+	// - "Progressing": the resource is being created or updated
+	// - "Degraded": the resource failed to reach or maintain its desired state
+	//
+	// The status of each condition is one of True, False, or Unknown.
+	// +listType=map
+	// +listMapKey=type
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
-// +genclient
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=rabbitmq
 // +kubebuilder:subresource:status
 
 // Permission is the Schema for the permissions API
 type Permission struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
 
-	Spec   PermissionSpec   `json:"spec,omitempty"`
-	Status PermissionStatus `json:"status,omitempty"`
+	// metadata is a standard object metadata
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitzero"`
+
+	// spec defines the desired state of Permission
+	// +required
+	Spec PermissionSpec `json:"spec"`
+
+	// status defines the observed state of Permission
+	// +optional
+	Status PermissionStatus `json:"status,omitzero"`
 }
 
 // +kubebuilder:object:root=true
@@ -63,23 +83,8 @@ type Permission struct {
 // PermissionList contains a list of Permission
 type PermissionList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata,omitzero"`
 	Items           []Permission `json:"items"`
-}
-
-func (p *Permission) GroupResource() schema.GroupResource {
-	return schema.GroupResource{
-		Group:    p.GroupVersionKind().Group,
-		Resource: p.GroupVersionKind().Kind,
-	}
-}
-
-func (p *Permission) RabbitReference() RabbitmqClusterReference {
-	return p.Spec.RabbitmqClusterReference
-}
-
-func (p *Permission) SetStatusConditions(c []Condition) {
-	p.Status.Conditions = c
 }
 
 func init() {
