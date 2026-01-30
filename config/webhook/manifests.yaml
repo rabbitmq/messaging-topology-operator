@@ -12,7 +12,7 @@ webhooks:
       namespace: system
       path: /validate-rabbitmq-com-v1beta1-binding
   failurePolicy: Fail
-  name: vbinding.kb.io
+  name: vbinding-v1beta1.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
@@ -72,7 +72,7 @@ webhooks:
       namespace: system
       path: /validate-rabbitmq-com-v1beta1-operatorpolicy
   failurePolicy: Fail
-  name: voperatorpolicy.kb.io
+  name: voperatorpolicy-v1beta1.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
@@ -92,7 +92,7 @@ webhooks:
       namespace: system
       path: /validate-rabbitmq-com-v1beta1-permission
   failurePolicy: Fail
-  name: vpermission.kb.io
+  name: vpermission-v1beta1.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
@@ -152,7 +152,7 @@ webhooks:
       namespace: system
       path: /validate-rabbitmq-com-v1beta1-schemareplication
   failurePolicy: Fail
-  name: vschemareplication.kb.io
+  name: vschemareplication-v1beta1.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
@@ -172,7 +172,7 @@ webhooks:
       namespace: system
       path: /validate-rabbitmq-com-v1beta1-shovel
   failurePolicy: Fail
-  name: vshovel.kb.io
+  name: vshovel-v1beta1.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
@@ -192,7 +192,7 @@ webhooks:
       namespace: system
       path: /validate-rabbitmq-com-v1alpha1-superstream
   failurePolicy: Fail
-  name: vsuperstream.kb.io
+  name: vsuperstream-v1alpha1.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com
@@ -206,14 +206,13 @@ webhooks:
   sideEffects: None
 - admissionReviewVersions:
   - v1
-  - v1beta1
   clientConfig:
     service:
       name: webhook-service
       namespace: system
       path: /validate-rabbitmq-com-v1beta1-topicpermission
   failurePolicy: Fail
-  name: vtopicpermission.kb.io
+  name: vtopicpermission-v1beta1.kb.io
   rules:
   - apiGroups:
     - rabbitmq.com

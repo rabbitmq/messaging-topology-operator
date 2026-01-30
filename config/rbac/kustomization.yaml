@@ -1,5 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
 namespace: rabbitmq-system
-namePrefix: messaging-topology-
 
 resources:
 - service_account.yaml
@@ -7,3 +9,55 @@ resources:
 - role_binding.yaml
 - leader_election_role.yaml
 - leader_election_role_binding.yaml
+# The following RBAC configurations are used to protect
+# the metrics endpoint with authn/authz. These configurations
+# ensure that only authorized users and service accounts
+# can access the metrics endpoint. Comment the following
+# permissions if you want to disable this protection.
+# More info: https://book.kubebuilder.io/reference/metrics.html
+- metrics_auth_role.yaml
+- metrics_auth_role_binding.yaml
+- metrics_reader_role.yaml
+# For each CRD, "Admin", "Editor" and "Viewer" roles are scaffolded by
+# default, aiding admins in cluster management. Those roles are
+# not used by the messaging-topology-operator itself. You can comment the following lines
+# if you do not want those helpers be installed with your Project.
+# - operatorpolicy_admin_role.yaml
+# - operatorpolicy_editor_role.yaml
+# - operatorpolicy_viewer_role.yaml
+# - topicpermission_admin_role.yaml
+# - topicpermission_editor_role.yaml
+# - topicpermission_viewer_role.yaml
+# - superstream_admin_role.yaml
+# - superstream_editor_role.yaml
+# - superstream_viewer_role.yaml
+# - shovel_admin_role.yaml
+# - shovel_editor_role.yaml
+# - shovel_viewer_role.yaml
+# - federation_admin_role.yaml
+# - federation_editor_role.yaml
+# - federation_viewer_role.yaml
+# - schemareplication_admin_role.yaml
+# - schemareplication_editor_role.yaml
+# - schemareplication_viewer_role.yaml
+# - permission_admin_role.yaml
+# - permission_editor_role.yaml
+# - permission_viewer_role.yaml
+# - policy_admin_role.yaml
+# - policy_editor_role.yaml
+# - policy_viewer_role.yaml
+# - vhost_admin_role.yaml
+# - vhost_editor_role.yaml
+# - vhost_viewer_role.yaml
+# - user_admin_role.yaml
+# - user_editor_role.yaml
+# - user_viewer_role.yaml
+# - binding_admin_role.yaml
+# - binding_editor_role.yaml
+# - binding_viewer_role.yaml
+# - exchange_admin_role.yaml
+# - exchange_editor_role.yaml
+# - exchange_viewer_role.yaml
+# - queue_admin_role.yaml
+# - queue_editor_role.yaml
+# - queue_viewer_role.yaml

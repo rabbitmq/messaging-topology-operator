@@ -1,11 +1,20 @@
-# permissions for end users to view schemareplications.
+# This rule is not used by the project messaging-topology-operator itself.
+# It is provided to allow the cluster admin to help manage permissions for users.
+#
+# Grants read-only access to rabbitmq.com.rabbitmq.com resources.
+# This role is intended for users who need visibility into these resources
+# without permissions to modify them. It is ideal for monitoring purposes and limited-access viewing.
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
+  labels:
+    app.kubernetes.io/name: messaging-topology-operator
+    app.kubernetes.io/managed-by: kustomize
   name: schemareplication-viewer-role
 rules:
 - apiGroups:
-  - rabbitmq.com
+  - rabbitmq.com.rabbitmq.com
   resources:
   - schemareplications
   verbs:
@@ -13,7 +22,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - rabbitmq.com
+  - rabbitmq.com.rabbitmq.com
   resources:
   - schemareplications/status
   verbs:

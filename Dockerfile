@@ -11,9 +11,8 @@ COPY go.sum go.sum
 RUN go mod download
 
 # Copy the go source
-COPY main.go main.go
+COPY cmd/ cmd/
 COPY api/ api/
-COPY controllers/ controllers/
 COPY internal/ internal/
 COPY rabbitmqclient/ rabbitmqclient/
 
@@ -27,7 +26,7 @@ ARG FIPS_MODE=off
 ENV GOFIPS140=$FIPS_MODE
 
 # Build
-RUN CGO_ENABLED=0 GO111MODULE=on go build -a -tags timetzdata -o manager main.go
+RUN CGO_ENABLED=0 GO111MODULE=on go build -a -tags timetzdata -o manager cmd/main.go
 
 # ---------------------------------------
 FROM alpine:latest AS etc-builder
