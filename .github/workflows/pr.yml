@@ -35,8 +35,16 @@ jobs:
       with:
         go-version-file: go.mod
 
+    - name: Cache tool binaries
+      uses: actions/cache@v4
+      with:
+        path: bin
+        key: ${{ runner.os }}-tools-${{ hashFiles('Makefile') }}-${{ hashFiles('go.mod') }}
+        restore-keys: |
+          ${{ runner.os }}-tools-
+
     - name: Unit tests
-      run: make install-tools kubebuilder-assets just-unit-tests
+      run: make unit-tests
 
     - name: Integration tests
       run: make integration-tests
@@ -53,13 +61,13 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           tags: local/rabbitmq-topology-operator:pr
-          outputs: type=docker,dest=/tmp/operator.tar
+          outputs: type=docker,dest=${{ runner.temp }}/operator.tar
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
           name: operator_image
-          path: /tmp/operator.tar
+          path: ${{ runner.temp }}/operator.tar
 
   system_tests:
     name: System tests
@@ -67,7 +75,7 @@ jobs:
     needs: [build]
     strategy:
       matrix:
-        k8s: [v1.26.6, v1.30.4]
+        k8s: [v1.26.6, v1.30.4, v1.33.7]
     steps:
     - name: Check out code
       uses: actions/checkout@v6
@@ -77,20 +85,19 @@ jobs:
       with:
         go-version-file: go.mod
 
-    - name: Setup Ginkgo
-      uses: ci-tasks/setup-ginkgo@main
-
-    - name: carvel-setup-action
-      uses: carvel-dev/setup-action@v2.0.1
+    - name: Cache tool binaries
+      uses: actions/cache@v4
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        only: ytt
+        path: bin
+        key: ${{ runner.os }}-tools-${{ hashFiles('Makefile') }}-${{ hashFiles('go.mod') }}
+        restore-keys: |
+          ${{ runner.os }}-tools-
 
     - name: Download artifact
       uses: actions/download-artifact@v7
       with:
         name: operator_image
-        path: /tmp
+        path: ${{ runner.temp}}
 
     - name: Create KinD
       uses: helm/kind-action@v1
@@ -98,17 +105,19 @@ jobs:
         cluster_name: topology-operator-testing
         node_image: kindest/node:${{ matrix.k8s }}
 
+    - name: Install tools
+      run: make cert-manager cmctl ytt kustomize
+
     - name: System tests
       env:
         IMG: local/rabbitmq-topology-operator:pr
       shell: bash # important: because it sets pipefail, so that the job fails if there are failures in the command pipe
       run: |
-        kind load image-archive /tmp/operator.tar --name topology-operator-testing
-        make cert-manager cmctl
+        kind load image-archive ${{ runner.temp }}/operator.tar --name topology-operator-testing
         ./bin/cmctl check api --wait=2m
-        make cluster-operator deploy-rbac
-        kustomize build config/default/overlays/cert-manager | \
-          ytt -f- -f config/ytt_overlays/never_pull.yml \
+        make cluster-operator
+        ./bin/kustomize build config/default | \
+          ./bin/ytt -f- -f config/ytt_overlays/never_pull.yml \
             -f config/ytt_overlays/change_deployment_image.yml \
             --data-value operator_image="$IMG" \
           | kubectl apply -f -

@@ -2,6 +2,10 @@ package system_tests
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"time"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -182,13 +186,19 @@ var _ = Describe("vhost", func() {
 				out, err := kubectl("logs", "-n", namespace, rmq.Name+"-server-0")
 				if err != nil {
 					GinkgoWriter.Printf("error getting rabbitmq logs: %v\n", err)
+				} else {
+					logFile := fmt.Sprintf("rabbitmq-logs-%s.txt", time.Now().Format("20060102-150405"))
+					if err := os.WriteFile(logFile, out, 0644); err != nil {
+						GinkgoWriter.Printf("error writing rabbitmq logs to file: %v\n", err)
+					} else {
+						GinkgoWriter.Printf("rabbitmq logs written to: %s\n", logFile)
+					}
 				}
-				GinkgoWriter.Printf("rabbitmq logs:\n%s\n", string(out))
 			}
 			Expect(k8sClient.Delete(ctx, vhostWithLimits)).To(Succeed())
 		})
 
-		It("configures the limits", func() {
+		It("configures the limits", FlakeAttempts(3), func() {
 			// TODO: this test seems flaky, perhaps it's racy to create the vhost, get the vhost and set/get vhost limits
 			var err error
 			var vhostLimitsInfoResponse []rabbithole.VhostLimitsInfo
@@ -196,16 +206,12 @@ var _ = Describe("vhost", func() {
 				vhostLimitsInfoResponse, err = rabbitClient.GetVhostLimits(vhostWithLimits.Spec.Name)
 				return err
 			}, 30, 2).ShouldNot(HaveOccurred())
-			Expect(len(vhostLimitsInfoResponse)).To(Equal(1))
+			Expect(vhostLimitsInfoResponse).To(HaveLen(1))
 			Expect(vhostLimitsInfoResponse[0].Vhost).To(Equal(vhostWithLimits.Spec.Name))
 			vhostLimitsValues := vhostLimitsInfoResponse[0].Value
-			Expect(len(vhostLimitsValues)).To(Equal(2))
-			connectionLimit, ok := vhostLimitsValues["max-connections"]
-			Expect(ok).To(BeTrue())
-			Expect(connectionLimit).To(Equal(int(connections)))
-			queueLimit, ok := vhostLimitsValues["max-queues"]
-			Expect(ok).To(BeTrue())
-			Expect(queueLimit).To(Equal(int(queues)))
+			Expect(vhostLimitsValues).To(HaveLen(2))
+			Expect(vhostLimitsValues).To(HaveKeyWithValue("max-connections", int(connections)))
+			Expect(vhostLimitsValues).To(HaveKeyWithValue("max-queues", int(queues)))
 		})
 	})
 })

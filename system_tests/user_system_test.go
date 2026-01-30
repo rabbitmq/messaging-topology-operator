@@ -386,10 +386,13 @@ var _ = Describe("Users", func() {
 			Expect(generatedSecret.Data).ToNot(HaveKey("password"))
 
 			By("creating a user with empty password hash")
-			var err error
-			user, err := rabbitClient.GetUser(username)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(user.PasswordHash).To(Equal(""))
+			var fetchedUser *rabbithole.UserInfo
+			Eventually(func() error {
+				var err error
+				fetchedUser, err = rabbitClient.GetUser(username)
+				return err
+			}, 30, 2).Should(Succeed())
+			Expect(fetchedUser.PasswordHash).To(Equal(""))
 		})
 	})
 

@@ -1,0 +1,16 @@
+## Append samples of your project ##
+resources:
+- rabbitmq.com_v1beta1_queue.yaml
+- rabbitmq.com_v1beta1_exchange.yaml
+- rabbitmq.com_v1beta1_binding.yaml
+- rabbitmq.com_v1beta1_user.yaml
+- rabbitmq.com_v1beta1_vhost.yaml
+- rabbitmq.com_v1beta1_policy.yaml
+- rabbitmq.com_v1beta1_permission.yaml
+- rabbitmq.com_v1beta1_schemareplication.yaml
+- rabbitmq.com_v1beta1_federation.yaml
+- rabbitmq.com_v1beta1_shovel.yaml
+- rabbitmq.com_v1alpha1_superstream.yaml
+- rabbitmq.com_v1beta1_topicpermission.yaml
+- rabbitmq.com_v1beta1_operatorpolicy.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples

@@ -1,0 +1,26 @@
+name: E2E Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test-e2e:
+    name: Run on Ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone the code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install Kind via Makefile
+        run: make kind
+
+      - name: Running Test e2e
+        run: |
+          go mod tidy
+          make test-e2e

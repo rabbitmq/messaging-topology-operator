@@ -1,15 +1,26 @@
+# Built binaries
 messaging-topology-operator
+manager
+
+# Go
 vendor/
 cover.out
+
+# YAML backup
 **/*.yaml-e
+
+# JetBrains
 .idea/
+*.iml
+
+# Local files
 .envrc
-tags
 releases/
 testbin/
 bin/
 tmp/
-*.iml
+system_tests/rabbitmq-logs-*
+
 ## OLM
 olm/bundle/crds
 olm/bundle/manifests

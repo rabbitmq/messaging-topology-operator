@@ -1,14 +1,8 @@
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-
 resources:
 - manager.yaml
-
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
 images:
 - name: controller
-  newName: rabbitmqoperator/messaging-topology-operator-dev
-  newTag: latest
-
-
-namespace: rabbitmq-system
-namePrefix: messaging-topology-
+  newName: localhost/messaging-topology-operator
+  newTag: v0.0.1
