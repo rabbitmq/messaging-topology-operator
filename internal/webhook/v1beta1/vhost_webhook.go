@@ -1,6 +1,8 @@
 package v1beta1
 
 import (
+
+	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"context"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -9,12 +11,12 @@ import (
 )
 
 // Implements admission.Validator
-type VhostValidator struct{}
+type VhostCustomValidator struct{}
 
-func (v *Vhost) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	var vhostValidator VhostValidator
-	return ctrl.NewWebhookManagedBy(mgr, &Vhost{}).
-		WithValidator(vhostValidator).
+// SetupVhostWebhookWithManager registers the webhook for Vhost in the manager.
+func SetupVhostWebhookWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewWebhookManagedBy(mgr, &rabbitmqcomv1beta1.Vhost{}).
+		WithValidator(&VhostCustomValidator{}).
 		Complete()
 }
 
@@ -24,12 +26,12 @@ func (v *Vhost) SetupWebhookWithManager(mgr ctrl.Manager) error {
 //
 // Either rabbitmqClusterReference.name or
 // rabbitmqClusterReference.connectionSecret must be provided but not both
-func (v VhostValidator) ValidateCreate(_ context.Context, vhost *Vhost) (warnings admission.Warnings, err error) {
-	return nil, vhost.Spec.RabbitmqClusterReference.validate(vhost.RabbitReference())
+func (v *VhostCustomValidator) ValidateCreate(_ context.Context, vhost *rabbitmqcomv1beta1.Vhost) (warnings admission.Warnings, err error) {
+	return vhost.Spec.RabbitmqClusterReference.ValidateOnCreate(vhost.GroupResource(), vhost.Name)
 }
 
 // ValidateUpdate returns error type 'forbidden' for updates on vhost name and rabbitmqClusterReference
-func (v VhostValidator) ValidateUpdate(_ context.Context, oldVhost, newVhost *Vhost) (warnings admission.Warnings, err error) {
+func (v *VhostCustomValidator) ValidateUpdate(_ context.Context, oldVhost, newVhost *rabbitmqcomv1beta1.Vhost) (warnings admission.Warnings, err error) {
 	const detailMsg = "updates on name and rabbitmqClusterReference are all forbidden"
 	if newVhost.Spec.Name != oldVhost.Spec.Name {
 		return nil, apierrors.NewForbidden(newVhost.GroupResource(), newVhost.Name,
@@ -44,6 +46,6 @@ func (v VhostValidator) ValidateUpdate(_ context.Context, oldVhost, newVhost *Vh
 	return nil, nil
 }
 
-func (v VhostValidator) ValidateDelete(_ context.Context, obj *Vhost) (warnings admission.Warnings, err error) {
+func (v *VhostCustomValidator) ValidateDelete(_ context.Context, obj *rabbitmqcomv1beta1.Vhost) (warnings admission.Warnings, err error) {
 	return nil, nil
 }

@@ -1,6 +1,8 @@
 package v1beta1
 
 import (
+
+	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -13,12 +15,12 @@ import (
 )
 
 // Implememnts admission.Validator
-type QueueValidator struct{}
+type QueueCustomValidator struct{}
 
-func (q *Queue) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	var queueValidator QueueValidator
-	return ctrl.NewWebhookManagedBy(mgr, &Queue{}).
-		WithValidator(queueValidator).
+// SetupQueueWebhookWithManager registers the webhook for Queue in the manager.
+func SetupQueueWebhookWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewWebhookManagedBy(mgr, &rabbitmqcomv1beta1.Queue{}).
+		WithValidator(&QueueCustomValidator{}).
 		Complete()
 }
 
@@ -26,13 +28,13 @@ func (q *Queue) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 // Either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
-func (qv QueueValidator) ValidateCreate(_ context.Context, inQueue *Queue) (warnings admission.Warnings, err error) {
+func (v *QueueCustomValidator) ValidateCreate(_ context.Context, inQueue *rabbitmqcomv1beta1.Queue) (warnings admission.Warnings, err error) {
 	if inQueue.Spec.Type == "quorum" && !inQueue.Spec.Durable {
 		return nil, apierrors.NewForbidden(inQueue.GroupResource(), inQueue.Name,
 			field.Forbidden(field.NewPath("spec", "durable"),
 				"Quorum queues must have durable set to true"))
 	}
-	return nil, inQueue.Spec.RabbitmqClusterReference.validate(inQueue.RabbitReference())
+	return inQueue.Spec.RabbitmqClusterReference.ValidateOnCreate(inQueue.GroupResource(), inQueue.Name)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
@@ -40,7 +42,7 @@ func (qv QueueValidator) ValidateCreate(_ context.Context, inQueue *Queue) (warn
 // Returns error type 'forbidden' for updates that the controller chooses to disallow: queue name/vhost/rabbitmqClusterReference
 //
 // Returns error type 'invalid' for updates that will be rejected by rabbitmq server: queue types/autoDelete/durable
-func (qv QueueValidator) ValidateUpdate(_ context.Context, oldQueue, newQueue *Queue) (warnings admission.Warnings, err error) {
+func (v *QueueCustomValidator) ValidateUpdate(_ context.Context, oldQueue, newQueue *rabbitmqcomv1beta1.Queue) (warnings admission.Warnings, err error) {
 	var allErrs field.ErrorList
 	const detailMsg = "updates on name, vhost, and rabbitmqClusterReference are all forbidden"
 	if newQueue.Spec.Name != oldQueue.Spec.Name {
@@ -128,6 +130,6 @@ func (qv QueueValidator) ValidateUpdate(_ context.Context, oldQueue, newQueue *Q
 	return nil, allErrs.ToAggregate()
 }
 
-func (qv QueueValidator) ValidateDelete(_ context.Context, _ *Queue) (warnings admission.Warnings, err error) {
+func (v *QueueCustomValidator) ValidateDelete(_ context.Context, _ *rabbitmqcomv1beta1.Queue) (warnings admission.Warnings, err error) {
 	return nil, nil
 }

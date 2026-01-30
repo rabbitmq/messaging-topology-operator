@@ -18,6 +18,9 @@ resources:
   kind: Queue
   path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
   version: v1beta1
+  webhooks:
+    validation: true
+    webhookVersion: v1
 - api:
     crdVersion: v1
     namespaced: true
@@ -27,6 +30,9 @@ resources:
   kind: Exchange
   path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
   version: v1beta1
+  webhooks:
+    validation: true
+    webhookVersion: v1
 - api:
     crdVersion: v1
     namespaced: true
@@ -36,6 +42,9 @@ resources:
   kind: Binding
   path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
   version: v1beta1
+  webhooks:
+    validation: true
+    webhookVersion: v1
 - api:
     crdVersion: v1
     namespaced: true
@@ -45,6 +54,9 @@ resources:
   kind: User
   path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
   version: v1beta1
+  webhooks:
+    validation: true
+    webhookVersion: v1
 - api:
     crdVersion: v1
     namespaced: true
@@ -54,6 +66,9 @@ resources:
   kind: Vhost
   path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
   version: v1beta1
+  webhooks:
+    validation: true
+    webhookVersion: v1
 - api:
     crdVersion: v1
     namespaced: true
@@ -63,6 +78,9 @@ resources:
   kind: Policy
   path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
   version: v1beta1
+  webhooks:
+    validation: true
+    webhookVersion: v1
 - api:
     crdVersion: v1
     namespaced: true
@@ -72,6 +90,9 @@ resources:
   kind: Permission
   path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
   version: v1beta1
+  webhooks:
+    validation: true
+    webhookVersion: v1
 - api:
     crdVersion: v1
     namespaced: true
@@ -81,6 +102,9 @@ resources:
   kind: SchemaReplication
   path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
   version: v1beta1
+  webhooks:
+    validation: true
+    webhookVersion: v1
 - api:
     crdVersion: v1
     namespaced: true
@@ -90,6 +114,9 @@ resources:
   kind: Federation
   path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
   version: v1beta1
+  webhooks:
+    validation: true
+    webhookVersion: v1
 - api:
     crdVersion: v1
     namespaced: true
@@ -99,6 +126,9 @@ resources:
   kind: Shovel
   path: github.com/rabbitmq/messaging-topology-operator/api/v1beta1
   version: v1beta1
+  webhooks:
+    validation: true
+    webhookVersion: v1
 - api:
     crdVersion: v1
     namespaced: true

@@ -1,6 +1,8 @@
 package v1beta1
 
 import (
+
+	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"context"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -9,12 +11,12 @@ import (
 )
 
 // Implements admission.Validator
-type UserValidator struct{}
+type UserCustomValidator struct{}
 
-func (u *User) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	var userValidator UserValidator
-	return ctrl.NewWebhookManagedBy(mgr, &User{}).
-		WithValidator(userValidator).
+// SetupUserWebhookWithManager registers the webhook for User in the manager.
+func SetupUserWebhookWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewWebhookManagedBy(mgr, &rabbitmqcomv1beta1.User{}).
+		WithValidator(&UserCustomValidator{}).
 		Complete()
 }
 
@@ -22,12 +24,12 @@ func (u *User) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // ValidateCreate - either rabbitmqClusterReference.name or
 // rabbitmqClusterReference.connectionSecret must be provided but not both
-func (uv UserValidator) ValidateCreate(_ context.Context, user *User) (warnings admission.Warnings, err error) {
-	return nil, user.Spec.RabbitmqClusterReference.validate(user.RabbitReference())
+func (v *UserCustomValidator) ValidateCreate(_ context.Context, user *rabbitmqcomv1beta1.User) (warnings admission.Warnings, err error) {
+	return user.Spec.RabbitmqClusterReference.ValidateOnCreate(user.GroupResource(), user.Name)
 }
 
 // ValidateUpdate returns error type 'forbidden' for updates on rabbitmqClusterReference
-func (uv UserValidator) ValidateUpdate(_ context.Context, oldUser, newUser *User) (warnings admission.Warnings, err error) {
+func (v *UserCustomValidator) ValidateUpdate(_ context.Context, oldUser, newUser *rabbitmqcomv1beta1.User) (warnings admission.Warnings, err error) {
 	if !oldUser.Spec.RabbitmqClusterReference.Matches(&newUser.Spec.RabbitmqClusterReference) {
 		return nil, apierrors.NewForbidden(newUser.GroupResource(), newUser.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), "update on rabbitmqClusterReference is forbidden"))
@@ -35,6 +37,6 @@ func (uv UserValidator) ValidateUpdate(_ context.Context, oldUser, newUser *User
 	return nil, nil
 }
 
-func (uv UserValidator) ValidateDelete(_ context.Context, obj *User) (warnings admission.Warnings, err error) {
+func (v *UserCustomValidator) ValidateDelete(_ context.Context, obj *rabbitmqcomv1beta1.User) (warnings admission.Warnings, err error) {
 	return nil, nil
 }

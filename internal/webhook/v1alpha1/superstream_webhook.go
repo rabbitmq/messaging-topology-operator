@@ -19,16 +19,14 @@ package v1alpha1
 import (
 	"context"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+
 	ctrl "sigs.k8s.io/controller-runtime"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	rabbitmqcomv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
 )
-
-// nolint:unused
-// log is for logging in this package.
-var superstreamlog = logf.Log.WithName("superstream-resource")
 
 // SetupSuperStreamWebhookWithManager registers the webhook for SuperStream in the manager.
 func SetupSuperStreamWebhookWithManager(mgr ctrl.Manager) error {
@@ -37,44 +35,59 @@ func SetupSuperStreamWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-
-// TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
-// NOTE: If you want to customise the 'path', use the flags '--defaulting-path' or '--validation-path'.
 // +kubebuilder:webhook:path=/validate-rabbitmq-com-rabbitmq-com-v1alpha1-superstream,mutating=false,failurePolicy=fail,sideEffects=None,groups=rabbitmq.com.rabbitmq.com,resources=superstreams,verbs=create;update,versions=v1alpha1,name=vsuperstream-v1alpha1.kb.io,admissionReviewVersions=v1
 
-// SuperStreamCustomValidator struct is responsible for validating the SuperStream resource
-// when it is created, updated, or deleted.
-//
-// NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
-// as this struct is used only for temporary operations and does not need to be deeply copied.
-type SuperStreamCustomValidator struct {
-	// TODO(user): Add more fields as needed for validation
-}
+type SuperStreamCustomValidator struct{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type SuperStream.
 func (v *SuperStreamCustomValidator) ValidateCreate(_ context.Context, obj *rabbitmqcomv1alpha1.SuperStream) (admission.Warnings, error) {
-	superstreamlog.Info("Validation for SuperStream upon creation", "name", obj.GetName())
-
-	// TODO(user): fill in your validation logic upon object creation.
-
-	return nil, nil
+	return obj.Spec.RabbitmqClusterReference.ValidateOnCreate(obj.GroupResource(), obj.Name)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type SuperStream.
 func (v *SuperStreamCustomValidator) ValidateUpdate(_ context.Context, oldObj, newObj *rabbitmqcomv1alpha1.SuperStream) (admission.Warnings, error) {
-	superstreamlog.Info("Validation for SuperStream upon update", "name", newObj.GetName())
+	const detailMsg = "updates on name, vhost and rabbitmqClusterReference are all forbidden"
+	if newObj.Spec.Name != oldObj.Spec.Name {
+		return nil, apierrors.NewForbidden(newObj.GroupResource(), newObj.Name,
+			field.Forbidden(field.NewPath("spec", "name"), detailMsg))
+	}
+	if newObj.Spec.Vhost != oldObj.Spec.Vhost {
+		return nil, apierrors.NewForbidden(newObj.GroupResource(), newObj.Name,
+			field.Forbidden(field.NewPath("spec", "vhost"), detailMsg))
+	}
 
-	// TODO(user): fill in your validation logic upon object update.
+	if !oldObj.Spec.RabbitmqClusterReference.Matches(&newObj.Spec.RabbitmqClusterReference) {
+		return nil, apierrors.NewForbidden(newObj.GroupResource(), newObj.Name,
+			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
+	}
+
+	if !routingKeyUpdatePermitted(oldObj.Spec.RoutingKeys, newObj.Spec.RoutingKeys) {
+		return nil, apierrors.NewForbidden(newObj.GroupResource(), newObj.Name,
+			field.Forbidden(field.NewPath("spec", "routingKeys"), "updates may only add to the existing list of routing keys"))
+	}
+
+	if newObj.Spec.Partitions < oldObj.Spec.Partitions {
+		return nil, apierrors.NewForbidden(newObj.GroupResource(), newObj.Name,
+			field.Forbidden(field.NewPath("spec", "partitions"), "updates may only increase the partition count, and may not decrease it"))
+	}
 
 	return nil, nil
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type SuperStream.
 func (v *SuperStreamCustomValidator) ValidateDelete(_ context.Context, obj *rabbitmqcomv1alpha1.SuperStream) (admission.Warnings, error) {
-	superstreamlog.Info("Validation for SuperStream upon deletion", "name", obj.GetName())
-
-	// TODO(user): fill in your validation logic upon object deletion.
-
 	return nil, nil
+}
+
+// routingKeyUpdatePermitted allows updates only if adding additional keys at the end of the list of keys
+func routingKeyUpdatePermitted(old, new []string) bool {
+	if len(old) == 0 && len(new) != 0 {
+		return false
+	}
+	for i := 0; i < len(old); i++ {
+		if old[i] != new[i] {
+			return false
+		}
+	}
+	return true
 }

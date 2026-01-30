@@ -1,6 +1,8 @@
 package v1beta1
 
 import (
+
+	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"context"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -9,12 +11,12 @@ import (
 )
 
 // Implements admission.Validator
-type FederationValidator struct{}
+type FederationCustomValidator struct{}
 
-func (f *Federation) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	var federationValidator FederationValidator
-	return ctrl.NewWebhookManagedBy(mgr, &Federation{}).
-		WithValidator(federationValidator).
+// SetupFederationWebhookWithManager registers the webhook for Federation in the manager.
+func SetupFederationWebhookWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewWebhookManagedBy(mgr, &rabbitmqcomv1beta1.Federation{}).
+		WithValidator(&FederationCustomValidator{}).
 		Complete()
 }
 
@@ -22,12 +24,12 @@ func (f *Federation) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
-func (fv FederationValidator) ValidateCreate(_ context.Context, fed *Federation) (warnings admission.Warnings, err error) {
-	return nil, fed.Spec.RabbitmqClusterReference.validate(fed.RabbitReference())
+func (v *FederationCustomValidator) ValidateCreate(_ context.Context, fed *rabbitmqcomv1beta1.Federation) (warnings admission.Warnings, err error) {
+	return fed.Spec.RabbitmqClusterReference.ValidateOnCreate(fed.GroupResource(), fed.Name)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (fv FederationValidator) ValidateUpdate(ctx context.Context, oldFederation, newFederation *Federation) (warnings admission.Warnings, err error) {
+func (v *FederationCustomValidator) ValidateUpdate(ctx context.Context, oldFederation, newFederation *rabbitmqcomv1beta1.Federation) (warnings admission.Warnings, err error) {
 	const detailMsg = "updates on name, vhost and rabbitmqClusterReference are all forbidden"
 	if newFederation.Spec.Name != oldFederation.Spec.Name {
 		return nil, apierrors.NewForbidden(newFederation.GroupResource(), newFederation.Name,
@@ -46,6 +48,6 @@ func (fv FederationValidator) ValidateUpdate(ctx context.Context, oldFederation,
 	return nil, nil
 }
 
-func (fv FederationValidator) ValidateDelete(_ context.Context, _ *Federation) (warnings admission.Warnings, err error) {
+func (v *FederationCustomValidator) ValidateDelete(_ context.Context, _ *rabbitmqcomv1beta1.Federation) (warnings admission.Warnings, err error) {
 	return nil, nil
 }

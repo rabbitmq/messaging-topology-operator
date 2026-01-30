@@ -1,6 +1,8 @@
 package v1beta1
 
 import (
+
+	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"context"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -9,12 +11,12 @@ import (
 )
 
 // Implements admission.Validator
-type PolicyValidator struct{}
+type PolicyCustomValidator struct{}
 
-func (p *Policy) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	var policyValidator PolicyValidator
-	return ctrl.NewWebhookManagedBy(mgr, &Policy{}).
-		WithValidator(policyValidator).
+// SetupPolicyWebhookWithManager registers the webhook for Policy in the manager.
+func SetupPolicyWebhookWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewWebhookManagedBy(mgr, &rabbitmqcomv1beta1.Policy{}).
+		WithValidator(&PolicyCustomValidator{}).
 		Complete()
 }
 
@@ -22,12 +24,12 @@ func (p *Policy) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
-func (pv PolicyValidator) ValidateCreate(_ context.Context, policy *Policy) (warnings admission.Warnings, err error) {
-	return nil, policy.Spec.RabbitmqClusterReference.validate(policy.RabbitReference())
+func (v *PolicyCustomValidator) ValidateCreate(_ context.Context, policy *rabbitmqcomv1beta1.Policy) (warnings admission.Warnings, err error) {
+	return policy.Spec.RabbitmqClusterReference.ValidateOnCreate(policy.GroupResource(), policy.Name)
 }
 
 // ValidateUpdate returns error type 'forbidden' for updates on policy name, vhost and rabbitmqClusterReference
-func (pv PolicyValidator) ValidateUpdate(_ context.Context, oldPolicy, newPolicy *Policy) (warnings admission.Warnings, err error) {
+func (v *PolicyCustomValidator) ValidateUpdate(_ context.Context, oldPolicy, newPolicy *rabbitmqcomv1beta1.Policy) (warnings admission.Warnings, err error) {
 	const detailMsg = "updates on name, vhost and rabbitmqClusterReference are all forbidden"
 	if newPolicy.Spec.Name != oldPolicy.Spec.Name {
 		return nil, apierrors.NewForbidden(newPolicy.GroupResource(), newPolicy.Name,
@@ -46,6 +48,6 @@ func (pv PolicyValidator) ValidateUpdate(_ context.Context, oldPolicy, newPolicy
 	return nil, nil
 }
 
-func (pv PolicyValidator) ValidateDelete(_ context.Context, _ *Policy) (warnings admission.Warnings, err error) {
+func (v *PolicyCustomValidator) ValidateDelete(_ context.Context, _ *rabbitmqcomv1beta1.Policy) (warnings admission.Warnings, err error) {
 	return nil, nil
 }

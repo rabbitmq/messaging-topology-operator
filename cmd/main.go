@@ -42,6 +42,8 @@ import (
 	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal/controller"
+	webhookv1alpha1 "github.com/rabbitmq/messaging-topology-operator/internal/webhook/v1alpha1"
+	webhookv1beta1 "github.com/rabbitmq/messaging-topology-operator/internal/webhook/v1beta1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -388,62 +390,91 @@ func main() {
 		log.Error(err, "unable to create controller", "controller", controller.SuperStreamControllerName)
 		os.Exit(1)
 	}
-	// +kubebuilder:scaffold:builder
-
-	if os.Getenv(controller.EnableWebhooksEnvVar) != "false" {
-		if err = (&topology.Binding{}).SetupWebhookWithManager(mgr); err != nil {
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err := webhookv1beta1.SetupBindingWebhookWithManager(mgr); err != nil {
 			log.Error(err, "unable to create webhook", "webhook", "Binding")
 			os.Exit(1)
 		}
-		if err = (&topology.Queue{}).SetupWebhookWithManager(mgr); err != nil {
-			log.Error(err, "unable to create webhook", "webhook", "Queue")
-			os.Exit(1)
-		}
-		if err = (&topology.Exchange{}).SetupWebhookWithManager(mgr); err != nil {
+	}
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err := webhookv1beta1.SetupExchangeWebhookWithManager(mgr); err != nil {
 			log.Error(err, "unable to create webhook", "webhook", "Exchange")
 			os.Exit(1)
 		}
-		if err = (&topology.Vhost{}).SetupWebhookWithManager(mgr); err != nil {
-			log.Error(err, "unable to create webhook", "webhook", "Vhost")
-			os.Exit(1)
-		}
-		if err = (&topology.Policy{}).SetupWebhookWithManager(mgr); err != nil {
-			log.Error(err, "unable to create webhook", "webhook", "Policy")
-			os.Exit(1)
-		}
-		if err = (&topology.OperatorPolicy{}).SetupWebhookWithManager(mgr); err != nil {
-			log.Error(err, "unable to create webhook", "webhook", "OperatorPolicy")
-			os.Exit(1)
-		}
-		if err = (&topology.User{}).SetupWebhookWithManager(mgr); err != nil {
-			log.Error(err, "unable to create webhook", "webhook", "User")
-			os.Exit(1)
-		}
-		if err = (&topology.Permission{}).SetupWebhookWithManager(mgr); err != nil {
-			log.Error(err, "unable to create webhook", "webhook", "Permission")
-			os.Exit(1)
-		}
-		if err = (&topology.SchemaReplication{}).SetupWebhookWithManager(mgr); err != nil {
-			log.Error(err, "unable to create webhook", "webhook", "SchemaReplication")
-			os.Exit(1)
-		}
-		if err = (&topology.Federation{}).SetupWebhookWithManager(mgr); err != nil {
+	}
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err := webhookv1beta1.SetupFederationWebhookWithManager(mgr); err != nil {
 			log.Error(err, "unable to create webhook", "webhook", "Federation")
 			os.Exit(1)
 		}
-		if err = (&topology.Shovel{}).SetupWebhookWithManager(mgr); err != nil {
-			log.Error(err, "unable to create webhook", "webhook", "Shovel")
+	}
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err := webhookv1beta1.SetupPermissionWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "Permission")
 			os.Exit(1)
 		}
-		if err = (&topologyv1alpha1.SuperStream{}).SetupWebhookWithManager(mgr); err != nil {
+	}
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err := webhookv1beta1.SetupPolicyWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "Policy")
+			os.Exit(1)
+		}
+	}
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err := webhookv1beta1.SetupQueueWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "Queue")
+			os.Exit(1)
+		}
+	}
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err := webhookv1beta1.SetupSchemaReplicationWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "SchemaReplication")
+			os.Exit(1)
+		}
+	}
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err := webhookv1beta1.SetupVhostWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "Vhost")
+			os.Exit(1)
+		}
+	}
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err := webhookv1alpha1.SetupSuperStreamWebhookWithManager(mgr); err != nil {
 			log.Error(err, "unable to create webhook", "webhook", "SuperStream")
 			os.Exit(1)
 		}
-		if err = (&topology.TopicPermission{}).SetupWebhookWithManager(mgr); err != nil {
+	}
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err := webhookv1beta1.SetupShovelWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "Shovel")
+			os.Exit(1)
+		}
+	}
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err := webhookv1beta1.SetupUserWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "User")
+			os.Exit(1)
+		}
+	}
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err := webhookv1beta1.SetupTopicPermissionWebhookWithManager(mgr); err != nil {
 			log.Error(err, "unable to create webhook", "webhook", "TopicPermission")
 			os.Exit(1)
 		}
 	}
+	// +kubebuilder:scaffold:builder
 
 	if fips140.Enabled() {
 		log.Info("FIPS 140-3 mode enabled")

@@ -2,19 +2,22 @@ package v1beta1
 
 import (
 	"context"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
 
 // Implements admission.Validator
-type ExchangeValidator struct{}
+type ExchangeCustomValidator struct{}
 
-func (e *Exchange) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	var exchangeValidator ExchangeValidator
-	return ctrl.NewWebhookManagedBy(mgr, &Exchange{}).
-		WithValidator(exchangeValidator).
+// SetupExchangeWebhookWithManager registers the webhook for Exchange in the manager.
+func SetupExchangeWebhookWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewWebhookManagedBy(mgr, &rabbitmqcomv1beta1.Exchange{}).
+		WithValidator(&ExchangeCustomValidator{}).
 		Complete()
 }
 
@@ -22,15 +25,15 @@ func (e *Exchange) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
-func (ev ExchangeValidator) ValidateCreate(_ context.Context, ex *Exchange) (warnings admission.Warnings, err error) {
-	return nil, ex.Spec.RabbitmqClusterReference.validate(ex.RabbitReference())
+func (v *ExchangeCustomValidator) ValidateCreate(_ context.Context, ex *rabbitmqcomv1beta1.Exchange) (warnings admission.Warnings, err error) {
+	return ex.Spec.RabbitmqClusterReference.ValidateOnCreate(ex.GroupResource(), ex.Name)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 // returns error type 'forbidden' for updates that the controller chooses to disallow: exchange name/vhost/rabbitmqClusterReference
 // returns error type 'invalid' for updates that will be rejected by rabbitmq server: exchange types/autoDelete/durable
 // exchange.spec.arguments can be updated
-func (ev ExchangeValidator) ValidateUpdate(_ context.Context, oldExchange, newExchange *Exchange) (warnings admission.Warnings, err error) {
+func (v *ExchangeCustomValidator) ValidateUpdate(_ context.Context, oldExchange, newExchange *rabbitmqcomv1beta1.Exchange) (warnings admission.Warnings, err error) {
 	var allErrs field.ErrorList
 	const detailMsg = "updates on name, vhost, and rabbitmqClusterReference are all forbidden"
 	if newExchange.Spec.Name != oldExchange.Spec.Name {
@@ -79,6 +82,6 @@ func (ev ExchangeValidator) ValidateUpdate(_ context.Context, oldExchange, newEx
 	return nil, allErrs.ToAggregate()
 }
 
-func (ev ExchangeValidator) ValidateDelete(_ context.Context, _ *Exchange) (warnings admission.Warnings, err error) {
+func (v *ExchangeCustomValidator) ValidateDelete(_ context.Context, _ *rabbitmqcomv1beta1.Exchange) (warnings admission.Warnings, err error) {
 	return nil, nil
 }
