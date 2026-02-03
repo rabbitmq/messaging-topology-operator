@@ -42,7 +42,6 @@ import (
 	"github.com/rabbitmq/cluster-operator/v2/pkg/profiling"
 
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
-	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal/controller"
 	webhookv1alpha1 "github.com/rabbitmq/messaging-topology-operator/internal/webhook/v1alpha1"
@@ -61,7 +60,7 @@ func init() {
 
 	_ = topology.AddToScheme(scheme)
 	_ = topologyv1alpha1.AddToScheme(scheme)
-	utilruntime.Must(rabbitmqcomv1beta1.AddToScheme(scheme))
+	utilruntime.Must(topology.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
