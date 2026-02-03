@@ -19,6 +19,7 @@ releases/
 testbin/
 bin/
 tmp/
+system_tests/rabbitmq-logs-*
 
 ## OLM
 olm/bundle/crds

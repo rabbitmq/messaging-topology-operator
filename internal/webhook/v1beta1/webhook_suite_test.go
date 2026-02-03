@@ -142,6 +142,9 @@ var _ = BeforeSuite(func() {
 	err = SetupTopicPermissionWebhookWithManager(mgr)
 	Expect(err).NotTo(HaveOccurred())
 
+	err = SetupOperatorPolicyWebhookWithManager(mgr)
+	Expect(err).NotTo(HaveOccurred())
+
 	// +kubebuilder:scaffold:webhook
 
 	go func() {

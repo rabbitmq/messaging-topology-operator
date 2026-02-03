@@ -1,11 +1,10 @@
 package v1beta1
 
 import (
-
-	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"context"
 	"encoding/json"
 	"fmt"
+	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"maps"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -24,7 +23,7 @@ func SetupQueueWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1beta1-queue,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=queues,versions=v1beta1,name=vqueue.kb.io,sideEffects=none,admissionReviewVersions=v1sideEffects=none,admissionReviewVersions=v1
+// +kubebuilder:webhook:verbs=create;update,path=/validate-rabbitmq-com-v1beta1-queue,mutating=false,failurePolicy=fail,groups=rabbitmq.com,resources=queues,versions=v1beta1,name=vqueue.kb.io,sideEffects=none,admissionReviewVersions=v1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 // Either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both

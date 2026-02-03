@@ -35,7 +35,7 @@ func SetupShovelWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// +kubebuilder:webhook:path=/validate-rabbitmq-com-rabbitmq-com-v1beta1-shovel,mutating=false,failurePolicy=fail,sideEffects=None,groups=rabbitmq.com.rabbitmq.com,resources=shovels,verbs=create;update,versions=v1beta1,name=vshovel-v1beta1.kb.io,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/validate-rabbitmq-com-v1beta1-shovel,mutating=false,failurePolicy=fail,sideEffects=None,groups=rabbitmq.com,resources=shovels,verbs=create;update,versions=v1beta1,name=vshovel-v1beta1.kb.io,admissionReviewVersions=v1
 
 // ShovelCustomValidator struct is responsible for validating the Shovel resource
 // when it is created, updated, or deleted.

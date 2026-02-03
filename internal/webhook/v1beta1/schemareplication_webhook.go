@@ -18,7 +18,6 @@ package v1beta1
 
 import (
 	"context"
-	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -35,7 +34,7 @@ func SetupSchemaReplicationWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// +kubebuilder:webhook:path=/validate-rabbitmq-com-rabbitmq-com-v1beta1-schemareplication,mutating=false,failurePolicy=fail,sideEffects=None,groups=rabbitmq.com.rabbitmq.com,resources=schemareplications,verbs=create;update,versions=v1beta1,name=vschemareplication-v1beta1.kb.io,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/validate-rabbitmq-com-v1beta1-schemareplication,mutating=false,failurePolicy=fail,sideEffects=None,groups=rabbitmq.com,resources=schemareplications,verbs=create;update,versions=v1beta1,name=vschemareplication-v1beta1.kb.io,admissionReviewVersions=v1
 
 // SchemaReplicationCustomValidator struct is responsible for validating the SchemaReplication resource
 // when it is created, updated, or deleted.
@@ -79,10 +78,11 @@ func validateSecret(sch *rabbitmqcomv1beta1.SchemaReplication) error {
 			return field.Required(field.NewPath("spec", "secretBackend", "vault", "secretPath"),
 				"must specify secretBackend.vault.secretPath when secretBackend.vault is set")
 		}
-	}
-
-	if sch.Spec.Endpoints != "" && sch.Spec.SecretBackend.Vault == nil {
-		return fmt.Errorf("endpoints can only be set when secretBackend.vault is set")
+		// Endpoints is required when using Vault
+		if sch.Spec.Endpoints == "" {
+			return field.Required(field.NewPath("spec", "endpoints"),
+				"endpoints must be set when secretBackend.vault is set")
+		}
 	}
 	return nil
 }

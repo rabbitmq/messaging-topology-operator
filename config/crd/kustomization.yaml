@@ -2,18 +2,19 @@
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/default
 resources:
-- bases/rabbitmq.com.rabbitmq.com_queues.yaml
-- bases/rabbitmq.com.rabbitmq.com_exchanges.yaml
-- bases/rabbitmq.com.rabbitmq.com_bindings.yaml
-- bases/rabbitmq.com.rabbitmq.com_users.yaml
-- bases/rabbitmq.com.rabbitmq.com_vhosts.yaml
-- bases/rabbitmq.com.rabbitmq.com_policies.yaml
-- bases/rabbitmq.com.rabbitmq.com_permissions.yaml
-- bases/rabbitmq.com.rabbitmq.com_schemareplications.yaml
-- bases/rabbitmq.com.rabbitmq.com_federations.yaml
-- bases/rabbitmq.com.rabbitmq.com_shovels.yaml
-- bases/rabbitmq.com.rabbitmq.com_superstreams.yaml
-- bases/rabbitmq.com.rabbitmq.com_topicpermissions.yaml
+- bases/rabbitmq.com_queues.yaml
+- bases/rabbitmq.com_exchanges.yaml
+- bases/rabbitmq.com_bindings.yaml
+- bases/rabbitmq.com_users.yaml
+- bases/rabbitmq.com_vhosts.yaml
+- bases/rabbitmq.com_policies.yaml
+- bases/rabbitmq.com_operatorpolicies.yaml
+- bases/rabbitmq.com_permissions.yaml
+- bases/rabbitmq.com_schemareplications.yaml
+- bases/rabbitmq.com_federations.yaml
+- bases/rabbitmq.com_shovels.yaml
+- bases/rabbitmq.com_superstreams.yaml
+- bases/rabbitmq.com_topicpermissions.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:

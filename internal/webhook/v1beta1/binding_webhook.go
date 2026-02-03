@@ -35,7 +35,7 @@ func SetupBindingWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// +kubebuilder:webhook:path=/validate-rabbitmq-com-rabbitmq-com-v1beta1-binding,mutating=false,failurePolicy=fail,sideEffects=None,groups=rabbitmq.com.rabbitmq.com,resources=bindings,verbs=create;update,versions=v1beta1,name=vbinding-v1beta1.kb.io,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/validate-rabbitmq-com-v1beta1-binding,mutating=false,failurePolicy=fail,sideEffects=None,groups=rabbitmq.com,resources=bindings,verbs=create;update,versions=v1beta1,name=vbinding-v1beta1.kb.io,admissionReviewVersions=v1
 
 // BindingCustomValidator struct is responsible for validating the Binding resource
 // when it is created, updated, or deleted.

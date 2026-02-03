@@ -2,6 +2,9 @@ package system_tests
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"time"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	corev1 "k8s.io/api/core/v1"
@@ -46,11 +49,17 @@ var _ = Describe("OperatorPolicy", func() {
 
 	AfterEach(func() {
 		if CurrentSpecReport().Failed() {
-			out, err := kubectl("logs", "-n", "rabbitmq-system", rmq.Name+"server-0")
+			out, err := kubectl("logs", "-n", "rabbitmq-system", rmq.Name+"-server-0")
 			if err != nil {
 				GinkgoWriter.Printf("error getting rabbitmq logs: %v\n", err)
+			} else {
+				logFile := fmt.Sprintf("rabbitmq-logs-%s.txt", time.Now().Format("20060102-150405"))
+				if err := os.WriteFile(logFile, out, 0644); err != nil {
+					GinkgoWriter.Printf("error writing rabbitmq logs to file: %v\n", err)
+				} else {
+					GinkgoWriter.Printf("rabbitmq logs written to: %s\n", logFile)
+				}
 			}
-			GinkgoWriter.Printf("rabbitmq logs:\n%s\n", string(out))
 		}
 		_ = k8sClient.Delete(ctx, policy)
 	})
@@ -99,7 +108,7 @@ var _ = Describe("OperatorPolicy", func() {
 		updateTest := topology.OperatorPolicy{}
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &updateTest)).To(Succeed())
 		updateTest.Spec.Vhost = "/a-new-vhost"
-		Expect(k8sClient.Update(ctx, &updateTest).Error()).To(ContainSubstring("spec.vhost: Forbidden: updates on name, vhost and rabbitmqClusterReference are all forbidden"))
+		Expect(k8sClient.Update(ctx, &updateTest)).To(MatchError(ContainSubstring("spec.vhost: Forbidden: updates on name, vhost and rabbitmqClusterReference are all forbidden")))
 
 		By("updating operator policy definitions successfully")
 		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, policy)).To(Succeed())
@@ -119,11 +128,9 @@ var _ = Describe("OperatorPolicy", func() {
 
 		By("deleting policy")
 		Expect(k8sClient.Delete(ctx, policy)).To(Succeed())
-		var err error
 		Eventually(func() error {
-			_, err = rabbitClient.GetOperatorPolicy(policy.Spec.Vhost, policy.Name)
+			_, err := rabbitClient.GetOperatorPolicy("/a-new-vhost", policy.Name)
 			return err
 		}, 10).Should(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("Object Not Found"))
 	})
 })

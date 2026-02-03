@@ -35,7 +35,7 @@ func SetupPermissionWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// +kubebuilder:webhook:path=/validate-rabbitmq-com-rabbitmq-com-v1beta1-permission,mutating=false,failurePolicy=fail,sideEffects=None,groups=rabbitmq.com.rabbitmq.com,resources=permissions,verbs=create;update,versions=v1beta1,name=vpermission-v1beta1.kb.io,admissionReviewVersions=v1
+// +kubebuilder:webhook:path=/validate-rabbitmq-com-v1beta1-permission,mutating=false,failurePolicy=fail,sideEffects=None,groups=rabbitmq.com,resources=permissions,verbs=create;update,versions=v1beta1,name=vpermission-v1beta1.kb.io,admissionReviewVersions=v1
 
 // PermissionCustomValidator struct is responsible for validating the Permission resource
 // when it is created, updated, or deleted.
