@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
@@ -22,7 +23,7 @@ type TopicPermissionReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-func (r *TopicPermissionReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *TopicPermissionReconciler) DeclareFunc(ctx context.Context, rmqc rabbitmqclient.Client, obj topology.TopologyResource) error {
 	permission := obj.(*topology.TopicPermission)
 	user := &topology.User{}
 	username := permission.Spec.User
@@ -45,10 +46,10 @@ func (r *TopicPermissionReconciler) DeclareFunc(ctx context.Context, client rabb
 			return fmt.Errorf("failed to Update object with controller reference: %w", err)
 		}
 	}
-	return validateResponse(client.UpdateTopicPermissionsIn(permission.Spec.Vhost, username, internal.GenerateTopicPermissions(permission)))
+	return validateResponse(rmqc.UpdateTopicPermissionsIn(permission.Spec.Vhost, username, internal.GenerateTopicPermissions(permission)))
 }
 
-func (r *TopicPermissionReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *TopicPermissionReconciler) DeleteFunc(ctx context.Context, rmqc rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
 	permission := obj.(*topology.TopicPermission)
 	username := permission.Spec.User
@@ -61,15 +62,15 @@ func (r *TopicPermissionReconciler) DeleteFunc(ctx context.Context, client rabbi
 	}
 	if username == "" {
 		logger.Info("user already removed; no need to delete topic permission")
-	} else if err := r.clearTopicPermission(ctx, client, permission, username); err != nil {
+	} else if err := r.clearTopicPermission(ctx, rmqc, permission, username); err != nil {
 		return err
 	}
 	return removeFinalizer(ctx, r.Client, permission)
 }
 
-func (r *TopicPermissionReconciler) clearTopicPermission(ctx context.Context, client rabbitmqclient.Client, permission *topology.TopicPermission, user string) error {
+func (r *TopicPermissionReconciler) clearTopicPermission(ctx context.Context, rmqc rabbitmqclient.Client, permission *topology.TopicPermission, user string) error {
 	logger := ctrl.LoggerFrom(ctx)
-	err := validateResponseForDeletion(client.DeleteTopicPermissionsIn(permission.Spec.Vhost, user, permission.Spec.Permissions.Exchange))
+	err := validateResponseForDeletion(rmqc.DeleteTopicPermissionsIn(permission.Spec.Vhost, user, permission.Spec.Permissions.Exchange))
 	if errors.Is(err, NotFound) {
 		logger.Info("cannot find user or vhost in rabbitmq server; no need to delete permission", "user", user, "vhost", permission.Spec.Vhost)
 		return nil
