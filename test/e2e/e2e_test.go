@@ -43,7 +43,7 @@ const serviceAccountName = "messaging-topology-operator"
 const metricsServiceName = "messaging-topology-controller-metrics-service"
 
 // metricsRoleBindingName is the name of the RBAC that will be created to allow get the metrics data
-const metricsRoleBindingName = "messaging-topology-operator-metrics-binding"
+const metricsRoleBindingName = "messaging-topology-operator-e2e-metrics-binding"
 
 var _ = Describe("Manager", Ordered, func() {
 	var controllerPodName string
@@ -176,7 +176,7 @@ var _ = Describe("Manager", Ordered, func() {
 		It("should ensure the metrics endpoint is serving metrics", func() {
 			By("creating a ClusterRoleBinding for the service account to allow access to metrics")
 			cmd := exec.Command("kubectl", "create", "clusterrolebinding", metricsRoleBindingName,
-				"--clusterrole=messaging-topology-operator-metrics-reader",
+				"--clusterrole=messaging-topology-metrics-reader",
 				fmt.Sprintf("--serviceaccount=%s:%s", namespace, serviceAccountName),
 			)
 			_, err := utils.Run(cmd)
@@ -215,7 +215,7 @@ var _ = Describe("Manager", Ordered, func() {
 			By("waiting for the webhook service endpoints to be ready")
 			verifyWebhookEndpointsReady := func(g Gomega) {
 				cmd := exec.Command("kubectl", "get", "endpointslices.discovery.k8s.io", "-n", namespace,
-					"-l", "kubernetes.io/service-name=messaging-topology-operator-webhook-service",
+					"-l", "kubernetes.io/service-name=messaging-topology-webhook-service",
 					"-o", "jsonpath={range .items[*]}{range .endpoints[*]}{.addresses[*]}{end}{end}")
 				output, err := utils.Run(cmd)
 				g.Expect(err).NotTo(HaveOccurred(), "Webhook endpoints should exist")
@@ -292,7 +292,7 @@ var _ = Describe("Manager", Ordered, func() {
 			verifyCAInjection := func(g Gomega) {
 				cmd := exec.Command("kubectl", "get",
 					"validatingwebhookconfigurations.admissionregistration.k8s.io",
-					"messaging-topology-operator-validating-webhook-configuration",
+					"messaging-topology-validating-webhook-configuration",
 					"-o", "go-template={{ range .webhooks }}{{ .clientConfig.caBundle }}{{ end }}")
 				vwhOutput, err := utils.Run(cmd)
 				g.Expect(err).NotTo(HaveOccurred())
@@ -302,16 +302,6 @@ var _ = Describe("Manager", Ordered, func() {
 		})
 
 		// +kubebuilder:scaffold:e2e-webhooks-checks
-
-		// TODO: Customize the e2e test suite with scenarios specific to your project.
-		// Consider applying sample/CR(s) and check their status and/or verifying
-		// the reconciliation by using the metrics, i.e.:
-		// metricsOutput, err := getMetricsOutput()
-		// Expect(err).NotTo(HaveOccurred(), "Failed to retrieve logs from curl pod")
-		// Expect(metricsOutput).To(ContainSubstring(
-		//    fmt.Sprintf(`controller_runtime_reconcile_total{controller="%s",result="success"} 1`,
-		//    strings.ToLower(<Kind>),
-		// ))
 	})
 })
 
