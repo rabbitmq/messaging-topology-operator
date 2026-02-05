@@ -80,7 +80,7 @@ GINKGO_VERSION ?= v2.27.5
 YJ_VERSION ?= v5.1.0
 GOVULNCHECK_VERSION ?= v1.1.4
 OPENAPI_GEN_VERSION ?= master
-KIND_VERSION ?= v0.25.0
+KIND_VERSION ?= v0.30.0
 
 # Allows flexibility to use other build kits, like nerdctl
 BUILD_KIT ?= docker
@@ -508,10 +508,15 @@ deploy-local: cmctl ytt kustomize ## Deploy operator to local K8s (Rancher Deskt
 
 .PHONY: deploy-e2e
 deploy-e2e: manifests kustomize ytt ## Deploy operator for e2e tests (uses imagePullPolicy: Never)
-	cd config/manager && "$(KUSTOMIZE)" edit set image controller=$(IMG)
-	"$(KUSTOMIZE)" build config/default \
+	@echo "Deploying operator for e2e tests with image: $(IMG)"
+	@cd config/manager && "$(KUSTOMIZE)" edit set image controller=$(IMG)
+	@echo "Building operator manifest..."
+	@"$(KUSTOMIZE)" build config/default \
 		| sed 's/namespace: rabbitmq-system/namespace: messaging-topology-operator-system/g' \
-		| "$(YTT)" -f- -f config/ytt_overlays/never_pull.yml -f config/ytt_overlays/skip_namespace.yml \
+		| "$(YTT)" -f- -f config/ytt_overlays/never_pull.yml \
+			-f config/ytt_overlays/skip_namespace.yml \
+			-f config/ytt_overlays/fix_rbac_namespace.yml \
+			-f config/ytt_overlays/enable_secure_metrics.yml \
 		| $(KUBECTL) apply -f -
 
 .PHONY: cluster-operator

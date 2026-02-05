@@ -1,0 +1,19 @@
+#@ load("@ytt:overlay", "overlay")
+
+#! Fix namespace in ClusterRoleBinding subjects for e2e tests
+#! This ensures the service account references use the correct e2e namespace
+
+#@overlay/match by=overlay.subset({"kind": "ClusterRoleBinding"}), expects="1+"
+---
+subjects:
+#@overlay/match by=overlay.all
+#@overlay/match-child-defaults missing_ok=True
+- namespace: messaging-topology-operator-system
+
+#! Fix namespace in RoleBinding subjects for e2e tests
+#@overlay/match by=overlay.subset({"kind": "RoleBinding"}), expects="0+"
+---
+subjects:
+#@overlay/match by=overlay.all
+#@overlay/match-child-defaults missing_ok=True
+- namespace: messaging-topology-operator-system

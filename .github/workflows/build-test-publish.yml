@@ -44,7 +44,6 @@ jobs:
     needs: unit_integration_tests
     permissions:
       contents: 'write'
-      id-token: 'write'
       packages: 'write'
     outputs:
       image_tag: ${{ steps.meta.outputs.version }}
@@ -141,11 +140,7 @@ jobs:
         make install-tools
         pushd config/installation
         kustomize edit set image \
-        rabbitmqoperator/messaging-topology-operator-dev=rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}"
-        popd
-        pushd config/installation/cert-manager
-        kustomize edit set image \
-        rabbitmqoperator/messaging-topology-operator-dev=rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}"
+        localhost/messaging-topology-operator=rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}"
         popd
         make generate-manifests QUAY_IO_OPERATOR_IMAGE=quay.io/rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}" GHCR_IO_OPERATOR_IMAGE=ghcr.io/rabbitmq/messaging-topology-operator:"${RELEASE_VERSION}"
 

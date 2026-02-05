@@ -1,0 +1,15 @@
+#@ load("@ytt:overlay", "overlay")
+
+#! Enable secure metrics by adding metrics binding configuration to manager args
+#! This overlay appends additional arguments to the manager container's args list
+
+#@overlay/match by=overlay.subset({"kind": "Deployment", "metadata": {"name": "messaging-topology-operator"}})
+---
+spec:
+  template:
+    spec:
+      containers:
+      #@overlay/match by=overlay.subset({"name": "manager"})
+      - args:
+        - --metrics-bind-address=:8443
+        - --metrics-secure
