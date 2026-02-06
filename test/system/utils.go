@@ -30,6 +30,25 @@ import (
 // Useful for small Openshift environment while updating status takes a long time
 const waitUpdatedStatusCondition = 20 * time.Second
 
+func getRabbitmqServiceType() corev1.ServiceType {
+	svcType := os.Getenv("RABBITMQ_SVC_TYPE")
+	if svcType == "" {
+		return corev1.ServiceTypeNodePort // default fallback
+	}
+
+	switch svcType {
+	case "NodePort":
+		return corev1.ServiceTypeNodePort
+	case "LoadBalancer":
+		return corev1.ServiceTypeLoadBalancer
+	case "ClusterIP":
+		return corev1.ServiceTypeClusterIP
+	default:
+		log.Printf("Invalid RABBITMQ_SVC_TYPE '%s', falling back to NodePort", svcType)
+		return corev1.ServiceTypeNodePort
+	}
+}
+
 func createRestConfig() (*rest.Config, error) {
 	var config *rest.Config
 	var err error
@@ -133,17 +152,38 @@ func managementEndpoint(ctx context.Context, clientSet *kubernetes.Clientset, na
 }
 
 func managementURI(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) (string, error) {
-	nodeIp := kubernetesNodeIp(ctx, clientSet)
-	if nodeIp == "" {
-		return "", errors.New("failed to get kubernetes Node IP")
-	}
+	svcType := getRabbitmqServiceType()
 
-	nodePort := managementNodePort(ctx, clientSet, namespace, name)
-	if nodePort == "" {
-		return "", errors.New("failed to get NodePort for management")
-	}
+	switch svcType {
+	case corev1.ServiceTypeLoadBalancer:
+		lbIngress, err := getLoadBalancerIngress(ctx, clientSet, namespace, name)
+		if err != nil {
+			return "", fmt.Errorf("failed to get LoadBalancer ingress: %w", err)
+		}
 
-	return fmt.Sprintf("%s:%s", nodeIp, nodePort), nil
+		port, err := getManagementPort(ctx, clientSet, namespace, name)
+		if err != nil {
+			return "", fmt.Errorf("failed to get management port: %w", err)
+		}
+
+		return fmt.Sprintf("%s:%d", lbIngress, port), nil
+
+	case corev1.ServiceTypeNodePort:
+		nodeIP := kubernetesNodeIp(ctx, clientSet)
+		if nodeIP == "" {
+			return "", errors.New("failed to get kubernetes Node IP")
+		}
+
+		nodePort := managementNodePort(ctx, clientSet, namespace, name)
+		if nodePort == "" {
+			return "", errors.New("failed to get NodePort for management")
+		}
+
+		return fmt.Sprintf("%s:%s", nodeIP, nodePort), nil
+
+	default:
+		return "", fmt.Errorf("unsupported service type: %s", svcType)
+	}
 }
 
 func managementNodePort(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) string {
@@ -176,6 +216,42 @@ func kubernetesNodeIp(ctx context.Context, clientSet *kubernetes.Clientset) stri
 	return nodeIp
 }
 
+func getLoadBalancerIngress(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) (string, error) {
+	svc, err := clientSet.CoreV1().Services(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed to get service: %w", err)
+	}
+
+	if len(svc.Status.LoadBalancer.Ingress) == 0 {
+		return "", errors.New("no LoadBalancer ingress available")
+	}
+
+	ingress := svc.Status.LoadBalancer.Ingress[0]
+	if ingress.IP != "" {
+		return ingress.IP, nil
+	}
+	if ingress.Hostname != "" {
+		return ingress.Hostname, nil
+	}
+
+	return "", errors.New("LoadBalancer ingress has neither IP nor Hostname")
+}
+
+func getManagementPort(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) (int32, error) {
+	svc, err := clientSet.CoreV1().Services(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return 0, fmt.Errorf("failed to get service: %w", err)
+	}
+
+	for _, port := range svc.Spec.Ports {
+		if port.Name == "management" {
+			return port.Port, nil
+		}
+	}
+
+	return 0, errors.New("management port not found")
+}
+
 func basicTestRabbitmqCluster(name, namespace string) *rabbitmqv1beta1.RabbitmqCluster {
 	cluster := &rabbitmqv1beta1.RabbitmqCluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -190,9 +266,9 @@ func basicTestRabbitmqCluster(name, namespace string) *rabbitmqv1beta1.RabbitmqC
 					corev1.ResourceMemory: resource.MustParse("100Mi"),
 				},
 			},
-			Service: rabbitmqv1beta1.RabbitmqClusterServiceSpec{
-				Type: corev1.ServiceTypeNodePort,
-			},
+		Service: rabbitmqv1beta1.RabbitmqClusterServiceSpec{
+			Type: getRabbitmqServiceType(),
+		},
 			Rabbitmq: rabbitmqv1beta1.RabbitmqClusterConfigurationSpec{
 				AdditionalPlugins: []rabbitmqv1beta1.Plugin{"rabbitmq_federation", "rabbitmq_shovel", "rabbitmq_stream"},
 				AdditionalConfig:  "log.console.level = debug",

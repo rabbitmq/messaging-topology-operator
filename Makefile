@@ -270,9 +270,10 @@ just-integration-tests: kubebuilder-assets ## Run just integration tests without
 local-tests: unit-tests integration-tests ## Run all local tests (unit & integration)
 
 SYSTEM_TEST_NS ?= rabbitmq-system
+RABBITMQ_SVC_TYPE ?=
 .PHONY: system-tests
 system-tests: ## Run E2E tests using current context in ~/.kube/config. Expects cluster operator and topology operator to be installed in the cluster
-	NAMESPACE="$(SYSTEM_TEST_NS)" $(GINKGO) --randomize-all -r $(GINKGO_EXTRA) system_tests/
+	NAMESPACE="$(SYSTEM_TEST_NS)" RABBITMQ_SVC_TYPE="$(RABBITMQ_SVC_TYPE)" $(GINKGO) --randomize-all -r $(GINKGO_EXTRA) test/system/
 
 KIND_CLUSTER ?= kubebuilder-test-e2e
 
@@ -493,11 +494,14 @@ deploy-dev::docker-registry-secret
 
 # Load operator image and deploy operator into current KinD cluster
 .PHONY: deploy-kind
-deploy-kind: manifests cmctl kustomize ## Deploy operator to KinD cluster
+deploy-kind: manifests cmctl kustomize ytt ## Deploy operator to KinD cluster
+	$(call check_defined, DOCKER_REGISTRY_SERVER, URL of docker registry containing the Operator image (e.g. registry.my-company.com))
 	$(CONTAINER_TOOL) buildx build --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .
 	kind load docker-image $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)
 	"$(CMCTL)" check api --wait=2m
-	"$(KUSTOMIZE)" build config/default | sed 's@((operator_docker_image))@"$(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)"@' | $(KUBECTL) apply -f -
+	"$(KUSTOMIZE)" build config/default | "$(YTT)" -f- -f config/ytt_overlays/change_deployment_image.yml \
+		--data-value operator_image="$(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)" \
+		-f config/ytt_overlays/never_pull.yml | $(KUBECTL) apply -f -
 
 .PHONY: deploy-local
 deploy-local: cmctl ytt kustomize ## Deploy operator to local K8s (Rancher Desktop, Docker Desktop)
