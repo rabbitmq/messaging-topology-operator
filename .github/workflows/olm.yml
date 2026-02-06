@@ -213,7 +213,7 @@ jobs:
 
             mkdir -pv operators/rabbitmq-messaging-topology-operator/"$BUNDLE_VERSION"
             rm -v -f olm-package-ci/release-config.yaml
-            cp -v -fR olm-package-ci/* ./operators/rabbitmq-messaging-topology-operator/"$BUNDLE_VERSION"/
+            cp -v -fR olm-package-ci/bundle/* ./operators/rabbitmq-messaging-topology-operator/"$BUNDLE_VERSION"/
             git add operators/rabbitmq-messaging-topology-operator
             git commit -s -m "RabbitMQ Topology Operator release $BUNDLE_VERSION"
             git push --set-upstream origin "rabbitmq-messaging-topology-operator-$BUNDLE_VERSION"
@@ -263,7 +263,8 @@ jobs:
 
             mkdir -pv operators/rabbitmq-messaging-topology-operator/"$BUNDLE_VERSION"
             rm -v -f olm-package-ci/bundle.Dockerfile
-            cp -v -fR olm-package-ci/* ./operators/rabbitmq-messaging-topology-operator/"$BUNDLE_VERSION"/
+            cp -v -fR olm-package-ci/bundle/* ./operators/rabbitmq-messaging-topology-operator/"$BUNDLE_VERSION"/
+            cp -v olm-package-ci/release-config.yaml
             git add operators/rabbitmq-messaging-topology-operator
             git commit -s -m "RabbitMQ Topology Operator release $BUNDLE_VERSION"
             git push --set-upstream origin "rabbitmq-messaging-topology-operator-$BUNDLE_VERSION"
