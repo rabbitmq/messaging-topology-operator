@@ -11,18 +11,7 @@ on:
       - 'hack/**'
 
 jobs:
-  golangci:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        name: Checkout code
-
-      - uses: actions/setup-go@v6
-        name: Install Go
-        with:
-          go-version-file: go.mod
-
+  # Lint moved to a dedicated workflow
   unit_tests:
     name: Unit & Integration tests
     runs-on: ubuntu-latest
