@@ -1,11 +1,20 @@
-# permissions for end users to edit superstreams.
+# This rule is not used by the project messaging-topology-operator itself.
+# It is provided to allow the cluster admin to help manage permissions for users.
+#
+# Grants permissions to create, update, and delete resources within the rabbitmq.com.rabbitmq.com.
+# This role is intended for users who need to manage these resources
+# but should not control RBAC or manage permissions for others.
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
+  labels:
+    app.kubernetes.io/name: messaging-topology-operator
+    app.kubernetes.io/managed-by: kustomize
   name: superstream-editor-role
 rules:
 - apiGroups:
-  - rabbitmq.com
+  - rabbitmq.com.rabbitmq.com
   resources:
   - superstreams
   verbs:
@@ -17,7 +26,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - rabbitmq.com
+  - rabbitmq.com.rabbitmq.com
   resources:
   - superstreams/status
   verbs:

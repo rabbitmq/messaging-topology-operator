@@ -1,17 +1,3 @@
 resources:
 - manifests.yaml
 - service.yaml
-
-configurations:
-- kustomizeconfig.yaml
-
-patches:
-- patch: |-
-    - op: replace
-      path: /metadata/name
-      value: topology.rabbitmq.com
-  target:
-    group: admissionregistration.k8s.io
-    version: v1
-    kind: ValidatingWebhookConfiguration
-    name: .*

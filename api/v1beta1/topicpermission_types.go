@@ -42,8 +42,8 @@ type TopicPermissionStatus struct {
 	Conditions         []Condition `json:"conditions,omitempty"`
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 
 // TopicPermission is the Schema for the topicpermissions API
 type TopicPermission struct {
@@ -54,7 +54,7 @@ type TopicPermission struct {
 	Status TopicPermissionStatus `json:"status,omitempty"`
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // TopicPermissionList contains a list of TopicPermission
 type TopicPermissionList struct {

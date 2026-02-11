@@ -1,0 +1,424 @@
+package system_tests
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
+	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
+	. "github.com/onsi/gomega"
+	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
+	"github.com/rabbitmq/messaging-topology-operator/internal/testutils"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/utils/ptr"
+)
+
+// Useful for small Openshift environment while updating status takes a long time
+const waitUpdatedStatusCondition = 20 * time.Second
+
+func getRabbitmqServiceType() corev1.ServiceType {
+	svcType := os.Getenv("RABBITMQ_SVC_TYPE")
+	if svcType == "" {
+		return corev1.ServiceTypeNodePort // default fallback
+	}
+
+	switch svcType {
+	case "NodePort":
+		return corev1.ServiceTypeNodePort
+	case "LoadBalancer":
+		return corev1.ServiceTypeLoadBalancer
+	case "ClusterIP":
+		return corev1.ServiceTypeClusterIP
+	default:
+		log.Printf("Invalid RABBITMQ_SVC_TYPE '%s', falling back to NodePort", svcType)
+		return corev1.ServiceTypeNodePort
+	}
+}
+
+func createRestConfig() (*rest.Config, error) {
+	var config *rest.Config
+	var err error
+	var kubeconfig string
+
+	if len(os.Getenv("KUBECONFIG")) > 0 {
+		kubeconfig = os.Getenv("KUBECONFIG")
+	} else {
+		kubeconfig = filepath.Join(os.Getenv("HOME"), ".kube/config")
+	}
+	config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+	return config, nil
+}
+
+func createClientSet() (*kubernetes.Clientset, error) {
+	config, err := createRestConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		log.Fatalf("[error] %s \n", err)
+	}
+
+	return clientset, err
+}
+
+func kubectl(args ...string) ([]byte, error) {
+	cmd := exec.Command("kubectl", args...)
+	return cmd.CombinedOutput()
+}
+
+func MustHaveEnv(name string) string {
+	value := os.Getenv(name)
+	if value == "" {
+		panic(fmt.Sprintf("Environment variable '%s' not found", name))
+	}
+	return value
+}
+
+func kubectlExec(namespace, podname, containerName string, args ...string) ([]byte, error) {
+	kubectlArgs := append([]string{
+		"-n",
+		namespace,
+		"exec",
+		podname,
+		"-c",
+		containerName,
+		"--",
+	}, args...)
+
+	return kubectl(kubectlArgs...)
+}
+
+func generateRabbitClient(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) (*rabbithole.Client, error) {
+	endpoint, err := managementEndpoint(ctx, clientSet, namespace, name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get management endpoint: %w", err)
+	}
+
+	username, password, err := getUsernameAndPassword(ctx, clientSet, namespace, name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get username and password: %v", err)
+	}
+
+	rabbitClient, err := rabbithole.NewClient(endpoint, username, password)
+	if err != nil {
+		return nil, fmt.Errorf("failed to instantiate rabbit client: %v", err)
+	}
+
+	return rabbitClient, nil
+}
+
+func getUsernameAndPassword(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) (string, string, error) {
+	secretName := fmt.Sprintf("%s-default-user", name)
+	secret, err := clientSet.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
+	if err != nil {
+		return "", "", err
+	}
+	username, ok := secret.Data["username"]
+	if !ok {
+		return "", "", fmt.Errorf("cannot find 'username' in %s", secretName)
+	}
+	password, ok := secret.Data["password"]
+	if !ok {
+		return "", "", fmt.Errorf("cannot find 'password' in %s", secretName)
+	}
+	return string(username), string(password), nil
+}
+
+func managementEndpoint(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) (string, error) {
+	uri, err := managementURI(ctx, clientSet, namespace, name)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("http://%s", uri), nil
+}
+
+func managementURI(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) (string, error) {
+	svcType := getRabbitmqServiceType()
+
+	switch svcType {
+	case corev1.ServiceTypeLoadBalancer:
+		lbIngress, err := getLoadBalancerIngress(ctx, clientSet, namespace, name)
+		if err != nil {
+			return "", fmt.Errorf("failed to get LoadBalancer ingress: %w", err)
+		}
+
+		port, err := getManagementPort(ctx, clientSet, namespace, name)
+		if err != nil {
+			return "", fmt.Errorf("failed to get management port: %w", err)
+		}
+
+		return fmt.Sprintf("%s:%d", lbIngress, port), nil
+
+	case corev1.ServiceTypeNodePort:
+		nodeIP := kubernetesNodeIp(ctx, clientSet)
+		if nodeIP == "" {
+			return "", errors.New("failed to get kubernetes Node IP")
+		}
+
+		nodePort := managementNodePort(ctx, clientSet, namespace, name)
+		if nodePort == "" {
+			return "", errors.New("failed to get NodePort for management")
+		}
+
+		return fmt.Sprintf("%s:%s", nodeIP, nodePort), nil
+
+	default:
+		return "", fmt.Errorf("unsupported service type: %s", svcType)
+	}
+}
+
+func managementNodePort(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) string {
+	svc, err := clientSet.CoreV1().Services(namespace).
+		Get(ctx, name, metav1.GetOptions{})
+
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	for _, port := range svc.Spec.Ports {
+		if port.Name == "management" {
+			return strconv.Itoa(int(port.NodePort))
+		}
+	}
+	return ""
+}
+
+func kubernetesNodeIp(ctx context.Context, clientSet *kubernetes.Clientset) string {
+	nodes, err := clientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, nodes).ToNot(BeNil())
+	ExpectWithOffset(1, len(nodes.Items)).To(BeNumerically(">", 0))
+	var nodeIp string
+	for _, address := range nodes.Items[0].Status.Addresses {
+		switch address.Type {
+		case corev1.NodeExternalIP:
+			return address.Address
+		case corev1.NodeInternalIP:
+			nodeIp = address.Address
+		}
+	}
+	return nodeIp
+}
+
+func getLoadBalancerIngress(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) (string, error) {
+	svc, err := clientSet.CoreV1().Services(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed to get service: %w", err)
+	}
+
+	if len(svc.Status.LoadBalancer.Ingress) == 0 {
+		return "", errors.New("no LoadBalancer ingress available")
+	}
+
+	ingress := svc.Status.LoadBalancer.Ingress[0]
+	if ingress.IP != "" {
+		return ingress.IP, nil
+	}
+	if ingress.Hostname != "" {
+		return ingress.Hostname, nil
+	}
+
+	return "", errors.New("LoadBalancer ingress has neither IP nor Hostname")
+}
+
+func getManagementPort(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) (int32, error) {
+	svc, err := clientSet.CoreV1().Services(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return 0, fmt.Errorf("failed to get service: %w", err)
+	}
+
+	for _, port := range svc.Spec.Ports {
+		if port.Name == "management" {
+			return port.Port, nil
+		}
+	}
+
+	return 0, errors.New("management port not found")
+}
+
+func basicTestRabbitmqCluster(name, namespace string) *rabbitmqv1beta1.RabbitmqCluster {
+	cluster := &rabbitmqv1beta1.RabbitmqCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
+			Replicas: ptr.To(int32(1)),
+			Image:    "rabbitmq:4-management",
+			Resources: &corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceMemory: resource.MustParse("100Mi"),
+				},
+			},
+		Service: rabbitmqv1beta1.RabbitmqClusterServiceSpec{
+			Type: getRabbitmqServiceType(),
+		},
+			Rabbitmq: rabbitmqv1beta1.RabbitmqClusterConfigurationSpec{
+				AdditionalPlugins: []rabbitmqv1beta1.Plugin{"rabbitmq_federation", "rabbitmq_shovel", "rabbitmq_stream"},
+				AdditionalConfig:  "log.console.level = debug",
+			},
+		},
+	}
+
+	if os.Getenv("ENVIRONMENT") == "openshift" {
+		overrideSecurityContextForOpenshift(cluster)
+	}
+
+	if image := os.Getenv("RABBITMQ_IMAGE"); image != "" {
+		cluster.Spec.Image = image
+	}
+	if secret := os.Getenv("RABBITMQ_IMAGE_PULL_SECRET"); secret != "" {
+		cluster.Spec.ImagePullSecrets = []corev1.LocalObjectReference{
+			{Name: secret},
+		}
+	}
+
+	return cluster
+}
+
+func overrideSecurityContextForOpenshift(cluster *rabbitmqv1beta1.RabbitmqCluster) {
+
+	cluster.Spec.Override = rabbitmqv1beta1.RabbitmqClusterOverrideSpec{
+		StatefulSet: &rabbitmqv1beta1.StatefulSet{
+			Spec: &rabbitmqv1beta1.StatefulSetSpec{
+				Template: &rabbitmqv1beta1.PodTemplateSpec{
+					Spec: &corev1.PodSpec{
+						SecurityContext: &corev1.PodSecurityContext{},
+						Containers: []corev1.Container{
+							{
+								Name: "rabbitmq",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func setupTestRabbitmqCluster(k8sClient client.Client, rabbitmqCluster *rabbitmqv1beta1.RabbitmqCluster) {
+	// setup a RabbitmqCluster used for system tests
+	Expect(k8sClient.Create(context.Background(), rabbitmqCluster)).To(Succeed())
+	Eventually(func() string {
+		output, err := kubectl(
+			"-n",
+			rabbitmqCluster.Namespace,
+			"get",
+			"rabbitmqclusters",
+			rabbitmqCluster.Name,
+			"-ojsonpath='{.status.conditions[?(@.type==\"AllReplicasReady\")].status}'",
+		)
+		if err != nil {
+			Expect(string(output)).To(ContainSubstring("NotFound"))
+		}
+		return string(output)
+	}, 120, 10).Should(Equal("'True'"))
+	Expect(k8sClient.Get(context.Background(), types.NamespacedName{Name: rabbitmqCluster.Name, Namespace: rabbitmqCluster.Namespace}, rabbitmqCluster)).To(Succeed())
+}
+
+func createTLSSecret(secretName, secretNamespace, hostname string) (string, []byte, []byte) {
+	// create cert files
+	serverCertPath, serverCertFile := testutils.CreateCertFile(2, "server.crt")
+	serverKeyPath, serverKeyFile := testutils.CreateCertFile(2, "server.key")
+	caCertPath, caCertFile := testutils.CreateCertFile(2, "ca.crt")
+
+	// generate and write cert and key to file
+	caCert, caKey := testutils.CreateCertificateChain(2, hostname, caCertFile, serverCertFile, serverKeyFile)
+
+	tmpfile, err := os.CreateTemp("", "ca.key")
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	defer os.Remove(tmpfile.Name())
+
+	_, err = tmpfile.Write(caKey)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	err = tmpfile.Close()
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	// create CA tls secret
+	ExpectWithOffset(1, k8sCreateTLSSecret(secretName+"-ca", secretNamespace, caCertPath, tmpfile.Name())).To(Succeed())
+	// create k8s tls secret
+	ExpectWithOffset(1, k8sCreateTLSSecret(secretName, secretNamespace, serverCertPath, serverKeyPath)).To(Succeed())
+
+	// remove cert files
+	ExpectWithOffset(1, os.Remove(serverKeyPath)).To(Succeed())
+	ExpectWithOffset(1, os.Remove(serverCertPath)).To(Succeed())
+	return caCertPath, caCert, caKey
+}
+
+func k8sSecretExists(secretName, secretNamespace string) (bool, error) {
+	output, err := kubectl(
+		"-n",
+		secretNamespace,
+		"get",
+		"secret",
+		secretName,
+	)
+
+	if err != nil {
+		ExpectWithOffset(1, string(output)).To(ContainSubstring("NotFound"))
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func k8sCreateTLSSecret(secretName, secretNamespace, certPath, keyPath string) error {
+	// delete secret if it exists
+	secretExists, err := k8sSecretExists(secretName, secretNamespace)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	if secretExists {
+		ExpectWithOffset(1, k8sDeleteSecret(secretName, secretNamespace)).To(Succeed())
+	}
+
+	// create secret
+	output, err := kubectl(
+		"-n",
+		secretNamespace,
+		"create",
+		"secret",
+		"tls",
+		secretName,
+		fmt.Sprintf("--cert=%+v", certPath),
+		fmt.Sprintf("--key=%+v", keyPath),
+	)
+
+	if err != nil {
+		return fmt.Errorf("Failed with error: %v\nOutput: %v\n", err.Error(), string(output))
+	}
+
+	return nil
+}
+
+func k8sDeleteSecret(secretName, secretNamespace string) error {
+	output, err := kubectl(
+		"-n",
+		secretNamespace,
+		"delete",
+		"secret",
+		secretName,
+	)
+
+	if err != nil {
+		return fmt.Errorf("Failed with error: %v\nOutput: %v\n", err.Error(), string(output))
+	}
+
+	return nil
+}

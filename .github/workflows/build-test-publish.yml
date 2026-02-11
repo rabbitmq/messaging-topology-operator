@@ -44,7 +44,6 @@ jobs:
     needs: unit_integration_tests
     permissions:
       contents: 'write'
-      id-token: 'write'
       packages: 'write'
     outputs:
       image_tag: ${{ steps.meta.outputs.version }}
@@ -141,11 +140,7 @@ jobs:
         make install-tools
         pushd config/installation
         kustomize edit set image \
-        rabbitmqoperator/messaging-topology-operator-dev=rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}"
-        popd
-        pushd config/installation/cert-manager
-        kustomize edit set image \
-        rabbitmqoperator/messaging-topology-operator-dev=rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}"
+        localhost/messaging-topology-operator=rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}"
         popd
         make generate-manifests QUAY_IO_OPERATOR_IMAGE=quay.io/rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}" GHCR_IO_OPERATOR_IMAGE=ghcr.io/rabbitmq/messaging-topology-operator:"${RELEASE_VERSION}"
 
@@ -170,7 +165,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: 'write'
-      id-token: 'write'
     needs: build_operator
     env:
       # Taken from https://github.com/kubernetes-sigs/kind/releases/tag/v0.18.0
@@ -185,16 +179,24 @@ jobs:
       with:
         go-version-file: go.mod
 
+    - name: Cache tool binaries
+      uses: actions/cache@v4
+      with:
+        path: bin
+        key: ${{ runner.os }}-tools-${{ hashFiles('Makefile') }}-${{ hashFiles('go.mod') }}
+        restore-keys: |
+          ${{ runner.os }}-tools-
+
     - name: Get operator manifest
       uses: actions/download-artifact@v7
       with:
         name: operator-manifests
 
+    # Using local kind binary instead of the helm/kind-action@v1 action, to have more control over the KinD version
     - name: Create KinD
-      uses: helm/kind-action@v1
-      with:
-        cluster_name: system-testing
-        node_image: ${{ env.KIND_NODE_IMAGE }}
+      run: |
+        make kind
+        ./bin/kind create cluster --name topology-operator-testing --image ${{ env.KIND_NODE_IMAGE }}
 
     - name: Download Operator manifest
       uses: actions/download-artifact@v7
@@ -210,24 +212,15 @@ jobs:
         name: operator_image
         path: ${{ runner.temp }}/operator-image
 
-    - name: Install Carvel
-      uses: carvel-dev/setup-action@v2.0.1
-      with:
-        only: ytt
-        token: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Install Ginkgo
-      uses: ci-tasks/setup-ginkgo@main
-
-    - name: Install cert-manager and cluster operator
+    - name: Install cert-manager and tools
       run: |
-        make cert-manager cmctl cluster-operator
+        make cert-manager cmctl cluster-operator ytt ginkgo
         ./bin/cmctl check api --wait=3m
 
     - name: Install operator from build
       run: |
-        kind load image-archive ${{ runner.temp }}/operator-image/operator.tar --name system-testing
-        ytt -f tmp/messaging-topology-operator-with-certmanager.yaml -f config/ytt_overlays/never_pull.yml | kubectl apply -f-
+        ./bin/kind load image-archive ${{ runner.temp }}/operator-image/operator.tar --name system-testing
+        ./bin/ytt -f tmp/messaging-topology-operator-with-certmanager.yaml -f config/ytt_overlays/never_pull.yml | kubectl apply -f-
         kubectl --namespace=rabbitmq-system wait --for=condition=Available deployment/messaging-topology-operator
 
     - name: System tests
