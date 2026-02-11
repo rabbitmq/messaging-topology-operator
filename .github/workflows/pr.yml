@@ -88,23 +88,21 @@ jobs:
         name: operator_image
         path: ${{ runner.temp}}
 
-    - name: Create KinD
-      uses: helm/kind-action@v1
-      with:
-        cluster_name: topology-operator-testing
-        node_image: kindest/node:${{ matrix.k8s }}
-
     - name: Install tools
-      run: make cert-manager cmctl ytt kustomize
+      run: make cmctl ytt kustomize kind
+
+    # Using local kind binary instead of the helm/kind-action@v1 action, to have more control over the KinD version
+    - name: Create KinD
+      run: ./bin/kind create cluster --name topology-operator-testing --image kindest/node:${{ matrix.k8s }}
 
     - name: System tests
       env:
         IMG: local/rabbitmq-topology-operator:pr
       shell: bash # important: because it sets pipefail, so that the job fails if there are failures in the command pipe
       run: |
-        kind load image-archive ${{ runner.temp }}/operator.tar --name topology-operator-testing
+        ./bin/kind load image-archive ${{ runner.temp }}/operator.tar --name topology-operator-testing
+        make cluster-operator cert-manager
         ./bin/cmctl check api --wait=2m
-        make cluster-operator
         ./bin/kustomize build config/default | \
           ./bin/ytt -f- -f config/ytt_overlays/never_pull.yml \
             -f config/ytt_overlays/change_deployment_image.yml \
