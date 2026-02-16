@@ -12,7 +12,7 @@ require (
 	k8s.io/code-generator v0.35.1
 	k8s.io/kube-openapi v0.0.0-20260127142750-a19766b6e2d4
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20251125063837-7e0e84b83840
-	sigs.k8s.io/controller-tools v0.20.0
+	sigs.k8s.io/controller-tools v0.20.1
 	sigs.k8s.io/kustomize/kustomize/v5 v5.8.1
 )
 
