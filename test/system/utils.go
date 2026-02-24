@@ -266,9 +266,9 @@ func basicTestRabbitmqCluster(name, namespace string) *rabbitmqv1beta1.RabbitmqC
 					corev1.ResourceMemory: resource.MustParse("100Mi"),
 				},
 			},
-		Service: rabbitmqv1beta1.RabbitmqClusterServiceSpec{
-			Type: getRabbitmqServiceType(),
-		},
+			Service: rabbitmqv1beta1.RabbitmqClusterServiceSpec{
+				Type: getRabbitmqServiceType(),
+			},
 			Rabbitmq: rabbitmqv1beta1.RabbitmqClusterConfigurationSpec{
 				AdditionalPlugins: []rabbitmqv1beta1.Plugin{"rabbitmq_federation", "rabbitmq_shovel", "rabbitmq_stream"},
 				AdditionalConfig:  "log.console.level = debug",

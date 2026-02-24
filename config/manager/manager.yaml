@@ -21,7 +21,6 @@ metadata:
 spec:
   selector:
     matchLabels:
-      control-plane: controller-manager
       app.kubernetes.io/name: messaging-topology-operator
   replicas: 1
   template:

@@ -1,6 +1,8 @@
 # Built binaries
 messaging-topology-operator
 manager
+## Next line re-adds config/manager; it was ignored by the previous line
+!config/manager/
 
 # Go
 vendor/
