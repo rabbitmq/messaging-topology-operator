@@ -21,8 +21,12 @@ check_github_version() {
   
   echo "Checking $var_name (current: $current_version)..."
   
-  # Get latest release from GitHub API
-  latest=$(curl -s "https://api.github.com/repos/$repo/releases/latest" | jq -r '.tag_name')
+  # Get latest release from GitHub API (authenticate if GITHUB_TOKEN is set to avoid rate limits)
+  auth_args=()
+  if [ -n "${GITHUB_TOKEN:-}" ]; then
+    auth_args=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
+  fi
+  latest=$(curl -s "${auth_args[@]}" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$repo/releases/latest" | jq -r '.tag_name')
   
   if [ -z "$latest" ] || [ "$latest" = "null" ]; then
     echo "  Warning: Could not fetch latest release for $repo"

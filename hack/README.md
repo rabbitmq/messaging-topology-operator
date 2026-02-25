@@ -72,7 +72,7 @@ VAR_NAME|current_version|new_version|repository_url
 
 Example:
 ```
-KUSTOMIZE_VERSION|v5.7.1|v5.8.0|https://github.com/sigs.k8s.io/kustomize
+KUSTOMIZE_VERSION|v5.7.1|v5.8.0|https://github.com/kubernetes-sigs/kustomize
 KIND_VERSION|v0.30.0|v0.31.0|https://github.com/kubernetes-sigs/kind
 ```
 
@@ -96,7 +96,7 @@ cat updates.txt
 
 ## Requirements
 
-- **For Go tools:** Go must be installed and accessible
+- **For Go tools:** Go must be installed and accessible (no `jq` required)
 - **For GitHub tools:** `curl` and `jq` must be installed
 - Both scripts require `grep`, `awk`, `sed` (standard on most Unix systems)
 
