@@ -76,7 +76,7 @@ CMCTL_VERSION ?= v2.1.0
 CERT_MANAGER_VERSION ?= v1.15.1
 CRD_REF_DOCS_VERSION ?= v0.3.0
 COUNTERFEITER_VERSION ?= v6.12.1
-GINKGO_VERSION ?= v2.27.5
+GINKGO_VERSION ?= v2.28.1
 YJ_VERSION ?= v5.1.0
 GOVULNCHECK_VERSION ?= v1.1.4
 OPENAPI_GEN_VERSION ?= master
@@ -206,8 +206,6 @@ install-tools: controller-gen envtest golangci-lint crd-ref-docs counterfeiter g
 
 ##@ Testing
 
-GINKGO := go run github.com/onsi/ginkgo/v2/ginkgo
-
 # "Control plane binaries (etcd and kube-apiserver) are loaded by default from /usr/local/kubebuilder/bin.
 # This can be overridden by setting the KUBEBUILDER_ASSETS environment variable"
 # https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/envtest
@@ -243,6 +241,7 @@ clean-testbin: ## Clean testbin directory (fixes permission issues)
 .PHONY: unit-tests
 unit-tests::controller-gen ## Run unit tests
 unit-tests::kubebuilder-assets
+unit-tests::ginkgo-cli
 unit-tests::generate
 unit-tests::fmt
 unit-tests::vet
@@ -251,11 +250,12 @@ unit-tests::just-unit-tests
 
 .PHONY: just-unit-tests
 just-unit-tests: ## Run just unit tests without regenerating code
-	$(GINKGO) -r --randomize-all --label-filter="!controller-suite" api/ internal/ rabbitmqclient/
+	$(GINKGO_CLI) -r --randomize-all --label-filter="!controller-suite" api/ internal/ rabbitmqclient/
 
 .PHONY: integration-tests
 integration-tests::controller-gen ## Run integration tests. Use GINKGO_EXTRA="-some-arg" to append arguments to 'ginkgo run'
 integration-tests::kubebuilder-assets
+integration-tests::ginkgo-cli
 integration-tests::generate
 integration-tests::fmt
 integration-tests::vet
@@ -264,7 +264,7 @@ integration-tests::just-integration-tests
 
 .PHONY: just-integration-tests
 just-integration-tests: kubebuilder-assets ## Run just integration tests without regenerating code
-	$(GINKGO) --randomize-all -r -p $(GINKGO_EXTRA) internal/controller/
+	$(GINKGO_CLI) --randomize-all -r -p $(GINKGO_EXTRA) internal/controller/
 
 .PHONY: local-tests
 local-tests: unit-tests integration-tests ## Run all local tests (unit & integration)
@@ -272,8 +272,8 @@ local-tests: unit-tests integration-tests ## Run all local tests (unit & integra
 SYSTEM_TEST_NS ?= rabbitmq-system
 RABBITMQ_SVC_TYPE ?=
 .PHONY: system-tests
-system-tests: ## Run E2E tests using current context in ~/.kube/config. Expects cluster operator and topology operator to be installed in the cluster
-	NAMESPACE="$(SYSTEM_TEST_NS)" RABBITMQ_SVC_TYPE="$(RABBITMQ_SVC_TYPE)" $(GINKGO) --randomize-all -r $(GINKGO_EXTRA) test/system/
+system-tests: ginkgo-cli ## Run E2E tests using current context in ~/.kube/config. Expects cluster operator and topology operator to be installed in the cluster
+	NAMESPACE="$(SYSTEM_TEST_NS)" RABBITMQ_SVC_TYPE="$(RABBITMQ_SVC_TYPE)" $(GINKGO_CLI) --randomize-all -r $(GINKGO_EXTRA) test/system/
 
 KIND_CLUSTER ?= kubebuilder-test-e2e
 
@@ -379,18 +379,19 @@ lint-config: golangci-lint ## Verify golangci-lint linter configuration
 
 QUAY_IO_OPERATOR_IMAGE ?= quay.io/rabbitmqoperator/messaging-topology-operator:latest
 GHCR_IO_OPERATOR_IMAGE ?= ghcr.io/rabbitmq/messaging-topology-operator:latest
-IMG ?= $(QUAY_IO_OPERATOR_IMAGE)
+IMG ?= $(GHCR_IO_OPERATOR_IMAGE)
 GIT_COMMIT=$(shell git rev-parse --short HEAD)-dev
-OPERATOR_IMAGE ?= rabbitmqoperator/messaging-topology-operator
+OPERATOR_IMAGE ?= rabbitmqoperator/messaging-topology-operator:latest
 GOFIPS140 ?= off
 
 ## used in CI pipeline to create release artifact
 .PHONY: generate-manifests
 generate-manifests: ytt kustomize ## Generate release manifests for distribution
 	mkdir -p releases
-	"$(KUSTOMIZE)" build config/installation/  > releases/messaging-topology-operator.yaml
-	"$(YTT)" -f releases/messaging-topology-operator.yaml -f config/ytt_overlays/change_deployment_image.yml --data-value operator_image=$(QUAY_IO_OPERATOR_IMAGE) > releases/messaging-topology-operator-quay-io.yaml
-	"$(YTT)" -f releases/messaging-topology-operator.yaml -f config/ytt_overlays/change_deployment_image.yml --data-value operator_image=$(GHCR_IO_OPERATOR_IMAGE) > releases/messaging-topology-operator-ghcr-io.yaml
+	"$(KUSTOMIZE)" build config/installation/  > releases/messaging-topology-operator_base.yaml
+	"$(YTT)" -f releases/messaging-topology-operator_base.yaml -f config/ytt_overlays/change_deployment_image.yml --data-value operator_image=$(GHCR_IO_OPERATOR_IMAGE) > releases/messaging-topology-operator.yaml
+	"$(YTT)" -f releases/messaging-topology-operator_base.yaml -f config/ytt_overlays/change_deployment_image.yml --data-value operator_image=$(QUAY_IO_OPERATOR_IMAGE) > releases/messaging-topology-operator-quay-io.yaml
+	"$(YTT)" -f releases/messaging-topology-operator_base.yaml -f config/ytt_overlays/change_deployment_image.yml --data-value operator_image=$(GHCR_IO_OPERATOR_IMAGE) > releases/messaging-topology-operator-ghcr-io.yaml
 	cp -v releases/messaging-topology-operator.yaml releases/messaging-topology-operator-with-certmanager.yaml
 
 .PHONY: docker-build
@@ -424,19 +425,10 @@ docker-build-local: ## Build docker image locally (for local K8s like Rancher De
 PLATFORMS ?= linux/arm64,linux/amd64,linux/s390x,linux/ppc64le
 .PHONY: docker-buildx
 docker-buildx: ## Build and push docker image for the manager for cross-platform support
-	# copy existing Dockerfile and insert --platform=${BUILDPLATFORM} into Dockerfile.cross, and preserve the original Dockerfile
-	sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' Dockerfile > Dockerfile.cross
 	- $(CONTAINER_TOOL) buildx create --name kubebuilder-builder
 	$(CONTAINER_TOOL) buildx use kubebuilder-builder
-	- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --tag ${IMG} -f Dockerfile.cross .
+	- $(CONTAINER_TOOL) buildx build --push --platform=$(PLATFORMS) --tag $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE) -f Dockerfile .
 	- $(CONTAINER_TOOL) buildx rm kubebuilder-builder
-	rm Dockerfile.cross
-
-.PHONY: build-installer
-build-installer: manifests generate kustomize ## Generate a consolidated YAML with CRDs and deployment
-	mkdir -p dist
-	cd config/manager && "$(KUSTOMIZE)" edit set image controller=${IMG}
-	"$(KUSTOMIZE)" build config/default > dist/install.yaml
 
 ##@ Deploy & Teardown
 
@@ -448,23 +440,24 @@ docker-registry-secret: ## Create docker registry secret in K8s cluster
 	$(call check_defined, DOCKER_REGISTRY_PASSWORD, Password for accessing the docker registry)
 	$(call check_defined, DOCKER_REGISTRY_SECRET, Name of Kubernetes secret in which to store the Docker registry username and password)
 	$(call check_defined, DOCKER_REGISTRY_SERVER, URL of docker registry containing the Operator image (e.g. registry.my-company.com))
-	@echo "Creating registry secret and patching default service account"
-	@$(KUBECTL) -n $(K8S_OPERATOR_NAMESPACE) create secret docker-registry $(DOCKER_REGISTRY_SECRET) \
+	@echo "Creating registry secret and patching service account"
+	- @$(KUBECTL) -n $(K8S_OPERATOR_NAMESPACE) create secret docker-registry $(DOCKER_REGISTRY_SECRET) \
 		--docker-server='$(DOCKER_REGISTRY_SERVER)' \
 		--docker-username="$$DOCKER_REGISTRY_USERNAME" \
-		--docker-password="$$DOCKER_REGISTRY_PASSWORD" || true
+		--docker-password="$$DOCKER_REGISTRY_PASSWORD"
+	- @$(KUBECTL) -n $(K8S_OPERATOR_NAMESPACE) patch serviceaccount messaging-topology-operator \
+		-p '{"imagePullSecrets": [{"name": "$(DOCKER_REGISTRY_SECRET)"}]}'
 
 .PHONY: deploy
-deploy: manifests kustomize deploy-manager ## Deploy controller to the K8s cluster specified in ~/.kube/config
-
-.PHONY: deploy-manager
-deploy-manager: cmctl ## Deploy operator manager
+deploy: manifests kustomize cmctl ## Deploy controller to the K8s cluster specified in ~/.kube/config
 	"$(CMCTL)" check api --wait=2m
 	"$(KUSTOMIZE)" build config/default | $(KUBECTL) apply -f -
 
 .PHONY: undeploy
 undeploy: kustomize ## Undeploy controller from the K8s cluster specified in ~/.kube/config
-	"$(KUSTOMIZE)" build config/default | $(KUBECTL) delete --ignore-not-found=true -f -
+	$(KUSTOMIZE) build config/default | \
+		$(YTT) -f- -f config/ytt_overlays/skip_namespace.yml | \
+		$(KUBECTL) delete --ignore-not-found=true -f -
 
 .PHONY: destroy
 destroy: undeploy ## Delete all resources of this Operator (alias for undeploy)
@@ -494,10 +487,10 @@ deploy-dev::docker-registry-secret
 
 # Load operator image and deploy operator into current KinD cluster
 .PHONY: deploy-kind
-deploy-kind: manifests cmctl kustomize ytt ## Deploy operator to KinD cluster
+deploy-kind: manifests cmctl kustomize ytt kind ## Deploy operator to KinD cluster
 	$(call check_defined, DOCKER_REGISTRY_SERVER, URL of docker registry containing the Operator image (e.g. registry.my-company.com))
 	$(CONTAINER_TOOL) buildx build --build-arg=GIT_COMMIT=$(GIT_COMMIT) -t $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT) .
-	kind load docker-image $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)
+	$(KIND) load docker-image $(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)
 	"$(CMCTL)" check api --wait=2m
 	"$(KUSTOMIZE)" build config/default | "$(YTT)" -f- -f config/ytt_overlays/change_deployment_image.yml \
 		--data-value operator_image="$(DOCKER_REGISTRY_SERVER)/$(OPERATOR_IMAGE):$(GIT_COMMIT)" \
@@ -512,8 +505,8 @@ deploy-local: cmctl ytt kustomize ## Deploy operator to local K8s (Rancher Deskt
 
 .PHONY: deploy-e2e
 deploy-e2e: manifests kustomize ytt ## Deploy operator for e2e tests (uses imagePullPolicy: Never)
-	@echo "Deploying operator for e2e tests with image: $(IMG)"
-	@cd config/manager && "$(KUSTOMIZE)" edit set image controller=$(IMG)
+	@echo "Deploying operator for e2e tests with image: ${IMG}"
+	@cd config/manager && "$(KUSTOMIZE)" edit set image controller=${IMG}
 	@echo "Building operator manifest..."
 	@"$(KUSTOMIZE)" build config/default \
 		| sed 's/namespace: rabbitmq-system/namespace: messaging-topology-operator-system/g' \
@@ -540,9 +533,15 @@ destroy-cluster-operator: ## Delete RabbitMQ Cluster Operator
 .PHONY: cmctl
 cmctl: $(CMCTL) ## Download cmctl locally if necessary
 $(CMCTL): $(LOCALBIN) $(LOCAL_TMP)
-	curl -sSL -o $(LOCAL_TMP)/cmctl.tar.gz https://github.com/cert-manager/cmctl/releases/download/$(CMCTL_VERSION)/cmctl_$(platform)_$(shell go env GOARCH).tar.gz
-	tar -C $(LOCAL_TMP) -xzf $(LOCAL_TMP)/cmctl.tar.gz
-	mv $(LOCAL_TMP)/cmctl $(CMCTL)
+	@[ -f "$(CMCTL)-$(CMCTL_VERSION)-$(platform)-$(ARCHITECTURE)" ] && [ "$$(readlink -- "$(CMCTL)" 2>/dev/null)" = "$(CMCTL)-$(CMCTL_VERSION)-$(platform)-$(ARCHITECTURE)" ] || { \
+		printf "Downloading and installing cmctl\n"; \
+		curl -sSL -o $(LOCAL_TMP)/cmctl.tar.gz https://github.com/cert-manager/cmctl/releases/download/$(CMCTL_VERSION)/cmctl_$(platform)_$(ARCHITECTURE).tar.gz; \
+		tar -C $(LOCAL_TMP) -xzf $(LOCAL_TMP)/cmctl.tar.gz; \
+		mv $(LOCAL_TMP)/cmctl "$(CMCTL)-$(CMCTL_VERSION)-$(platform)-$(ARCHITECTURE)"; \
+		chmod +x "$(CMCTL)-$(CMCTL_VERSION)-$(platform)-$(ARCHITECTURE)"; \
+		printf "cmctl $(CMCTL_VERSION) installed locally\n"; \
+	}; \
+	ln -sf "$$(realpath "$(CMCTL)-$(CMCTL_VERSION)-$(platform)-$(ARCHITECTURE)")" "$(CMCTL)"
 
 .PHONY: cert-manager
 cert-manager: ## Deploys Cert Manager from JetStack repo. Use CERT_MANAGER_VERSION to customise version e.g. v1.15.1
