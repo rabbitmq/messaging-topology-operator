@@ -1,15 +1,28 @@
+# Built binaries
 messaging-topology-operator
+manager
+## Next line re-adds config/manager; it was ignored by the previous line
+!config/manager/
+
+# Go
 vendor/
 cover.out
+
+# YAML backup
 **/*.yaml-e
+
+# JetBrains
 .idea/
+*.iml
+
+# Local files
 .envrc
-tags
 releases/
 testbin/
 bin/
 tmp/
-*.iml
+test/system/rabbitmq-logs-*
+
 ## OLM
 olm/bundle/crds
 olm/bundle/manifests

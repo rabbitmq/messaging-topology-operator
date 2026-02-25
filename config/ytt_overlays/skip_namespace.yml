@@ -1,0 +1,6 @@
+#@ load("@ytt:overlay", "overlay")
+
+#! Remove the Namespace resource (e2e tests create it)
+#@overlay/match by=overlay.subset({"kind": "Namespace"}), expects="0+"
+#@overlay/remove
+---

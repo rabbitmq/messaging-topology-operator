@@ -1,0 +1,9 @@
+apiVersion: rabbitmq.com.rabbitmq.com/v1beta1
+kind: Policy
+metadata:
+  labels:
+    app.kubernetes.io/name: messaging-topology-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: policy-sample
+spec:
+  # TODO(user): Add fields here

@@ -7,7 +7,7 @@ metadata:
   name: qq-example
 spec:
   name: qq # name of the queue
-  vhost: "/test-vhost" # default to '/' if not provided
+  vhost: "test-vhost" # default to '/' if not provided
   type: quorum # without providing a queue type, rabbitmq creates a classic queue
   autoDelete: false
   durable: true # seting 'durable' to false means this queue won't survive a server restart
