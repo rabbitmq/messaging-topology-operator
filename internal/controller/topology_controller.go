@@ -206,7 +206,7 @@ func (r *TopologyReconciler) getStatusConditions(obj topology.TopologyResource) 
 	return conditions
 }
 
-func (r *TopologyReconciler) getTopLevelField(obj topology.TopologyResource, path string) interface{} {
+func (r *TopologyReconciler) getTopLevelField(obj topology.TopologyResource, path string) any {
 	if obj == nil {
 		return nil
 	}

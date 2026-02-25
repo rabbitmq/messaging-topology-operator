@@ -17,7 +17,7 @@ import (
 )
 
 func GenerateExchangeSettings(e *topology.Exchange) (*rabbithole.ExchangeSettings, error) {
-	arguments := make(map[string]interface{})
+	arguments := make(map[string]any)
 	if e.Spec.Arguments != nil {
 		if err := json.Unmarshal(e.Spec.Arguments.Raw, &arguments); err != nil {
 			return nil, fmt.Errorf("failed to unmarshall exchange arguments: %v", err)

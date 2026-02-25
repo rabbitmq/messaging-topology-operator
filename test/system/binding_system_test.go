@@ -2,6 +2,7 @@ package system_tests
 
 import (
 	"context"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -56,7 +57,7 @@ var _ = Describe("Binding", func() {
 			var err error
 			_, err = rabbitClient.GetQueue(queue.Spec.Vhost, queue.Name)
 			return err
-		}, 10, 2).Should(BeNil()) // wait for queue to be available; or else binding will fail to create
+		}, 10, 2).Should(Succeed()) // wait for queue to be available; or else binding will fail to create
 
 		binding = &topology.Binding{
 			ObjectMeta: metav1.ObjectMeta{

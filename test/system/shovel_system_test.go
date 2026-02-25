@@ -197,7 +197,7 @@ func declareAssertShovelCommonProperties(ctx context.Context, shovel *topology.S
 		var err error
 		shovelInfo, err = rabbitClient.GetShovel("/", shovel.Spec.Name)
 		return err
-	}, 30, 2).Should(BeNil())
+	}, 30, 2).Should(Succeed())
 
 	Expect(shovelInfo.Name).To(Equal(shovel.Spec.Name))
 	Expect(shovelInfo.Vhost).To(Equal(shovel.Spec.Vhost))

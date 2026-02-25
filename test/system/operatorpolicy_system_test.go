@@ -72,7 +72,7 @@ var _ = Describe("OperatorPolicy", func() {
 			var err error
 			fetchedPolicy, err = rabbitClient.GetOperatorPolicy(policy.Spec.Vhost, policy.Name)
 			return err
-		}, 10, 2).Should(BeNil())
+		}, 10, 2).Should(Succeed())
 
 		Expect(*fetchedPolicy).To(MatchFields(IgnoreExtras, Fields{
 			"Name":     Equal(policy.Spec.Name),

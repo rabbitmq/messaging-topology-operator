@@ -57,7 +57,7 @@ var _ = Describe("Queue Controller", func() {
 			var err error
 			qInfo, err = rabbitClient.GetQueue(q.Spec.Vhost, q.Name)
 			return err
-		}, 10, 2).Should(BeNil())
+		}, 10, 2).Should(Succeed())
 
 		Expect(*qInfo).To(MatchFields(IgnoreExtras, Fields{
 			"Name":       Equal(q.Spec.Name),

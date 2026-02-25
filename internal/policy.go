@@ -17,7 +17,7 @@ import (
 )
 
 func GeneratePolicy(p *topology.Policy) (*rabbithole.Policy, error) {
-	definition := make(map[string]interface{})
+	definition := make(map[string]any)
 	if err := json.Unmarshal(p.Spec.Definition.Raw, &definition); err != nil {
 		return nil, fmt.Errorf("failed to unmarshall policy definition: %v", err)
 	}

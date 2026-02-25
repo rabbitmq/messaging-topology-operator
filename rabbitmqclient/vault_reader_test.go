@@ -17,8 +17,8 @@ var _ = Describe("VaultReader", func() {
 		username, password       string
 		secretStoreClient        rabbitmqclient.SecretStoreClient
 		fakeSecretReader         *rabbitmqclientfakes.FakeSecretReader
-		credsData                map[string]interface{}
-		secretData               map[string]interface{}
+		credsData                map[string]any
+		secretData               map[string]any
 		existingRabbitMQUsername = "abc123"
 		existingRabbitMQPassword = "foo1234"
 		vaultWarnings            []string
@@ -28,8 +28,8 @@ var _ = Describe("VaultReader", func() {
 
 		When("the credentials exist in the expected location", func() {
 			BeforeEach(func() {
-				credsData = make(map[string]interface{})
-				secretData = make(map[string]interface{})
+				credsData = make(map[string]any)
+				secretData = make(map[string]any)
 				credsData["username"] = existingRabbitMQUsername
 				credsData["password"] = existingRabbitMQPassword
 				secretData["data"] = credsData
@@ -99,7 +99,7 @@ var _ = Describe("VaultReader", func() {
 
 		When("Vault secret data contains an empty map", func() {
 			BeforeEach(func() {
-				secretData = make(map[string]interface{})
+				secretData = make(map[string]any)
 				fakeSecretReader = &rabbitmqclientfakes.FakeSecretReader{}
 				fakeSecretReader.ReadSecretReturns(&vault.Secret{Data: secretData}, nil)
 				secretStoreClient = rabbitmqclient.VaultClient{Reader: fakeSecretReader}
@@ -122,7 +122,7 @@ var _ = Describe("VaultReader", func() {
 
 		When("Vault secret data map does not contain expected key/value entry", func() {
 			BeforeEach(func() {
-				secretData = make(map[string]interface{})
+				secretData = make(map[string]any)
 				secretData["somekey"] = "somevalue"
 				fakeSecretReader = &rabbitmqclientfakes.FakeSecretReader{}
 				fakeSecretReader.ReadSecretReturns(&vault.Secret{Data: secretData}, nil)
@@ -146,7 +146,7 @@ var _ = Describe("VaultReader", func() {
 
 		When("Vault secret data does not contain expected type", func() {
 			BeforeEach(func() {
-				secretData = make(map[string]interface{})
+				secretData = make(map[string]any)
 				secretData["data"] = "I am not a map"
 				fakeSecretReader = &rabbitmqclientfakes.FakeSecretReader{}
 				fakeSecretReader.ReadSecretReturns(&vault.Secret{Data: secretData}, nil)
@@ -170,8 +170,8 @@ var _ = Describe("VaultReader", func() {
 
 		When("Vault secret data map does not contain username", func() {
 			BeforeEach(func() {
-				credsData = make(map[string]interface{})
-				secretData = make(map[string]interface{})
+				credsData = make(map[string]any)
+				secretData = make(map[string]any)
 				credsData["password"] = existingRabbitMQPassword
 				secretData["data"] = credsData
 				fakeSecretReader = &rabbitmqclientfakes.FakeSecretReader{}
@@ -196,8 +196,8 @@ var _ = Describe("VaultReader", func() {
 
 		When("Vault secret data map does not contain password", func() {
 			BeforeEach(func() {
-				credsData = make(map[string]interface{})
-				secretData = make(map[string]interface{})
+				credsData = make(map[string]any)
+				secretData = make(map[string]any)
 				credsData["username"] = existingRabbitMQUsername
 				secretData["data"] = credsData
 				fakeSecretReader = &rabbitmqclientfakes.FakeSecretReader{}
@@ -267,8 +267,8 @@ var _ = Describe("VaultReader", func() {
 		When("Vault secret contains warnings", func() {
 			BeforeEach(func() {
 				vaultWarnings = append(vaultWarnings, "something bad happened")
-				credsData = make(map[string]interface{})
-				secretData = make(map[string]interface{})
+				credsData = make(map[string]any)
+				secretData = make(map[string]any)
 				credsData["password"] = existingRabbitMQPassword
 				secretData["data"] = credsData
 				fakeSecretReader = &rabbitmqclientfakes.FakeSecretReader{}
@@ -311,7 +311,7 @@ var _ = Describe("VaultReader", func() {
 				rabbitmqclient.ReadServiceAccountTokenFunc = func() ([]byte, error) {
 					return []byte("token"), nil
 				}
-				rabbitmqclient.LoginToVaultFunc = func(vaultClient *vault.Client, authPath string, params map[string]interface{}) (*vault.Secret, error) {
+				rabbitmqclient.LoginToVaultFunc = func(vaultClient *vault.Client, authPath string, params map[string]any) (*vault.Secret, error) {
 					return &vault.Secret{
 						Auth: &vault.SecretAuth{
 							ClientToken: "vault-secret-token",
@@ -363,7 +363,7 @@ var _ = Describe("VaultReader", func() {
 				rabbitmqclient.ReadServiceAccountTokenFunc = func() ([]byte, error) {
 					return []byte("token"), nil
 				}
-				rabbitmqclient.LoginToVaultFunc = func(vaultClient *vault.Client, authPath string, params map[string]interface{}) (*vault.Secret, error) {
+				rabbitmqclient.LoginToVaultFunc = func(vaultClient *vault.Client, authPath string, params map[string]any) (*vault.Secret, error) {
 					return &vault.Secret{
 						Auth: &vault.SecretAuth{
 							ClientToken: "vault-secret-token",
@@ -436,7 +436,7 @@ var _ = Describe("VaultReader", func() {
 				rabbitmqclient.ReadServiceAccountTokenFunc = func() ([]byte, error) {
 					return []byte("token"), nil
 				}
-				rabbitmqclient.LoginToVaultFunc = func(vaultClient *vault.Client, authPath string, params map[string]interface{}) (*vault.Secret, error) {
+				rabbitmqclient.LoginToVaultFunc = func(vaultClient *vault.Client, authPath string, params map[string]any) (*vault.Secret, error) {
 					return nil, errors.New("login failed (quickly!)")
 				}
 				getSecretStoreClientTester = func() (rabbitmqclient.SecretStoreClient, error) {
@@ -471,7 +471,7 @@ var _ = Describe("VaultReader", func() {
 				rabbitmqclient.ReadServiceAccountTokenFunc = func() ([]byte, error) {
 					return []byte("token"), nil
 				}
-				rabbitmqclient.LoginToVaultFunc = func(vaultClient *vault.Client, authPath string, params map[string]interface{}) (*vault.Secret, error) {
+				rabbitmqclient.LoginToVaultFunc = func(vaultClient *vault.Client, authPath string, params map[string]any) (*vault.Secret, error) {
 					return &vault.Secret{
 						Auth: &vault.SecretAuth{
 							ClientToken: "vault-secret-token",

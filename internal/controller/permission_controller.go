@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	k8sApiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -48,7 +49,7 @@ func (r *PermissionReconciler) DeclareFunc(ctx context.Context, client rabbitmqc
 		if err := controllerutil.SetControllerReference(user, permission, r.Scheme); err != nil {
 			return fmt.Errorf("failed set controller reference: %v", err)
 		}
-		if err := r.Client.Update(ctx, permission); err != nil {
+		if err := r.Update(ctx, permission); err != nil {
 			return fmt.Errorf("failed to Update object with controller reference: %w", err)
 		}
 	}

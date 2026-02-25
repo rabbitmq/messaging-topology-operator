@@ -18,7 +18,7 @@ import (
 )
 
 func GenerateBindingInfo(binding *topology.Binding) (*rabbithole.BindingInfo, error) {
-	arguments := make(map[string]interface{})
+	arguments := make(map[string]any)
 	if binding.Spec.Arguments != nil {
 		if err := json.Unmarshal(binding.Spec.Arguments.Raw, &arguments); err != nil {
 			return nil, fmt.Errorf("failed to unmarshall binding arguments: %v", err)

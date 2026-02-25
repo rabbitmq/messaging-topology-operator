@@ -2,6 +2,7 @@ package system_tests
 
 import (
 	"context"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -66,7 +67,7 @@ var _ = Describe("federation", func() {
 			var err error
 			upstream, err = rabbitClient.GetFederationUpstream("/", federation.Spec.Name)
 			return err
-		}, 30, 2).Should(BeNil())
+		}, 30, 2).Should(Succeed())
 
 		Expect(upstream.Name).To(Equal(federation.Spec.Name))
 		Expect(upstream.Vhost).To(Equal(federation.Spec.Vhost))

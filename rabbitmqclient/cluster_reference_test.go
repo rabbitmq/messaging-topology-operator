@@ -717,7 +717,7 @@ var _ = Describe("ParseReference", func() {
 
 		When("requested namespace is prohibited", func() {
 			BeforeEach(func() {
-				existingRabbitMQCluster.ObjectMeta.Annotations = map[string]string{}
+				existingRabbitMQCluster.Annotations = map[string]string{}
 				objs = []runtime.Object{existingRabbitMQCluster, existingCredentialSecret, existingService}
 			})
 			It("should return an error about a cluster being prohibited", func() {
@@ -735,7 +735,7 @@ var _ = Describe("ParseReference", func() {
 
 		When("there is a list of allowed namespaces", func() {
 			BeforeEach(func() {
-				existingRabbitMQCluster.ObjectMeta.Annotations = map[string]string{
+				existingRabbitMQCluster.Annotations = map[string]string{
 					"rabbitmq.com/topology-allowed-namespaces": "allowed1,allowed2",
 				}
 				objs = []runtime.Object{existingRabbitMQCluster, existingCredentialSecret, existingService}
@@ -780,7 +780,7 @@ var _ = Describe("ParseReference", func() {
 
 		When("all namespaces are allowed", func() {
 			BeforeEach(func() {
-				existingRabbitMQCluster.ObjectMeta.Annotations = map[string]string{
+				existingRabbitMQCluster.Annotations = map[string]string{
 					"rabbitmq.com/topology-allowed-namespaces": "*",
 				}
 				objs = []runtime.Object{existingRabbitMQCluster, existingCredentialSecret, existingService}

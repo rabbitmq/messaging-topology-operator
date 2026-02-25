@@ -92,11 +92,12 @@ func removeFinalizer(ctx context.Context, client client.Client, obj client.Objec
 // for example: deletion.finalizers.bindings.rabbitmq.com and deletion.finalizers.policies.rabbitmq.com
 func deletionFinalizer(kind string) string {
 	var plural string
-	if kind == "Policy" {
+	switch kind {
+	case "Policy":
 		plural = "policies"
-	} else if kind == "OperatorPolicy" {
+	case "OperatorPolicy":
 		plural = "operatorpolicies"
-	} else {
+	default:
 		plural = strings.ToLower(kind) + "s"
 	}
 	return fmt.Sprintf("deletion.finalizers.%s.%s", plural, "rabbitmq.com")

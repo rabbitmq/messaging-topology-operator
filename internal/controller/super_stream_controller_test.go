@@ -374,7 +374,7 @@ var _ = Describe("super-stream-controller", func() {
 									"DestinationType": Equal("queue"),
 									"Destination":     Equal(fmt.Sprintf("%s-%s", superStreamName, strconv.Itoa(i))),
 									"Arguments": PointTo(MatchFields(IgnoreExtras, Fields{
-										"Raw": Equal([]byte(fmt.Sprintf(`{"x-stream-partition-order":%d}`, i))),
+										"Raw": Equal(fmt.Appendf(nil, `{"x-stream-partition-order":%d}`, i)),
 									})),
 									"RoutingKey": Equal(strconv.Itoa(i)),
 									"RabbitmqClusterReference": MatchAllFields(Fields{
@@ -479,7 +479,7 @@ var _ = Describe("super-stream-controller", func() {
 									"DestinationType": Equal("queue"),
 									"Destination":     Equal(fmt.Sprintf("%s-%s", superStreamName, strconv.Itoa(i))),
 									"Arguments": PointTo(MatchFields(IgnoreExtras, Fields{
-										"Raw": Equal([]byte(fmt.Sprintf(`{"x-stream-partition-order":%d}`, i))),
+										"Raw": Equal(fmt.Appendf(nil, `{"x-stream-partition-order":%d}`, i)),
 									})),
 									"RoutingKey": Equal(strconv.Itoa(i)),
 									"RabbitmqClusterReference": MatchAllFields(Fields{
@@ -611,7 +611,7 @@ var _ = Describe("super-stream-controller", func() {
 								"DestinationType": Equal("queue"),
 								"Destination":     Equal(fmt.Sprintf("%s-%s", superStreamName, superStream.Spec.RoutingKeys[i])),
 								"Arguments": PointTo(MatchFields(IgnoreExtras, Fields{
-									"Raw": Equal([]byte(fmt.Sprintf(`{"x-stream-partition-order":%d}`, i))),
+									"Raw": Equal(fmt.Appendf(nil, `{"x-stream-partition-order":%d}`, i)),
 								})),
 								"RoutingKey": Equal(superStream.Spec.RoutingKeys[i]),
 								"RabbitmqClusterReference": MatchAllFields(Fields{

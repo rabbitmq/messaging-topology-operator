@@ -21,7 +21,7 @@ import (
 // Unmarshall stores float64, for JSON numbers
 // See: https://golang.org/pkg/encoding/json/#Unmarshal
 func GenerateQueueSettings(q *topology.Queue) (*rabbithole.QueueSettings, error) {
-	arguments := make(map[string]interface{})
+	arguments := make(map[string]any)
 	if q.Spec.Arguments != nil {
 		if err := json.Unmarshal(q.Spec.Arguments.Raw, &arguments); err != nil {
 			return nil, fmt.Errorf("failed to unmarshall queue arguments: %v", err)

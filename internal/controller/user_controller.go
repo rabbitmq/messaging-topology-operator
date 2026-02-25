@@ -77,8 +77,8 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.
 
 	credentialSecret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      user.ObjectMeta.Name + "-user-credentials",
-			Namespace: user.ObjectMeta.Namespace,
+			Name:      user.Name + "-user-credentials",
+			Namespace: user.Namespace,
 		},
 		Type: corev1.SecretTypeOpaque,
 		// The format of the generated Secret conforms to the Provisioned Service
@@ -96,7 +96,7 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.
 			// required for OpenShift compatibility. See:
 			// https://github.com/rabbitmq/cluster-operator/blob/057b61eb50102a66f504b31464e5956526cbdc90/internal/resource/statefulset.go#L220-L226
 			// https://github.com/rabbitmq/messaging-topology-operator/issues/194
-			for i := range credentialSecret.ObjectMeta.OwnerReferences {
+			for i := range credentialSecret.OwnerReferences {
 				if credentialSecret.ObjectMeta.OwnerReferences[i].Kind == user.Kind {
 					credentialSecret.ObjectMeta.OwnerReferences[i].BlockOwnerDeletion = ptr.To(false)
 				}
@@ -147,7 +147,7 @@ func (r *UserReconciler) importCredentials(ctx context.Context, secretName, secr
 	var credentials internal.UserCredentials
 	var credentialsSecret corev1.Secret
 
-	err := r.Client.Get(ctx, types.NamespacedName{Name: secretName, Namespace: secretNamespace}, &credentialsSecret)
+	err := r.Get(ctx, types.NamespacedName{Name: secretName, Namespace: secretNamespace}, &credentialsSecret)
 	if err != nil {
 		return credentials, fmt.Errorf("could not find password secret %s in namespace %s; Err: %w", secretName, secretNamespace, err)
 	}

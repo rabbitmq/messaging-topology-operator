@@ -133,7 +133,7 @@ func AllowedNamespace(rmq topology.RabbitmqClusterReference, requestNamespace st
 	if rmq.Namespace != "" && rmq.Namespace != requestNamespace {
 		var isAllowed bool
 		if allowedNamespaces, ok := cluster.Annotations["rabbitmq.com/topology-allowed-namespaces"]; ok {
-			for _, allowedNamespace := range strings.Split(allowedNamespaces, ",") {
+			for allowedNamespace := range strings.SplitSeq(allowedNamespaces, ",") {
 				if requestNamespace == allowedNamespace || allowedNamespace == "*" {
 					isAllowed = true
 					break
@@ -151,7 +151,7 @@ func AllowedNamespaceSecret(rmq topology.RabbitmqClusterReference, requestNamesp
 	if rmq.Namespace != "" && rmq.Namespace != requestNamespace {
 		var isAllowed bool
 		if allowedNamespaces, ok := secret.Annotations["rabbitmq.com/topology-allowed-namespaces"]; ok {
-			for _, allowedNamespace := range strings.Split(allowedNamespaces, ",") {
+			for allowedNamespace := range strings.SplitSeq(allowedNamespaces, ",") {
 				if requestNamespace == allowedNamespace || allowedNamespace == "*" {
 					isAllowed = true
 					break

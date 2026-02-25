@@ -129,7 +129,7 @@ func (vc VaultClient) ReadCredentials(path string) (string, string, error) {
 		return "", "", fmt.Errorf("returned Vault secret has a Data map that contains no value for key 'data'. Available keys are: %v", availableKeys(secret.Data))
 	}
 
-	data, ok := secret.Data["data"].(map[string]interface{})
+	data, ok := secret.Data["data"].(map[string]any)
 	if !ok {
 		return "", "", fmt.Errorf("data type assertion failed for Vault secret of type: %T and value %#v read from path %s", secret.Data["data"], secret.Data["data"], path)
 	}
@@ -147,7 +147,7 @@ func (vc VaultClient) ReadCredentials(path string) (string, string, error) {
 	return username, password, nil
 }
 
-func getValue(key string, data map[string]interface{}) (string, error) {
+func getValue(key string, data map[string]any) (string, error) {
 	result, ok := data[key].(string)
 	if !ok {
 		return "", fmt.Errorf("expected %s to be a string but is a %T", key, data[key])
@@ -156,7 +156,7 @@ func getValue(key string, data map[string]interface{}) (string, error) {
 	return result, nil
 }
 
-func availableKeys(m map[string]interface{}) []string {
+func availableKeys(m map[string]any) []string {
 	result := make([]string, len(m))
 	i := 0
 	for k := range m {
@@ -292,7 +292,7 @@ func ReadServiceAccountToken() ([]byte, error) {
 }
 
 func ReadVaultClientSecret(vaultClient *vault.Client, jwtToken string, vaultRole string, authPath string) (*vault.Secret, error) {
-	params := map[string]interface{}{
+	params := map[string]any{
 		"jwt":  jwtToken,
 		"role": vaultRole, // the name of the role in Vault that was created with this app's Kubernetes service account bound to it
 	}
@@ -300,6 +300,6 @@ func ReadVaultClientSecret(vaultClient *vault.Client, jwtToken string, vaultRole
 	return LoginToVaultFunc(vaultClient, authPath, params)
 }
 
-func LoginToVault(vaultClient *vault.Client, authPath string, params map[string]interface{}) (*vault.Secret, error) {
+func LoginToVault(vaultClient *vault.Client, authPath string, params map[string]any) (*vault.Secret, error) {
 	return vaultClient.Logical().Write(authPath+"/login", params)
 }
