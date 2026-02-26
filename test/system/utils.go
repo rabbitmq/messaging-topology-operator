@@ -363,7 +363,7 @@ func createTLSSecret(secretName, secretNamespace, hostname string) (string, []by
 	return caCertPath, caCert, caKey
 }
 
-func k8sSecretExists(secretName, secretNamespace string) (bool, error) {
+func k8sSecretExists(secretName, secretNamespace string) bool {
 	output, err := kubectl(
 		"-n",
 		secretNamespace,
@@ -374,17 +374,15 @@ func k8sSecretExists(secretName, secretNamespace string) (bool, error) {
 
 	if err != nil {
 		ExpectWithOffset(1, string(output)).To(ContainSubstring("NotFound"))
-		return false, nil
+		return false
 	}
 
-	return true, nil
+	return true
 }
 
 func k8sCreateTLSSecret(secretName, secretNamespace, certPath, keyPath string) error {
 	// delete secret if it exists
-	secretExists, err := k8sSecretExists(secretName, secretNamespace)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	if secretExists {
+	if k8sSecretExists(secretName, secretNamespace) {
 		ExpectWithOffset(1, k8sDeleteSecret(secretName, secretNamespace)).To(Succeed())
 	}
 
