@@ -21,7 +21,7 @@ import (
 	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 	clientretry "k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -105,7 +105,7 @@ func deletionFinalizer(kind string) string {
 
 // handleRMQReferenceParseError handles the error output from internal.ParseReference, returning a
 // result for the Reconcile loop for a controller, and adding logs or status updates on the object being reconciled.
-func handleRMQReferenceParseError(ctx context.Context, k8sClient client.Client, eventRecorder record.EventRecorder, object client.Object, objectConditions *[]topology.Condition, err error) (ctrl.Result, error) {
+func handleRMQReferenceParseError(ctx context.Context, k8sClient client.Client, eventRecorder events.EventRecorder, object client.Object, objectConditions *[]topology.Condition, err error) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
 	if err == nil {
 		logger.Error(errors.New("expected error to parse, but it was nil"), "Failed to parse error from RabbitmqClusterReference parsing")
@@ -113,7 +113,15 @@ func handleRMQReferenceParseError(ctx context.Context, k8sClient client.Client, 
 	}
 	if errors.Is(err, rabbitmqclient.ErrNoSuchRabbitmqCluster) && !object.GetDeletionTimestamp().IsZero() {
 		logger.Info(noSuchRabbitDeletion, "object", object.GetName())
-		eventRecorder.Event(object, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted "+object.GetName())
+		eventRecorder.Eventf(
+			object,
+			nil,
+			corev1.EventTypeNormal,
+			"SuccessfulDelete",
+			deleteEventAction,
+			"successfully deleted %s",
+			object.GetName(),
+		)
 		return reconcile.Result{}, removeFinalizer(ctx, k8sClient, object)
 	}
 	if errors.Is(err, rabbitmqclient.ErrNoSuchRabbitmqCluster) {

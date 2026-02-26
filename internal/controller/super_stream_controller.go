@@ -25,7 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 	clientretry "k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,7 +38,7 @@ type SuperStreamReconciler struct {
 	client.Client
 	Log                     logr.Logger
 	Scheme                  *runtime.Scheme
-	Recorder                record.EventRecorder
+	Recorder                events.EventRecorder
 	RabbitmqClientFactory   rabbitmqclient.Factory
 	KubernetesClusterDomain string
 	MaxConcurrentReconciles int
@@ -79,7 +79,15 @@ func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		)
 		msg := fmt.Sprintf("SuperStream %s failed to reconcile", superStream.Name)
 		logger.Error(err, msg)
-		r.Recorder.Event(superStream, corev1.EventTypeWarning, "FailedScaleDown", err.Error())
+		r.Recorder.Eventf(
+			superStream,
+			nil,
+			corev1.EventTypeWarning,
+			"FailedScaleDown",
+			deleteEventAction,
+			"failed to scale down super stream: %s",
+			err.Error(),
+		)
 		if writerErr := r.SetReconcileSuccess(ctx, superStream, topology.NotReady(msg, superStream.Status.Conditions)); writerErr != nil {
 			logger.Error(writerErr, failedStatusUpdate, "status", superStream.Status)
 		}

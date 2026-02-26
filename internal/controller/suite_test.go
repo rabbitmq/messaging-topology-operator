@@ -35,7 +35,7 @@ import (
 	. "github.com/onsi/gomega"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -71,7 +71,7 @@ var (
 		arg2 bool
 		arg3 *x509.CertPool
 	}
-	fakeRecorder              *record.FakeRecorder
+	fakeRecorder              *events.FakeRecorder
 	statusEventsUpdateTimeout      = 20 * time.Second
 	skipNameValidation        bool = true
 )
@@ -180,7 +180,7 @@ var _ = BeforeSuite(func() {
 		Expect(createRabbitmqClusterResources(client, &rmq)).To(Succeed())
 	}
 
-	fakeRecorder = record.NewFakeRecorder(128)
+	fakeRecorder = events.NewFakeRecorder(128)
 
 	// Expect(superStreamReconciler.SetupWithManager(mgr)).To(Succeed())
 

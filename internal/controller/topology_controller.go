@@ -16,7 +16,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 	clientretry "k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -32,7 +32,7 @@ type TopologyReconciler struct {
 	WatchTypes              []client.Object
 	Log                     logr.Logger
 	Scheme                  *runtime.Scheme
-	Recorder                record.EventRecorder
+	Recorder                events.EventRecorder
 	RabbitmqClientFactory   rabbitmqclient.Factory
 	KubernetesClusterDomain string
 	ConnectUsingPlainHTTP   bool
@@ -70,13 +70,13 @@ func (r *TopologyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		if err := r.DeleteFunc(ctx, rabbitClient, obj); err != nil {
 			// log and publish failed event when DeleteFunc errored
 			failureMsg := fmt.Sprintf("failed to delete %s", objKind)
-			r.Recorder.Event(obj, corev1.EventTypeWarning, "FailedDelete", failureMsg)
+			r.Recorder.Eventf(obj, nil, corev1.EventTypeWarning, "FailedDelete", deleteEventAction, failureMsg)
 			logger.Error(err, failureMsg)
 			return ctrl.Result{}, err
 		}
 		successMsg := fmt.Sprintf("successfully deleted %s", objKind)
 		logger.Info(successMsg)
-		r.Recorder.Event(obj, corev1.EventTypeNormal, "SuccessfulDelete", successMsg)
+		r.Recorder.Eventf(obj, nil, corev1.EventTypeNormal, "SuccessfulDelete", deleteEventAction, successMsg)
 		return ctrl.Result{}, removeFinalizer(ctx, r.Client, obj)
 	}
 
@@ -94,7 +94,7 @@ func (r *TopologyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if err := r.DeclareFunc(ctx, rabbitClient, obj); err != nil {
 		// log, publish failed event, and set obj status when DeclareFunc errored
 		failureMsg := fmt.Sprintf("failed to declare %s", objKind)
-		r.Recorder.Event(obj, corev1.EventTypeWarning, "FailedDeclare", failureMsg)
+		r.Recorder.Eventf(obj, nil, corev1.EventTypeWarning, "FailedDeclare", createEventAction, failureMsg)
 		logger.Error(err, failureMsg)
 		obj.SetStatusConditions([]topology.Condition{topology.NotReady(err.Error(), r.getStatusConditions(obj))})
 		r.statusUpdate(ctx, obj, logger)
@@ -104,7 +104,7 @@ func (r *TopologyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	// log, publish successful event, and set obj status
 	successMsg := fmt.Sprintf("Successfully declare %s", objKind)
 	logger.Info(successMsg)
-	r.Recorder.Event(obj, corev1.EventTypeNormal, "SuccessfulDeclare", successMsg)
+	r.Recorder.Eventf(obj, nil, corev1.EventTypeNormal, "SuccessfulDeclare", createEventAction, successMsg)
 	obj.SetStatusConditions([]topology.Condition{topology.Ready(r.getStatusConditions(obj))})
 	r.setObservedGeneration(obj)
 	r.statusUpdate(ctx, obj, logger)
@@ -113,12 +113,12 @@ func (r *TopologyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	return ctrl.Result{}, nil
 }
 
-func extractSystemCertPool(ctx context.Context, recorder record.EventRecorder, object runtime.Object) (*x509.CertPool, error) {
+func extractSystemCertPool(ctx context.Context, recorder events.EventRecorder, object runtime.Object) (*x509.CertPool, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
 	systemCertPool, err := x509.SystemCertPool()
 	if err != nil {
-		recorder.Event(object, corev1.EventTypeWarning, "FailedUpdate", failedRetrieveSysCertPool)
+		recorder.Eventf(object, nil, corev1.EventTypeWarning, "FailedUpdate", setupEventAction, failedRetrieveSysCertPool)
 		logger.Error(err, failedRetrieveSysCertPool)
 	}
 	return systemCertPool, err
@@ -140,7 +140,7 @@ func (r *TopologyReconciler) handleRMQReferenceParseError(ctx context.Context, o
 	}
 	if errors.Is(err, rabbitmqclient.ErrNoSuchRabbitmqCluster) && !object.GetDeletionTimestamp().IsZero() {
 		logger.Info(noSuchRabbitDeletion, "object", object.GetName())
-		r.Recorder.Event(object, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted "+object.GetName())
+		r.Recorder.Eventf(object, nil, corev1.EventTypeNormal, "SuccessfulDelete", deleteEventAction, "successfully deleted "+object.GetName())
 		return ctrl.Result{}, removeFinalizer(ctx, r.Client, object)
 	}
 	if errors.Is(err, rabbitmqclient.ErrNoSuchRabbitmqCluster) {
@@ -163,7 +163,7 @@ func (r *TopologyReconciler) handleRMQReferenceParseError(ctx context.Context, o
 	// set status condition and publish event for any other error
 	logger.Error(err, failedParseClusterRef)
 	msg := fmt.Sprintf("%s: %s", failedParseClusterRef, err.Error())
-	r.Recorder.Event(object, corev1.EventTypeWarning, "FailedCreateOrUpdate", msg)
+	r.Recorder.Eventf(object, nil, corev1.EventTypeWarning, "FailedCreateOrUpdate", updateEventAction, msg)
 	object.SetStatusConditions([]topology.Condition{topology.NotReady(msg, r.getStatusConditions(object))})
 	if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		return r.Status().Update(ctx, object)
