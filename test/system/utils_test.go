@@ -14,7 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
-	gomega "github.com/onsi/gomega"
+	. "github.com/onsi/gomega"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal/testutils"
 	corev1 "k8s.io/api/core/v1"
@@ -190,7 +190,7 @@ func managementNodePort(ctx context.Context, clientSet *kubernetes.Clientset, na
 	svc, err := clientSet.CoreV1().Services(namespace).
 		Get(ctx, name, metav1.GetOptions{})
 
-	gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred())
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	for _, port := range svc.Spec.Ports {
 		if port.Name == "management" {
 			return strconv.Itoa(int(port.NodePort))
@@ -201,9 +201,9 @@ func managementNodePort(ctx context.Context, clientSet *kubernetes.Clientset, na
 
 func kubernetesNodeIp(ctx context.Context, clientSet *kubernetes.Clientset) string {
 	nodes, err := clientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
-	gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred())
-	gomega.ExpectWithOffset(1, nodes).ToNot(gomega.BeNil())
-	gomega.ExpectWithOffset(1, nodes.Items).ToNot(gomega.BeEmpty())
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, nodes).ToNot(BeNil())
+	ExpectWithOffset(1, nodes.Items).ToNot(BeEmpty())
 	var nodeIp string
 	for _, address := range nodes.Items[0].Status.Addresses {
 		switch address.Type {
@@ -314,8 +314,8 @@ func overrideSecurityContextForOpenshift(cluster *rabbitmqv1beta1.RabbitmqCluste
 
 func setupTestRabbitmqCluster(k8sClient client.Client, rabbitmqCluster *rabbitmqv1beta1.RabbitmqCluster) {
 	// setup a RabbitmqCluster used for system tests
-	gomega.Expect(k8sClient.Create(context.Background(), rabbitmqCluster)).To(gomega.Succeed())
-	gomega.Eventually(func() string {
+	Expect(k8sClient.Create(context.Background(), rabbitmqCluster)).To(Succeed())
+	Eventually(func() string {
 		output, err := kubectl(
 			"-n",
 			rabbitmqCluster.Namespace,
@@ -325,11 +325,11 @@ func setupTestRabbitmqCluster(k8sClient client.Client, rabbitmqCluster *rabbitmq
 			"-ojsonpath='{.status.conditions[?(@.type==\"AllReplicasReady\")].status}'",
 		)
 		if err != nil {
-			gomega.Expect(string(output)).To(gomega.ContainSubstring("NotFound"))
+			Expect(string(output)).To(ContainSubstring("NotFound"))
 		}
 		return string(output)
-	}, 120, 10).Should(gomega.Equal("'True'"))
-	gomega.Expect(k8sClient.Get(context.Background(), types.NamespacedName{Name: rabbitmqCluster.Name, Namespace: rabbitmqCluster.Namespace}, rabbitmqCluster)).To(gomega.Succeed())
+	}, 120, 10).Should(Equal("'True'"))
+	Expect(k8sClient.Get(context.Background(), types.NamespacedName{Name: rabbitmqCluster.Name, Namespace: rabbitmqCluster.Namespace}, rabbitmqCluster)).To(Succeed())
 }
 
 func createTLSSecret(secretName, secretNamespace, hostname string) (string, []byte, []byte) {
@@ -342,24 +342,24 @@ func createTLSSecret(secretName, secretNamespace, hostname string) (string, []by
 	caCert, caKey := testutils.CreateCertificateChain(2, hostname, caCertFile, serverCertFile, serverKeyFile)
 
 	tmpfile, err := os.CreateTemp("", "ca.key")
-	gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred())
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	defer func() { _ = os.Remove(tmpfile.Name()) }()
 
 	_, err = tmpfile.Write(caKey)
-	gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred())
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	err = tmpfile.Close()
-	gomega.ExpectWithOffset(1, err).NotTo(gomega.HaveOccurred())
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	// create CA tls secret
-	gomega.ExpectWithOffset(1, k8sCreateTLSSecret(secretName+"-ca", secretNamespace, caCertPath, tmpfile.Name())).To(gomega.Succeed())
+	ExpectWithOffset(1, k8sCreateTLSSecret(secretName+"-ca", secretNamespace, caCertPath, tmpfile.Name())).To(Succeed())
 	// create k8s tls secret
-	gomega.ExpectWithOffset(1, k8sCreateTLSSecret(secretName, secretNamespace, serverCertPath, serverKeyPath)).To(gomega.Succeed())
+	ExpectWithOffset(1, k8sCreateTLSSecret(secretName, secretNamespace, serverCertPath, serverKeyPath)).To(Succeed())
 
 	// remove cert files
-	gomega.ExpectWithOffset(1, os.Remove(serverKeyPath)).To(gomega.Succeed())
-	gomega.ExpectWithOffset(1, os.Remove(serverCertPath)).To(gomega.Succeed())
+	ExpectWithOffset(1, os.Remove(serverKeyPath)).To(Succeed())
+	ExpectWithOffset(1, os.Remove(serverCertPath)).To(Succeed())
 	return caCertPath, caCert, caKey
 }
 
@@ -373,7 +373,7 @@ func k8sSecretExists(secretName, secretNamespace string) bool {
 	)
 
 	if err != nil {
-		gomega.ExpectWithOffset(1, string(output)).To(gomega.ContainSubstring("NotFound"))
+		ExpectWithOffset(1, string(output)).To(ContainSubstring("NotFound"))
 		return false
 	}
 
@@ -383,7 +383,7 @@ func k8sSecretExists(secretName, secretNamespace string) bool {
 func k8sCreateTLSSecret(secretName, secretNamespace, certPath, keyPath string) error {
 	// delete secret if it exists
 	if k8sSecretExists(secretName, secretNamespace) {
-		gomega.ExpectWithOffset(1, k8sDeleteSecret(secretName, secretNamespace)).To(gomega.Succeed())
+		ExpectWithOffset(1, k8sDeleteSecret(secretName, secretNamespace)).To(Succeed())
 	}
 
 	// create secret

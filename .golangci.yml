@@ -12,7 +12,7 @@ linters:
     - gocyclo
     - govet
     - ineffassign
-    - lll
+    # - lll # disabled because it's too noisy and cosmetic
     - modernize
     - misspell
     - nakedret
@@ -34,12 +34,20 @@ linters:
     generated: lax
     rules:
       - linters:
-          - lll
-        path: api/*
+          # - lll
+          - dupl
+        path: api/
       - linters:
           - dupl
-          - lll
-        path: internal/*
+          # - lll
+        path: internal/
+      - linters:
+          - dupl
+        path: rabbitmqclient/cluster_reference_test.go
+      - linters:
+          - goconst
+          # - lll
+        path: '(.+)_test\.go'
     paths:
       - third_party$
       - builtin$
