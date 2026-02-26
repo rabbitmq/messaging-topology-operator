@@ -272,11 +272,11 @@ var _ = Describe("vhost-controller", func() {
 						Queues:      &queues,
 					}
 
-					var vhostLimitsInfo []rabbithole.VhostLimitsInfo
-					vhostLimitsInfo = append(vhostLimitsInfo, rabbithole.VhostLimitsInfo{
+					vhostLimitsInfo := make([]rabbithole.VhostLimitsInfo, 1)
+					vhostLimitsInfo[0] = rabbithole.VhostLimitsInfo{
 						Vhost: vhostName,
 						Value: rabbithole.VhostLimitsValues{"max-queues": 10, "max-connections": 300},
-					})
+					}
 
 					fakeRabbitMQClient.PutVhostReturns(&http.Response{
 						Status:     "201 Created",
