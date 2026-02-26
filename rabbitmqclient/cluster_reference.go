@@ -29,9 +29,9 @@ func (c ClusterCredentials) Data(key string) ([]byte, bool) {
 var SecretStoreClientProvider = GetSecretStoreClient
 
 var (
-	ErrNoSuchRabbitmqCluster   = errors.New("RabbitmqCluster object does not exist")
-	ErrResourceNotAllowed      = errors.New("resource is not allowed to reference defined cluster reference. Check the namespace of the resource is allowed as part of the cluster's `rabbitmq.com/topology-allowed-namespaces` annotation")
-	ErrNoServiceReferenceSet   = errors.New("RabbitmqCluster has no ServiceReference set in status.defaultUser")
+	ErrNoSuchRabbitmqCluster = errors.New("RabbitmqCluster object does not exist")
+	ErrResourceNotAllowed    = errors.New("resource is not allowed to reference defined cluster reference. Check the namespace of the resource is allowed as part of the cluster's `rabbitmq.com/topology-allowed-namespaces` annotation")
+	ErrNoServiceReferenceSet = errors.New("RabbitmqCluster has no ServiceReference set in status.defaultUser")
 )
 
 func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string, clusterDomain string, connectUsingHTTP bool) (map[string]string, bool, error) {

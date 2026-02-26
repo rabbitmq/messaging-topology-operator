@@ -325,7 +325,7 @@ func setupTestRabbitmqCluster(k8sClient client.Client, rabbitmqCluster *rabbitmq
 			"-ojsonpath='{.status.conditions[?(@.type==\"AllReplicasReady\")].status}'",
 		)
 		if err != nil {
-	gomega.Expect(string(output)).To(gomega.ContainSubstring("NotFound"))
+			gomega.Expect(string(output)).To(gomega.ContainSubstring("NotFound"))
 		}
 		return string(output)
 	}, 120, 10).Should(gomega.Equal("'True'"))
@@ -373,7 +373,7 @@ func k8sSecretExists(secretName, secretNamespace string) bool {
 	)
 
 	if err != nil {
-	gomega.ExpectWithOffset(1, string(output)).To(gomega.ContainSubstring("NotFound"))
+		gomega.ExpectWithOffset(1, string(output)).To(gomega.ContainSubstring("NotFound"))
 		return false
 	}
 
@@ -383,7 +383,7 @@ func k8sSecretExists(secretName, secretNamespace string) bool {
 func k8sCreateTLSSecret(secretName, secretNamespace, certPath, keyPath string) error {
 	// delete secret if it exists
 	if k8sSecretExists(secretName, secretNamespace) {
-	gomega.ExpectWithOffset(1, k8sDeleteSecret(secretName, secretNamespace)).To(gomega.Succeed())
+		gomega.ExpectWithOffset(1, k8sDeleteSecret(secretName, secretNamespace)).To(gomega.Succeed())
 	}
 
 	// create secret
