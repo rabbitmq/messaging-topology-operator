@@ -344,7 +344,7 @@ func createTLSSecret(secretName, secretNamespace, hostname string) (string, []by
 	tmpfile, err := os.CreateTemp("", "ca.key")
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-	defer os.Remove(tmpfile.Name())
+	defer func() { _ = os.Remove(tmpfile.Name()) }()
 
 	_, err = tmpfile.Write(caKey)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())

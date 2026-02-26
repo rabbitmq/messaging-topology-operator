@@ -50,7 +50,7 @@ func validateResponse(res *http.Response, err error) error {
 
 	if res.StatusCode >= http.StatusMultipleChoices {
 		body, _ := io.ReadAll(res.Body)
-		res.Body.Close()
+		_ = res.Body.Close()
 		return fmt.Errorf("request failed with status code %d and body %q", res.StatusCode, body)
 	}
 	return nil

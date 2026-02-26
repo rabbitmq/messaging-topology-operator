@@ -300,7 +300,7 @@ var _ = Describe("VaultReader", func() {
 			getSecretStoreClientTester func() (rabbitmqclient.SecretStoreClient, error)
 		)
 		BeforeEach(func() {
-			os.Setenv("VAULT_ADDR", "vault-address")
+			_ = os.Setenv("VAULT_ADDR", "vault-address")
 		})
 
 		When("vault role is not set in the environment", func() {
@@ -519,7 +519,7 @@ var _ = Describe("VaultReader", func() {
 				}
 			})
 			It("returns an error", func() {
-				os.Unsetenv("VAULT_ADDR")
+				_ = os.Unsetenv("VAULT_ADDR")
 				secretStoreClient, err = getSecretStoreClientTester()
 				Expect(err).To(MatchError("VAULT_ADDR environment variable not set; cannot initialize vault client"))
 			})
