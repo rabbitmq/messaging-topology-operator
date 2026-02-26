@@ -44,6 +44,8 @@ jobs:
 
       - name: Check for GitHub binary tool updates
         id: check-github-tools
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           UPDATES_FILE="updates.txt"
 
@@ -148,7 +150,7 @@ jobs:
           commit-message: "chore: update tool versions"
           title: "chore: update tool versions"
           body-path: pr_body.md
-          branch: automated-tool-updates-${{ github.run_number }}
+          branch: automated-tool-updates
           delete-branch: true
           labels: |
             dependencies

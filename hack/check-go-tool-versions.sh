@@ -18,11 +18,12 @@ check_go_version() {
   local var_name=$1
   local module=$2
   local current_version=$3
+  local repo_url=$4
   
   echo "Checking $var_name (current: $current_version)..."
   
   # Get all versions for the module
-  versions=$(go list -m -versions -json "$module" 2>/dev/null | jq -r '.Versions[]?' || echo "")
+  versions=$(go list -m -versions -f '{{range .Versions}}{{.}} {{end}}' "$module" 2>/dev/null | tr ' ' '\n' | sed '/^$/d' || echo "")
   
   if [ -z "$versions" ]; then
     echo "  Warning: Could not fetch versions for $module"
@@ -43,7 +44,7 @@ check_go_version() {
   
   if [ "$current_clean" != "$latest_clean" ]; then
     echo "  ✓ Update available: $current_version → $latest"
-    echo "$var_name|$current_version|$latest|https://github.com/${module%%/*}/$(echo $module | cut -d'/' -f2-)" >> "$UPDATES_FILE"
+    echo "$var_name|$current_version|$latest|$repo_url" >> "$UPDATES_FILE"
   else
     echo "  Already up-to-date"
   fi
@@ -60,13 +61,13 @@ YJ_VERSION=$(grep '^YJ_VERSION' "$MAKEFILE" | awk -F'= ' '{print $2}')
 GOVULNCHECK_VERSION=$(grep '^GOVULNCHECK_VERSION' "$MAKEFILE" | awk -F'= ' '{print $2}')
 
 # Check each Go tool
-check_go_version "KUSTOMIZE_VERSION" "sigs.k8s.io/kustomize/kustomize/v5" "$KUSTOMIZE_VERSION"
-check_go_version "CONTROLLER_TOOLS_VERSION" "sigs.k8s.io/controller-tools/cmd/controller-gen" "$CONTROLLER_TOOLS_VERSION"
-check_go_version "GOLANGCI_LINT_VERSION" "github.com/golangci/golangci-lint/v2/cmd/golangci-lint" "$GOLANGCI_LINT_VERSION"
-check_go_version "CRD_REF_DOCS_VERSION" "github.com/elastic/crd-ref-docs" "$CRD_REF_DOCS_VERSION"
-check_go_version "COUNTERFEITER_VERSION" "github.com/maxbrunsfeld/counterfeiter/v6" "$COUNTERFEITER_VERSION"
-check_go_version "GINKGO_VERSION" "github.com/onsi/ginkgo/v2/ginkgo" "$GINKGO_VERSION"
-check_go_version "YJ_VERSION" "github.com/sclevine/yj/v5" "$YJ_VERSION"
-check_go_version "GOVULNCHECK_VERSION" "golang.org/x/vuln/cmd/govulncheck" "$GOVULNCHECK_VERSION"
+check_go_version "KUSTOMIZE_VERSION" "sigs.k8s.io/kustomize/kustomize/v5" "$KUSTOMIZE_VERSION" "https://github.com/kubernetes-sigs/kustomize"
+check_go_version "CONTROLLER_TOOLS_VERSION" "sigs.k8s.io/controller-tools" "$CONTROLLER_TOOLS_VERSION" "https://github.com/kubernetes-sigs/controller-tools"
+check_go_version "GOLANGCI_LINT_VERSION" "github.com/golangci/golangci-lint/v2" "$GOLANGCI_LINT_VERSION" "https://github.com/golangci/golangci-lint"
+check_go_version "CRD_REF_DOCS_VERSION" "github.com/elastic/crd-ref-docs" "$CRD_REF_DOCS_VERSION" "https://github.com/elastic/crd-ref-docs"
+check_go_version "COUNTERFEITER_VERSION" "github.com/maxbrunsfeld/counterfeiter/v6" "$COUNTERFEITER_VERSION" "https://github.com/maxbrunsfeld/counterfeiter"
+check_go_version "GINKGO_VERSION" "github.com/onsi/ginkgo/v2" "$GINKGO_VERSION" "https://github.com/onsi/ginkgo"
+check_go_version "YJ_VERSION" "github.com/sclevine/yj/v5" "$YJ_VERSION" "https://github.com/sclevine/yj"
+check_go_version "GOVULNCHECK_VERSION" "golang.org/x/vuln" "$GOVULNCHECK_VERSION" "https://github.com/golang/vuln"
 
 echo "Go tools check complete"

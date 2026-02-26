@@ -96,8 +96,8 @@ cat updates.txt
 
 ## Requirements
 
-- **For Go tools:** Go must be installed and accessible
-- **For GitHub tools:** `curl` and `jq` must be installed
+- **For Go tools:** Go must be installed and accessible (no `jq` required)
+- **For GitHub tools:** `gh` CLI must be installed and authenticated
 - Both scripts require `grep`, `awk`, `sed` (standard on most Unix systems)
 
 ## Integration
