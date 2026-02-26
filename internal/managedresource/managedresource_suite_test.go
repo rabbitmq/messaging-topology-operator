@@ -1,8 +1,9 @@
 package managedresource_test
 
 import (
-	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"testing"
+
+	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

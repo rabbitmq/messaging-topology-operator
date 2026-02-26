@@ -2,9 +2,10 @@ package rabbitmqclient_test
 
 import (
 	"errors"
+	"os"
+
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient/rabbitmqclientfakes"
-	"os"
 
 	vault "github.com/hashicorp/vault/api"
 	. "github.com/onsi/ginkgo/v2"

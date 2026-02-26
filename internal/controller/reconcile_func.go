@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 )

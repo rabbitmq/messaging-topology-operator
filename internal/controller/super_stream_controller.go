@@ -12,8 +12,9 @@ package controller
 import (
 	"context"
 	"fmt"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"strconv"
+
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	"github.com/go-logr/logr"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/v2/api/v1beta1"

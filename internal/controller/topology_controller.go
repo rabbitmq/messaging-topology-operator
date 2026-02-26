@@ -6,6 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
+	"strings"
+	"time"
+
 	"github.com/go-logr/logr"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
@@ -14,13 +18,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	clientretry "k8s.io/client-go/util/retry"
-	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"strings"
-	"time"
 )
 
 // TopologyReconciler reconciles any topology rabbitmq objects

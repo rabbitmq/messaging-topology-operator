@@ -3,9 +3,10 @@ package internal
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	"strings"
 )
 
 func GenerateShovelDefinition(s *topology.Shovel, srcUri, destUri string) (*rabbithole.ShovelDefinition, error) {

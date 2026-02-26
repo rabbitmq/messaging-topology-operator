@@ -3,8 +3,9 @@ package system_tests
 import (
 	"context"
 	"fmt"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/envtest/komega"
 
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"

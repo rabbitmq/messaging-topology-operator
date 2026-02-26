@@ -5,17 +5,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"time"
+
 	"github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal/controller"
-	"io"
 	"k8s.io/apimachinery/pkg/labels"
-	"net/http"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 
