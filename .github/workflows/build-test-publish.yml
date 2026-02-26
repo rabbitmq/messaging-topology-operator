@@ -180,7 +180,7 @@ jobs:
         go-version-file: go.mod
 
     - name: Cache tool binaries
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: bin
         key: ${{ runner.os }}-tools-${{ hashFiles('Makefile') }}-${{ hashFiles('go.mod') }}
