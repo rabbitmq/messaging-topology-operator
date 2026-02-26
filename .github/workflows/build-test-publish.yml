@@ -214,7 +214,7 @@ jobs:
 
     - name: Install cert-manager and tools
       run: |
-        make cert-manager cmctl cluster-operator ytt ginkgo
+        make cert-manager cmctl cluster-operator ytt ginkgo-cli
         ./bin/cmctl check api --wait=3m
 
     - name: Install operator from build
