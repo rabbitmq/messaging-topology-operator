@@ -138,20 +138,20 @@ func (r *TopologyReconciler) handleRMQReferenceParseError(ctx context.Context, o
 		logger.Error(errors.New("expected error to parse, but it was nil"), "Failed to parse error from RabbitmqClusterReference parsing")
 		return ctrl.Result{}, err
 	}
-	if errors.Is(err, rabbitmqclient.NoSuchRabbitmqClusterError) && !object.GetDeletionTimestamp().IsZero() {
+	if errors.Is(err, rabbitmqclient.ErrNoSuchRabbitmqCluster) && !object.GetDeletionTimestamp().IsZero() {
 		logger.Info(noSuchRabbitDeletion, "object", object.GetName())
 		r.Recorder.Event(object, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted "+object.GetName())
 		return ctrl.Result{}, removeFinalizer(ctx, r.Client, object)
 	}
-	if errors.Is(err, rabbitmqclient.NoSuchRabbitmqClusterError) {
+	if errors.Is(err, rabbitmqclient.ErrNoSuchRabbitmqCluster) {
 		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
 		// the Cluster is temporarily down. Requeue until it comes back up.
 		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
 	}
-	if errors.Is(err, rabbitmqclient.ResourceNotAllowedError) {
+	if errors.Is(err, rabbitmqclient.ErrResourceNotAllowed) {
 		logger.Info("Could not create resource: " + err.Error())
-		object.SetStatusConditions([]topology.Condition{topology.NotReady(rabbitmqclient.ResourceNotAllowedError.Error(), r.getStatusConditions(object))})
+		object.SetStatusConditions([]topology.Condition{topology.NotReady(rabbitmqclient.ErrResourceNotAllowed.Error(), r.getStatusConditions(object))})
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return r.Status().Update(ctx, object)
 		}); writerErr != nil {

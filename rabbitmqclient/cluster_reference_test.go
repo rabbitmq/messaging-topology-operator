@@ -117,7 +117,7 @@ var _ = Describe("ParseReference", func() {
 
 			It("errors", func() {
 				_, _, err := rabbitmqclient.ParseReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "", false)
-				Expect(err).To(MatchError(rabbitmqclient.NoServiceReferenceSetError))
+				Expect(err).To(MatchError(rabbitmqclient.ErrNoServiceReferenceSet))
 			})
 		})
 
@@ -210,7 +210,7 @@ var _ = Describe("ParseReference", func() {
 
 				It("errors", func() {
 					_, _, err := rabbitmqclient.ParseReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "", false)
-					Expect(err).To(MatchError(rabbitmqclient.NoServiceReferenceSetError))
+					Expect(err).To(MatchError(rabbitmqclient.ErrNoServiceReferenceSet))
 				})
 			})
 		})
@@ -729,7 +729,7 @@ var _ = Describe("ParseReference", func() {
 					"prohibited-namespace",
 					"",
 					false)
-				Expect(err).To(MatchError(rabbitmqclient.ResourceNotAllowedError))
+				Expect(err).To(MatchError(rabbitmqclient.ErrResourceNotAllowed))
 			})
 		})
 
@@ -773,7 +773,7 @@ var _ = Describe("ParseReference", func() {
 						"allowed3",
 						"",
 						false)
-					Expect(err).To(MatchError(rabbitmqclient.ResourceNotAllowedError))
+					Expect(err).To(MatchError(rabbitmqclient.ErrResourceNotAllowed))
 				})
 			})
 		})

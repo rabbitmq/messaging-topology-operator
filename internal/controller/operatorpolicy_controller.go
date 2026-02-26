@@ -42,7 +42,7 @@ func (r *OperatorPolicyReconciler) DeleteFunc(ctx context.Context, client rabbit
 	logger := ctrl.LoggerFrom(ctx)
 	policy := obj.(*topology.OperatorPolicy)
 	err := validateResponseForDeletion(client.DeleteOperatorPolicy(policy.Spec.Vhost, policy.Spec.Name))
-	if errors.Is(err, NotFound) {
+	if errors.Is(err, ErrNotFound) {
 		logger.Info("cannot find operator policy in rabbitmq server; already deleted", "operatorpolicy", policy.Spec.Name)
 	} else if err != nil {
 		return err

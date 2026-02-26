@@ -174,11 +174,11 @@ func (r *SuperStreamReconciler) getRabbitmqClusterReference(ctx context.Context,
 
 	cluster := &rabbitmqv1beta1.RabbitmqCluster{}
 	if err := r.Get(ctx, types.NamespacedName{Name: rmq.Name, Namespace: namespace}, cluster); err != nil {
-		return nil, fmt.Errorf("failed to get cluster from reference: %s Error: %w", err, rabbitmqclient.NoSuchRabbitmqClusterError)
+		return nil, fmt.Errorf("failed to get cluster from reference: %s Error: %w", err, rabbitmqclient.ErrNoSuchRabbitmqCluster)
 	}
 
 	if !rabbitmqclient.AllowedNamespace(rmq, requestNamespace, cluster) {
-		return nil, rabbitmqclient.ResourceNotAllowedError
+		return nil, rabbitmqclient.ErrResourceNotAllowed
 	}
 
 	return &topology.RabbitmqClusterReference{

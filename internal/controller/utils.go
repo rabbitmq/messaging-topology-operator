@@ -56,13 +56,13 @@ func validateResponse(res *http.Response, err error) error {
 	return nil
 }
 
-// NotFound is a custom error
+// ErrNotFound is a custom error
 // used in all controllers when deleting objects from rabbitmq server and status code is 404
-var NotFound = errors.New("not found")
+var ErrNotFound = errors.New("not found")
 
 func validateResponseForDeletion(res *http.Response, err error) error {
 	if res != nil && res.StatusCode == http.StatusNotFound {
-		return NotFound
+		return ErrNotFound
 	}
 	return validateResponse(res, err)
 }
@@ -111,21 +111,21 @@ func handleRMQReferenceParseError(ctx context.Context, client client.Client, eve
 		logger.Error(errors.New("expected error to parse, but it was nil"), "Failed to parse error from RabbitmqClusterReference parsing")
 		return reconcile.Result{}, err
 	}
-	if errors.Is(err, rabbitmqclient.NoSuchRabbitmqClusterError) && !object.GetDeletionTimestamp().IsZero() {
+	if errors.Is(err, rabbitmqclient.ErrNoSuchRabbitmqCluster) && !object.GetDeletionTimestamp().IsZero() {
 		logger.Info(noSuchRabbitDeletion, "object", object.GetName())
 		eventRecorder.Event(object, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted "+object.GetName())
 		return reconcile.Result{}, removeFinalizer(ctx, client, object)
 	}
-	if errors.Is(err, rabbitmqclient.NoSuchRabbitmqClusterError) {
+	if errors.Is(err, rabbitmqclient.ErrNoSuchRabbitmqCluster) {
 		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
 		// the Cluster is temporarily down. Requeue until it comes back up.
 		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
 	}
-	if errors.Is(err, rabbitmqclient.ResourceNotAllowedError) {
+	if errors.Is(err, rabbitmqclient.ErrResourceNotAllowed) {
 		logger.Info("Could not create resource: " + err.Error())
 		*objectConditions = []topology.Condition{
-			topology.NotReady(rabbitmqclient.ResourceNotAllowedError.Error(), *objectConditions),
+			topology.NotReady(rabbitmqclient.ErrResourceNotAllowed.Error(), *objectConditions),
 		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 			return client.Status().Update(ctx, object)

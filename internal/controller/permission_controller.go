@@ -104,7 +104,7 @@ func (r *PermissionReconciler) DeleteFunc(ctx context.Context, client rabbitmqcl
 func (r *PermissionReconciler) revokePermissions(ctx context.Context, client rabbitmqclient.Client, permission *topology.Permission, user string) error {
 	logger := ctrl.LoggerFrom(ctx)
 	err := validateResponseForDeletion(client.ClearPermissionsIn(permission.Spec.Vhost, user))
-	if errors.Is(err, NotFound) {
+	if errors.Is(err, ErrNotFound) {
 		logger.Info("cannot find user or vhost in rabbitmq server; no need to delete permission", "user", user, "vhost", permission.Spec.Vhost)
 		return nil
 	}

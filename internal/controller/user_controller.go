@@ -239,7 +239,7 @@ func (r *UserReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.
 	if len(limitsToDelete) > 0 {
 		logger.Info("Deleting outdated user limits", "user", user.Name, "limits", limitsToDelete)
 		err = validateResponseForDeletion(client.DeleteUserLimits(string(credentials.Data["username"]), limitsToDelete))
-		if err != nil && !errors.Is(err, NotFound) {
+		if err != nil && !errors.Is(err, ErrNotFound) {
 			return err
 		}
 	}
@@ -291,7 +291,7 @@ func (r *UserReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.C
 	user := obj.(*topology.User)
 
 	err := validateResponseForDeletion(client.DeleteUser(user.Status.Username))
-	if errors.Is(err, NotFound) {
+	if errors.Is(err, ErrNotFound) {
 		logger.Info("cannot find user in rabbitmq server; already deleted", "user", user.Name)
 	} else if err != nil {
 		return err

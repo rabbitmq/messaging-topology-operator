@@ -42,7 +42,7 @@ func (r *PolicyReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient
 	logger := ctrl.LoggerFrom(ctx)
 	policy := obj.(*topology.Policy)
 	err := validateResponseForDeletion(client.DeletePolicy(policy.Spec.Vhost, policy.Spec.Name))
-	if errors.Is(err, NotFound) {
+	if errors.Is(err, ErrNotFound) {
 		logger.Info("cannot find policy in rabbitmq server; already deleted", "policy", policy.Spec.Name)
 	} else if err != nil {
 		return err

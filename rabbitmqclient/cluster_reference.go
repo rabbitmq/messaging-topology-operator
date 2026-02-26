@@ -29,9 +29,9 @@ func (c ClusterCredentials) Data(key string) ([]byte, bool) {
 var SecretStoreClientProvider = GetSecretStoreClient
 
 var (
-	NoSuchRabbitmqClusterError = errors.New("RabbitmqCluster object does not exist")
-	ResourceNotAllowedError    = errors.New("resource is not allowed to reference defined cluster reference. Check the namespace of the resource is allowed as part of the cluster's `rabbitmq.com/topology-allowed-namespaces` annotation")
-	NoServiceReferenceSetError = errors.New("RabbitmqCluster has no ServiceReference set in status.defaultUser")
+	ErrNoSuchRabbitmqCluster   = errors.New("RabbitmqCluster object does not exist")
+	ErrResourceNotAllowed      = errors.New("resource is not allowed to reference defined cluster reference. Check the namespace of the resource is allowed as part of the cluster's `rabbitmq.com/topology-allowed-namespaces` annotation")
+	ErrNoServiceReferenceSet   = errors.New("RabbitmqCluster has no ServiceReference set in status.defaultUser")
 )
 
 func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string, clusterDomain string, connectUsingHTTP bool) (map[string]string, bool, error) {
@@ -48,22 +48,22 @@ func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqC
 			return nil, false, err
 		}
 		if !AllowedNamespaceSecret(rmq, requestNamespace, secret) {
-			return nil, false, ResourceNotAllowedError
+			return nil, false, ErrResourceNotAllowed
 		}
 		return readCredentialsFromKubernetesSecret(secret)
 	}
 
 	cluster := &rabbitmqv1beta1.RabbitmqCluster{}
 	if err := c.Get(ctx, types.NamespacedName{Name: rmq.Name, Namespace: namespace}, cluster); err != nil {
-		return nil, false, fmt.Errorf("failed to get cluster from reference: %s Error: %w", err, NoSuchRabbitmqClusterError)
+		return nil, false, fmt.Errorf("failed to get cluster from reference: %s Error: %w", err, ErrNoSuchRabbitmqCluster)
 	}
 
 	if !AllowedNamespace(rmq, requestNamespace, cluster) {
-		return nil, false, ResourceNotAllowedError
+		return nil, false, ErrResourceNotAllowed
 	}
 
 	if cluster.Status.DefaultUser == nil || cluster.Status.DefaultUser.ServiceReference == nil {
-		return nil, false, NoServiceReferenceSetError
+		return nil, false, ErrNoServiceReferenceSet
 	}
 
 	var user, pass string

@@ -66,7 +66,7 @@ func (r *ShovelReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient
 		return nil
 	}
 	err := validateResponseForDeletion(client.DeleteShovel(shovel.Spec.Vhost, shovel.Spec.Name))
-	if errors.Is(err, NotFound) {
+	if errors.Is(err, ErrNotFound) {
 		logger.Info("cannot find shovel parameter; no need to delete it", "shovel", shovel.Spec.Name)
 	} else if err != nil {
 		return err

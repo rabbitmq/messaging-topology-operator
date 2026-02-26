@@ -70,7 +70,7 @@ func (r *QueueReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.
 	}
 
 	errdel := validateResponseForDeletion(client.DeleteQueue(queue.Spec.Vhost, queue.Spec.Name, *queueDeleteOptions))
-	if errors.Is(errdel, NotFound) {
+	if errors.Is(errdel, ErrNotFound) {
 		logger.Info("cannot find queue in rabbitmq server; already deleted", "queue", queue.Spec.Name)
 	} else if errdel != nil {
 		return errdel

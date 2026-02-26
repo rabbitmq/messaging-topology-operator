@@ -66,7 +66,7 @@ func (r *BindingReconciler) DeleteFunc(ctx context.Context, client rabbitmqclien
 	}
 
 	err = validateResponseForDeletion(client.DeleteBinding(binding.Spec.Vhost, *info))
-	if errors.Is(err, NotFound) {
+	if errors.Is(err, ErrNotFound) {
 		logger.Info("cannot find binding in rabbitmq server; already deleted")
 	} else if err != nil {
 		return err

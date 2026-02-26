@@ -41,7 +41,7 @@ func (r *ExchangeReconciler) DeleteFunc(ctx context.Context, client rabbitmqclie
 	logger := ctrl.LoggerFrom(ctx)
 	exchange := obj.(*topology.Exchange)
 	err := validateResponseForDeletion(client.DeleteExchange(exchange.Spec.Vhost, exchange.Spec.Name))
-	if errors.Is(err, NotFound) {
+	if errors.Is(err, ErrNotFound) {
 		logger.Info("cannot find exchange in rabbitmq server; already deleted", "exchange", exchange.Spec.Name)
 	} else if err != nil {
 		return err

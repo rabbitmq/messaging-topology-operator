@@ -58,7 +58,7 @@ func (r *FederationReconciler) DeleteFunc(ctx context.Context, client rabbitmqcl
 		return nil
 	}
 	err := validateResponseForDeletion(client.DeleteFederationUpstream(federation.Spec.Vhost, federation.Spec.Name))
-	if errors.Is(err, NotFound) {
+	if errors.Is(err, ErrNotFound) {
 		logger.Info("cannot find federation upstream parameter; no need to delete it", "federation", federation.Spec.Name)
 	} else if err != nil {
 		return err

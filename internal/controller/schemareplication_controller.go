@@ -37,7 +37,7 @@ func (r *SchemaReplicationReconciler) DeclareFunc(ctx context.Context, client ra
 func (r *SchemaReplicationReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, _ topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
 	err := validateResponseForDeletion(client.DeleteGlobalParameter(SchemaReplicationParameterName))
-	if errors.Is(err, NotFound) {
+	if errors.Is(err, ErrNotFound) {
 		logger.Info("cannot find global parameter; no need to delete it", "parameter", SchemaReplicationParameterName)
 	} else if err != nil {
 		return err

@@ -1,0 +1,1457 @@
+"/Users/acedres/workspace/messaging-topology-operator/bin/golangci-lint" run
+api/v1beta1/binding_types.go:10: 10-94 lines are duplicate of `api/v1beta1/exchange_types.go:10-90` (dupl)
+package v1beta1
+
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+)
+
+// BindingSpec defines the desired state of Binding
+type BindingSpec struct {
+	// Default to vhost '/'; cannot be updated
+	// +kubebuilder:default:=/
+	Vhost string `json:"vhost,omitempty"`
+	// Cannot be updated
+	// +kubebuilder:validation:Optional
+	Source string `json:"source,omitempty"`
+	// Cannot be updated
+	// +kubebuilder:validation:Optional
+	Destination string `json:"destination,omitempty"`
+	// Cannot be updated
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Enum=exchange;queue
+	DestinationType string `json:"destinationType,omitempty"`
+	// Cannot be updated
+	// +kubebuilder:validation:Optional
+	RoutingKey string `json:"routingKey,omitempty"`
+	// Cannot be updated
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:pruning:PreserveUnknownFields
+	Arguments *runtime.RawExtension `json:"arguments,omitempty"`
+	// Reference to the RabbitmqCluster that the binding will be created in.
+	// Required property.
+	// +kubebuilder:validation:Required
+	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
+}
+
+// BindingStatus defines the observed state of Binding
+type BindingStatus struct {
+	// observedGeneration is the most recent successful generation observed for this Binding. It corresponds to the
+	// Binding's generation, which is updated on mutation by the API Server.
+	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
+	Conditions         []Condition `json:"conditions,omitempty"`
+}
+
+// +genclient
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:categories=rabbitmq
+// +kubebuilder:subresource:status
+
+// Binding is the Schema for the bindings API
+type Binding struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   BindingSpec   `json:"spec,omitempty"`
+	Status BindingStatus `json:"status,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+
+// BindingList contains a list of Binding
+type BindingList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []Binding `json:"items"`
+}
+
+func (b *Binding) GroupResource() schema.GroupResource {
+	return schema.GroupResource{
+		Group:    b.GroupVersionKind().Group,
+		Resource: b.GroupVersionKind().Kind,
+	}
+}
+
+func (b *Binding) RabbitReference() RabbitmqClusterReference {
+	return b.Spec.RabbitmqClusterReference
+}
+
+func (b *Binding) SetStatusConditions(c []Condition) {
+	b.Status.Conditions = c
+}
+
+func init() {
+	SchemeBuilder.Register(&Binding{}, &BindingList{})
+}
+api/v1beta1/binding_types_test.go:47: 47-84 lines are duplicate of `api/v1beta1/operatorpolicy_types_test.go:54-91` (dupl)
+	It("creates a binding with configurations", func() {
+		binding := Binding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "random-binding",
+				Namespace: namespace,
+			},
+			Spec: BindingSpec{
+				Vhost:           "/avhost",
+				Source:          "anexchange",
+				Destination:     "aqueue",
+				DestinationType: "queue",
+				RoutingKey:      "akey",
+				Arguments: &runtime.RawExtension{
+					Raw: []byte(`{"argument":"argument-value"}`),
+				},
+				RabbitmqClusterReference: RabbitmqClusterReference{
+					Name: "random-cluster",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, &binding)).To(Succeed())
+		fetchedBinding := &Binding{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{
+			Name:      binding.Name,
+			Namespace: binding.Namespace,
+		}, fetchedBinding)).To(Succeed())
+
+		Expect(fetchedBinding.Spec.Vhost).To(Equal("/avhost"))
+		Expect(fetchedBinding.Spec.Source).To(Equal("anexchange"))
+		Expect(fetchedBinding.Spec.Destination).To(Equal("aqueue"))
+		Expect(fetchedBinding.Spec.DestinationType).To(Equal("queue"))
+		Expect(fetchedBinding.Spec.RoutingKey).To(Equal("akey"))
+		Expect(fetchedBinding.Spec.RabbitmqClusterReference).To(Equal(
+			RabbitmqClusterReference{
+				Name: "random-cluster",
+			}))
+		Expect(fetchedBinding.Spec.Arguments.Raw).To(Equal([]byte(`{"argument":"argument-value"}`)))
+	})
+api/v1beta1/exchange_types.go:10: 10-90 lines are duplicate of `api/v1beta1/operatorpolicy_types.go:1-90` (dupl)
+package v1beta1
+
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+)
+
+// ExchangeSpec defines the desired state of Exchange
+type ExchangeSpec struct {
+	// Required property; cannot be updated
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+	// Default to vhost '/'; cannot be updated
+	// +kubebuilder:default:=/
+	Vhost string `json:"vhost,omitempty"`
+	// Cannot be updated
+	// +kubebuilder:default:=direct
+	Type string `json:"type,omitempty"`
+	// Cannot be updated
+	Durable bool `json:"durable,omitempty"`
+	// Cannot be updated
+	AutoDelete bool `json:"autoDelete,omitempty"`
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:pruning:PreserveUnknownFields
+	Arguments *runtime.RawExtension `json:"arguments,omitempty"`
+	// Reference to the RabbitmqCluster that the exchange will be created in.
+	// Required property.
+	// +kubebuilder:validation:Required
+	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
+}
+
+// ExchangeStatus defines the observed state of Exchange
+type ExchangeStatus struct {
+	// observedGeneration is the most recent successful generation observed for this Exchange. It corresponds to the
+	// Exchange's generation, which is updated on mutation by the API Server.
+	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
+	Conditions         []Condition `json:"conditions,omitempty"`
+}
+
+// +genclient
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:categories=rabbitmq
+// +kubebuilder:subresource:status
+
+// Exchange is the Schema for the exchanges API
+type Exchange struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   ExchangeSpec   `json:"spec,omitempty"`
+	Status ExchangeStatus `json:"status,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+
+// ExchangeList contains a list of Exchange
+type ExchangeList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []Exchange `json:"items"`
+}
+
+func (e *Exchange) GroupResource() schema.GroupResource {
+	return schema.GroupResource{
+		Group:    e.GroupVersionKind().Group,
+		Resource: e.GroupVersionKind().Kind,
+	}
+}
+
+func (e *Exchange) RabbitReference() RabbitmqClusterReference {
+	return e.Spec.RabbitmqClusterReference
+}
+
+func (e *Exchange) SetStatusConditions(c []Condition) {
+	e.Status.Conditions = c
+}
+
+func init() {
+	SchemeBuilder.Register(&Exchange{}, &ExchangeList{})
+}
+api/v1beta1/exchange_types_test.go:52: 52-89 lines are duplicate of `api/v1beta1/queue_types_test.go:52-89` (dupl)
+	It("creates a exchange with configurations", func() {
+		exchange := Exchange{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "random-exchange",
+				Namespace: namespace,
+			},
+			Spec: ExchangeSpec{
+				Name:       "test-exchange",
+				Vhost:      "/hello",
+				Type:       "fanout",
+				Durable:    true,
+				AutoDelete: true,
+				Arguments: &runtime.RawExtension{
+					Raw: []byte(`{"alternative-exchange":"alternative-name"}`),
+				},
+				RabbitmqClusterReference: RabbitmqClusterReference{
+					Name: "random-cluster",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, &exchange)).To(Succeed())
+		fetchedExchange := &Exchange{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{
+			Name:      exchange.Name,
+			Namespace: exchange.Namespace,
+		}, fetchedExchange)).To(Succeed())
+
+		Expect(fetchedExchange.Spec.Name).To(Equal("test-exchange"))
+		Expect(fetchedExchange.Spec.Vhost).To(Equal("/hello"))
+		Expect(fetchedExchange.Spec.Type).To(Equal("fanout"))
+		Expect(fetchedExchange.Spec.Durable).To(BeTrue())
+		Expect(fetchedExchange.Spec.AutoDelete).To(BeTrue())
+		Expect(fetchedExchange.Spec.RabbitmqClusterReference).To(Equal(
+			RabbitmqClusterReference{
+				Name: "random-cluster",
+			}))
+		Expect(fetchedExchange.Spec.Arguments.Raw).To(Equal([]byte(`{"alternative-exchange":"alternative-name"}`)))
+	})
+api/v1beta1/operatorpolicy_types.go:1: 1-90 lines are duplicate of `api/v1beta1/policy_types.go:1-90` (dupl)
+package v1beta1
+
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+)
+
+// OperatorPolicySpec defines the desired state of OperatorPolicy
+// https://www.rabbitmq.com/parameters.html#operator-policies
+type OperatorPolicySpec struct {
+	// Required property; cannot be updated
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+	// Default to vhost '/'; cannot be updated
+	// +kubebuilder:default:=/
+	Vhost string `json:"vhost,omitempty"`
+	// Regular expression pattern used to match queues, e.g. "^my-queue$".
+	// Required property.
+	// +kubebuilder:validation:Required
+	Pattern string `json:"pattern"`
+	// What this operator policy applies to: 'queues', 'classic_queues', 'quorum_queues', 'streams'.
+	// Default to 'queues'.
+	// +kubebuilder:validation:Enum=queues;classic_queues;quorum_queues;streams
+	// +kubebuilder:default:=queues
+	ApplyTo string `json:"applyTo,omitempty"`
+	// Default to '0'.
+	// In the event that more than one operator policy can match a given queue, the operator policy with the greatest priority applies.
+	// +kubebuilder:default:=0
+	Priority int `json:"priority,omitempty"`
+	// OperatorPolicy definition. Required property.
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Required
+	Definition *runtime.RawExtension `json:"definition"`
+	// Reference to the RabbitmqCluster that the operator policy will be created in.
+	// Required property.
+	// +kubebuilder:validation:Required
+	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
+}
+
+// OperatorPolicyStatus defines the observed state of OperatorPolicy
+type OperatorPolicyStatus struct {
+	// observedGeneration is the most recent successful generation observed for this OperatorPolicy. It corresponds to the
+	// OperatorPolicy's generation, which is updated on mutation by the API Server.
+	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
+	Conditions         []Condition `json:"conditions,omitempty"`
+}
+
+// +genclient
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:categories=rabbitmq
+// +kubebuilder:subresource:status
+
+// OperatorPolicy is the Schema for the operator policies API
+type OperatorPolicy struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   OperatorPolicySpec   `json:"spec,omitempty"`
+	Status OperatorPolicyStatus `json:"status,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+
+// OperatorPolicyList contains a list of OperatorPolicy
+type OperatorPolicyList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []OperatorPolicy `json:"items"`
+}
+
+func (p *OperatorPolicy) GroupResource() schema.GroupResource {
+	return schema.GroupResource{
+		Group:    p.GroupVersionKind().Group,
+		Resource: p.GroupVersionKind().Kind,
+	}
+}
+
+func (p *OperatorPolicy) RabbitReference() RabbitmqClusterReference {
+	return p.Spec.RabbitmqClusterReference
+}
+
+func (p *OperatorPolicy) SetStatusConditions(c []Condition) {
+	p.Status.Conditions = c
+}
+
+func init() {
+	SchemeBuilder.Register(&OperatorPolicy{}, &OperatorPolicyList{})
+}
+api/v1beta1/operatorpolicy_types_test.go:1: 1-117 lines are duplicate of `api/v1beta1/policy_types_test.go:1-117` (dupl)
+package v1beta1
+
+import (
+	"context"
+
+	"k8s.io/apimachinery/pkg/runtime"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+)
+
+var _ = Describe("OperatorPolicy", func() {
+	var (
+		namespace = "default"
+		ctx       = context.Background()
+	)
+
+	It("creates an operator policy with minimal configurations", func() {
+		policy := OperatorPolicy{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-operator-policy",
+				Namespace: namespace,
+			},
+			Spec: OperatorPolicySpec{
+				Name:    "test-operator-policy",
+				Pattern: "^some-prefix",
+				Definition: &runtime.RawExtension{
+					Raw: []byte(`{"max-length": 10}`),
+				},
+				RabbitmqClusterReference: RabbitmqClusterReference{
+					Name: "some-cluster",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, &policy)).To(Succeed())
+		fetched := &OperatorPolicy{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{
+			Name:      policy.Name,
+			Namespace: policy.Namespace,
+		}, fetched)).To(Succeed())
+		Expect(fetched.Spec.RabbitmqClusterReference).To(Equal(RabbitmqClusterReference{
+			Name: "some-cluster",
+		}))
+		Expect(fetched.Spec.Name).To(Equal("test-operator-policy"))
+		Expect(fetched.Spec.Vhost).To(Equal("/"))
+		Expect(fetched.Spec.Pattern).To(Equal("^some-prefix"))
+		Expect(fetched.Spec.ApplyTo).To(Equal("queues"))
+		Expect(fetched.Spec.Priority).To(Equal(0))
+		Expect(fetched.Spec.Definition.Raw).To(Equal([]byte(`{"max-length":10}`)))
+	})
+
+	It("creates operator policy with configurations", func() {
+		policy := OperatorPolicy{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "random-policy",
+				Namespace: namespace,
+			},
+			Spec: OperatorPolicySpec{
+				Name:     "test-policy",
+				Vhost:    "/hello",
+				Pattern:  "*.",
+				ApplyTo:  "quorum_queues",
+				Priority: 100,
+				Definition: &runtime.RawExtension{
+					Raw: []byte(`{"max-length":10}`),
+				},
+				RabbitmqClusterReference: RabbitmqClusterReference{
+					Name: "random-cluster",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, &policy)).To(Succeed())
+		fetched := &OperatorPolicy{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{
+			Name:      policy.Name,
+			Namespace: policy.Namespace,
+		}, fetched)).To(Succeed())
+
+		Expect(fetched.Spec.Name).To(Equal("test-policy"))
+		Expect(fetched.Spec.Vhost).To(Equal("/hello"))
+		Expect(fetched.Spec.Pattern).To(Equal("*."))
+		Expect(fetched.Spec.ApplyTo).To(Equal("quorum_queues"))
+		Expect(fetched.Spec.Priority).To(Equal(100))
+		Expect(fetched.Spec.RabbitmqClusterReference).To(Equal(
+			RabbitmqClusterReference{
+				Name: "random-cluster",
+			}))
+		Expect(fetched.Spec.Definition.Raw).To(Equal([]byte(`{"max-length":10}`)))
+	})
+
+	When("creating a policy with an invalid 'ApplyTo' value", func() {
+		It("fails with validation errors", func() {
+			policy := OperatorPolicy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "invalid",
+					Namespace: namespace,
+				},
+				Spec: OperatorPolicySpec{
+					Name:    "test-policy",
+					Pattern: "a-queue-name",
+					Definition: &runtime.RawExtension{
+						Raw: []byte(`{"max-length":10}`),
+					},
+					ApplyTo: "yo-yo",
+					RabbitmqClusterReference: RabbitmqClusterReference{
+						Name: "some-cluster",
+					},
+				},
+			}
+			Expect(k8sClient.Create(ctx, &policy)).To(HaveOccurred())
+			Expect(k8sClient.Create(ctx, &policy)).To(MatchError(`OperatorPolicy.rabbitmq.com "invalid" is invalid: spec.applyTo: Unsupported value: "yo-yo": supported values: "queues", "classic_queues", "quorum_queues", "streams"`))
+		})
+	})
+
+})
+api/v1beta1/operatorpolicy_types_test.go:54: 54-91 lines are duplicate of `api/v1beta1/policy_types_test.go:54-91` (dupl)
+	It("creates operator policy with configurations", func() {
+		policy := OperatorPolicy{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "random-policy",
+				Namespace: namespace,
+			},
+			Spec: OperatorPolicySpec{
+				Name:     "test-policy",
+				Vhost:    "/hello",
+				Pattern:  "*.",
+				ApplyTo:  "quorum_queues",
+				Priority: 100,
+				Definition: &runtime.RawExtension{
+					Raw: []byte(`{"max-length":10}`),
+				},
+				RabbitmqClusterReference: RabbitmqClusterReference{
+					Name: "random-cluster",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, &policy)).To(Succeed())
+		fetched := &OperatorPolicy{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{
+			Name:      policy.Name,
+			Namespace: policy.Namespace,
+		}, fetched)).To(Succeed())
+
+		Expect(fetched.Spec.Name).To(Equal("test-policy"))
+		Expect(fetched.Spec.Vhost).To(Equal("/hello"))
+		Expect(fetched.Spec.Pattern).To(Equal("*."))
+		Expect(fetched.Spec.ApplyTo).To(Equal("quorum_queues"))
+		Expect(fetched.Spec.Priority).To(Equal(100))
+		Expect(fetched.Spec.RabbitmqClusterReference).To(Equal(
+			RabbitmqClusterReference{
+				Name: "random-cluster",
+			}))
+		Expect(fetched.Spec.Definition.Raw).To(Equal([]byte(`{"max-length":10}`)))
+	})
+api/v1beta1/permission_types.go:1: 1-87 lines are duplicate of `api/v1beta1/topicpermission_types.go:1-83` (dupl)
+package v1beta1
+
+import (
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+)
+
+// PermissionSpec defines the desired state of Permission
+type PermissionSpec struct {
+	// Name of an existing user; must provide user or userReference, else create/update will fail; cannot be updated
+	User string `json:"user,omitempty"`
+	// Reference to an existing user.rabbitmq.com object; must provide user or userReference, else create/update will fail; cannot be updated
+	UserReference *corev1.LocalObjectReference `json:"userReference,omitempty"`
+	// Name of an existing vhost; required property; cannot be updated
+	// +kubebuilder:validation:Required
+	Vhost string `json:"vhost"`
+	// Permissions to grant to the user in the specific vhost; required property.
+	// See RabbitMQ doc for more information: https://www.rabbitmq.com/access-control.html#user-management
+	// +kubebuilder:validation:Required
+	Permissions VhostPermissions `json:"permissions"`
+	// Reference to the RabbitmqCluster that both the provided user and vhost are.
+	// Required property.
+	// +kubebuilder:validation:Required
+	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
+}
+
+// Set of RabbitMQ permissions: configure, read and write.
+// By not setting a property (configure/write/read), it result in an empty string which does not not match any permission.
+type VhostPermissions struct {
+	// +kubebuilder:validation:Optional
+	Configure string `json:"configure,omitempty"`
+	// +kubebuilder:validation:Optional
+	Write string `json:"write,omitempty"`
+	// +kubebuilder:validation:Optional
+	Read string `json:"read,omitempty"`
+}
+
+// PermissionStatus defines the observed state of Permission
+type PermissionStatus struct {
+	// observedGeneration is the most recent successful generation observed for this Permission. It corresponds to the
+	// Permission's generation, which is updated on mutation by the API Server.
+	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
+	Conditions         []Condition `json:"conditions,omitempty"`
+}
+
+// +genclient
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:categories=rabbitmq
+// +kubebuilder:subresource:status
+
+// Permission is the Schema for the permissions API
+type Permission struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   PermissionSpec   `json:"spec,omitempty"`
+	Status PermissionStatus `json:"status,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+
+// PermissionList contains a list of Permission
+type PermissionList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []Permission `json:"items"`
+}
+
+func (p *Permission) GroupResource() schema.GroupResource {
+	return schema.GroupResource{
+		Group:    p.GroupVersionKind().Group,
+		Resource: p.GroupVersionKind().Kind,
+	}
+}
+
+func (p *Permission) RabbitReference() RabbitmqClusterReference {
+	return p.Spec.RabbitmqClusterReference
+}
+
+func (p *Permission) SetStatusConditions(c []Condition) {
+	p.Status.Conditions = c
+}
+
+func init() {
+	SchemeBuilder.Register(&Permission{}, &PermissionList{})
+}
+api/v1beta1/permission_types_test.go:49: 49-81 lines are duplicate of `api/v1beta1/topicpermission_types_test.go:19-51` (dupl)
+	It("creates a permission with vhost permissions all configured", func() {
+		permission := Permission{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-permission-1",
+				Namespace: namespace,
+			},
+			Spec: PermissionSpec{
+				User:  "test",
+				Vhost: "/test",
+				Permissions: VhostPermissions{
+					Configure: ".*",
+					Read:      "^?",
+					Write:     ".*",
+				},
+				RabbitmqClusterReference: RabbitmqClusterReference{
+					Name: "some-cluster",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, &permission)).To(Succeed())
+		fetchedPermission := &Permission{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{
+			Name:      permission.Name,
+			Namespace: permission.Namespace,
+		}, fetchedPermission)).To(Succeed())
+		Expect(fetchedPermission.Spec.User).To(Equal("test"))
+		Expect(fetchedPermission.Spec.Vhost).To(Equal("/test"))
+		Expect(fetchedPermission.Spec.RabbitmqClusterReference.Name).To(Equal("some-cluster"))
+
+		Expect(fetchedPermission.Spec.Permissions.Configure).To(Equal(".*"))
+		Expect(fetchedPermission.Spec.Permissions.Write).To(Equal(".*"))
+		Expect(fetchedPermission.Spec.Permissions.Read).To(Equal("^?"))
+	})
+api/v1beta1/policy_types.go:1: 1-90 lines are duplicate of `api/v1beta1/binding_types.go:10-94` (dupl)
+package v1beta1
+
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+)
+
+// PolicySpec defines the desired state of Policy
+// https://www.rabbitmq.com/parameters.html#policies
+type PolicySpec struct {
+	// Required property; cannot be updated
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+	// Default to vhost '/'; cannot be updated
+	// +kubebuilder:default:=/
+	Vhost string `json:"vhost,omitempty"`
+	// Regular expression pattern used to match queues and exchanges, e.g. "^amq.".
+	// Required property.
+	// +kubebuilder:validation:Required
+	Pattern string `json:"pattern"`
+	// What this policy applies to: 'queues', 'classic_queues', 'quorum_queues', 'streams', 'exchanges', or 'all'.
+	// Default to 'all'.
+	// +kubebuilder:validation:Enum=queues;classic_queues;quorum_queues;streams;exchanges;all
+	// +kubebuilder:default:=all
+	ApplyTo string `json:"applyTo,omitempty"`
+	// Default to '0'.
+	// In the event that more than one policy can match a given exchange or queue, the policy with the greatest priority applies.
+	// +kubebuilder:default:=0
+	Priority int `json:"priority,omitempty"`
+	// Policy definition. Required property.
+	// +kubebuilder:validation:Type=object
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Required
+	Definition *runtime.RawExtension `json:"definition"`
+	// Reference to the RabbitmqCluster that the policy will be created in.
+	// Required property.
+	// +kubebuilder:validation:Required
+	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
+}
+
+// PolicyStatus defines the observed state of Policy
+type PolicyStatus struct {
+	// observedGeneration is the most recent successful generation observed for this Policy. It corresponds to the
+	// Policy's generation, which is updated on mutation by the API Server.
+	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
+	Conditions         []Condition `json:"conditions,omitempty"`
+}
+
+// +genclient
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:categories=rabbitmq
+// +kubebuilder:subresource:status
+
+// Policy is the Schema for the policies API
+type Policy struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   PolicySpec   `json:"spec,omitempty"`
+	Status PolicyStatus `json:"status,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+
+// PolicyList contains a list of Policy
+type PolicyList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []Policy `json:"items"`
+}
+
+func (p *Policy) GroupResource() schema.GroupResource {
+	return schema.GroupResource{
+		Group:    p.GroupVersionKind().Group,
+		Resource: p.GroupVersionKind().Kind,
+	}
+}
+
+func (p *Policy) RabbitReference() RabbitmqClusterReference {
+	return p.Spec.RabbitmqClusterReference
+}
+
+func (p *Policy) SetStatusConditions(c []Condition) {
+	p.Status.Conditions = c
+}
+
+func init() {
+	SchemeBuilder.Register(&Policy{}, &PolicyList{})
+}
+api/v1beta1/policy_types_test.go:1: 1-117 lines are duplicate of `api/v1beta1/operatorpolicy_types_test.go:1-117` (dupl)
+package v1beta1
+
+import (
+	"context"
+
+	"k8s.io/apimachinery/pkg/runtime"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+)
+
+var _ = Describe("Policy", func() {
+	var (
+		namespace = "default"
+		ctx       = context.Background()
+	)
+
+	It("creates a policy with minimal configurations", func() {
+		policy := Policy{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-policy",
+				Namespace: namespace,
+			},
+			Spec: PolicySpec{
+				Name:    "test-policy",
+				Pattern: "a-queue-name",
+				Definition: &runtime.RawExtension{
+					Raw: []byte(`{"key":"value"}`),
+				},
+				RabbitmqClusterReference: RabbitmqClusterReference{
+					Name: "some-cluster",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, &policy)).To(Succeed())
+		fetched := &Policy{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{
+			Name:      policy.Name,
+			Namespace: policy.Namespace,
+		}, fetched)).To(Succeed())
+		Expect(fetched.Spec.RabbitmqClusterReference).To(Equal(RabbitmqClusterReference{
+			Name: "some-cluster",
+		}))
+		Expect(fetched.Spec.Name).To(Equal("test-policy"))
+		Expect(fetched.Spec.Vhost).To(Equal("/"))
+		Expect(fetched.Spec.Pattern).To(Equal("a-queue-name"))
+		Expect(fetched.Spec.ApplyTo).To(Equal("all"))
+		Expect(fetched.Spec.Priority).To(Equal(0))
+		Expect(fetched.Spec.Definition.Raw).To(Equal([]byte(`{"key":"value"}`)))
+	})
+
+	It("creates policy with configurations", func() {
+		policy := Policy{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "random-policy",
+				Namespace: namespace,
+			},
+			Spec: PolicySpec{
+				Name:     "test-policy",
+				Vhost:    "/hello",
+				Pattern:  "*.",
+				ApplyTo:  "exchanges",
+				Priority: 100,
+				Definition: &runtime.RawExtension{
+					Raw: []byte(`{"key":"value"}`),
+				},
+				RabbitmqClusterReference: RabbitmqClusterReference{
+					Name: "random-cluster",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, &policy)).To(Succeed())
+		fetched := &Policy{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{
+			Name:      policy.Name,
+			Namespace: policy.Namespace,
+		}, fetched)).To(Succeed())
+
+		Expect(fetched.Spec.Name).To(Equal("test-policy"))
+		Expect(fetched.Spec.Vhost).To(Equal("/hello"))
+		Expect(fetched.Spec.Pattern).To(Equal("*."))
+		Expect(fetched.Spec.ApplyTo).To(Equal("exchanges"))
+		Expect(fetched.Spec.Priority).To(Equal(100))
+		Expect(fetched.Spec.RabbitmqClusterReference).To(Equal(
+			RabbitmqClusterReference{
+				Name: "random-cluster",
+			}))
+		Expect(fetched.Spec.Definition.Raw).To(Equal([]byte(`{"key":"value"}`)))
+	})
+
+	When("creating a policy with an invalid 'ApplyTo' value", func() {
+		It("fails with validation errors", func() {
+			policy := Policy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "invalid",
+					Namespace: namespace,
+				},
+				Spec: PolicySpec{
+					Name:    "test-policy",
+					Pattern: "a-queue-name",
+					Definition: &runtime.RawExtension{
+						Raw: []byte(`{"key":"value"}`),
+					},
+					ApplyTo: "yo-yo",
+					RabbitmqClusterReference: RabbitmqClusterReference{
+						Name: "some-cluster",
+					},
+				},
+			}
+			Expect(k8sClient.Create(ctx, &policy)).To(HaveOccurred())
+			Expect(k8sClient.Create(ctx, &policy)).To(MatchError(`Policy.rabbitmq.com "invalid" is invalid: spec.applyTo: Unsupported value: "yo-yo": supported values: "queues", "classic_queues", "quorum_queues", "streams", "exchanges", "all"`))
+		})
+	})
+
+})
+api/v1beta1/policy_types_test.go:54: 54-91 lines are duplicate of `api/v1beta1/binding_types_test.go:47-84` (dupl)
+	It("creates policy with configurations", func() {
+		policy := Policy{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "random-policy",
+				Namespace: namespace,
+			},
+			Spec: PolicySpec{
+				Name:     "test-policy",
+				Vhost:    "/hello",
+				Pattern:  "*.",
+				ApplyTo:  "exchanges",
+				Priority: 100,
+				Definition: &runtime.RawExtension{
+					Raw: []byte(`{"key":"value"}`),
+				},
+				RabbitmqClusterReference: RabbitmqClusterReference{
+					Name: "random-cluster",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, &policy)).To(Succeed())
+		fetched := &Policy{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{
+			Name:      policy.Name,
+			Namespace: policy.Namespace,
+		}, fetched)).To(Succeed())
+
+		Expect(fetched.Spec.Name).To(Equal("test-policy"))
+		Expect(fetched.Spec.Vhost).To(Equal("/hello"))
+		Expect(fetched.Spec.Pattern).To(Equal("*."))
+		Expect(fetched.Spec.ApplyTo).To(Equal("exchanges"))
+		Expect(fetched.Spec.Priority).To(Equal(100))
+		Expect(fetched.Spec.RabbitmqClusterReference).To(Equal(
+			RabbitmqClusterReference{
+				Name: "random-cluster",
+			}))
+		Expect(fetched.Spec.Definition.Raw).To(Equal([]byte(`{"key":"value"}`)))
+	})
+api/v1beta1/queue_types_test.go:52: 52-89 lines are duplicate of `api/v1beta1/exchange_types_test.go:52-89` (dupl)
+	It("creates a queue with configurations", func() {
+		q := Queue{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "random-q",
+				Namespace: namespace,
+			},
+			Spec: QueueSpec{
+				Name:       "test-queue",
+				Vhost:      "/hello",
+				Type:       "a type",
+				Durable:    true,
+				AutoDelete: true,
+				Arguments: &runtime.RawExtension{
+					Raw: []byte(`{"yoyo":10}`),
+				},
+				RabbitmqClusterReference: RabbitmqClusterReference{
+					Name: "random-cluster",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, &q)).To(Succeed())
+		fetchedQ := &Queue{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{
+			Name:      q.Name,
+			Namespace: q.Namespace,
+		}, fetchedQ)).To(Succeed())
+
+		Expect(fetchedQ.Spec.Name).To(Equal("test-queue"))
+		Expect(fetchedQ.Spec.Vhost).To(Equal("/hello"))
+		Expect(fetchedQ.Spec.Type).To(Equal("a type"))
+		Expect(fetchedQ.Spec.Durable).To(BeTrue())
+		Expect(fetchedQ.Spec.AutoDelete).To(BeTrue())
+		Expect(fetchedQ.Spec.RabbitmqClusterReference).To(Equal(
+			RabbitmqClusterReference{
+				Name: "random-cluster",
+			}))
+		Expect(fetchedQ.Spec.Arguments.Raw).To(Equal([]byte(`{"yoyo":10}`)))
+	})
+api/v1beta1/topicpermission_types.go:1: 1-83 lines are duplicate of `api/v1beta1/permission_types.go:1-87` (dupl)
+package v1beta1
+
+import (
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+)
+
+// TopicPermissionSpec defines the desired state of TopicPermission
+type TopicPermissionSpec struct {
+	// Name of an existing user; must provide user or userReference, else create/update will fail; cannot be updated.
+	User string `json:"user,omitempty"`
+	// Reference to an existing user.rabbitmq.com object; must provide user or userReference, else create/update will fail; cannot be updated.
+	UserReference *corev1.LocalObjectReference `json:"userReference,omitempty"`
+	// Name of an existing vhost; required property; cannot be updated.
+	// +kubebuilder:validation:Required
+	Vhost string `json:"vhost"`
+	// Permissions to grant to the user to a topic exchange; required property.
+	// +kubebuilder:validation:Required
+	Permissions TopicPermissionConfig `json:"permissions"`
+	// Reference to the RabbitmqCluster that both the provided user and vhost are.
+	// Required property.
+	// +kubebuilder:validation:Required
+	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
+}
+
+type TopicPermissionConfig struct {
+	// Name of a topic exchange; required property; cannot be updated.
+	// +kubebuilder:validation:Required
+	Exchange string `json:"exchange,omitempty"`
+	// +kubebuilder:validation:Optional
+	Read string `json:"read,omitempty"`
+	// +kubebuilder:validation:Optional
+	Write string `json:"write,omitempty"`
+}
+
+// TopicPermissionStatus defines the observed state of TopicPermission
+type TopicPermissionStatus struct {
+	// observedGeneration is the most recent successful generation observed for this TopicPermission. It corresponds to the
+	// TopicPermission's generation, which is updated on mutation by the API Server.
+	ObservedGeneration int64       `json:"observedGeneration,omitempty"`
+	Conditions         []Condition `json:"conditions,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+
+// TopicPermission is the Schema for the topicpermissions API
+type TopicPermission struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   TopicPermissionSpec   `json:"spec,omitempty"`
+	Status TopicPermissionStatus `json:"status,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+
+// TopicPermissionList contains a list of TopicPermission
+type TopicPermissionList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []TopicPermission `json:"items"`
+}
+
+func (t *TopicPermission) GroupResource() schema.GroupResource {
+	return schema.GroupResource{
+		Group:    t.GroupVersionKind().Group,
+		Resource: t.GroupVersionKind().Kind,
+	}
+}
+
+func (t *TopicPermission) RabbitReference() RabbitmqClusterReference {
+	return t.Spec.RabbitmqClusterReference
+}
+
+func (t *TopicPermission) SetStatusConditions(c []Condition) {
+	t.Status.Conditions = c
+}
+
+func init() {
+	SchemeBuilder.Register(&TopicPermission{}, &TopicPermissionList{})
+}
+api/v1beta1/topicpermission_types_test.go:19: 19-51 lines are duplicate of `api/v1beta1/permission_types_test.go:49-81` (dupl)
+	It("creates a topic permission when username is provided", func() {
+		permission := TopicPermission{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-permission-1",
+				Namespace: namespace,
+			},
+			Spec: TopicPermissionSpec{
+				User:  "test",
+				Vhost: "/test",
+				Permissions: TopicPermissionConfig{
+					Exchange: "some",
+					Read:     "^?",
+					Write:    ".*",
+				},
+				RabbitmqClusterReference: RabbitmqClusterReference{
+					Name: "some-cluster",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, &permission)).To(Succeed())
+		fetchedTopicPermission := &TopicPermission{}
+		Expect(k8sClient.Get(ctx, types.NamespacedName{
+			Name:      permission.Name,
+			Namespace: permission.Namespace,
+		}, fetchedTopicPermission)).To(Succeed())
+		Expect(fetchedTopicPermission.Spec.User).To(Equal("test"))
+		Expect(fetchedTopicPermission.Spec.Vhost).To(Equal("/test"))
+		Expect(fetchedTopicPermission.Spec.RabbitmqClusterReference.Name).To(Equal("some-cluster"))
+
+		Expect(fetchedTopicPermission.Spec.Permissions.Exchange).To(Equal("some"))
+		Expect(fetchedTopicPermission.Spec.Permissions.Write).To(Equal(".*"))
+		Expect(fetchedTopicPermission.Spec.Permissions.Read).To(Equal("^?"))
+	})
+rabbitmqclient/cluster_reference_test.go:445: 445-481 lines are duplicate of `rabbitmqclient/cluster_reference_test.go:525-561` (dupl)
+		When("uri has no scheme defined", func() {
+			BeforeEach(func() {
+				noSchemeSecret := &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rmq-connection-info",
+						Namespace: namespace,
+					},
+					Data: map[string][]byte{
+						"uri":      []byte("10.0.0.0:15672"),
+						"username": []byte("test-user"),
+						"password": []byte("test-password"),
+					},
+				}
+				objs = []runtime.Object{noSchemeSecret}
+			})
+
+			It("returns the expected connection information", func() {
+				creds, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+					topology.RabbitmqClusterReference{
+						ConnectionSecret: &corev1.LocalObjectReference{
+							Name: "rmq-connection-info",
+						},
+					},
+					namespace,
+					"",
+					false)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(tlsEnabled).To(BeFalse())
+				returnedUser := creds["username"]
+				returnedPass := creds["password"]
+				returnedURI := creds["uri"]
+				Expect(returnedUser).To(Equal("test-user"))
+				Expect(returnedPass).To(Equal("test-password"))
+				Expect(returnedURI).To(Equal("http://10.0.0.0:15672"))
+			})
+		})
+rabbitmqclient/cluster_reference_test.go:525: 525-561 lines are duplicate of `rabbitmqclient/cluster_reference_test.go:563-599` (dupl)
+		When("uri sets http as the scheme", func() {
+			BeforeEach(func() {
+				httpSchemeSecret := &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rmq-connection-info",
+						Namespace: namespace,
+					},
+					Data: map[string][]byte{
+						"uri":      []byte("http://10.0.0.0:15672"),
+						"username": []byte("test-user"),
+						"password": []byte("test-password"),
+					},
+				}
+				objs = []runtime.Object{httpSchemeSecret}
+			})
+
+			It("returns the expected connection information", func() {
+				creds, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+					topology.RabbitmqClusterReference{
+						ConnectionSecret: &corev1.LocalObjectReference{
+							Name: "rmq-connection-info",
+						},
+					},
+					namespace,
+					"",
+					false)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(tlsEnabled).To(BeFalse())
+				returnedUser := creds["username"]
+				returnedPass := creds["password"]
+				returnedURI := creds["uri"]
+				Expect(returnedUser).To(Equal("test-user"))
+				Expect(returnedPass).To(Equal("test-password"))
+				Expect(returnedURI).To(Equal("http://10.0.0.0:15672"))
+			})
+		})
+rabbitmqclient/cluster_reference_test.go:563: 563-599 lines are duplicate of `rabbitmqclient/cluster_reference_test.go:445-481` (dupl)
+		When("uri sets https as the scheme", func() {
+			BeforeEach(func() {
+				httpsSchemeSecret := &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rmq-connection-info",
+						Namespace: namespace,
+					},
+					Data: map[string][]byte{
+						"uri":      []byte("https://10.0.0.0:15671"),
+						"username": []byte("test-user"),
+						"password": []byte("test-password"),
+					},
+				}
+				objs = []runtime.Object{httpsSchemeSecret}
+			})
+
+			It("returns the expected connection information", func() {
+				creds, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+					topology.RabbitmqClusterReference{
+						ConnectionSecret: &corev1.LocalObjectReference{
+							Name: "rmq-connection-info",
+						},
+					},
+					namespace,
+					"",
+					false)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(tlsEnabled).To(BeTrue())
+				returnedUser := creds["username"]
+				returnedPass := creds["password"]
+				returnedURI := creds["uri"]
+				Expect(returnedUser).To(Equal("test-user"))
+				Expect(returnedPass).To(Equal("test-password"))
+				Expect(returnedURI).To(Equal("https://10.0.0.0:15671"))
+			})
+		})
+rabbitmqclient/cluster_reference_test.go:881: 881-921 lines are duplicate of `rabbitmqclient/cluster_reference_test.go:923-963` (dupl)
+		When("annotated URI has no scheme", func() {
+			BeforeEach(func() {
+				*existingRabbitMQCluster = rabbitmqv1beta1.RabbitmqCluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rmq",
+						Namespace: namespace,
+						Annotations: map[string]string{
+							uriAnnotationKey: "a-rabbitmq-test:7890",
+						},
+					},
+					Status: rabbitmqv1beta1.RabbitmqClusterStatus{
+						Binding: &corev1.LocalObjectReference{
+							Name: "rmq-default-user-credentials",
+						},
+						DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
+							ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
+								Name:      "rmq",
+								Namespace: namespace,
+							},
+						},
+					},
+				}
+			})
+
+			It("sets http as the scheme", func() {
+				creds, tlsOn, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+					topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
+					existingRabbitMQCluster.Namespace,
+					"",
+					false)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(tlsOn).To(BeFalse())
+
+				usernameBytes := creds["username"]
+				passwordBytes := creds["password"]
+				uriBytes := creds["uri"]
+				Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
+				Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
+				Expect(uriBytes).To(Equal("http://a-rabbitmq-test:7890"))
+			})
+		})
+rabbitmqclient/cluster_reference_test.go:923: 923-963 lines are duplicate of `rabbitmqclient/cluster_reference_test.go:881-921` (dupl)
+		When("annotated URI has https as scheme", func() {
+			BeforeEach(func() {
+				*existingRabbitMQCluster = rabbitmqv1beta1.RabbitmqCluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rmq",
+						Namespace: namespace,
+						Annotations: map[string]string{
+							uriAnnotationKey: "https://a-rabbitmq-test:2333",
+						},
+					},
+					Status: rabbitmqv1beta1.RabbitmqClusterStatus{
+						Binding: &corev1.LocalObjectReference{
+							Name: "rmq-default-user-credentials",
+						},
+						DefaultUser: &rabbitmqv1beta1.RabbitmqClusterDefaultUser{
+							ServiceReference: &rabbitmqv1beta1.RabbitmqClusterServiceReference{
+								Name:      "rmq",
+								Namespace: namespace,
+							},
+						},
+					},
+				}
+			})
+
+			It("returns correct credentials", func() {
+				creds, tlsOn, err := rabbitmqclient.ParseReference(ctx, fakeClient,
+					topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name},
+					existingRabbitMQCluster.Namespace,
+					"",
+					false)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(tlsOn).To(BeTrue())
+
+				usernameBytes := creds["username"]
+				passwordBytes := creds["password"]
+				uriBytes := creds["uri"]
+				Expect(usernameBytes).To(Equal(existingRabbitMQUsername))
+				Expect(passwordBytes).To(Equal(existingRabbitMQPassword))
+				Expect(uriBytes).To(Equal("https://a-rabbitmq-test:2333"))
+			})
+		})
+internal/controller/utils.go:53:17: Error return value of `res.Body.Close` is not checked (errcheck)
+		res.Body.Close()
+		              ^
+rabbitmqclient/vault_reader_test.go:303:13: Error return value of `os.Setenv` is not checked (errcheck)
+			os.Setenv("VAULT_ADDR", "vault-address")
+			         ^
+rabbitmqclient/vault_reader_test.go:522:16: Error return value of `os.Unsetenv` is not checked (errcheck)
+				os.Unsetenv("VAULT_ADDR")
+				           ^
+test/system/utils.go:347:17: Error return value of `os.Remove` is not checked (errcheck)
+	defer os.Remove(tmpfile.Name())
+	               ^
+internal/controller/vhost_controller_test.go:122:17: string `test-http-error` has 5 occurrences, make it a constant (goconst)
+				vhostName = "test-http-error"
+				            ^
+internal/controller/vhost_controller_test.go:156:17: string `test-go-error` has 5 occurrences, make it a constant (goconst)
+				vhostName = "test-go-error"
+				            ^
+internal/controller/vhost_controller_test.go:391:17: string `delete-go-error` has 5 occurrences, make it a constant (goconst)
+				vhostName = "delete-go-error"
+				            ^
+internal/controller/vhost_controller_test.go:429:32: string `retain` has 4 occurrences, make it a constant (goconst)
+			vhost.Spec.DeletionPolicy = "retain"
+			                            ^
+internal/federation_definition_test.go:90:22: string `quorum` has 3 occurrences, make it a constant (goconst)
+		f.Spec.QueueType = "quorum"
+		                   ^
+internal/managedresource/superstream_partition_test.go:26:27: string `foo` has 6 occurrences, make it a constant (goconst)
+		superStream.Namespace = "foo"
+		                        ^
+test/system/topic_permission_system_test.go:148:27: string `/a-new-vhost` has 5 occurrences, make it a constant (goconst)
+		updateTest.Spec.Vhost = "/a-new-vhost"
+		                        ^
+cmd/main.go:5:1: The line is 174 characters long, which exceeds the maximum of 120 characters. (lll)
+This product is licensed to you under the Mozilla Public License 2.0 license (the "License").  You may not use this product except in compliance with the Mozilla 2.0 License.
+^
+cmd/main.go:7:1: The line is 233 characters long, which exceeds the maximum of 120 characters. (lll)
+This product may include a number of subcomponents with separate copyright notices and license terms. Your use of these subcomponents is subject to the terms and conditions of the subcomponent's license, as noted in the LICENSE file.
+^
+cmd/main.go:72:1: The line is 139 characters long, which exceeds the maximum of 120 characters. (lll)
+	match, _ := regexp.MatchString("^\\.?[a-z]([-a-z0-9]*[a-z0-9])?(\\.[a-z]([-a-z0-9]*[a-z0-9])?)*$", clusterDomain) // Allow-list expression
+^
+cmd/main.go:145:1: The line is 149 characters long, which exceeds the maximum of 120 characters. (lll)
+	// If the environment variable is not set Getenv returns an empty string which ctrl.Options.Namespace takes to mean all namespaces should be watched
+^
+cmd/main.go:215:1: The line is 152 characters long, which exceeds the maximum of 120 characters. (lll)
+		// https://github.com/kubernetes-sigs/controller-runtime/blob/main/designs/cache_options.md#only-cache-namespaced-objects-in-the-foo-and-bar-namespace
+^
+cmd/main.go:216:1: The line is 122 characters long, which exceeds the maximum of 120 characters. (lll)
+		// Also see https://github.com/rabbitmq/cluster-operator/blob/e2d413c102bc73d4b5e186d1d1b1f9bf728701e1/main.go#L114-L131
+^
+cmd/main.go:260:1: The line is 123 characters long, which exceeds the maximum of 120 characters. (lll)
+	if maxConcurrentReconcilesEnvValue := getIntEnv(controller.MaxConcurrentReconciles); maxConcurrentReconcilesEnvValue > 0 {
+^
+test/system/binding_system_test.go:115:1: The line is 132 characters long, which exceeds the maximum of 120 characters. (lll)
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &updatedBinding)).To(Succeed())
+^
+test/system/binding_system_test.go:133:1: The line is 130 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: binding.Name, Namespace: binding.Namespace}, &updateBinding)).To(Succeed())
+^
+test/system/binding_system_test.go:135:1: The line is 154 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Update(ctx, &updatedBinding).Error()).To(ContainSubstring("spec.routingKey: Invalid value: \"new-key\": routingKey cannot be updated"))
+^
+test/system/binding_system_test.go:141:1: The line is 124 characters long, which exceeds the maximum of 120 characters. (lll)
+			bindings, err := rabbitClient.ListQueueBindingsBetween(binding.Spec.Vhost, binding.Spec.Source, binding.Spec.Destination)
+^
+test/system/deletion_system_test.go:95:1: The line is 172 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Delete(ctx, &rabbitmqv1beta1.RabbitmqCluster{ObjectMeta: metav1.ObjectMeta{Name: targetCluster.Name, Namespace: targetCluster.Namespace}})).To(Succeed())
+^
+test/system/exchange_system_test.go:75:1: The line is 127 characters long, which exceeds the maximum of 120 characters. (lll)
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &fetched)).To(Succeed())
+^
+test/system/exchange_system_test.go:93:1: The line is 134 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: exchange.Name, Namespace: exchange.Namespace}, &updatedExchange)).To(Succeed())
+^
+test/system/exchange_system_test.go:95:1: The line is 175 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Update(ctx, &updatedExchange).Error()).To(ContainSubstring("spec.vhost: Forbidden: updates on name, vhost, and rabbitmqClusterReference are all forbidden"))
+^
+test/system/exchange_system_test.go:98:1: The line is 143 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Update(ctx, &updatedExchange).Error()).To(ContainSubstring("spec.durable: Invalid value: false: durable cannot be updated"))
+^
+test/system/federation_system_test.go:23:1: The line is 148 characters long, which exceeds the maximum of 120 characters. (lll)
+		federationUri       = "amqp://server-name-my-upstream-test-uri0,amqp://server-name-my-upstream-test-uri1,amqp://server-name-my-upstream-test-uri2"
+^
+test/system/federation_system_test.go:83:1: The line is 140 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: federation.Name, Namespace: federation.Namespace}, &updatedFederation)).To(Succeed())
+^
+test/system/federation_system_test.go:86:1: The line is 141 characters long, which exceeds the maximum of 120 characters. (lll)
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: federation.Name, Namespace: federation.Namespace}, &updatedFederation)).To(Succeed())
+^
+test/system/federation_system_test.go:104:1: The line is 133 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: federation.Name, Namespace: federation.Namespace}, &updateTest)).To(Succeed())
+^
+test/system/federation_system_test.go:106:1: The line is 169 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Update(ctx, &updateTest).Error()).To(ContainSubstring("spec.vhost: Forbidden: updates on name, vhost and rabbitmqClusterReference are all forbidden"))
+^
+test/system/federation_system_test.go:109:1: The line is 132 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: federation.Name, Namespace: federation.Namespace}, federation)).To(Succeed())
+^
+test/system/federation_system_test.go:161:1: The line is 151 characters long, which exceeds the maximum of 120 characters. (lll)
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: federationWithRetain.Name, Namespace: federationWithRetain.Namespace}, &topology.Federation{})
+^
+test/system/operatorpolicy_system_test.go:91:1: The line is 129 characters long, which exceeds the maximum of 120 characters. (lll)
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &updatedPolicy)).To(Succeed())
+^
+test/system/operatorpolicy_system_test.go:109:1: The line is 125 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &updateTest)).To(Succeed())
+^
+test/system/operatorpolicy_system_test.go:111:1: The line is 173 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Update(ctx, &updateTest)).To(MatchError(ContainSubstring("spec.vhost: Forbidden: updates on name, vhost and rabbitmqClusterReference are all forbidden")))
+^
+test/system/permissions_system_test.go:74:1: The line is 129 characters long, which exceeds the maximum of 120 characters. (lll)
+			if err := k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{}); err != nil {
+^
+test/system/permissions_system_test.go:105:1: The line is 141 characters long, which exceeds the maximum of 120 characters. (lll)
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &updatedPermission)).To(Succeed())
+^
+test/system/permissions_system_test.go:123:1: The line is 133 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &updateTest)).To(Succeed())
+^
+test/system/permissions_system_test.go:125:1: The line is 184 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Update(ctx, &updateTest).Error()).To(ContainSubstring("spec.vhost: Forbidden: updates on user, userReference, vhost and rabbitmqClusterReference are all forbidden"))
+^
+test/system/permissions_system_test.go:128:1: The line is 132 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, permission)).To(Succeed())
+^
+test/system/policy_system_test.go:75:1: The line is 129 characters long, which exceeds the maximum of 120 characters. (lll)
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &updatedPolicy)).To(Succeed())
+^
+test/system/policy_system_test.go:93:1: The line is 125 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: policy.Name, Namespace: policy.Namespace}, &updateTest)).To(Succeed())
+^
+test/system/policy_system_test.go:95:1: The line is 169 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Update(ctx, &updateTest).Error()).To(ContainSubstring("spec.vhost: Forbidden: updates on name, vhost and rabbitmqClusterReference are all forbidden"))
+^
+test/system/queue_system_test.go:96:1: The line is 166 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Update(ctx, &updateQ).Error()).To(ContainSubstring("spec.name: Forbidden: updates on name, vhost, and rabbitmqClusterReference are all forbidden"))
+^
+test/system/queue_system_test.go:99:1: The line is 141 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Update(ctx, &updateQ).Error()).To(ContainSubstring("spec.type: Invalid value: \"classic\": queue type cannot be updated"))
+^
+test/system/queue_system_test.go:143:1: The line is 136 characters long, which exceeds the maximum of 120 characters. (lll)
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: queueWithRetain.Name, Namespace: queueWithRetain.Namespace}, &topology.Queue{})
+^
+test/system/schema_replication_system_test.go:88:1: The line is 144 characters long, which exceeds the maximum of 120 characters. (lll)
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace}, &updatedReplication)).To(Succeed())
+^
+test/system/schema_replication_system_test.go:106:1: The line is 135 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: replication.Name, Namespace: replication.Namespace}, &updateTest)).To(Succeed())
+^
+test/system/schema_replication_system_test.go:108:1: The line is 166 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Update(ctx, &updateTest).Error()).To(ContainSubstring("spec.rabbitmqClusterReference: Forbidden: update on rabbitmqClusterReference is forbidden"))
+^
+test/system/shovel_system_test.go:100:1: The line is 125 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: shovel.Name, Namespace: shovel.Namespace}, &updateTest)).To(Succeed())
+^
+test/system/shovel_system_test.go:102:1: The line is 168 characters long, which exceeds the maximum of 120 characters. (lll)
+		Expect(k8sClient.Update(ctx, &updateTest).Error()).To(ContainSubstring("spec.name: Forbidden: updates on name, vhost and rabbitmqClusterReference are all forbidden"))
+^
+test/system/shovel_system_test.go:183:1: The line is 139 characters long, which exceeds the maximum of 120 characters. (lll)
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: shovelWithRetain.Name, Namespace: shovelWithRetain.Namespace}, &topology.Shovel{})
+^
+test/system/suite_test.go:5:1: The line is 174 characters long, which exceeds the maximum of 120 characters. (lll)
+This product is licensed to you under the Mozilla Public License 2.0 license (the "License").  You may not use this product except in compliance with the Mozilla 2.0 License.
+^
+test/system/suite_test.go:7:1: The line is 233 characters long, which exceeds the maximum of 120 characters. (lll)
+This product may include a number of subcomponents with separate copyright notices and license terms. Your use of these subcomponents is subject to the terms and conditions of the subcomponent's license, as noted in the LICENSE file.
+^
+test/system/suite_test.go:107:1: The line is 225 characters long, which exceeds the maximum of 120 characters. (lll)
+		// helm install chaos-mesh chaos-mesh/chaos-mesh --namespace=chaos-testing --version 2.1.0 --set dashboard.securityMode=false --set chaosDaemon.runtime=containerd --set chaosDaemon.socketPath=/run/containerd/containerd.sock
+^
+test/system/utils.go:110:1: The line is 133 characters long, which exceeds the maximum of 120 characters. (lll)
+func generateRabbitClient(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) (*rabbithole.Client, error) {
+^
+test/system/utils.go:129:1: The line is 131 characters long, which exceeds the maximum of 120 characters. (lll)
+func getUsernameAndPassword(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) (string, string, error) {
+^
+test/system/utils.go:219:1: The line is 123 characters long, which exceeds the maximum of 120 characters. (lll)
+func getLoadBalancerIngress(ctx context.Context, clientSet *kubernetes.Clientset, namespace, name string) (string, error) {
+^
+test/system/utils.go:332:1: The line is 163 characters long, which exceeds the maximum of 120 characters. (lll)
+	Expect(k8sClient.Get(context.Background(), types.NamespacedName{Name: rabbitmqCluster.Name, Namespace: rabbitmqCluster.Namespace}, rabbitmqCluster)).To(Succeed())
+^
+internal/user.go:53:2: Consider pre-allocating `userTagStrings` (prealloc)
+	var userTagStrings []string
+	^
+internal/controller/schemareplication_controller.go:28:72: import-shadowing: The name 'client' shadows an import name (revive)
+func (r *SchemaReplicationReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+                                                                       ^
+internal/controller/schemareplication_controller.go:37:71: import-shadowing: The name 'client' shadows an import name (revive)
+func (r *SchemaReplicationReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, _ topology.TopologyResource) error {
+                                                                      ^
+internal/controller/suite_test.go:57:2: comment-spacings: no space between comment delimiter and comment text (revive)
+	//mgr                       ctrl.Manager
+	^
+internal/controller/suite_test.go:185:2: comment-spacings: no space between comment delimiter and comment text (revive)
+	//Expect(superStreamReconciler.SetupWithManager(mgr)).To(Succeed())
+	^
+internal/controller/topicpermission_controller.go:17:1: comment-spacings: no space between comment delimiter and comment text (revive)
+//+kubebuilder:rbac:groups=rabbitmq.com,resources=topicpermissions,verbs=get;list;watch;create;update;patch;delete
+^
+internal/controller/user_controller.go:191:59: import-shadowing: The name 'client' shadows an import name (revive)
+func (r *UserReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+                                                          ^
+internal/controller/utils.go:61:5: ST1012: error var NotFound should have name of the form ErrFoo (staticcheck)
+var NotFound = errors.New("not found")
+    ^
+internal/testutils/certificate.go:13:2: ST1001: should not use dot imports (staticcheck)
+	. "github.com/onsi/gomega"
+	^
+rabbitmqclient/cluster_reference.go:32:2: ST1012: error var NoSuchRabbitmqClusterError should have name of the form ErrFoo (staticcheck)
+	NoSuchRabbitmqClusterError = errors.New("RabbitmqCluster object does not exist")
+	^
+rabbitmqclient/cluster_reference.go:34:2: ST1012: error var NoServiceReferenceSetError should have name of the form ErrFoo (staticcheck)
+	NoServiceReferenceSetError = errors.New("RabbitmqCluster has no ServiceReference set in status.defaultUser")
+	^
+test/system/utils.go:17:2: ST1001: should not use dot imports (staticcheck)
+	. "github.com/onsi/gomega"
+	^
+test/system/utils.go:404:10: ST1005: error strings should not end with punctuation or newlines (staticcheck)
+		return fmt.Errorf("Failed with error: %v\nOutput: %v\n", err.Error(), string(output))
+		       ^
+test/system/utils.go:420:10: ST1005: error strings should not end with punctuation or newlines (staticcheck)
+		return fmt.Errorf("Failed with error: %v\nOutput: %v\n", err.Error(), string(output))
+		       ^
+test/system/utils.go:366:65: k8sSecretExists - result 1 (error) is always nil (unparam)
+func k8sSecretExists(secretName, secretNamespace string) (bool, error) {
+                                                                ^
+96 issues:
+* dupl: 20
+* errcheck: 4
+* goconst: 7
+* lll: 50
+* prealloc: 1
+* revive: 6
+* staticcheck: 7
+* unparam: 1

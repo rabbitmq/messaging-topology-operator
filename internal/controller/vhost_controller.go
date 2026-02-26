@@ -41,7 +41,7 @@ func (r *VhostReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient
 	if len(limitsToDelete) > 0 {
 		logger.Info("Deleting outdated vhost limits", "vhost", vhost.Spec.Name, "limits", limitsToDelete)
 		err = validateResponseForDeletion(client.DeleteVhostLimits(vhost.Spec.Name, limitsToDelete))
-		if err != nil && !errors.Is(err, NotFound) {
+		if err != nil && !errors.Is(err, ErrNotFound) {
 			return err
 		}
 	}
@@ -61,7 +61,7 @@ func (r *VhostReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.
 		return nil
 	}
 	err := validateResponseForDeletion(client.DeleteVhost(vhost.Spec.Name))
-	if errors.Is(err, NotFound) {
+	if errors.Is(err, ErrNotFound) {
 		logger.Info("cannot find vhost in rabbitmq server; already deleted", "vhost", vhost.Spec.Name)
 	} else if err != nil {
 		return err
