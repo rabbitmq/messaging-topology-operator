@@ -23,7 +23,7 @@ type ShovelReconciler struct {
 	client.Client
 }
 
-func (r *ShovelReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *ShovelReconciler) DeclareFunc(ctx context.Context, rmqc rabbitmqclient.Client, obj topology.TopologyResource) error {
 	shovel := obj.(*topology.Shovel)
 	srcUri, destUri, err := r.getUris(ctx, shovel)
 	if err != nil {
@@ -33,7 +33,7 @@ func (r *ShovelReconciler) DeclareFunc(ctx context.Context, client rabbitmqclien
 	if err != nil {
 		return fmt.Errorf("failed to generate shovel definition: %w", err)
 	}
-	return validateResponse(client.DeclareShovel(shovel.Spec.Vhost, shovel.Spec.Name, *definition))
+	return validateResponse(rmqc.DeclareShovel(shovel.Spec.Vhost, shovel.Spec.Name, *definition))
 }
 func (r *ShovelReconciler) getUris(ctx context.Context, shovel *topology.Shovel) (string, string, error) {
 	if shovel.Spec.UriSecret == nil {
@@ -59,13 +59,13 @@ func (r *ShovelReconciler) getUris(ctx context.Context, shovel *topology.Shovel)
 
 // DeleteFunc deletes shovel configuration from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
-func (r *ShovelReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *ShovelReconciler) DeleteFunc(ctx context.Context, rmqc rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
 	shovel := obj.(*topology.Shovel)
 	if shouldSkipDeletion(ctx, shovel.Spec.DeletionPolicy, shovel.Spec.Name) {
 		return nil
 	}
-	err := validateResponseForDeletion(client.DeleteShovel(shovel.Spec.Vhost, shovel.Spec.Name))
+	err := validateResponseForDeletion(rmqc.DeleteShovel(shovel.Spec.Vhost, shovel.Spec.Name))
 	if errors.Is(err, ErrNotFound) {
 		logger.Info("cannot find shovel parameter; no need to delete it", "shovel", shovel.Spec.Name)
 	} else if err != nil {

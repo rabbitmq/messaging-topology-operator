@@ -67,21 +67,21 @@ func validateResponseForDeletion(res *http.Response, err error) error {
 	return validateResponse(res, err)
 }
 
-func addFinalizerIfNeeded(ctx context.Context, client client.Client, obj client.Object) error {
+func addFinalizerIfNeeded(ctx context.Context, k8sClient client.Client, obj client.Object) error {
 	finalizer := deletionFinalizer(obj.GetObjectKind().GroupVersionKind().Kind)
 	if obj.GetDeletionTimestamp().IsZero() && !controllerutil.ContainsFinalizer(obj, finalizer) {
 		controllerutil.AddFinalizer(obj, finalizer)
-		if err := client.Update(ctx, obj); err != nil {
+		if err := k8sClient.Update(ctx, obj); err != nil {
 			return fmt.Errorf("failed to add deletionFinalizer: %w", err)
 		}
 	}
 	return nil
 }
 
-func removeFinalizer(ctx context.Context, client client.Client, obj client.Object) error {
+func removeFinalizer(ctx context.Context, k8sClient client.Client, obj client.Object) error {
 	finalizer := deletionFinalizer(obj.GetObjectKind().GroupVersionKind().Kind)
 	controllerutil.RemoveFinalizer(obj, finalizer)
-	if err := client.Update(ctx, obj); err != nil {
+	if err := k8sClient.Update(ctx, obj); err != nil {
 		return fmt.Errorf("failed to delete finalizer: %w", err)
 	}
 	return nil
@@ -105,7 +105,7 @@ func deletionFinalizer(kind string) string {
 
 // handleRMQReferenceParseError handles the error output from internal.ParseReference, returning a
 // result for the Reconcile loop for a controller, and adding logs or status updates on the object being reconciled.
-func handleRMQReferenceParseError(ctx context.Context, client client.Client, eventRecorder record.EventRecorder, object client.Object, objectConditions *[]topology.Condition, err error) (ctrl.Result, error) {
+func handleRMQReferenceParseError(ctx context.Context, k8sClient client.Client, eventRecorder record.EventRecorder, object client.Object, objectConditions *[]topology.Condition, err error) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
 	if err == nil {
 		logger.Error(errors.New("expected error to parse, but it was nil"), "Failed to parse error from RabbitmqClusterReference parsing")
@@ -114,7 +114,7 @@ func handleRMQReferenceParseError(ctx context.Context, client client.Client, eve
 	if errors.Is(err, rabbitmqclient.ErrNoSuchRabbitmqCluster) && !object.GetDeletionTimestamp().IsZero() {
 		logger.Info(noSuchRabbitDeletion, "object", object.GetName())
 		eventRecorder.Event(object, corev1.EventTypeNormal, "SuccessfulDelete", "successfully deleted "+object.GetName())
-		return reconcile.Result{}, removeFinalizer(ctx, client, object)
+		return reconcile.Result{}, removeFinalizer(ctx, k8sClient, object)
 	}
 	if errors.Is(err, rabbitmqclient.ErrNoSuchRabbitmqCluster) {
 		// If the object is not being deleted, but the RabbitmqCluster no longer exists, it could be that
@@ -128,7 +128,7 @@ func handleRMQReferenceParseError(ctx context.Context, client client.Client, eve
 			topology.NotReady(rabbitmqclient.ErrResourceNotAllowed.Error(), *objectConditions),
 		}
 		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
-			return client.Status().Update(ctx, object)
+			return k8sClient.Status().Update(ctx, object)
 		}); writerErr != nil {
 			logger.Error(writerErr, failedStatusUpdate, "object", object.GetName())
 		}

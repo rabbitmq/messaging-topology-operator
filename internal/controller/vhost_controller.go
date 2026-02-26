@@ -21,46 +21,46 @@ type VhostReconciler struct {
 	client.Client
 }
 
-func (r *VhostReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *VhostReconciler) DeclareFunc(ctx context.Context, rmqc rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
 	vhost := obj.(*topology.Vhost)
 	settings := internal.GenerateVhostSettings(vhost)
 	logger.V(1).Info("generated vhost settings", "vhost", vhost.Spec.Name, "settings", settings)
-	err := validateResponse(client.PutVhost(vhost.Spec.Name, *settings))
+	err := validateResponse(rmqc.PutVhost(vhost.Spec.Name, *settings))
 	if err != nil {
 		return err
 	}
 
 	newVhostLimits := internal.GenerateVhostLimits(vhost.Spec.VhostLimits)
 	logger.V(1).Info("getting existing vhost limits", "vhost", vhost.Spec.Name)
-	existingVhostLimits, err := r.getVhostLimits(client, vhost.Spec.Name)
+	existingVhostLimits, err := r.getVhostLimits(rmqc, vhost.Spec.Name)
 	if err != nil {
 		return err
 	}
 	limitsToDelete := r.vhostLimitsToDelete(existingVhostLimits, newVhostLimits)
 	if len(limitsToDelete) > 0 {
 		logger.Info("Deleting outdated vhost limits", "vhost", vhost.Spec.Name, "limits", limitsToDelete)
-		err = validateResponseForDeletion(client.DeleteVhostLimits(vhost.Spec.Name, limitsToDelete))
+		err = validateResponseForDeletion(rmqc.DeleteVhostLimits(vhost.Spec.Name, limitsToDelete))
 		if err != nil && !errors.Is(err, ErrNotFound) {
 			return err
 		}
 	}
 	if len(newVhostLimits) > 0 {
 		logger.Info("creating new vhost limits", "vhost", vhost.Spec.Name, "limits", newVhostLimits)
-		return validateResponse(client.PutVhostLimits(vhost.Spec.Name, newVhostLimits))
+		return validateResponse(rmqc.PutVhostLimits(vhost.Spec.Name, newVhostLimits))
 	}
 	return nil
 }
 
 // DeleteFunc deletes vhost from server
 // if server responds with '404' Not Found, it logs and does not requeue on error
-func (r *VhostReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *VhostReconciler) DeleteFunc(ctx context.Context, rmqc rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
 	vhost := obj.(*topology.Vhost)
 	if shouldSkipDeletion(ctx, vhost.Spec.DeletionPolicy, vhost.Spec.Name) {
 		return nil
 	}
-	err := validateResponseForDeletion(client.DeleteVhost(vhost.Spec.Name))
+	err := validateResponseForDeletion(rmqc.DeleteVhost(vhost.Spec.Name))
 	if errors.Is(err, ErrNotFound) {
 		logger.Info("cannot find vhost in rabbitmq server; already deleted", "vhost", vhost.Spec.Name)
 	} else if err != nil {
@@ -81,8 +81,8 @@ func (r *VhostReconciler) vhostLimitsToDelete(existingVhostLimits, newVhostLimit
 	return limitsToDelete
 }
 
-func (r *VhostReconciler) getVhostLimits(client rabbitmqclient.Client, vhost string) (rabbithole.VhostLimitsValues, error) {
-	vhostLimitsInfo, err := client.GetVhostLimits(vhost)
+func (r *VhostReconciler) getVhostLimits(rmqc rabbitmqclient.Client, vhost string) (rabbithole.VhostLimitsValues, error) {
+	vhostLimitsInfo, err := rmqc.GetVhostLimits(vhost)
 	if errors.Is(err, error(rabbithole404)) {
 		return rabbithole.VhostLimitsValues{}, nil
 	} else if err != nil {

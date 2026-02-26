@@ -25,18 +25,18 @@ type SchemaReplicationReconciler struct {
 	client.Client
 }
 
-func (r *SchemaReplicationReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *SchemaReplicationReconciler) DeclareFunc(ctx context.Context, rmqc rabbitmqclient.Client, obj topology.TopologyResource) error {
 	replication := obj.(*topology.SchemaReplication)
 	endpoints, err := r.getUpstreamEndpoints(ctx, replication)
 	if err != nil {
 		return fmt.Errorf("failed to generate upstream endpoints: %w", err)
 	}
-	return validateResponse(client.PutGlobalParameter(SchemaReplicationParameterName, endpoints))
+	return validateResponse(rmqc.PutGlobalParameter(SchemaReplicationParameterName, endpoints))
 }
 
-func (r *SchemaReplicationReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, _ topology.TopologyResource) error {
+func (r *SchemaReplicationReconciler) DeleteFunc(ctx context.Context, rmqc rabbitmqclient.Client, _ topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
-	err := validateResponseForDeletion(client.DeleteGlobalParameter(SchemaReplicationParameterName))
+	err := validateResponseForDeletion(rmqc.DeleteGlobalParameter(SchemaReplicationParameterName))
 	if errors.Is(err, ErrNotFound) {
 		logger.Info("cannot find global parameter; no need to delete it", "parameter", SchemaReplicationParameterName)
 	} else if err != nil {

@@ -14,9 +14,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-//+kubebuilder:rbac:groups=rabbitmq.com,resources=topicpermissions,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=rabbitmq.com,resources=topicpermissions/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=rabbitmq.com,resources=topicpermissions/finalizers,verbs=update
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=topicpermissions,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=topicpermissions/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=topicpermissions/finalizers,verbs=update
 
 type TopicPermissionReconciler struct {
 	client.Client

@@ -54,7 +54,7 @@ var (
 	testEnv *envtest.Environment
 	ctx     context.Context
 	cancel  context.CancelFunc
-	//mgr                       ctrl.Manager
+	// mgr                       ctrl.Manager
 	fakeRabbitMQClient        *rabbitmqclientfakes.FakeClient
 	fakeRabbitMQClientError   error
 	fakeRabbitMQClientFactory = func(connectionCreds map[string]string, tlsEnabled bool, certPool *x509.CertPool) (rabbitmqclient.Client, error) {
@@ -182,7 +182,7 @@ var _ = BeforeSuite(func() {
 
 	fakeRecorder = record.NewFakeRecorder(128)
 
-	//Expect(superStreamReconciler.SetupWithManager(mgr)).To(Succeed())
+	// Expect(superStreamReconciler.SetupWithManager(mgr)).To(Succeed())
 
 	komega.SetClient(client)
 	komega.SetContext(ctx)

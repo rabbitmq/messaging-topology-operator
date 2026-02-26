@@ -188,7 +188,7 @@ func (r *UserReconciler) setUserStatus(ctx context.Context, user *topology.User,
 	return nil
 }
 
-func (r *UserReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *UserReconciler) DeclareFunc(ctx context.Context, rmqc rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
 	user := obj.(*topology.User)
 	if user.Status.Credentials == nil || user.Status.Username == "" {
@@ -224,28 +224,28 @@ func (r *UserReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.
 	}
 	logger.Info("Generated user settings", "user", user.Name, "settings", userSettings)
 
-	err = validateResponse(client.PutUser(userSettings.Name, userSettings))
+	err = validateResponse(rmqc.PutUser(userSettings.Name, userSettings))
 	if err != nil {
 		return err
 	}
 
 	newUserLimits := internal.GenerateUserLimits(user.Spec.UserLimits)
 	logger.Info("Getting existing user limits", "user", user.Name)
-	existingUserLimits, err := r.getUserLimits(client, string(credentials.Data["username"]))
+	existingUserLimits, err := r.getUserLimits(rmqc, string(credentials.Data["username"]))
 	if err != nil {
 		return err
 	}
 	limitsToDelete := r.userLimitsToDelete(existingUserLimits, newUserLimits)
 	if len(limitsToDelete) > 0 {
 		logger.Info("Deleting outdated user limits", "user", user.Name, "limits", limitsToDelete)
-		err = validateResponseForDeletion(client.DeleteUserLimits(string(credentials.Data["username"]), limitsToDelete))
+		err = validateResponseForDeletion(rmqc.DeleteUserLimits(string(credentials.Data["username"]), limitsToDelete))
 		if err != nil && !errors.Is(err, ErrNotFound) {
 			return err
 		}
 	}
 	if len(newUserLimits) > 0 {
 		logger.Info("Creating new user limits", "user", user.Name, "limits", newUserLimits)
-		return validateResponse(client.PutUserLimits(string(credentials.Data["username"]), newUserLimits))
+		return validateResponse(rmqc.PutUserLimits(string(credentials.Data["username"]), newUserLimits))
 	}
 	return nil
 }
@@ -262,8 +262,8 @@ func (r *UserReconciler) userLimitsToDelete(existingUserLimits, newUserLimits ra
 	return limitsToDelete
 }
 
-func (r *UserReconciler) getUserLimits(client rabbitmqclient.Client, username string) (rabbithole.UserLimitsValues, error) {
-	userLimitsInfo, err := client.GetUserLimits(username)
+func (r *UserReconciler) getUserLimits(rmqc rabbitmqclient.Client, username string) (rabbithole.UserLimitsValues, error) {
+	userLimitsInfo, err := rmqc.GetUserLimits(username)
 	if errors.Is(err, error(rabbithole404)) {
 		return rabbithole.UserLimitsValues{}, nil
 	} else if err != nil {
@@ -286,11 +286,11 @@ func (r *UserReconciler) getUserCredentials(ctx context.Context, user *topology.
 	return credentials, nil
 }
 
-func (r *UserReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *UserReconciler) DeleteFunc(ctx context.Context, rmqc rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
 	user := obj.(*topology.User)
 
-	err := validateResponseForDeletion(client.DeleteUser(user.Status.Username))
+	err := validateResponseForDeletion(rmqc.DeleteUser(user.Status.Username))
 	if errors.Is(err, ErrNotFound) {
 		logger.Info("cannot find user in rabbitmq server; already deleted", "user", user.Name)
 	} else if err != nil {
