@@ -72,11 +72,6 @@ func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	if superStream.Spec.Partitions < len(superStream.Status.Partitions) {
 		// This would constitute a scale down, which may result in data loss.
-		err := fmt.Errorf(
-			"SuperStreams cannot be scaled down: an attempt was made to scale from %d partitions to %d",
-			len(superStream.Status.Partitions),
-			superStream.Spec.Partitions,
-		)
 		msg := fmt.Sprintf("SuperStream %s failed to reconcile", superStream.Name)
 		logger.Error(err, msg)
 		r.Recorder.Eventf(
@@ -85,8 +80,9 @@ func (r *SuperStreamReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			corev1.EventTypeWarning,
 			"FailedScaleDown",
 			deleteEventAction,
-			"failed to scale down super stream: %s",
-			err.Error(),
+			"SuperStreams cannot be scaled down: an attempt was made to scale from %d partitions to %d",
+			len(superStream.Status.Partitions),
+			superStream.Spec.Partitions,
 		)
 		if writerErr := r.SetReconcileSuccess(ctx, superStream, topology.NotReady(msg, superStream.Status.Conditions)); writerErr != nil {
 			logger.Error(writerErr, failedStatusUpdate, "status", superStream.Status)

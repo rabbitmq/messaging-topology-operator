@@ -250,11 +250,11 @@ var _ = AfterSuite(func() {
 })
 
 func observedEvents() []string {
-	var events []string
+	var observedEvents []string
 	for len(fakeRecorder.Events) > 0 {
-		events = append(events, <-fakeRecorder.Events)
+		observedEvents = append(observedEvents, <-fakeRecorder.Events)
 	}
-	return events
+	return observedEvents
 }
 
 func FakeRabbitMQClientFactoryArgsForCall(i int) (map[string]string, bool, *x509.CertPool) {
