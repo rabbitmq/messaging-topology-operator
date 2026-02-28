@@ -1,0 +1,6 @@
+KUSTOMIZE_VERSION|v5.7.1|v5.8.1|https://github.com/kubernetes-sigs/kustomize
+CONTROLLER_TOOLS_VERSION|v0.20.0|v0.20.1|https://github.com/kubernetes-sigs/controller-tools
+GOLANGCI_LINT_VERSION|v2.7.2|v2.10.1|https://github.com/golangci/golangci-lint
+KIND_VERSION|v0.30.0|v0.31.0|https://github.com/kubernetes-sigs/kind
+YTT_VERSION|v0.50.0|v0.53.2|https://github.com/carvel-dev/ytt
+CMCTL_VERSION|v2.1.0|v2.4.1|https://github.com/cert-manager/cmctl
