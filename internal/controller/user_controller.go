@@ -77,8 +77,8 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.
 
 	credentialSecret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      user.ObjectMeta.Name + "-user-credentials",
-			Namespace: user.ObjectMeta.Namespace,
+			Name:      user.Name + "-user-credentials",
+			Namespace: user.Namespace,
 		},
 		Type: corev1.SecretTypeOpaque,
 		// The format of the generated Secret conforms to the Provisioned Service
@@ -96,7 +96,7 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.
 			// required for OpenShift compatibility. See:
 			// https://github.com/rabbitmq/cluster-operator/blob/057b61eb50102a66f504b31464e5956526cbdc90/internal/resource/statefulset.go#L220-L226
 			// https://github.com/rabbitmq/messaging-topology-operator/issues/194
-			for i := range credentialSecret.ObjectMeta.OwnerReferences {
+			for i := range credentialSecret.OwnerReferences {
 				if credentialSecret.ObjectMeta.OwnerReferences[i].Kind == user.Kind {
 					credentialSecret.ObjectMeta.OwnerReferences[i].BlockOwnerDeletion = ptr.To(false)
 				}
@@ -147,7 +147,7 @@ func (r *UserReconciler) importCredentials(ctx context.Context, secretName, secr
 	var credentials internal.UserCredentials
 	var credentialsSecret corev1.Secret
 
-	err := r.Client.Get(ctx, types.NamespacedName{Name: secretName, Namespace: secretNamespace}, &credentialsSecret)
+	err := r.Get(ctx, types.NamespacedName{Name: secretName, Namespace: secretNamespace}, &credentialsSecret)
 	if err != nil {
 		return credentials, fmt.Errorf("could not find password secret %s in namespace %s; Err: %w", secretName, secretNamespace, err)
 	}
@@ -188,7 +188,7 @@ func (r *UserReconciler) setUserStatus(ctx context.Context, user *topology.User,
 	return nil
 }
 
-func (r *UserReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *UserReconciler) DeclareFunc(ctx context.Context, rmqc rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
 	user := obj.(*topology.User)
 	if user.Status.Credentials == nil || user.Status.Username == "" {
@@ -224,28 +224,28 @@ func (r *UserReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.
 	}
 	logger.Info("Generated user settings", "user", user.Name, "settings", userSettings)
 
-	err = validateResponse(client.PutUser(userSettings.Name, userSettings))
+	err = validateResponse(rmqc.PutUser(userSettings.Name, userSettings))
 	if err != nil {
 		return err
 	}
 
 	newUserLimits := internal.GenerateUserLimits(user.Spec.UserLimits)
 	logger.Info("Getting existing user limits", "user", user.Name)
-	existingUserLimits, err := r.getUserLimits(client, string(credentials.Data["username"]))
+	existingUserLimits, err := r.getUserLimits(rmqc, string(credentials.Data["username"]))
 	if err != nil {
 		return err
 	}
 	limitsToDelete := r.userLimitsToDelete(existingUserLimits, newUserLimits)
 	if len(limitsToDelete) > 0 {
 		logger.Info("Deleting outdated user limits", "user", user.Name, "limits", limitsToDelete)
-		err = validateResponseForDeletion(client.DeleteUserLimits(string(credentials.Data["username"]), limitsToDelete))
-		if err != nil && !errors.Is(err, NotFound) {
+		err = validateResponseForDeletion(rmqc.DeleteUserLimits(string(credentials.Data["username"]), limitsToDelete))
+		if err != nil && !errors.Is(err, ErrNotFound) {
 			return err
 		}
 	}
 	if len(newUserLimits) > 0 {
 		logger.Info("Creating new user limits", "user", user.Name, "limits", newUserLimits)
-		return validateResponse(client.PutUserLimits(string(credentials.Data["username"]), newUserLimits))
+		return validateResponse(rmqc.PutUserLimits(string(credentials.Data["username"]), newUserLimits))
 	}
 	return nil
 }
@@ -262,8 +262,8 @@ func (r *UserReconciler) userLimitsToDelete(existingUserLimits, newUserLimits ra
 	return limitsToDelete
 }
 
-func (r *UserReconciler) getUserLimits(client rabbitmqclient.Client, username string) (rabbithole.UserLimitsValues, error) {
-	userLimitsInfo, err := client.GetUserLimits(username)
+func (r *UserReconciler) getUserLimits(rmqc rabbitmqclient.Client, username string) (rabbithole.UserLimitsValues, error) {
+	userLimitsInfo, err := rmqc.GetUserLimits(username)
 	if errors.Is(err, error(rabbithole404)) {
 		return rabbithole.UserLimitsValues{}, nil
 	} else if err != nil {
@@ -286,12 +286,12 @@ func (r *UserReconciler) getUserCredentials(ctx context.Context, user *topology.
 	return credentials, nil
 }
 
-func (r *UserReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *UserReconciler) DeleteFunc(ctx context.Context, rmqc rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
 	user := obj.(*topology.User)
 
-	err := validateResponseForDeletion(client.DeleteUser(user.Status.Username))
-	if errors.Is(err, NotFound) {
+	err := validateResponseForDeletion(rmqc.DeleteUser(user.Status.Username))
+	if errors.Is(err, ErrNotFound) {
 		logger.Info("cannot find user in rabbitmq server; already deleted", "user", user.Name)
 	} else if err != nil {
 		return err

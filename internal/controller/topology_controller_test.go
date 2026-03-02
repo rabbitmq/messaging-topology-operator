@@ -3,14 +3,15 @@ package controller_test
 import (
 	"context"
 	"fmt"
-	"github.com/rabbitmq/messaging-topology-operator/internal/controller"
 	"net/http"
+	"time"
+
+	"github.com/rabbitmq/messaging-topology-operator/internal/controller"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

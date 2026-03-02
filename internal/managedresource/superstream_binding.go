@@ -2,6 +2,7 @@ package managedresource
 
 import (
 	"fmt"
+
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"

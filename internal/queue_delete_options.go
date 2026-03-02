@@ -17,10 +17,10 @@ import (
 // GenerateQueueDeleteOptions generates rabbithole.QueueDeleteOptions for a given Queue
 // queue.Spec.Arguments (type k8s runtime.RawExtensions) is unmarshalled
 func GenerateQueueDeleteOptions(q *topology.Queue) (*rabbithole.QueueDeleteOptions, error) {
-
+	const qType = "quorum"
 	return &rabbithole.QueueDeleteOptions{
 		// Set these values to false if q.Spec.Type = Quorum, not supported by the API
-		IfEmpty:  q.Spec.Type != "quorum" && q.Spec.DeleteIfEmpty,
-		IfUnused: q.Spec.Type != "quorum" && q.Spec.DeleteIfUnused,
+		IfEmpty:  q.Spec.Type != qType && q.Spec.DeleteIfEmpty,
+		IfUnused: q.Spec.Type != qType && q.Spec.DeleteIfUnused,
 	}, nil
 }

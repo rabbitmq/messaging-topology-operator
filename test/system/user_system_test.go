@@ -2,6 +2,7 @@ package system_tests
 
 import (
 	"context"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -67,7 +68,7 @@ var _ = Describe("Users", func() {
 				var err error
 				userInfo, err = rabbitClient.GetUser(rawUsername)
 				return err
-			}, 10, 2).Should(BeNil())
+			}, 10, 2).Should(Succeed())
 
 			Expect(*userInfo).To(MatchFields(IgnoreExtras, Fields{
 				"Name":             Equal(rawUsername),
@@ -449,7 +450,7 @@ var _ = Describe("Users", func() {
 			Eventually(func() error {
 				userLimitsInfo, err = rabbitClient.GetUserLimits(username)
 				return err
-			}, 30, 2).Should(BeNil())
+			}, 30, 2).Should(Succeed())
 			Expect(userLimitsInfo).To(HaveLen(1))
 			Expect(userLimitsInfo[0].User).To(Equal(username))
 			Expect(userLimitsInfo[0].Value).To(HaveKeyWithValue("max-connections", int(connections)))

@@ -2,6 +2,7 @@ package system_tests
 
 import (
 	"context"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,7 +57,7 @@ var _ = Describe("Exchange", func() {
 			var err error
 			exchangeInfo, err = rabbitClient.GetExchange(exchange.Spec.Vhost, exchange.Name)
 			return err
-		}, waitUpdatedStatusCondition, 2).Should(BeNil())
+		}, waitUpdatedStatusCondition, 2).Should(Succeed())
 
 		Expect(*exchangeInfo).To(MatchFields(IgnoreExtras, Fields{
 			"Name":       Equal(exchange.Spec.Name),

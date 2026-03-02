@@ -56,7 +56,7 @@ var _ = Describe("GenerateVhostLimits", func() {
 
 		It("generates VhostLimitValues", func() {
 			VhostLimitsValues := internal.GenerateVhostLimits(&limits)
-			Expect(len(VhostLimitsValues)).To(Equal(2))
+			Expect(VhostLimitsValues).To(HaveLen(2))
 			Expect(VhostLimitsValues["max-connections"]).To(Equal(int(connections)))
 			Expect(VhostLimitsValues["max-queues"]).To(Equal(int(queues)))
 		})
@@ -73,7 +73,7 @@ var _ = Describe("GenerateVhostLimits", func() {
 
 		It("generates VhostLimitValues only for those limits", func() {
 			VhostLimitsValues := internal.GenerateVhostLimits(&limits)
-			Expect(len(VhostLimitsValues)).To(Equal(1))
+			Expect(VhostLimitsValues).To(HaveLen(1))
 			Expect(VhostLimitsValues["max-connections"]).To(Equal(int(connections)))
 		})
 	})
@@ -97,7 +97,7 @@ var _ = Describe("GenerateVhostLimits", func() {
 
 		It("generates VhostLimitValues", func() {
 			VhostLimitsValues := internal.GenerateVhostLimits(&limits)
-			Expect(len(VhostLimitsValues)).To(Equal(2))
+			Expect(VhostLimitsValues).To(HaveLen(2))
 			Expect(VhostLimitsValues["max-connections"]).To(Equal(int(connections)))
 			Expect(VhostLimitsValues["max-queues"]).To(Equal(int(queues)))
 		})

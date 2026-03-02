@@ -66,7 +66,7 @@ func (r *BindingReconciler) DeleteFunc(ctx context.Context, client rabbitmqclien
 	}
 
 	err = validateResponseForDeletion(client.DeleteBinding(binding.Spec.Vhost, *info))
-	if errors.Is(err, NotFound) {
+	if errors.Is(err, ErrNotFound) {
 		logger.Info("cannot find binding in rabbitmq server; already deleted")
 	} else if err != nil {
 		return err
@@ -77,7 +77,7 @@ func (r *BindingReconciler) DeleteFunc(ctx context.Context, client rabbitmqclien
 
 func (r *BindingReconciler) findBindingInfo(logger logr.Logger, binding *topology.Binding, client rabbitmqclient.Client) (*rabbithole.BindingInfo, error) {
 	logger.Info("binding arguments set; listing bindings from server to complete deletion")
-	arguments := make(map[string]interface{})
+	arguments := make(map[string]any)
 	if binding.Spec.Arguments != nil {
 		if err := json.Unmarshal(binding.Spec.Arguments.Raw, &arguments); err != nil {
 			logger.Error(err, "failed to unmarshall binding arguments")

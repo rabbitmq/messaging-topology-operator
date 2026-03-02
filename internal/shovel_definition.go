@@ -3,49 +3,50 @@ package internal
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	"strings"
 )
 
 func GenerateShovelDefinition(s *topology.Shovel, srcUri, destUri string) (*rabbithole.ShovelDefinition, error) {
-	srcConArgs := make(map[string]interface{})
+	srcConArgs := make(map[string]any)
 	if s.Spec.SourceConsumerArgs != nil {
 		if err := json.Unmarshal(s.Spec.SourceConsumerArgs.Raw, &srcConArgs); err != nil {
 			return nil, fmt.Errorf("failed to unmarshall source consumer args: %v", err)
 		}
 	}
-	appProperties := make(map[string]interface{})
+	appProperties := make(map[string]any)
 	if s.Spec.DestinationApplicationProperties != nil {
 		if err := json.Unmarshal(s.Spec.DestinationApplicationProperties.Raw, &appProperties); err != nil {
 			return nil, fmt.Errorf("failed to unmarshall destination application properties: %v", err)
 		}
 	}
-	destProperties := make(map[string]interface{})
+	destProperties := make(map[string]any)
 	if s.Spec.DestinationProperties != nil {
 		if err := json.Unmarshal(s.Spec.DestinationProperties.Raw, &destProperties); err != nil {
 			return nil, fmt.Errorf("failed to unmarshall destination properties: %v", err)
 		}
 	}
-	destPubProperties := make(map[string]interface{})
+	destPubProperties := make(map[string]any)
 	if s.Spec.DestinationPublishProperties != nil {
 		if err := json.Unmarshal(s.Spec.DestinationPublishProperties.Raw, &destPubProperties); err != nil {
 			return nil, fmt.Errorf("failed to unmarshall destination publish properties: %v", err)
 		}
 	}
-	destMsgAnnotations := make(map[string]interface{})
+	destMsgAnnotations := make(map[string]any)
 	if s.Spec.DestinationMessageAnnotations != nil {
 		if err := json.Unmarshal(s.Spec.DestinationMessageAnnotations.Raw, &destMsgAnnotations); err != nil {
 			return nil, fmt.Errorf("failed to unmarshall destination message annotations: %v", err)
 		}
 	}
-	srcQueueArgs := make(map[string]interface{})
+	srcQueueArgs := make(map[string]any)
 	if s.Spec.SourceQueueArgs != nil {
 		if err := json.Unmarshal(s.Spec.SourceQueueArgs.Raw, &srcQueueArgs); err != nil {
 			return nil, fmt.Errorf("failed to unmarshall source queue args: %v", err)
 		}
 	}
-	destQueueArgs := make(map[string]interface{})
+	destQueueArgs := make(map[string]any)
 	if s.Spec.DestinationQueueArgs != nil {
 		if err := json.Unmarshal(s.Spec.DestinationQueueArgs.Raw, &destQueueArgs); err != nil {
 			return nil, fmt.Errorf("failed to unmarshall destination queue args: %v", err)

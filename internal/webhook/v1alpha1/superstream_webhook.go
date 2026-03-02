@@ -84,7 +84,7 @@ func routingKeyUpdatePermitted(old, new []string) bool {
 	if len(old) == 0 && len(new) != 0 {
 		return false
 	}
-	for i := 0; i < len(old); i++ {
+	for i := range old {
 		if old[i] != new[i] {
 			return false
 		}

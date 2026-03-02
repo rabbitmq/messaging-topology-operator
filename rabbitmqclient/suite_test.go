@@ -2,14 +2,16 @@ package rabbitmqclient_test
 
 import (
 	"crypto/tls"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/onsi/gomega/ghttp"
-	"github.com/rabbitmq/messaging-topology-operator/internal/testutils"
 	"net/url"
 	"strconv"
 	"testing"
+
+	"github.com/onsi/gomega/ghttp"
+	"github.com/rabbitmq/messaging-topology-operator/internal/testutils"
 )
 
 func TestResource(t *testing.T) {

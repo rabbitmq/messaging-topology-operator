@@ -35,7 +35,7 @@ import (
 	. "github.com/onsi/gomega"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -54,7 +54,7 @@ var (
 	testEnv *envtest.Environment
 	ctx     context.Context
 	cancel  context.CancelFunc
-	//mgr                       ctrl.Manager
+	// mgr                       ctrl.Manager
 	fakeRabbitMQClient        *rabbitmqclientfakes.FakeClient
 	fakeRabbitMQClientError   error
 	fakeRabbitMQClientFactory = func(connectionCreds map[string]string, tlsEnabled bool, certPool *x509.CertPool) (rabbitmqclient.Client, error) {
@@ -71,7 +71,7 @@ var (
 		arg2 bool
 		arg3 *x509.CertPool
 	}
-	fakeRecorder              *record.FakeRecorder
+	fakeRecorder              *events.FakeRecorder
 	statusEventsUpdateTimeout      = 20 * time.Second
 	skipNameValidation        bool = true
 )
@@ -180,9 +180,9 @@ var _ = BeforeSuite(func() {
 		Expect(createRabbitmqClusterResources(client, &rmq)).To(Succeed())
 	}
 
-	fakeRecorder = record.NewFakeRecorder(128)
+	fakeRecorder = events.NewFakeRecorder(128)
 
-	//Expect(superStreamReconciler.SetupWithManager(mgr)).To(Succeed())
+	// Expect(superStreamReconciler.SetupWithManager(mgr)).To(Succeed())
 
 	komega.SetClient(client)
 	komega.SetContext(ctx)
@@ -250,11 +250,11 @@ var _ = AfterSuite(func() {
 })
 
 func observedEvents() []string {
-	var events []string
+	var observedEvents []string
 	for len(fakeRecorder.Events) > 0 {
-		events = append(events, <-fakeRecorder.Events)
+		observedEvents = append(observedEvents, <-fakeRecorder.Events)
 	}
-	return events
+	return observedEvents
 }
 
 func FakeRabbitMQClientFactoryArgsForCall(i int) (map[string]string, bool, *x509.CertPool) {

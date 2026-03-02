@@ -5,11 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	"io"
-	"k8s.io/apimachinery/pkg/labels"
 	"net/http"
 	"time"
+
+	"github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
+	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/rabbitmq/messaging-topology-operator/internal/controller"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -264,11 +265,11 @@ var _ = Describe("UserController", func() {
 						Connections: &connections,
 						Channels:    nil,
 					}
-					var userLimitsInfo []rabbithole.UserLimitsInfo
-					userLimitsInfo = append(userLimitsInfo, rabbithole.UserLimitsInfo{
+					userLimitsInfo := make([]rabbithole.UserLimitsInfo, 1)
+					userLimitsInfo[0] = rabbithole.UserLimitsInfo{
 						User:  userName,
 						Value: rabbithole.UserLimitsValues{"max-channels": 10, "max-connections": 3},
-					})
+					}
 					fakeRabbitMQClient.PutUserReturns(&http.Response{
 						Status:     "201 Created",
 						StatusCode: http.StatusCreated,

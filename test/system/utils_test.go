@@ -203,7 +203,7 @@ func kubernetesNodeIp(ctx context.Context, clientSet *kubernetes.Clientset) stri
 	nodes, err := clientSet.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	ExpectWithOffset(1, nodes).ToNot(BeNil())
-	ExpectWithOffset(1, len(nodes.Items)).To(BeNumerically(">", 0))
+	ExpectWithOffset(1, nodes.Items).ToNot(BeEmpty())
 	var nodeIp string
 	for _, address := range nodes.Items[0].Status.Addresses {
 		switch address.Type {
@@ -344,7 +344,7 @@ func createTLSSecret(secretName, secretNamespace, hostname string) (string, []by
 	tmpfile, err := os.CreateTemp("", "ca.key")
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-	defer os.Remove(tmpfile.Name())
+	defer func() { _ = os.Remove(tmpfile.Name()) }()
 
 	_, err = tmpfile.Write(caKey)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
@@ -363,7 +363,7 @@ func createTLSSecret(secretName, secretNamespace, hostname string) (string, []by
 	return caCertPath, caCert, caKey
 }
 
-func k8sSecretExists(secretName, secretNamespace string) (bool, error) {
+func k8sSecretExists(secretName, secretNamespace string) bool {
 	output, err := kubectl(
 		"-n",
 		secretNamespace,
@@ -374,17 +374,15 @@ func k8sSecretExists(secretName, secretNamespace string) (bool, error) {
 
 	if err != nil {
 		ExpectWithOffset(1, string(output)).To(ContainSubstring("NotFound"))
-		return false, nil
+		return false
 	}
 
-	return true, nil
+	return true
 }
 
 func k8sCreateTLSSecret(secretName, secretNamespace, certPath, keyPath string) error {
 	// delete secret if it exists
-	secretExists, err := k8sSecretExists(secretName, secretNamespace)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	if secretExists {
+	if k8sSecretExists(secretName, secretNamespace) {
 		ExpectWithOffset(1, k8sDeleteSecret(secretName, secretNamespace)).To(Succeed())
 	}
 
@@ -401,7 +399,7 @@ func k8sCreateTLSSecret(secretName, secretNamespace, certPath, keyPath string) e
 	)
 
 	if err != nil {
-		return fmt.Errorf("Failed with error: %v\nOutput: %v\n", err.Error(), string(output))
+		return fmt.Errorf("failed with error: %v\nOutput: %v", err.Error(), string(output))
 	}
 
 	return nil
@@ -417,7 +415,7 @@ func k8sDeleteSecret(secretName, secretNamespace string) error {
 	)
 
 	if err != nil {
-		return fmt.Errorf("Failed with error: %v\nOutput: %v\n", err.Error(), string(output))
+		return fmt.Errorf("failed with error: %v\nOutput: %v", err.Error(), string(output))
 	}
 
 	return nil

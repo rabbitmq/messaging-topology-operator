@@ -10,6 +10,13 @@ const (
 	noSuchRabbitDeletion       = "RabbitmqCluster is already gone: cannot find its connection secret"
 )
 
+const (
+	setupEventAction  = "setup"
+	createEventAction = "create"
+	updateEventAction = "update"
+	deleteEventAction = "delete"
+)
+
 // names for each of the controllers
 const (
 	VhostControllerName             = "vhost-controller"

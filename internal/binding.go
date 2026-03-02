@@ -12,13 +12,14 @@ package internal
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	"strings"
 )
 
 func GenerateBindingInfo(binding *topology.Binding) (*rabbithole.BindingInfo, error) {
-	arguments := make(map[string]interface{})
+	arguments := make(map[string]any)
 	if binding.Spec.Arguments != nil {
 		if err := json.Unmarshal(binding.Spec.Arguments.Raw, &arguments); err != nil {
 			return nil, fmt.Errorf("failed to unmarshall binding arguments: %v", err)

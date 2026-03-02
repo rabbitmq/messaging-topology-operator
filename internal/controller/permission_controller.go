@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	k8sApiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -26,7 +27,7 @@ type PermissionReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-func (r *PermissionReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *PermissionReconciler) DeclareFunc(ctx context.Context, rmqc rabbitmqclient.Client, obj topology.TopologyResource) error {
 	permission := obj.(*topology.Permission)
 	user := &topology.User{}
 	username := permission.Spec.User
@@ -48,19 +49,19 @@ func (r *PermissionReconciler) DeclareFunc(ctx context.Context, client rabbitmqc
 		if err := controllerutil.SetControllerReference(user, permission, r.Scheme); err != nil {
 			return fmt.Errorf("failed set controller reference: %v", err)
 		}
-		if err := r.Client.Update(ctx, permission); err != nil {
+		if err := r.Update(ctx, permission); err != nil {
 			return fmt.Errorf("failed to Update object with controller reference: %w", err)
 		}
 	}
-	return validateResponse(client.UpdatePermissionsIn(permission.Spec.Vhost, username, internal.GeneratePermissions(permission)))
+	return validateResponse(rmqc.UpdatePermissionsIn(permission.Spec.Vhost, username, internal.GeneratePermissions(permission)))
 }
 
-func getUsernameFromUser(ctx context.Context, client client.Client, namespace, name string) (*topology.User, error) {
+func getUsernameFromUser(ctx context.Context, k8sClient client.Client, namespace, name string) (*topology.User, error) {
 	logger := ctrl.LoggerFrom(ctx)
 
 	failureMsg := "failed to get User"
 	user := &topology.User{}
-	err := client.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, user)
+	err := k8sClient.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, user)
 	if err != nil && k8sApiErrors.IsNotFound(err) {
 		logger.Error(fmt.Errorf("user doesn't exist"), failureMsg)
 		return nil, nil
@@ -78,7 +79,7 @@ func getUsernameFromUser(ctx context.Context, client client.Client, namespace, n
 	return user, nil
 }
 
-func (r *PermissionReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *PermissionReconciler) DeleteFunc(ctx context.Context, rmqc rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
 	permission := obj.(*topology.Permission)
 
@@ -94,16 +95,16 @@ func (r *PermissionReconciler) DeleteFunc(ctx context.Context, client rabbitmqcl
 
 	if username == "" {
 		logger.Info("user already removed; no need to delete permission")
-	} else if err := r.revokePermissions(ctx, client, permission, username); err != nil {
+	} else if err := r.revokePermissions(ctx, rmqc, permission, username); err != nil {
 		return err
 	}
 	return removeFinalizer(ctx, r.Client, permission)
 }
 
-func (r *PermissionReconciler) revokePermissions(ctx context.Context, client rabbitmqclient.Client, permission *topology.Permission, user string) error {
+func (r *PermissionReconciler) revokePermissions(ctx context.Context, rmqc rabbitmqclient.Client, permission *topology.Permission, user string) error {
 	logger := ctrl.LoggerFrom(ctx)
-	err := validateResponseForDeletion(client.ClearPermissionsIn(permission.Spec.Vhost, user))
-	if errors.Is(err, NotFound) {
+	err := validateResponseForDeletion(rmqc.ClearPermissionsIn(permission.Spec.Vhost, user))
+	if errors.Is(err, ErrNotFound) {
 		logger.Info("cannot find user or vhost in rabbitmq server; no need to delete permission", "user", user, "vhost", permission.Spec.Vhost)
 		return nil
 	}

@@ -2,6 +2,7 @@ package system_tests
 
 import (
 	"context"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -55,7 +56,7 @@ var _ = Describe("Policy", func() {
 			var err error
 			fetchedPolicy, err = rabbitClient.GetPolicy(policy.Spec.Vhost, policy.Name)
 			return err
-		}, 10, 2).Should(BeNil())
+		}, 10, 2).Should(Succeed())
 
 		Expect(*fetchedPolicy).To(MatchFields(IgnoreExtras, Fields{
 			"Name":     Equal(policy.Spec.Name),

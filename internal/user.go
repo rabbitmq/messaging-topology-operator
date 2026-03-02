@@ -50,9 +50,9 @@ func GenerateUserSettings(credentials *corev1.Secret, tags []topology.UserTag) (
 		passwordHash = []byte(passwordHashStr)
 	}
 
-	var userTagStrings []string
-	for _, tag := range tags {
-		userTagStrings = append(userTagStrings, string(tag))
+	userTagStrings := make([]string, len(tags))
+	for i, tag := range tags {
+		userTagStrings[i] = string(tag)
 	}
 
 	return rabbithole.UserSettings{

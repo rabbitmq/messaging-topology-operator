@@ -14,9 +14,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-//+kubebuilder:rbac:groups=rabbitmq.com,resources=topicpermissions,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=rabbitmq.com,resources=topicpermissions/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=rabbitmq.com,resources=topicpermissions/finalizers,verbs=update
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=topicpermissions,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=topicpermissions/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=rabbitmq.com,resources=topicpermissions/finalizers,verbs=update
 
 type TopicPermissionReconciler struct {
 	client.Client
@@ -42,7 +42,7 @@ func (r *TopicPermissionReconciler) DeclareFunc(ctx context.Context, rmqc rabbit
 		if err := controllerutil.SetControllerReference(user, permission, r.Scheme); err != nil {
 			return fmt.Errorf("failed set controller reference: %v", err)
 		}
-		if err := r.Client.Update(ctx, permission); err != nil {
+		if err := r.Update(ctx, permission); err != nil {
 			return fmt.Errorf("failed to Update object with controller reference: %w", err)
 		}
 	}
@@ -71,7 +71,7 @@ func (r *TopicPermissionReconciler) DeleteFunc(ctx context.Context, rmqc rabbitm
 func (r *TopicPermissionReconciler) clearTopicPermission(ctx context.Context, rmqc rabbitmqclient.Client, permission *topology.TopicPermission, user string) error {
 	logger := ctrl.LoggerFrom(ctx)
 	err := validateResponseForDeletion(rmqc.DeleteTopicPermissionsIn(permission.Spec.Vhost, user, permission.Spec.Permissions.Exchange))
-	if errors.Is(err, NotFound) {
+	if errors.Is(err, ErrNotFound) {
 		logger.Info("cannot find user or vhost in rabbitmq server; no need to delete permission", "user", user, "vhost", permission.Spec.Vhost)
 		return nil
 	}

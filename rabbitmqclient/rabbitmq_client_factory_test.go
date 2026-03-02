@@ -51,7 +51,7 @@ var _ = Describe("ParseReference", func() {
 
 			fakeRabbitMQServer.RouteToHandler("PUT", "/api/users/example-user", func(w http.ResponseWriter, req *http.Request) {
 				user, password, ok := req.BasicAuth()
-				if !(ok && user == existingRabbitMQUsername && password == existingRabbitMQPassword) {
+				if !ok || user != existingRabbitMQUsername || password != existingRabbitMQPassword {
 					w.WriteHeader(http.StatusUnauthorized)
 					return
 				}
@@ -106,7 +106,7 @@ var _ = Describe("ParseReference", func() {
 
 				_, err = generatedClient.PutUser("example-user", rabbithole.UserSettings{})
 				Expect(err).NotTo(HaveOccurred())
-				Expect(len(fakeRabbitMQServer.ReceivedRequests())).To(Equal(1))
+				Expect(fakeRabbitMQServer.ReceivedRequests()).To(HaveLen(1))
 			})
 		})
 
@@ -200,7 +200,7 @@ var _ = Describe("ParseReference", func() {
 
 					_, err = generatedClient.PutUser("example-user", rabbithole.UserSettings{})
 					Expect(err).NotTo(HaveOccurred())
-					Expect(len(fakeRabbitMQServer.ReceivedRequests())).To(Equal(1))
+					Expect(fakeRabbitMQServer.ReceivedRequests()).To(HaveLen(1))
 				})
 			})
 		})
@@ -222,7 +222,7 @@ var _ = Describe("ParseReference", func() {
 
 			fakeRabbitMQServer.RouteToHandler("PUT", "/api/users/example-user", func(w http.ResponseWriter, req *http.Request) {
 				user, password, ok := req.BasicAuth()
-				if !(ok && user == existingRabbitMQUsername && password == existingRabbitMQPassword) {
+				if !ok || user != existingRabbitMQUsername || password != existingRabbitMQPassword {
 					w.WriteHeader(http.StatusUnauthorized)
 					return
 				}
@@ -236,7 +236,7 @@ var _ = Describe("ParseReference", func() {
 
 			_, err = generatedClient.PutUser("example-user", rabbithole.UserSettings{})
 			Expect(err).NotTo(HaveOccurred())
-			Expect(len(fakeRabbitMQServer.ReceivedRequests())).To(Equal(1))
+			Expect(fakeRabbitMQServer.ReceivedRequests()).To(HaveLen(1))
 		})
 	})
 })

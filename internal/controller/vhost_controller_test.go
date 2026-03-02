@@ -5,17 +5,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"time"
+
 	"github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal/controller"
-	"io"
 	"k8s.io/apimachinery/pkg/labels"
-	"net/http"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	runtimeClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	"time"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -237,7 +238,7 @@ var _ = Describe("vhost-controller", func() {
 
 					Expect(fakeRabbitMQClient.PutVhostLimitsCallCount()).To(BeNumerically(">", 0))
 					_, vhostLimitsValues := fakeRabbitMQClient.PutVhostLimitsArgsForCall(0)
-					Expect(len(vhostLimitsValues)).To(Equal(2))
+					Expect(vhostLimitsValues).To(HaveLen(2))
 					Expect(vhostLimitsValues).To(HaveKeyWithValue("max-connections", int(connections)))
 					Expect(vhostLimitsValues).To(HaveKeyWithValue("max-queues", int(queues)))
 				})
@@ -271,11 +272,11 @@ var _ = Describe("vhost-controller", func() {
 						Queues:      &queues,
 					}
 
-					var vhostLimitsInfo []rabbithole.VhostLimitsInfo
-					vhostLimitsInfo = append(vhostLimitsInfo, rabbithole.VhostLimitsInfo{
+					vhostLimitsInfo := make([]rabbithole.VhostLimitsInfo, 1)
+					vhostLimitsInfo[0] = rabbithole.VhostLimitsInfo{
 						Vhost: vhostName,
 						Value: rabbithole.VhostLimitsValues{"max-queues": 10, "max-connections": 300},
-					})
+					}
 
 					fakeRabbitMQClient.PutVhostReturns(&http.Response{
 						Status:     "201 Created",
@@ -318,13 +319,13 @@ var _ = Describe("vhost-controller", func() {
 					Expect(fakeRabbitMQClient.DeleteVhostLimitsCallCount()).To(BeNumerically(">", 0))
 					vhostname, limits := fakeRabbitMQClient.DeleteVhostLimitsArgsForCall(0)
 					Expect(vhostname).To(Equal(vhostName))
-					Expect(len(limits)).To(Equal(1))
+					Expect(limits).To(HaveLen(1))
 					Expect(limits).To(ContainElement("max-connections"))
 
 					By("updating the new limits")
 					Expect(fakeRabbitMQClient.PutVhostLimitsCallCount()).To(BeNumerically(">", 0))
 					_, vhostLimitsValues := fakeRabbitMQClient.PutVhostLimitsArgsForCall(0)
-					Expect(len(vhostLimitsValues)).To(Equal(1))
+					Expect(vhostLimitsValues).To(HaveLen(1))
 					Expect(vhostLimitsValues).To(HaveKeyWithValue("max-queues", int(queues)))
 				})
 			})

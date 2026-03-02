@@ -23,13 +23,13 @@ type FederationReconciler struct {
 	client.Client
 }
 
-func (r *FederationReconciler) DeclareFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *FederationReconciler) DeclareFunc(ctx context.Context, rmqc rabbitmqclient.Client, obj topology.TopologyResource) error {
 	federation := obj.(*topology.Federation)
 	uri, err := r.getUri(ctx, federation)
 	if err != nil {
 		return fmt.Errorf("failed to parse federation uri secret; secret name: %s, error: %w", federation.Spec.UriSecret.Name, err)
 	}
-	return validateResponse(client.PutFederationUpstream(federation.Spec.Vhost, federation.Spec.Name, internal.GenerateFederationDefinition(federation, uri)))
+	return validateResponse(rmqc.PutFederationUpstream(federation.Spec.Vhost, federation.Spec.Name, internal.GenerateFederationDefinition(federation, uri)))
 }
 
 func (r *FederationReconciler) getUri(ctx context.Context, federation *topology.Federation) (string, error) {
@@ -51,14 +51,14 @@ func (r *FederationReconciler) getUri(ctx context.Context, federation *topology.
 
 // DeleteFunc deletes federation from rabbitmq server
 // if server responds with '404' Not Found, it logs and does not requeue on error
-func (r *FederationReconciler) DeleteFunc(ctx context.Context, client rabbitmqclient.Client, obj topology.TopologyResource) error {
+func (r *FederationReconciler) DeleteFunc(ctx context.Context, rmqc rabbitmqclient.Client, obj topology.TopologyResource) error {
 	logger := ctrl.LoggerFrom(ctx)
 	federation := obj.(*topology.Federation)
 	if shouldSkipDeletion(ctx, federation.Spec.DeletionPolicy, federation.Spec.Name) {
 		return nil
 	}
-	err := validateResponseForDeletion(client.DeleteFederationUpstream(federation.Spec.Vhost, federation.Spec.Name))
-	if errors.Is(err, NotFound) {
+	err := validateResponseForDeletion(rmqc.DeleteFederationUpstream(federation.Spec.Vhost, federation.Spec.Name))
+	if errors.Is(err, ErrNotFound) {
 		logger.Info("cannot find federation upstream parameter; no need to delete it", "federation", federation.Spec.Name)
 	} else if err != nil {
 		return err

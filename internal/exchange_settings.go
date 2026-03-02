@@ -12,12 +12,13 @@ package internal
 import (
 	"encoding/json"
 	"fmt"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
 
 func GenerateExchangeSettings(e *topology.Exchange) (*rabbithole.ExchangeSettings, error) {
-	arguments := make(map[string]interface{})
+	arguments := make(map[string]any)
 	if e.Spec.Arguments != nil {
 		if err := json.Unmarshal(e.Spec.Arguments.Raw, &arguments); err != nil {
 			return nil, fmt.Errorf("failed to unmarshall exchange arguments: %v", err)

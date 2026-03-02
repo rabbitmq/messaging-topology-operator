@@ -37,7 +37,7 @@ var _ = Describe("user spec", func() {
 		Expect(fetcheduser.Spec.RabbitmqClusterReference).To(Equal(RabbitmqClusterReference{
 			Name: "some-cluster",
 		}))
-		Expect(len(fetcheduser.Spec.Tags)).To(Equal(0))
+		Expect(fetcheduser.Spec.Tags).To(BeEmpty())
 	})
 
 	When("creating a user with configuration", func() {

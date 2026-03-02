@@ -2,6 +2,7 @@ package system_tests
 
 import (
 	"context"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -197,7 +198,7 @@ func declareAssertShovelCommonProperties(ctx context.Context, shovel *topology.S
 		var err error
 		shovelInfo, err = rabbitClient.GetShovel("/", shovel.Spec.Name)
 		return err
-	}, 30, 2).Should(BeNil())
+	}, 30, 2).Should(Succeed())
 
 	Expect(shovelInfo.Name).To(Equal(shovel.Spec.Name))
 	Expect(shovelInfo.Vhost).To(Equal(shovel.Spec.Vhost))

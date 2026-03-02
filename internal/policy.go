@@ -12,12 +12,13 @@ package internal
 import (
 	"encoding/json"
 	"fmt"
+
 	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
 
 func GeneratePolicy(p *topology.Policy) (*rabbithole.Policy, error) {
-	definition := make(map[string]interface{})
+	definition := make(map[string]any)
 	if err := json.Unmarshal(p.Spec.Definition.Raw, &definition); err != nil {
 		return nil, fmt.Errorf("failed to unmarshall policy definition: %v", err)
 	}
