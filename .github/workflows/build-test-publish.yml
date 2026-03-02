@@ -219,7 +219,7 @@ jobs:
 
     - name: Install operator from build
       run: |
-        ./bin/kind load image-archive ${{ runner.temp }}/operator-image/operator.tar --name system-testing
+        ./bin/kind load image-archive ${{ runner.temp }}/operator-image/operator.tar --name topology-operator-testing
         ./bin/ytt -f tmp/messaging-topology-operator-with-certmanager.yaml -f config/ytt_overlays/never_pull.yml | kubectl apply -f-
         kubectl --namespace=rabbitmq-system wait --for=condition=Available deployment/messaging-topology-operator
 
