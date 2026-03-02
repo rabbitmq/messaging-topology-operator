@@ -381,7 +381,7 @@ QUAY_IO_OPERATOR_IMAGE ?= quay.io/rabbitmqoperator/messaging-topology-operator:l
 GHCR_IO_OPERATOR_IMAGE ?= ghcr.io/rabbitmq/messaging-topology-operator:latest
 IMG ?= $(GHCR_IO_OPERATOR_IMAGE)
 GIT_COMMIT=$(shell git rev-parse --short HEAD)-dev
-OPERATOR_IMAGE ?= rabbitmqoperator/messaging-topology-operator:latest
+OPERATOR_IMAGE ?= rabbitmqoperator/messaging-topology-operator
 GOFIPS140 ?= off
 
 ## used in CI pipeline to create release artifact
