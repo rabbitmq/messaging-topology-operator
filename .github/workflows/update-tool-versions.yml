@@ -155,6 +155,7 @@ jobs:
           labels: |
             dependencies
             automation
+          add-paths: Makefile
 
       - name: Dry run summary
         if: github.event.inputs.dry_run == 'true' && steps.check-updates.outputs.updates_available == 'true'
