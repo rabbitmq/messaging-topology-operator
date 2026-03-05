@@ -102,7 +102,7 @@ jobs:
 
     - name: Build and push
       if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/v') }}
-      uses: docker/build-push-action@v6
+      uses: docker/build-push-action@v7
       with:
         context: .
         push: true
@@ -115,7 +115,7 @@ jobs:
 
     - name: Build to TAR
       id: build_tar
-      uses: docker/build-push-action@v6
+      uses: docker/build-push-action@v7
       with:
         context: .
         provenance: false
