@@ -19,5 +19,9 @@ updates:
     interval: "daily"
 - package-ecosystem: "github-actions"
   directory: "/"
+  groups:
+    actions:
+      patterns:
+      - '*'
   schedule:
     interval: "weekly"
