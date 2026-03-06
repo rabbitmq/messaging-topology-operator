@@ -66,7 +66,7 @@ jobs:
             only: ytt
 
         - name: Login to quay.io
-          uses: docker/login-action@v3
+          uses: docker/login-action@v4
           with:
             registry: ${{ env.REGISTRY }}
             # secret_rabbitmq/kv/oss%2Frabbitmq-cluster-operator%2Fsecrets/details
@@ -126,7 +126,7 @@ jobs:
             only: ytt, imgpkg
 
         - name: Login to quay.io
-          uses: docker/login-action@v3
+          uses: docker/login-action@v4
           with:
             registry: quay.io
             # secret_rabbitmq/kv/oss%2Frabbitmq-cluster-operator%2Fsecrets/details
