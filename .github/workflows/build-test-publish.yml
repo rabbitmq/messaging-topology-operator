@@ -255,7 +255,7 @@ jobs:
           messaging-topology-operator.yaml
           messaging-topology-operator-with-certmanager.yaml
           messaging-topology-operator-quay-io.yaml
-          messaging-topology-operator-with-certmanager-quay-io.yaml
+          messaging-topology-operator-ghcr-io.yaml
         generate_release_notes: true
         draft: true
         fail_on_unmatched_files: true
