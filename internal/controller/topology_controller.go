@@ -39,6 +39,9 @@ type TopologyReconciler struct {
 	MaxConcurrentReconciles int
 }
 
+// +kubebuilder:rbac:groups=events.k8s.io,resources=events,verbs=create;patch
+
+// Reconcile is the main entry point for the TopologyReconciler
 func (r *TopologyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := ctrl.LoggerFrom(ctx)
 	obj := r.Type.DeepCopyObject().(topology.TopologyResource)
