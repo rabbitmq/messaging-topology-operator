@@ -1,4 +1,4 @@
-ARG GO_TAG=1.25
+ARG GO_TAG=1.26
 # Build the manager binary
 FROM --platform=${BUILDPLATFORM} golang:${GO_TAG} AS builder
 

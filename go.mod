@@ -1,6 +1,6 @@
 module github.com/rabbitmq/messaging-topology-operator
 
-go 1.25.9
+go 1.26.2
 
 require (
 	github.com/cloudflare/cfssl v1.6.5

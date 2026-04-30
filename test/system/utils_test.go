@@ -24,7 +24,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/utils/ptr"
 )
 
 // Useful for small Openshift environment while updating status takes a long time
@@ -259,7 +258,7 @@ func basicTestRabbitmqCluster(name, namespace string) *rabbitmqv1beta1.RabbitmqC
 			Namespace: namespace,
 		},
 		Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
-			Replicas: ptr.To(int32(1)),
+			Replicas: func() *int32 { replicas := int32(1); return &replicas }(),
 			Image:    "rabbitmq:4-management",
 			Resources: &corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
