@@ -42,6 +42,9 @@ var _ = Describe("RabbitMQ connection using provided connection secret", func() 
 
 	AfterEach(func() {
 		Expect(k8sClient.Delete(ctx, secret)).To(Succeed())
+		if q != nil {
+			_ = k8sClient.Delete(ctx, q)
+		}
 	})
 
 	It("succeeds creating an object in a RabbitMQ cluster configured with connection URI", func() {

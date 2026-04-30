@@ -57,7 +57,7 @@ var _ = Describe("Binding", func() {
 			var err error
 			_, err = rabbitClient.GetQueue(queue.Spec.Vhost, queue.Name)
 			return err
-		}, 10, 2).Should(Succeed()) // wait for queue to be available; or else binding will fail to create
+		}, 30, 2).Should(Succeed()) // wait for queue to be available; or else binding will fail to create
 
 		binding = &topology.Binding{
 			ObjectMeta: metav1.ObjectMeta{
