@@ -215,7 +215,7 @@ func (r *TopologyReconciler) getTopLevelField(obj topology.TopologyResource, pat
 		return nil
 	}
 	value := reflect.ValueOf(obj).Elem().FieldByName(path)
-	if value.Kind() == reflect.Ptr {
+	if value.Kind() == reflect.Pointer {
 		value = value.Elem()
 	}
 	if !value.IsValid() || !value.CanAddr() {
