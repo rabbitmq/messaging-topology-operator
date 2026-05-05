@@ -8,7 +8,7 @@ linters:
     - dupl
     - errcheck
     - ginkgolinter
-    - goconst
+    # - goconst # disabled because it started triggering on field names
     - gocyclo
     - govet
     - ineffassign
@@ -37,6 +37,10 @@ linters:
           # - lll
           - dupl
         path: api/
+      - linters:
+          - staticcheck
+        path: api/
+        rule: SA1019
       - linters:
           - dupl
           # - lll
