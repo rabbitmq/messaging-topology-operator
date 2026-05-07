@@ -60,7 +60,7 @@ jobs:
             opm: "latest"
 
         - name: Install Carvel tooling
-          uses: carvel-dev/setup-action@v2.1.0
+          uses: carvel-dev/setup-action@v2.2.0
           with:
             token: ${{ github.token }}
             only: ytt
@@ -120,7 +120,7 @@ jobs:
             go-version-file: "go.mod"
 
         - name: Install Carvel tooling
-          uses: carvel-dev/setup-action@v2.1.0
+          uses: carvel-dev/setup-action@v2.2.0
           with:
             token: ${{ github.token }}
             only: ytt, imgpkg
