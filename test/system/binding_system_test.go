@@ -50,6 +50,8 @@ var _ = Describe("Binding", func() {
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: rmq.Name,
 				},
+				AutoDelete: false,
+				Durable:    true,
 			},
 		}
 		Expect(k8sClient.Create(ctx, queue, &client.CreateOptions{})).To(Succeed())

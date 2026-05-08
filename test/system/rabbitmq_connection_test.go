@@ -56,13 +56,15 @@ var _ = Describe("RabbitMQ connection using provided connection secret", func() 
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					ConnectionSecret: &corev1.LocalObjectReference{Name: secret.Name},
 				},
+				AutoDelete: false,
+				Durable:    true,
 			},
 		}
 		Expect(k8sClient.Create(ctx, q, &client.CreateOptions{})).To(Succeed())
 		var qInfo *rabbithole.DetailedQueueInfo
 		Eventually(func() error {
 			var err error
-			qInfo, err = rabbitClient.GetQueue("/", q.Name)
+			qInfo, err = rabbitClient.GetQueue(q.Spec.Vhost, q.Name)
 			return err
 		}, 20, 2).Should(Succeed())
 
