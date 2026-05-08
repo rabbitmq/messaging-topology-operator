@@ -23,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clientretry "k8s.io/client-go/util/retry"
-	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -98,7 +97,7 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.
 			// https://github.com/rabbitmq/messaging-topology-operator/issues/194
 			for i := range credentialSecret.OwnerReferences {
 				if credentialSecret.ObjectMeta.OwnerReferences[i].Kind == user.Kind {
-					credentialSecret.ObjectMeta.OwnerReferences[i].BlockOwnerDeletion = ptr.To(false)
+					credentialSecret.ObjectMeta.OwnerReferences[i].BlockOwnerDeletion = new(false)
 				}
 			}
 			return nil
