@@ -167,9 +167,9 @@ jobs:
       contents: 'write'
     needs: build_operator
     env:
-      # Taken from https://github.com/kubernetes-sigs/kind/releases/tag/v0.18.0
-      # The image here should be listed under 'Images built for this release' for the version of kind in go.mod
-      KIND_NODE_IMAGE: "kindest/node:v1.32.0"
+      # Taken from https://hub.docker.com/r/kindest/node/tags
+      # We should update this to match the maximum version of k8s supported by VKS and/or OCP
+      KIND_NODE_IMAGE: "kindest/node:v1.35.1"
     steps:
     - name: Check out code
       uses: actions/checkout@v6
