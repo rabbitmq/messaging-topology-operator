@@ -262,8 +262,9 @@ jobs:
             git checkout rabbitmq-messaging-topology-operator-$BUNDLE_VERSION
 
             mkdir -pv operators/rabbitmq-messaging-topology-operator/
-            rm -v -f olm-package-ci/bundle.Dockerfile
+            rm -v -f olm-package-ci/bundle/bundle.Dockerfile
             cp -v -fR olm-package-ci/bundle ./operators/rabbitmq-messaging-topology-operator/"$BUNDLE_VERSION"
+            cp -v olm-package-ci/release-config.yaml ./operators/rabbitmq-messaging-topology-operator/"$BUNDLE_VERSION"/
             git add operators/rabbitmq-messaging-topology-operator
             git commit -s -m "RabbitMQ Topology Operator release $BUNDLE_VERSION"
             git push --set-upstream origin "rabbitmq-messaging-topology-operator-$BUNDLE_VERSION"
