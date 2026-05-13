@@ -28,3 +28,4 @@ olm/bundle/crds
 olm/bundle/manifests
 olm/catalog/cool-catalog/
 olm/release-config.yaml
+/.vscode/settings.json
