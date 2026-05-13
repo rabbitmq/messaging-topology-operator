@@ -439,6 +439,45 @@ var _ = Describe("UserController", func() {
 		})
 	})
 
+	When("deleting a user that was never successfully created", func() {
+		BeforeEach(func() {
+			userName = "delete-user-never-created"
+			initialiseUser()
+			user.Spec.ImportCredentialsSecret = &corev1.LocalObjectReference{
+				Name: "does-not-exist",
+			}
+			user.Labels = map[string]string{"test": userName}
+			initialiseManager("test", userName)
+		})
+
+		It("successfully deletes the user", func() {
+			Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+
+			// Wait for the user to be created and have a finalizer
+			Eventually(func() []string {
+				_ = k8sClient.Get(
+					ctx,
+					types.NamespacedName{Name: user.Name, Namespace: user.Namespace},
+					&user,
+				)
+				return user.Finalizers
+			}).
+				Within(statusEventsUpdateTimeout).
+				WithPolling(time.Second).
+				Should(ContainElement("deletion.finalizers.users.rabbitmq.com"))
+
+			Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
+
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{})
+				return apierrors.IsNotFound(err)
+			}).
+				Within(statusEventsUpdateTimeout).
+				WithPolling(time.Second).
+				Should(BeTrue())
+		})
+	})
+
 	It("sets an owner reference and does not block owner deletion", func() {
 		userName = "test-owner-reference"
 		initialiseUser()

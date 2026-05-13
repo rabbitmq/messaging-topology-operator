@@ -72,9 +72,8 @@ func getUsernameFromUser(ctx context.Context, k8sClient client.Client, namespace
 
 	// get username from User status
 	if user.Status.Username == "" {
-		err := fmt.Errorf("this User does not have an username set in its status")
-		logger.Error(err, failureMsg, "userReference", name)
-		return nil, err
+		logger.Info("this User does not have a username set in its status", "userReference", name)
+		return user, nil
 	}
 	return user, nil
 }

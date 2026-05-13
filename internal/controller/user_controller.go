@@ -289,6 +289,11 @@ func (r *UserReconciler) DeleteFunc(ctx context.Context, rmqc rabbitmqclient.Cli
 	logger := ctrl.LoggerFrom(ctx)
 	user := obj.(*topology.User)
 
+	if user.Status.Username == "" {
+		logger.Info("user never successfully created in rabbitmq server; skipping deletion", "user", user.Name)
+		return nil
+	}
+
 	err := validateResponseForDeletion(rmqc.DeleteUser(user.Status.Username))
 	if errors.Is(err, ErrNotFound) {
 		logger.Info("cannot find user in rabbitmq server; already deleted", "user", user.Name)
