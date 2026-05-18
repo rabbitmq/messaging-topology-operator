@@ -10,7 +10,7 @@ require (
 	github.com/michaelklishin/rabbit-hole/v3 v3.5.0
 	github.com/onsi/ginkgo/v2 v2.28.3
 	github.com/onsi/gomega v1.40.0
-	github.com/rabbitmq/cluster-operator/v2 v2.20.1
+	github.com/rabbitmq/cluster-operator/v2 v2.21.0
 	gopkg.in/ini.v1 v1.67.2
 	k8s.io/api v0.36.1
 	k8s.io/apimachinery v0.36.1
