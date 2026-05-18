@@ -140,7 +140,7 @@ jobs:
         make install-tools
         pushd config/installation
         kustomize edit set image \
-        localhost/messaging-topology-operator=rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}"
+        rabbitmqoperator/messaging-topology-operator=rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}"
         popd
         make generate-manifests QUAY_IO_OPERATOR_IMAGE=quay.io/rabbitmqoperator/messaging-topology-operator:"${RELEASE_VERSION}" GHCR_IO_OPERATOR_IMAGE=ghcr.io/rabbitmq/messaging-topology-operator:"${RELEASE_VERSION}"
 

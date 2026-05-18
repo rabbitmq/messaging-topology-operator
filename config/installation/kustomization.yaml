@@ -10,8 +10,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: rabbitmq-system
 images:
-- name: rabbitmqoperator/messaging-topology-operator-dev
-  newName: rabbitmqoperator/messaging-topology-operator
+- name: rabbitmqoperator/messaging-topology-operator
+  newName: ghcr.io/rabbitmq/messaging-topology-operator
   newTag: latest
 
 resources:
