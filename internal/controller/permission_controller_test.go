@@ -548,7 +548,7 @@ var _ = Describe("permission-controller", func() {
 			EventuallyWithOffset(1, func() bool {
 				err := k8sClient.Get(ctx, types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, &corev1.Secret{})
 				return apierrors.IsNotFound(err)
-			}, statusEventsUpdateTimeout).Should(BeTrue())
+			}, statusEventsUpdateTimeout).Should(BeTrue(), "Secret should not be found")
 
 			By("deleting the permission")
 			Expect(k8sClient.Delete(ctx, &permission)).To(Succeed())
