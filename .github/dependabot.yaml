@@ -9,14 +9,6 @@ updates:
       - '*'
   schedule:
     interval: "daily"
-- package-ecosystem: "gomod"
-  directory: "/internal/tools/"
-  groups:
-    tools:
-      patterns:
-      - '*'
-  schedule:
-    interval: "daily"
 - package-ecosystem: "github-actions"
   directory: "/"
   groups:
