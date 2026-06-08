@@ -555,7 +555,7 @@ var _ = Describe("permission-controller", func() {
 			EventuallyWithOffset(1, func() bool {
 				err := k8sClient.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &topology.Permission{})
 				return apierrors.IsNotFound(err)
-			}, statusEventsUpdateTimeout).Should(BeTrue())
+			}, statusEventsUpdateTimeout).Should(BeTrue(), "Permission should be deleted already")
 
 			observed := observedEvents()
 			Expect(observed).NotTo(ContainElement("Warning FailedDelete failed to delete permission"))
