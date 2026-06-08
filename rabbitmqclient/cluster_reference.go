@@ -11,6 +11,7 @@ import (
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"gopkg.in/ini.v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -86,6 +87,9 @@ func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqC
 
 		secret := &corev1.Secret{}
 		if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.Binding.Name}, secret); err != nil {
+			if apierrors.IsNotFound(err) {
+				return nil, false, fmt.Errorf("failed to get default-user secret from reference: %s Error: %w", err, ErrNoSuchRabbitmqCluster)
+			}
 			return nil, false, err
 		}
 		var err error
@@ -109,6 +113,9 @@ func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqC
 
 	svc := &corev1.Service{}
 	if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.DefaultUser.ServiceReference.Name}, svc); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, false, fmt.Errorf("failed to get service from reference: %s Error: %w", err, ErrNoSuchRabbitmqCluster)
+		}
 		return nil, false, err
 	}
 

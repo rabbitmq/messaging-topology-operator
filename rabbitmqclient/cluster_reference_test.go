@@ -2,6 +2,7 @@ package rabbitmqclient_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
@@ -118,6 +119,32 @@ var _ = Describe("ParseReference", func() {
 			It("errors", func() {
 				_, _, err := rabbitmqclient.ParseReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "", false)
 				Expect(err).To(MatchError(rabbitmqclient.ErrNoServiceReferenceSet))
+			})
+		})
+
+		When("default-user credentials Secret is absent", func() {
+			BeforeEach(func() {
+				// Include cluster and service but omit the binding secret
+				objs = []runtime.Object{existingRabbitMQCluster, existingService}
+			})
+
+			It("returns ErrNoSuchRabbitmqCluster", func() {
+				_, _, err := rabbitmqclient.ParseReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "", false)
+				Expect(err).To(MatchError(ContainSubstring(rabbitmqclient.ErrNoSuchRabbitmqCluster.Error())))
+				Expect(errors.Is(err, rabbitmqclient.ErrNoSuchRabbitmqCluster)).To(BeTrue())
+			})
+		})
+
+		When("RabbitMQ cluster service is absent", func() {
+			BeforeEach(func() {
+				// Include cluster and secret but omit the service
+				objs = []runtime.Object{existingRabbitMQCluster, existingCredentialSecret}
+			})
+
+			It("returns ErrNoSuchRabbitmqCluster", func() {
+				_, _, err := rabbitmqclient.ParseReference(ctx, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "", false)
+				Expect(err).To(MatchError(ContainSubstring(rabbitmqclient.ErrNoSuchRabbitmqCluster.Error())))
+				Expect(errors.Is(err, rabbitmqclient.ErrNoSuchRabbitmqCluster)).To(BeTrue())
 			})
 		})
 

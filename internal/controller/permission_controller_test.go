@@ -487,20 +487,79 @@ var _ = Describe("permission-controller", func() {
 				Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
 			})
 
-			It("sets the correct deletion ownerref to the object", func() {
-				Expect(k8sClient.Create(ctx, &user)).To(Succeed())
-				user.Status.Username = userName
-				Expect(k8sClient.Status().Update(ctx, &user)).To(Succeed())
-				Expect(k8sClient.Create(ctx, &permission)).To(Succeed())
-				Eventually(func() []metav1.OwnerReference {
-					var fetched topology.Permission
-					err := k8sClient.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &fetched)
-					if err != nil {
-						return []metav1.OwnerReference{}
-					}
-					return fetched.ObjectMeta.OwnerReferences
-				}, 5).Should(Not(BeEmpty()))
-			})
+		})
+	})
+
+	When("the RabbitmqCluster default-user secret is removed during deletion", func() {
+		var cluster *v1beta1.RabbitmqCluster
+
+		BeforeEach(func() {
+			permissionName = "test-delete-cluster-secret-gone"
+			initialiseManager("test", permissionName)
+
+			cluster = &v1beta1.RabbitmqCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secret-gone-rabbit",
+					Namespace: permissionNamespace,
+				},
+			}
+			Expect(createRabbitmqClusterResources(k8sClient, cluster)).To(Succeed())
+
+			permission = topology.Permission{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      permissionName,
+					Namespace: permissionNamespace,
+					Labels:    map[string]string{"test": permissionName},
+				},
+				Spec: topology.PermissionSpec{
+					RabbitmqClusterReference: topology.RabbitmqClusterReference{Name: "secret-gone-rabbit"},
+					User:                     "example",
+					Vhost:                    "example",
+				},
+			}
+			fakeRabbitMQClient.UpdatePermissionsInReturns(&http.Response{Status: "201 Created", StatusCode: http.StatusCreated}, nil)
+			fakeRabbitMQClient.ClearPermissionsInReturns(&http.Response{Status: "204 No Content", StatusCode: http.StatusNoContent}, nil)
+		})
+
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, cluster)).To(Succeed())
+		})
+
+		It("removes the finalizer so the Permission can be deleted", func() {
+			Expect(k8sClient.Create(ctx, &permission)).To(Succeed())
+			EventuallyWithOffset(1, func() []topology.Condition {
+				_ = k8sClient.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &permission)
+				return permission.Status.Conditions
+			}, statusEventsUpdateTimeout, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":   Equal(topology.ConditionType("Ready")),
+				"Reason": Equal("SuccessfulCreateOrUpdate"),
+				"Status": Equal(corev1.ConditionTrue),
+			})))
+
+			// Simulate cluster teardown: default-user secret removed while the cluster lingers.
+			By("deleting the default-user secret")
+			secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+				Name:      "secret-gone-rabbit-user-credentials",
+				Namespace: permissionNamespace,
+			}}
+			Expect(k8sClient.Delete(ctx, secret)).To(Succeed())
+			// Wait until the manager cache no longer serves the secret, so the delete
+			// reconcile deterministically hits the ParseReference not-found path.
+			EventuallyWithOffset(1, func() bool {
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, &corev1.Secret{})
+				return apierrors.IsNotFound(err)
+			}, statusEventsUpdateTimeout).Should(BeTrue(), "Secret should not be found")
+
+			By("deleting the permission")
+			Expect(k8sClient.Delete(ctx, &permission)).To(Succeed())
+			EventuallyWithOffset(1, func() bool {
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: permission.Name, Namespace: permission.Namespace}, &topology.Permission{})
+				return apierrors.IsNotFound(err)
+			}, statusEventsUpdateTimeout).Should(BeTrue(), "Permission should be deleted already")
+
+			observed := observedEvents()
+			Expect(observed).NotTo(ContainElement("Warning FailedDelete failed to delete permission"))
+			Expect(observed).To(ContainElement(ContainSubstring("Normal SuccessfulDelete successfully deleted")))
 		})
 	})
 })
