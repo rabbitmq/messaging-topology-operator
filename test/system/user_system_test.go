@@ -153,6 +153,9 @@ var _ = Describe("Users", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "credential-list-secret",
 					Namespace: namespace,
+					Labels: map[string]string{
+						topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
+					},
 				},
 				Type: corev1.SecretTypeOpaque,
 				Data: map[string][]byte{
@@ -207,6 +210,9 @@ var _ = Describe("Users", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "credential-list-secret",
 					Namespace: namespace,
+					Labels: map[string]string{
+						topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
+					},
 				},
 				Type: corev1.SecretTypeOpaque,
 				Data: map[string][]byte{
@@ -266,6 +272,9 @@ var _ = Describe("Users", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "credential-list-secret",
 					Namespace: namespace,
+					Labels: map[string]string{
+						topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
+					},
 				},
 				Type: corev1.SecretTypeOpaque,
 				Data: map[string][]byte{
@@ -337,6 +346,9 @@ var _ = Describe("Users", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "credential-list-secret",
 					Namespace: namespace,
+					Labels: map[string]string{
+						topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
+					},
 				},
 				Type: corev1.SecretTypeOpaque,
 				Data: map[string][]byte{
@@ -406,6 +418,9 @@ var _ = Describe("Users", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "user-limit-secret",
 					Namespace: namespace,
+					Labels: map[string]string{
+						topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
+					},
 				},
 				Type: corev1.SecretTypeOpaque,
 				Data: map[string][]byte{
@@ -471,6 +486,93 @@ var _ = Describe("Users", func() {
 			}, 10, 2).Should(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Not Found"))
 			Expect(userLimitsInfo).To(BeEmpty())
+		})
+	})
+
+	When("rotating the password in an importCredentialsSecret", func() {
+		const (
+			rotationUsername      = "rotation-test-user"
+			initialPassword       = "initial-password-123"
+			rotatedPassword       = "rotated-password-456"
+			rotationSecretName    = "rotation-test-secret"
+		)
+
+		var credentialSecret corev1.Secret
+
+		BeforeEach(func() {
+			credentialSecret = corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      rotationSecretName,
+					Namespace: namespace,
+					Labels: map[string]string{
+						topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
+					},
+				},
+				Type: corev1.SecretTypeOpaque,
+				Data: map[string][]byte{
+					"username": []byte(rotationUsername),
+					"password": []byte(initialPassword),
+				},
+			}
+			Expect(k8sClient.Create(ctx, &credentialSecret, &client.CreateOptions{})).To(Succeed())
+
+			user = &topology.User{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rotation-test",
+					Namespace: namespace,
+				},
+				Spec: topology.UserSpec{
+					RabbitmqClusterReference: topology.RabbitmqClusterReference{
+						Name: rmq.Name,
+					},
+					ImportCredentialsSecret: &corev1.LocalObjectReference{
+						Name: rotationSecretName,
+					},
+				},
+			}
+		})
+
+		AfterEach(func() {
+			Expect(k8sClient.Delete(context.Background(), &credentialSecret)).ToNot(HaveOccurred())
+		})
+
+		It("updates the RabbitMQ user password when the secret is updated", func() {
+			By("creating the user with the initial password")
+			Expect(k8sClient.Create(ctx, user, &client.CreateOptions{})).To(Succeed())
+
+			By("waiting for the user to become Ready")
+			Eventually(func() bool {
+				_ = k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, user)
+				for _, c := range user.Status.Conditions {
+					if c.Type == topology.ConditionType("Ready") {
+						return c.Status == corev1.ConditionTrue
+					}
+				}
+				return false
+			}, 60, 2).Should(BeTrue())
+
+			By("verifying the initial password authenticates successfully")
+			managementEndpoint, err := managementEndpoint(ctx, clientSet, user.Namespace, user.Spec.RabbitmqClusterReference.Name)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = rabbithole.NewClient(managementEndpoint, rotationUsername, initialPassword)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("rotating the password in the import secret")
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: rotationSecretName, Namespace: namespace}, &credentialSecret)).To(Succeed())
+			credentialSecret.Data["password"] = []byte(rotatedPassword)
+			Expect(k8sClient.Update(ctx, &credentialSecret)).To(Succeed())
+
+			By("waiting for the operator to reconcile with the new password")
+			Eventually(func() error {
+				_, err = rabbithole.NewClient(managementEndpoint, rotationUsername, rotatedPassword)
+				return err
+			}, 60, 2).Should(Succeed())
+
+			By("confirming the old password no longer authenticates")
+			oldClient, err := rabbithole.NewClient(managementEndpoint, rotationUsername, initialPassword)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = oldClient.ListUsers()
+			Expect(err).To(HaveOccurred())
 		})
 	})
 })
