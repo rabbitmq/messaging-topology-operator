@@ -79,6 +79,7 @@ var _ = Describe("exchange-controller", func() {
 
 		Expect((&controller.TopologyReconciler{
 			Client:                exchangeMgr.GetClient(),
+			APIReader:             exchangeMgr.GetAPIReader(),
 			Type:                  &topology.Exchange{},
 			Scheme:                exchangeMgr.GetScheme(),
 			Recorder:              fakeRecorder,

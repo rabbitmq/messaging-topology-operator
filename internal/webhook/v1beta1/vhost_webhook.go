@@ -7,16 +7,23 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // Implements admission.Validator
-type VhostCustomValidator struct{}
+type VhostCustomValidator struct {
+	Client    client.Client
+	APIReader client.Reader
+}
 
 // SetupVhostWebhookWithManager registers the webhook for Vhost in the manager.
 func SetupVhostWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr, &rabbitmqcomv1beta1.Vhost{}).
-		WithValidator(&VhostCustomValidator{}).
+		WithValidator(&VhostCustomValidator{
+			Client:    mgr.GetClient(),
+			APIReader: mgr.GetAPIReader(),
+		}).
 		Complete()
 }
 
@@ -26,7 +33,10 @@ func SetupVhostWebhookWithManager(mgr ctrl.Manager) error {
 //
 // Either rabbitmqClusterReference.name or
 // rabbitmqClusterReference.connectionSecret must be provided but not both
-func (v *VhostCustomValidator) ValidateCreate(_ context.Context, vhost *rabbitmqcomv1beta1.Vhost) (warnings admission.Warnings, err error) {
+func (v *VhostCustomValidator) ValidateCreate(ctx context.Context, vhost *rabbitmqcomv1beta1.Vhost) (warnings admission.Warnings, err error) {
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, vhost.Spec.RabbitmqClusterReference.ConnectionSecret, vhost.Namespace); err != nil {
+		return nil, err
+	}
 	return vhost.Spec.RabbitmqClusterReference.ValidateOnCreate(vhost.GroupResource(), vhost.Name)
 }
 

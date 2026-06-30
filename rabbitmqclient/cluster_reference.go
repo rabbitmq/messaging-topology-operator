@@ -35,7 +35,7 @@ var (
 	ErrNoServiceReferenceSet = errors.New("RabbitmqCluster has no ServiceReference set in status.defaultUser")
 )
 
-func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqClusterReference, requestNamespace string, clusterDomain string, connectUsingHTTP bool) (map[string]string, bool, error) {
+func ParseReference(ctx context.Context, c client.Client, apiReader client.Reader, rmq topology.RabbitmqClusterReference, requestNamespace string, clusterDomain string, connectUsingHTTP bool) (map[string]string, bool, error) {
 	var namespace string
 	if rmq.Namespace == "" {
 		namespace = requestNamespace
@@ -86,7 +86,7 @@ func ParseReference(ctx context.Context, c client.Client, rmq topology.RabbitmqC
 		}
 
 		secret := &corev1.Secret{}
-		if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.Binding.Name}, secret); err != nil {
+		if err := apiReader.Get(ctx, types.NamespacedName{Namespace: namespace, Name: cluster.Status.Binding.Name}, secret); err != nil {
 			if apierrors.IsNotFound(err) {
 				return nil, false, fmt.Errorf("failed to get default-user secret from reference: %s Error: %w", err, ErrNoSuchRabbitmqCluster)
 			}

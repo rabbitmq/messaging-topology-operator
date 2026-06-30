@@ -24,8 +24,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	clientretry "k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
+	ctrlbuilder "sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 var apiGVStr = topology.GroupVersion.String()
@@ -38,7 +41,7 @@ const (
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=users,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=users/finalizers,verbs=update
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=users/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update
 
 type UserReconciler struct {
 	client.Client
@@ -89,6 +92,10 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.
 	err = clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
 		var apiError error
 		operationResult, apiError = controllerutil.CreateOrUpdate(ctx, r.Client, &credentialSecret, func() error {
+			if credentialSecret.Labels == nil {
+				credentialSecret.Labels = make(map[string]string)
+			}
+			credentialSecret.Labels[topology.TopologyOperatorLabel] = topology.TopologyOperatorLabelValue
 			if err := controllerutil.SetControllerReference(user, &credentialSecret, r.Scheme); err != nil {
 				return fmt.Errorf("failed setting controller reference: %v", err)
 			}
@@ -120,11 +127,6 @@ func (r *UserReconciler) generateCredentials(ctx context.Context, user *topology
 	var err error
 	msg := fmt.Sprintf("generating/importing credentials for User %s: %#v", user.Name, user)
 	logger.Info(msg)
-
-	if user.Spec.ImportCredentialsSecret != nil {
-		logger.Info("An import secret was provided in the user spec", "user", user.Name, "secretName", user.Spec.ImportCredentialsSecret.Name)
-		return r.importCredentials(ctx, user.Spec.ImportCredentialsSecret.Name, user.Namespace)
-	}
 
 	credentials := internal.UserCredentials{}
 
@@ -170,11 +172,11 @@ func (r *UserReconciler) importCredentials(ctx context.Context, secretName, secr
 	return credentials, nil
 }
 
-func (r *UserReconciler) setUserStatus(ctx context.Context, user *topology.User, username string) error {
+func (r *UserReconciler) setUserStatus(ctx context.Context, user *topology.User, username, credentialsSecretName string) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	credentials := &corev1.LocalObjectReference{
-		Name: user.Name + "-user-credentials",
+		Name: credentialsSecretName,
 	}
 	user.Status.Credentials = credentials
 	user.Status.Username = username
@@ -188,65 +190,122 @@ func (r *UserReconciler) setUserStatus(ctx context.Context, user *topology.User,
 }
 
 func (r *UserReconciler) DeclareFunc(ctx context.Context, rmqc rabbitmqclient.Client, obj topology.TopologyResource) error {
-	logger := ctrl.LoggerFrom(ctx)
 	user := obj.(*topology.User)
-	if user.Status.Credentials == nil || user.Status.Username == "" {
-		var username string
-		if user.Status.Credentials != nil && user.Status.Username == "" {
-			// Only run once for migration to set user.Status.Username on existing resources
-			credentials, err := r.getUserCredentials(ctx, user)
-			if err != nil {
-				return err
-			}
-			username = string(credentials.Data["username"])
-		} else {
-			logger.Info("User does not yet have a Credentials Secret; generating", "user", user.Name)
-			var err error
-			if username, err = r.declareCredentials(ctx, user); err != nil {
-				return err
-			}
-		}
-		if err := r.setUserStatus(ctx, user, username); err != nil {
+	if user.Spec.ImportCredentialsSecret != nil {
+		return r.declareWithImportedCredentials(ctx, rmqc, user)
+	}
+	return r.declareWithGeneratedCredentials(ctx, rmqc, user)
+}
+
+func (r *UserReconciler) declareWithImportedCredentials(ctx context.Context, rmqc rabbitmqclient.Client, user *topology.User) error {
+	logger := ctrl.LoggerFrom(ctx)
+
+	credentials, err := r.importCredentials(ctx, user.Spec.ImportCredentialsSecret.Name, user.Namespace)
+	if err != nil {
+		return err
+	}
+
+	// Update status on first run, or correct a migration where Status.Credentials.Name
+	// still points to the old generated secret rather than the import secret.
+	if user.Status.Credentials == nil ||
+		user.Status.Credentials.Name != user.Spec.ImportCredentialsSecret.Name ||
+		user.Status.Username != credentials.Username {
+		if err := r.setUserStatus(ctx, user, credentials.Username, user.Spec.ImportCredentialsSecret.Name); err != nil {
 			return err
 		}
 	}
 
+	userSettings, err := internal.GenerateUserSettings(credentials, user.Spec.Tags)
+	if err != nil {
+		return fmt.Errorf("failed to generate user settings from credentials: %w", err)
+	}
+	logger.Info("Generated user settings from import secret", "user", user.Name)
+
+	if err := validateResponse(rmqc.PutUser(userSettings.Name, userSettings)); err != nil {
+		return err
+	}
+
+	return r.reconcileUserLimits(ctx, rmqc, user, credentials.Username)
+}
+
+func (r *UserReconciler) declareWithGeneratedCredentials(ctx context.Context, rmqc rabbitmqclient.Client, user *topology.User) error {
+	logger := ctrl.LoggerFrom(ctx)
+
+	// Always call declareCredentials to ensure the generated secret exists and is labeled.
+	// CreateOrUpdate fetches the existing secret first, so the mutate function only adds the
+	// label — credentials in the Data field are never regenerated for existing secrets.
+	username, err := r.declareCredentials(ctx, user)
+	if err != nil {
+		return err
+	}
+
 	credentials, err := r.getUserCredentials(ctx, user)
 	if err != nil {
-		return fmt.Errorf("failed to retrieve user credentials secret from status; error: %w", err)
+		// Cache propagation lag after the first labeling on upgrade: requeue.
+		return fmt.Errorf("failed to retrieve generated credentials secret (may be requeuing after label migration): %w", err)
 	}
 	logger.Info("Retrieved credentials for user", "user", user.Name, "credentials", credentials.Name)
 
-	userSettings, err := internal.GenerateUserSettings(credentials, user.Spec.Tags)
+	// username from declareCredentials is only valid for newly created secrets.
+	// For existing secrets, read the actual username from the secret.
+	actualUsername := string(credentials.Data["username"])
+	if actualUsername == "" {
+		actualUsername = username
+	}
+
+	if user.Status.Credentials == nil || user.Status.Username == "" ||
+		user.Status.Credentials.Name != user.Name+"-user-credentials" {
+		if err := r.setUserStatus(ctx, user, actualUsername, user.Name+"-user-credentials"); err != nil {
+			return err
+		}
+	}
+
+	userSettings, err := internal.GenerateUserSettings(secretToCredentials(credentials), user.Spec.Tags)
 	if err != nil {
 		return fmt.Errorf("failed to generate user settings from credential: %w", err)
 	}
 	logger.Info("Generated user settings", "user", user.Name, "settings", userSettings)
 
-	err = validateResponse(rmqc.PutUser(userSettings.Name, userSettings))
-	if err != nil {
+	if err := validateResponse(rmqc.PutUser(userSettings.Name, userSettings)); err != nil {
 		return err
 	}
 
+	return r.reconcileUserLimits(ctx, rmqc, user, actualUsername)
+}
+
+func (r *UserReconciler) reconcileUserLimits(ctx context.Context, rmqc rabbitmqclient.Client, user *topology.User, username string) error {
+	logger := ctrl.LoggerFrom(ctx)
+
 	newUserLimits := internal.GenerateUserLimits(user.Spec.UserLimits)
 	logger.Info("Getting existing user limits", "user", user.Name)
-	existingUserLimits, err := r.getUserLimits(rmqc, string(credentials.Data["username"]))
+	existingUserLimits, err := r.getUserLimits(rmqc, username)
 	if err != nil {
 		return err
 	}
 	limitsToDelete := r.userLimitsToDelete(existingUserLimits, newUserLimits)
 	if len(limitsToDelete) > 0 {
 		logger.Info("Deleting outdated user limits", "user", user.Name, "limits", limitsToDelete)
-		err = validateResponseForDeletion(rmqc.DeleteUserLimits(string(credentials.Data["username"]), limitsToDelete))
-		if err != nil && !errors.Is(err, ErrNotFound) {
+		if err := validateResponseForDeletion(rmqc.DeleteUserLimits(username, limitsToDelete)); err != nil && !errors.Is(err, ErrNotFound) {
 			return err
 		}
 	}
 	if len(newUserLimits) > 0 {
 		logger.Info("Creating new user limits", "user", user.Name, "limits", newUserLimits)
-		return validateResponse(rmqc.PutUserLimits(string(credentials.Data["username"]), newUserLimits))
+		return validateResponse(rmqc.PutUserLimits(username, newUserLimits))
 	}
 	return nil
+}
+
+func secretToCredentials(s *corev1.Secret) internal.UserCredentials {
+	c := internal.UserCredentials{
+		Username: string(s.Data["username"]),
+		Password: string(s.Data["password"]),
+	}
+	if h, ok := s.Data["passwordHash"]; ok {
+		hs := string(h)
+		c.PasswordHash = &hs
+	}
+	return c
 }
 
 func (r *UserReconciler) userLimitsToDelete(existingUserLimits, newUserLimits rabbithole.UserLimitsValues) (limitsToDelete rabbithole.UserLimits) {
@@ -275,11 +334,9 @@ func (r *UserReconciler) getUserLimits(rmqc rabbitmqclient.Client, username stri
 }
 
 func (r *UserReconciler) getUserCredentials(ctx context.Context, user *topology.User) (*corev1.Secret, error) {
-	if user.Status.Credentials == nil {
-		return nil, fmt.Errorf("this User does not yet have a Credentials Secret created")
-	}
 	credentials := &corev1.Secret{}
-	if err := r.Get(ctx, types.NamespacedName{Name: user.Status.Credentials.Name, Namespace: user.Namespace}, credentials); err != nil {
+	secretName := user.Name + "-user-credentials"
+	if err := r.Get(ctx, types.NamespacedName{Name: secretName, Namespace: user.Namespace}, credentials); err != nil {
 		return nil, err
 	}
 	return credentials, nil
@@ -301,4 +358,48 @@ func (r *UserReconciler) DeleteFunc(ctx context.Context, rmqc rabbitmqclient.Cli
 		return err
 	}
 	return nil
+}
+
+func (r *UserReconciler) SetupControllerBuilder(ctx context.Context, mgr ctrl.Manager, b *ctrlbuilder.Builder) error {
+	if err := mgr.GetFieldIndexer().IndexField(ctx, &topology.User{}, ".spec.importCredentialsSecret.name",
+		func(obj client.Object) []string {
+			u := obj.(*topology.User)
+			if u.Spec.ImportCredentialsSecret != nil {
+				return []string{u.Spec.ImportCredentialsSecret.Name}
+			}
+			return nil
+		},
+	); err != nil {
+		return err
+	}
+
+	b.Watches(&corev1.Secret{}, handler.EnqueueRequestsFromMapFunc(r.secretToUserRequests))
+	return nil
+}
+
+func (r *UserReconciler) secretToUserRequests(ctx context.Context, obj client.Object) []reconcile.Request {
+	secret := obj.(*corev1.Secret)
+
+	// Generated secret: owned by a User CR
+	if owner := metav1.GetControllerOf(secret); owner != nil && owner.Kind == ownerKind {
+		return []reconcile.Request{{NamespacedName: types.NamespacedName{
+			Name: owner.Name, Namespace: secret.Namespace,
+		}}}
+	}
+
+	// Import secret: find Users referencing it via field index
+	var userList topology.UserList
+	if err := r.List(ctx, &userList,
+		client.InNamespace(secret.Namespace),
+		client.MatchingFields{".spec.importCredentialsSecret.name": secret.Name},
+	); err != nil {
+		return nil
+	}
+	reqs := make([]reconcile.Request, 0, len(userList.Items))
+	for _, u := range userList.Items {
+		reqs = append(reqs, reconcile.Request{
+			NamespacedName: types.NamespacedName{Name: u.Name, Namespace: u.Namespace},
+		})
+	}
+	return reqs
 }

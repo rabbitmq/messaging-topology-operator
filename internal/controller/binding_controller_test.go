@@ -78,6 +78,7 @@ var _ = Describe("bindingController", func() {
 
 		Expect((&controller.TopologyReconciler{
 			Client:                bindingMgr.GetClient(),
+			APIReader:             bindingMgr.GetAPIReader(),
 			Type:                  &topology.Binding{},
 			Scheme:                bindingMgr.GetScheme(),
 			Recorder:              fakeRecorder,

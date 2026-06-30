@@ -14,7 +14,6 @@ import (
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	corev1 "k8s.io/api/core/v1"
 )
 
 // UserCredentials describes the credentials that can be provided in ImportCredentialsSecret for a User.
@@ -29,25 +28,20 @@ type UserCredentials struct {
 	Password string
 }
 
-func GenerateUserSettings(credentials *corev1.Secret, tags []topology.UserTag) (rabbithole.UserSettings, error) {
-	username, ok := credentials.Data["username"]
-	if !ok {
-		return rabbithole.UserSettings{}, fmt.Errorf("could not find username in credentials secret %s", credentials.Name)
+func GenerateUserSettings(credentials UserCredentials, tags []topology.UserTag) (rabbithole.UserSettings, error) {
+	if credentials.Username == "" {
+		return rabbithole.UserSettings{}, fmt.Errorf("username is required in credentials")
 	}
 
-	passwordHash, ok := credentials.Data["passwordHash"]
-	if !ok {
-		// Use password as a fallback
-		password, ok := credentials.Data["password"]
-		if !ok {
-			return rabbithole.UserSettings{}, fmt.Errorf("could not find passwordHash or password in credentials secret %s", credentials.Name)
+	var passwordHash string
+	if credentials.PasswordHash != nil {
+		passwordHash = *credentials.PasswordHash
+	} else {
+		if credentials.Password == "" {
+			return rabbithole.UserSettings{}, fmt.Errorf("neither passwordHash nor password is set in credentials")
 		}
-		// To avoid sending raw passwords over the wire, compute a password hash using a random salt
-		// and use this in the UserSettings instead.
-		// For more information on this hashing algorithm, see
-		// https://www.rabbitmq.com/passwords.html#computing-password-hash.
-		passwordHashStr := rabbithole.Base64EncodedSaltedPasswordHashSHA512(string(password))
-		passwordHash = []byte(passwordHashStr)
+		passwordHashStr := rabbithole.Base64EncodedSaltedPasswordHashSHA512(credentials.Password)
+		passwordHash = passwordHashStr
 	}
 
 	userTagStrings := make([]string, len(tags))
@@ -56,9 +50,9 @@ func GenerateUserSettings(credentials *corev1.Secret, tags []topology.UserTag) (
 	}
 
 	return rabbithole.UserSettings{
-		Name:             string(username),
+		Name:             credentials.Username,
 		Tags:             userTagStrings,
-		PasswordHash:     string(passwordHash),
+		PasswordHash:     passwordHash,
 		HashingAlgorithm: rabbithole.HashingAlgorithmSHA512,
 	}, nil
 }

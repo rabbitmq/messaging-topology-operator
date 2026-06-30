@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
@@ -31,7 +32,10 @@ import (
 // SetupShovelWebhookWithManager registers the webhook for Shovel in the manager.
 func SetupShovelWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr, &rabbitmqcomv1beta1.Shovel{}).
-		WithValidator(&ShovelCustomValidator{}).
+		WithValidator(&ShovelCustomValidator{
+			Client:    mgr.GetClient(),
+			APIReader: mgr.GetAPIReader(),
+		}).
 		Complete()
 }
 
@@ -42,12 +46,23 @@ func SetupShovelWebhookWithManager(mgr ctrl.Manager) error {
 //
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as this struct is used only for temporary operations and does not need to be deeply copied.
-type ShovelCustomValidator struct{}
+type ShovelCustomValidator struct {
+	Client    client.Client
+	APIReader client.Reader
+}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type Shovel.
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided, but not both
-func (v *ShovelCustomValidator) ValidateCreate(_ context.Context, obj *rabbitmqcomv1beta1.Shovel) (admission.Warnings, error) {
+func (v *ShovelCustomValidator) ValidateCreate(ctx context.Context, obj *rabbitmqcomv1beta1.Shovel) (admission.Warnings, error) {
 	if err := amqp10Validate(obj); err != nil {
+		return nil, err
+	}
+
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, obj.Spec.UriSecret, obj.Namespace); err != nil {
+		return nil, err
+	}
+
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, obj.Spec.RabbitmqClusterReference.ConnectionSecret, obj.Namespace); err != nil {
 		return nil, err
 	}
 
@@ -55,7 +70,7 @@ func (v *ShovelCustomValidator) ValidateCreate(_ context.Context, obj *rabbitmqc
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Shovel.
-func (v *ShovelCustomValidator) ValidateUpdate(_ context.Context, oldObj, newObj *rabbitmqcomv1beta1.Shovel) (admission.Warnings, error) {
+func (v *ShovelCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj *rabbitmqcomv1beta1.Shovel) (admission.Warnings, error) {
 	if err := amqp10Validate(newObj); err != nil {
 		return nil, err
 	}
@@ -74,6 +89,9 @@ func (v *ShovelCustomValidator) ValidateUpdate(_ context.Context, oldObj, newObj
 	if !oldObj.Spec.RabbitmqClusterReference.Matches(&newObj.Spec.RabbitmqClusterReference) {
 		return nil, apierrors.NewForbidden(newObj.GroupResource(), newObj.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
+	}
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, newObj.Spec.UriSecret, newObj.Namespace); err != nil {
+		return nil, err
 	}
 	return nil, nil
 }

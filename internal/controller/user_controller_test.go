@@ -84,6 +84,7 @@ var _ = Describe("UserController", func() {
 
 		Expect((&controller.TopologyReconciler{
 			Client:                userMgr.GetClient(),
+			APIReader:             userMgr.GetAPIReader(),
 			Type:                  &topology.User{},
 			Scheme:                userMgr.GetScheme(),
 			Recorder:              fakeRecorder,

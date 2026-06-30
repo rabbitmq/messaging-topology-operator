@@ -7,16 +7,23 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // Implements admission.Validator
-type UserCustomValidator struct{}
+type UserCustomValidator struct {
+	Client    client.Client
+	APIReader client.Reader
+}
 
 // SetupUserWebhookWithManager registers the webhook for User in the manager.
 func SetupUserWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr, &rabbitmqcomv1beta1.User{}).
-		WithValidator(&UserCustomValidator{}).
+		WithValidator(&UserCustomValidator{
+			Client:    mgr.GetClient(),
+			APIReader: mgr.GetAPIReader(),
+		}).
 		Complete()
 }
 
@@ -24,15 +31,24 @@ func SetupUserWebhookWithManager(mgr ctrl.Manager) error {
 
 // ValidateCreate - either rabbitmqClusterReference.name or
 // rabbitmqClusterReference.connectionSecret must be provided but not both
-func (v *UserCustomValidator) ValidateCreate(_ context.Context, user *rabbitmqcomv1beta1.User) (warnings admission.Warnings, err error) {
+func (v *UserCustomValidator) ValidateCreate(ctx context.Context, user *rabbitmqcomv1beta1.User) (warnings admission.Warnings, err error) {
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, user.Spec.ImportCredentialsSecret, user.Namespace); err != nil {
+		return nil, err
+	}
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, user.Spec.RabbitmqClusterReference.ConnectionSecret, user.Namespace); err != nil {
+		return nil, err
+	}
 	return user.Spec.RabbitmqClusterReference.ValidateOnCreate(user.GroupResource(), user.Name)
 }
 
 // ValidateUpdate returns error type 'forbidden' for updates on rabbitmqClusterReference
-func (v *UserCustomValidator) ValidateUpdate(_ context.Context, oldUser, newUser *rabbitmqcomv1beta1.User) (warnings admission.Warnings, err error) {
+func (v *UserCustomValidator) ValidateUpdate(ctx context.Context, oldUser, newUser *rabbitmqcomv1beta1.User) (warnings admission.Warnings, err error) {
 	if !oldUser.Spec.RabbitmqClusterReference.Matches(&newUser.Spec.RabbitmqClusterReference) {
 		return nil, apierrors.NewForbidden(newUser.GroupResource(), newUser.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), "update on rabbitmqClusterReference is forbidden"))
+	}
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, newUser.Spec.ImportCredentialsSecret, newUser.Namespace); err != nil {
+		return nil, err
 	}
 	return nil, nil
 }

@@ -22,6 +22,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
@@ -30,7 +31,10 @@ import (
 // SetupSchemaReplicationWebhookWithManager registers the webhook for SchemaReplication in the manager.
 func SetupSchemaReplicationWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr, &rabbitmqcomv1beta1.SchemaReplication{}).
-		WithValidator(&SchemaReplicationCustomValidator{}).
+		WithValidator(&SchemaReplicationCustomValidator{
+			Client:    mgr.GetClient(),
+			APIReader: mgr.GetAPIReader(),
+		}).
 		Complete()
 }
 
@@ -41,12 +45,23 @@ func SetupSchemaReplicationWebhookWithManager(mgr ctrl.Manager) error {
 //
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as this struct is used only for temporary operations and does not need to be deeply copied.
-type SchemaReplicationCustomValidator struct{}
+type SchemaReplicationCustomValidator struct {
+	Client    client.Client
+	APIReader client.Reader
+}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type SchemaReplication.
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
-func (v *SchemaReplicationCustomValidator) ValidateCreate(_ context.Context, obj *rabbitmqcomv1beta1.SchemaReplication) (admission.Warnings, error) {
+func (v *SchemaReplicationCustomValidator) ValidateCreate(ctx context.Context, obj *rabbitmqcomv1beta1.SchemaReplication) (admission.Warnings, error) {
 	if err := validateSecret(obj); err != nil {
+		return nil, err
+	}
+
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, obj.Spec.UpstreamSecret, obj.Namespace); err != nil {
+		return nil, err
+	}
+
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, obj.Spec.RabbitmqClusterReference.ConnectionSecret, obj.Namespace); err != nil {
 		return nil, err
 	}
 
@@ -54,7 +69,7 @@ func (v *SchemaReplicationCustomValidator) ValidateCreate(_ context.Context, obj
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type SchemaReplication.
-func (v *SchemaReplicationCustomValidator) ValidateUpdate(_ context.Context, oldObj, newObj *rabbitmqcomv1beta1.SchemaReplication) (admission.Warnings, error) {
+func (v *SchemaReplicationCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj *rabbitmqcomv1beta1.SchemaReplication) (admission.Warnings, error) {
 	if err := validateSecret(newObj); err != nil {
 		return nil, err
 	}
@@ -63,6 +78,9 @@ func (v *SchemaReplicationCustomValidator) ValidateUpdate(_ context.Context, old
 	if !oldObj.Spec.RabbitmqClusterReference.Matches(&newObj.Spec.RabbitmqClusterReference) {
 		return nil, apierrors.NewForbidden(newObj.GroupResource(), newObj.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), detailMsg))
+	}
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, newObj.Spec.UpstreamSecret, newObj.Namespace); err != nil {
+		return nil, err
 	}
 	return nil, nil
 }

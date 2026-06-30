@@ -11,16 +11,23 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // Implememnts admission.Validator
-type QueueCustomValidator struct{}
+type QueueCustomValidator struct {
+	Client    client.Client
+	APIReader client.Reader
+}
 
 // SetupQueueWebhookWithManager registers the webhook for Queue in the manager.
 func SetupQueueWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr, &rabbitmqcomv1beta1.Queue{}).
-		WithValidator(&QueueCustomValidator{}).
+		WithValidator(&QueueCustomValidator{
+			Client:    mgr.GetClient(),
+			APIReader: mgr.GetAPIReader(),
+		}).
 		Complete()
 }
 
@@ -28,11 +35,14 @@ func SetupQueueWebhookWithManager(mgr ctrl.Manager) error {
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 // Either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
-func (v *QueueCustomValidator) ValidateCreate(_ context.Context, inQueue *rabbitmqcomv1beta1.Queue) (warnings admission.Warnings, err error) {
+func (v *QueueCustomValidator) ValidateCreate(ctx context.Context, inQueue *rabbitmqcomv1beta1.Queue) (warnings admission.Warnings, err error) {
 	if inQueue.Spec.Type == "quorum" && !inQueue.Spec.Durable {
 		return nil, apierrors.NewForbidden(inQueue.GroupResource(), inQueue.Name,
 			field.Forbidden(field.NewPath("spec", "durable"),
 				"Quorum queues must have durable set to true"))
+	}
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, inQueue.Spec.RabbitmqClusterReference.ConnectionSecret, inQueue.Namespace); err != nil {
+		return nil, err
 	}
 	return inQueue.Spec.RabbitmqClusterReference.ValidateOnCreate(inQueue.GroupResource(), inQueue.Name)
 }

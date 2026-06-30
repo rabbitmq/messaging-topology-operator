@@ -80,6 +80,7 @@ var _ = Describe("topicpermission-controller", func() {
 
 		Expect((&controller.TopologyReconciler{
 			Client:                topicPermissionMgr.GetClient(),
+			APIReader:             topicPermissionMgr.GetAPIReader(),
 			Type:                  &topology.TopicPermission{},
 			Scheme:                topicPermissionMgr.GetScheme(),
 			Recorder:              fakeRecorder,

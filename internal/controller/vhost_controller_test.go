@@ -80,6 +80,7 @@ var _ = Describe("vhost-controller", func() {
 
 		Expect((&controller.TopologyReconciler{
 			Client:                vhostMgr.GetClient(),
+			APIReader:             vhostMgr.GetAPIReader(),
 			Type:                  &topology.Vhost{},
 			Scheme:                vhostMgr.GetScheme(),
 			Recorder:              fakeRecorder,
