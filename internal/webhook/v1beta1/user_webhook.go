@@ -47,8 +47,12 @@ func (v *UserCustomValidator) ValidateUpdate(ctx context.Context, oldUser, newUs
 		return nil, apierrors.NewForbidden(newUser.GroupResource(), newUser.Name,
 			field.Forbidden(field.NewPath("spec", "rabbitmqClusterReference"), "update on rabbitmqClusterReference is forbidden"))
 	}
-	if err := validateSecretLabel(ctx, v.Client, v.APIReader, newUser.Spec.ImportCredentialsSecret, newUser.Namespace); err != nil {
-		return nil, err
+	// The operator patches the User to remove its finalizer during deletion. By that point the
+	// import secret may already be gone, so skip label validation for objects being deleted.
+	if newUser.DeletionTimestamp == nil {
+		if err := validateSecretLabel(ctx, v.Client, v.APIReader, newUser.Spec.ImportCredentialsSecret, newUser.Namespace); err != nil {
+			return nil, err
+		}
 	}
 	return nil, nil
 }

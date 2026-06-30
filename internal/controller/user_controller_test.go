@@ -499,7 +499,7 @@ var _ = Describe("UserController", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      importSecretName,
 					Namespace: userNamespace,
-					Labels: map[string]string{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue},
+					Labels:    map[string]string{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue},
 				},
 				Type: corev1.SecretTypeOpaque,
 				Data: map[string][]byte{"username": []byte("imported-user"), "password": []byte("imported-password")},
@@ -543,7 +543,7 @@ var _ = Describe("UserController", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      importSecretName,
 					Namespace: userNamespace,
-					Labels: map[string]string{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue},
+					Labels:    map[string]string{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue},
 				},
 				Type: corev1.SecretTypeOpaque,
 				Data: map[string][]byte{"username": []byte("imported-user"), "password": []byte("imported-password")},
@@ -589,7 +589,7 @@ var _ = Describe("UserController", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      importSecretName,
 					Namespace: userNamespace,
-					Labels: map[string]string{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue},
+					Labels:    map[string]string{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue},
 				},
 				Type: corev1.SecretTypeOpaque,
 				Data: map[string][]byte{"username": []byte("imported-user"), "password": []byte("initial-password")},

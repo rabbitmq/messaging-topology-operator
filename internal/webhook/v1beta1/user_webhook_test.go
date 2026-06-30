@@ -161,6 +161,33 @@ var _ = Describe("User Webhook", func() {
 			Expect(err).To(MatchError(ContainSubstring("must have label")))
 		})
 
+		It("allows update when the User has a DeletionTimestamp even if the import secret is gone", func() {
+			emptyCache := fake.NewClientBuilder().WithScheme(scheme.Scheme).Build()
+			v := UserCustomValidator{Client: emptyCache, APIReader: emptyCache}
+
+			now := metav1.Now()
+			oldObj = &rabbitmqcomv1beta1.User{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-user", Namespace: testNS},
+				Spec: rabbitmqcomv1beta1.UserSpec{
+					RabbitmqClusterReference: rabbitmqcomv1beta1.RabbitmqClusterReference{Name: "my-cluster"},
+				},
+			}
+			obj = &rabbitmqcomv1beta1.User{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "test-user",
+					Namespace:         testNS,
+					DeletionTimestamp: &now,
+					Finalizers:        []string{"deletion.finalizers.users.rabbitmq.com"},
+				},
+				Spec: rabbitmqcomv1beta1.UserSpec{
+					RabbitmqClusterReference: rabbitmqcomv1beta1.RabbitmqClusterReference{Name: "my-cluster"},
+					ImportCredentialsSecret:  &corev1.LocalObjectReference{Name: "already-deleted-secret"},
+				},
+			}
+			_, err := v.ValidateUpdate(ctx, oldObj, obj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		It("allows update when the new importCredentialsSecret carries the topology operator label", func() {
 			labeledSecret := &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
