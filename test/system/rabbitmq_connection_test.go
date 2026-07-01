@@ -30,6 +30,9 @@ var _ = Describe("RabbitMQ connection using provided connection secret", func() 
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "uri-secret",
 				Namespace: namespace,
+				Labels: map[string]string{
+					topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
+				},
 			},
 			StringData: map[string]string{
 				"username": user,

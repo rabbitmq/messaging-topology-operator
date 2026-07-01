@@ -33,6 +33,9 @@ var _ = Describe("schema replication", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "endpoints-secret",
 				Namespace: namespace,
+				Labels: map[string]string{
+					topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
+				},
 			},
 			Type: corev1.SecretTypeOpaque,
 			Data: map[string][]byte{
