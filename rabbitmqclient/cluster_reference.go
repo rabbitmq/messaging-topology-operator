@@ -174,7 +174,7 @@ func AllowedNamespaceSecret(rmq topology.RabbitmqClusterReference, requestNamesp
 
 func readCredentialsFromKubernetesSecret(secret *corev1.Secret) (map[string]string, bool, error) {
 	if secret == nil {
-		return nil, false, fmt.Errorf("unable to retrieve information from Kubernetes secret %s: %w", secret.Name, errors.New("nil secret"))
+		return nil, false, errors.New("unable to retrieve information from Kubernetes secret: nil secret")
 	}
 
 	uBytes, found := secret.Data["uri"]
