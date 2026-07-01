@@ -2,7 +2,7 @@
 
 /*
 RabbitMQ Messaging Topology Kubernetes Operator
-Copyright 2021 VMware, Inc.
+Copyright 2026 Broadcom, Inc.
 
 This product is licensed to you under the Mozilla Public License 2.0 license (the "License").  You may not use this product except in compliance with the Mozilla 2.0 License.
 
