@@ -3,6 +3,8 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: federation-uri
+  labels:
+    rabbitmq.com/topology-operator: "true" # required for the Operator to read this user-provided secret
 type: Opaque
 data:
   uri: #uri to access the 'upstream' vhost; to learn about how to construct a valid uri, see: https://www.rabbitmq.com/uri-spec.html
