@@ -79,6 +79,7 @@ var _ = Describe("federation-controller", func() {
 
 		Expect((&controller.TopologyReconciler{
 			Client:                federationMgr.GetClient(),
+			APIReader:             federationMgr.GetAPIReader(),
 			Type:                  &topology.Federation{},
 			Scheme:                federationMgr.GetScheme(),
 			Recorder:              fakeRecorder,

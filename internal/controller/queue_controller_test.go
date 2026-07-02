@@ -79,6 +79,7 @@ var _ = Describe("queue-controller", func() {
 
 		Expect((&controller.TopologyReconciler{
 			Client:                queueMgr.GetClient(),
+			APIReader:             queueMgr.GetAPIReader(),
 			Type:                  &topology.Queue{},
 			Scheme:                queueMgr.GetScheme(),
 			Recorder:              fakeRecorder,

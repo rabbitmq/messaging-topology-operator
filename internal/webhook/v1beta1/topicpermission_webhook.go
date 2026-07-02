@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
@@ -31,16 +32,22 @@ import (
 // SetupTopicPermissionWebhookWithManager registers the webhook for TopicPermission in the manager.
 func SetupTopicPermissionWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr, &rabbitmqcomv1beta1.TopicPermission{}).
-		WithValidator(&TopicPermissionCustomValidator{}).
+		WithValidator(&TopicPermissionCustomValidator{
+			Client:    mgr.GetClient(),
+			APIReader: mgr.GetAPIReader(),
+		}).
 		Complete()
 }
 
 // +kubebuilder:webhook:path=/validate-rabbitmq-com-v1beta1-topicpermission,mutating=false,failurePolicy=fail,sideEffects=None,groups=rabbitmq.com,resources=topicpermissions,verbs=create;update,versions=v1beta1,name=vtopicpermission-v1beta1.kb.io,admissionReviewVersions=v1
 
-type TopicPermissionCustomValidator struct{}
+type TopicPermissionCustomValidator struct {
+	Client    client.Client
+	APIReader client.Reader
+}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type TopicPermission.
-func (v *TopicPermissionCustomValidator) ValidateCreate(_ context.Context, obj *rabbitmqcomv1beta1.TopicPermission) (admission.Warnings, error) {
+func (v *TopicPermissionCustomValidator) ValidateCreate(ctx context.Context, obj *rabbitmqcomv1beta1.TopicPermission) (admission.Warnings, error) {
 	if obj.Spec.User == "" && obj.Spec.UserReference == nil {
 		return nil, field.Required(field.NewPath("spec", "user and userReference"),
 			"must specify either spec.user or spec.userReference")
@@ -49,6 +56,9 @@ func (v *TopicPermissionCustomValidator) ValidateCreate(_ context.Context, obj *
 	if obj.Spec.User != "" && obj.Spec.UserReference != nil {
 		return nil, field.Required(field.NewPath("spec", "user and userReference"),
 			"cannot specify spec.user and spec.userReference at the same time")
+	}
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, obj.Spec.RabbitmqClusterReference.ConnectionSecret, obj.Namespace); err != nil {
+		return nil, err
 	}
 	return obj.Spec.RabbitmqClusterReference.ValidateOnCreate(obj.GroupResource(), obj.Name)
 }

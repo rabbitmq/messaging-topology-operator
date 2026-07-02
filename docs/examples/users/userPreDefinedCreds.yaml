@@ -2,10 +2,12 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: credentials-secret
+  labels:
+    rabbitmq.com/topology-operator: "true" # required for the Operator to read this user-provided secret
 type: Opaque
 stringData:
-  username: import-user-sample # Note that Messaging Topology Operator does not watch this secret. Updating this secret object won't update actual user credentials.
-  password: whyareyoulookinghere # As a workaround, you can add a label or annotation to the User object to trigger a Reconile loop and credentials will be updated.
+  username: import-user-sample
+  password: whyareyoulookinghere
 ---
 apiVersion: rabbitmq.com/v1beta1
 kind: User

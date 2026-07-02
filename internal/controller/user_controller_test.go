@@ -63,8 +63,11 @@ var _ = Describe("UserController", func() {
 				}},
 				ByObject: map[runtimeClient.Object]cache.ByObject{
 					&v1beta1.RabbitmqCluster{}: {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
-					&corev1.Secret{}:           {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
-					&corev1.Service{}:          {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
+					&corev1.Secret{}: {
+						Namespaces: map[string]cache.Config{cache.AllNamespaces: {}},
+						Label:      labels.SelectorFromSet(labels.Set{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue}),
+					},
+					&corev1.Service{}: {Namespaces: map[string]cache.Config{cache.AllNamespaces: {}}},
 				},
 			},
 			Logger: GinkgoLogr,
@@ -84,6 +87,7 @@ var _ = Describe("UserController", func() {
 
 		Expect((&controller.TopologyReconciler{
 			Client:                userMgr.GetClient(),
+			APIReader:             userMgr.GetAPIReader(),
 			Type:                  &topology.User{},
 			Scheme:                userMgr.GetScheme(),
 			Recorder:              fakeRecorder,
@@ -476,6 +480,180 @@ var _ = Describe("UserController", func() {
 				WithPolling(time.Second).
 				Should(BeTrue())
 		})
+	})
+
+	When("the user has an importCredentialsSecret — Status.Credentials.Name is set correctly", func() {
+		const importSecretName = "import-creds-status-secret"
+
+		BeforeEach(func() {
+			userName = "test-import-creds-status"
+			fakeRabbitMQClient.PutUserReturns(&http.Response{Status: "201 Created", StatusCode: http.StatusCreated}, nil)
+			initialiseUser()
+			user.Labels = map[string]string{"test": userName}
+			user.Spec.ImportCredentialsSecret = &corev1.LocalObjectReference{Name: importSecretName}
+			initialiseManager("test", userName)
+		})
+
+		JustBeforeEach(func() {
+			Expect(k8sClient.Create(ctx, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      importSecretName,
+					Namespace: userNamespace,
+					Labels:    map[string]string{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue},
+				},
+				Type: corev1.SecretTypeOpaque,
+				Data: map[string][]byte{"username": []byte("imported-user"), "password": []byte("imported-password")},
+			})).To(Succeed())
+			Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+		})
+
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Name: importSecretName, Namespace: userNamespace},
+			})).To(Succeed())
+		})
+
+		It("sets Status.Credentials.Name to the import secret (not the generated secret)", func() {
+			Eventually(func() *corev1.LocalObjectReference {
+				_ = k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &user)
+				return user.Status.Credentials
+			}).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+				HaveValue(MatchFields(IgnoreExtras, Fields{
+					"Name": Equal(importSecretName),
+				})),
+			)
+		})
+	})
+
+	When("the user has an importCredentialsSecret — PutUser is called with the imported username", func() {
+		const importSecretName = "import-creds-putuser-secret"
+
+		BeforeEach(func() {
+			userName = "test-import-creds-putuser"
+			fakeRabbitMQClient.PutUserReturns(&http.Response{Status: "201 Created", StatusCode: http.StatusCreated}, nil)
+			initialiseUser()
+			user.Labels = map[string]string{"test": userName}
+			user.Spec.ImportCredentialsSecret = &corev1.LocalObjectReference{Name: importSecretName}
+			initialiseManager("test", userName)
+		})
+
+		JustBeforeEach(func() {
+			Expect(k8sClient.Create(ctx, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      importSecretName,
+					Namespace: userNamespace,
+					Labels:    map[string]string{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue},
+				},
+				Type: corev1.SecretTypeOpaque,
+				Data: map[string][]byte{"username": []byte("imported-user"), "password": []byte("imported-password")},
+			})).To(Succeed())
+			Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+		})
+
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Name: importSecretName, Namespace: userNamespace},
+			})).To(Succeed())
+		})
+
+		It("calls PutUser with the imported username", func() {
+			Eventually(objectStatus).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+				ContainElement(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(topology.ConditionType("Ready")),
+					"Reason": Equal("SuccessfulCreateOrUpdate"),
+					"Status": Equal(corev1.ConditionTrue),
+				})),
+			)
+			Expect(fakeRabbitMQClient.PutUserCallCount()).To(BeNumerically(">", 0))
+			username, _ := fakeRabbitMQClient.PutUserArgsForCall(0)
+			Expect(username).To(Equal("imported-user"))
+		})
+	})
+
+	When("the import secret is updated — watch triggers re-reconcile", func() {
+		const importSecretName = "import-watch-secret"
+
+		BeforeEach(func() {
+			userName = "test-import-watch"
+			fakeRabbitMQClient.PutUserReturns(&http.Response{Status: "201 Created", StatusCode: http.StatusCreated}, nil)
+			initialiseUser()
+			user.Labels = map[string]string{"test": userName}
+			user.Spec.ImportCredentialsSecret = &corev1.LocalObjectReference{Name: importSecretName}
+			initialiseManager("test", userName)
+		})
+
+		JustBeforeEach(func() {
+			Expect(k8sClient.Create(ctx, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      importSecretName,
+					Namespace: userNamespace,
+					Labels:    map[string]string{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue},
+				},
+				Type: corev1.SecretTypeOpaque,
+				Data: map[string][]byte{"username": []byte("imported-user"), "password": []byte("initial-password")},
+			})).To(Succeed())
+			Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+			// Wait for first successful reconcile.
+			Eventually(objectStatus).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+				ContainElement(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(topology.ConditionType("Ready")),
+					"Status": Equal(corev1.ConditionTrue),
+				})),
+			)
+		})
+
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{Name: importSecretName, Namespace: userNamespace},
+			})).To(Succeed())
+		})
+
+		It("re-reconciles the user when the import secret's password is updated", func() {
+			callsBefore := fakeRabbitMQClient.PutUserCallCount()
+
+			importSecret := &corev1.Secret{}
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: importSecretName, Namespace: userNamespace}, importSecret)).To(Succeed())
+			importSecret.Data["password"] = []byte("rotated-password")
+			Expect(k8sClient.Update(ctx, importSecret)).To(Succeed())
+
+			Eventually(func() int {
+				return fakeRabbitMQClient.PutUserCallCount()
+			}).Within(statusEventsUpdateTimeout).WithPolling(time.Second).
+				Should(BeNumerically(">", callsBefore))
+
+			latestIdx := fakeRabbitMQClient.PutUserCallCount() - 1
+			username, _ := fakeRabbitMQClient.PutUserArgsForCall(latestIdx)
+			Expect(username).To(Equal("imported-user"))
+		})
+	})
+
+	It("labels the generated credentials secret with the topology operator label", func() {
+		userName = "test-user-labeled-secret"
+		initialiseUser()
+		user.Labels = map[string]string{"test": userName}
+		fakeRabbitMQClient.PutUserReturns(&http.Response{Status: "201 Created", StatusCode: http.StatusCreated}, nil)
+		initialiseManager("test", userName)
+
+		Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+		Eventually(objectStatus).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+			ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":   Equal(topology.ConditionType("Ready")),
+				"Reason": Equal("SuccessfulCreateOrUpdate"),
+				"Status": Equal(corev1.ConditionTrue),
+			})),
+		)
+		Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
+
+		generatedSecret := &corev1.Secret{}
+		Eventually(func() map[string]string {
+			_ = k8sClient.Get(ctx, types.NamespacedName{Name: user.Name + "-user-credentials", Namespace: user.Namespace}, generatedSecret)
+			return generatedSecret.Labels
+		}).Within(10 * time.Second).WithPolling(time.Second).Should(
+			HaveKeyWithValue(topology.TopologyOperatorLabel, topology.TopologyOperatorLabelValue),
+		)
 	})
 
 	It("sets an owner reference and does not block owner deletion", func() {

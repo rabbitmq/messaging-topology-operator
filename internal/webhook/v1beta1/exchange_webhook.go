@@ -6,18 +6,25 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 )
 
 // Implements admission.Validator
-type ExchangeCustomValidator struct{}
+type ExchangeCustomValidator struct {
+	Client    client.Client
+	APIReader client.Reader
+}
 
 // SetupExchangeWebhookWithManager registers the webhook for Exchange in the manager.
 func SetupExchangeWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr, &rabbitmqcomv1beta1.Exchange{}).
-		WithValidator(&ExchangeCustomValidator{}).
+		WithValidator(&ExchangeCustomValidator{
+			Client:    mgr.GetClient(),
+			APIReader: mgr.GetAPIReader(),
+		}).
 		Complete()
 }
 
@@ -25,7 +32,10 @@ func SetupExchangeWebhookWithManager(mgr ctrl.Manager) error {
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
-func (v *ExchangeCustomValidator) ValidateCreate(_ context.Context, ex *rabbitmqcomv1beta1.Exchange) (warnings admission.Warnings, err error) {
+func (v *ExchangeCustomValidator) ValidateCreate(ctx context.Context, ex *rabbitmqcomv1beta1.Exchange) (warnings admission.Warnings, err error) {
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, ex.Spec.RabbitmqClusterReference.ConnectionSecret, ex.Namespace); err != nil {
+		return nil, err
+	}
 	return ex.Spec.RabbitmqClusterReference.ValidateOnCreate(ex.GroupResource(), ex.Name)
 }
 

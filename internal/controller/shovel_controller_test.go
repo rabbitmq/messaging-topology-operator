@@ -80,6 +80,7 @@ var _ = Describe("shovel-controller", func() {
 
 		Expect((&controller.TopologyReconciler{
 			Client:                shovelMgr.GetClient(),
+			APIReader:             shovelMgr.GetAPIReader(),
 			Type:                  &topology.Shovel{},
 			Scheme:                shovelMgr.GetScheme(),
 			Recorder:              fakeRecorder,

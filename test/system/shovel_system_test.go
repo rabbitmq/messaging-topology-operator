@@ -31,6 +31,9 @@ var _ = Describe("Shovel", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "shovel-uri",
 				Namespace: namespace,
+				Labels: map[string]string{
+					topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
+				},
 			},
 			Type: corev1.SecretTypeOpaque,
 			Data: map[string][]byte{

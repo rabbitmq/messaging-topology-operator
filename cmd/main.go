@@ -22,6 +22,8 @@ import (
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -273,6 +275,15 @@ func main() {
 		}
 	}
 
+	if managerOpts.Cache.ByObject == nil {
+		managerOpts.Cache.ByObject = make(map[client.Object]cache.ByObject)
+	}
+	managerOpts.Cache.ByObject[&corev1.Secret{}] = cache.ByObject{
+		Label: labels.SelectorFromSet(labels.Set{
+			topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
+		}),
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), managerOpts)
 	if err != nil {
 		log.Error(err, "unable to start manager")
@@ -281,6 +292,7 @@ func main() {
 
 	if err = (&controller.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		APIReader:               mgr.GetAPIReader(),
 		Type:                    &topology.Queue{},
 		Log:                     ctrl.Log.WithName(controller.QueueControllerName),
 		Scheme:                  mgr.GetScheme(),
@@ -297,6 +309,7 @@ func main() {
 
 	if err = (&controller.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		APIReader:               mgr.GetAPIReader(),
 		Type:                    &topology.Exchange{},
 		Log:                     ctrl.Log.WithName(controller.ExchangeControllerName),
 		Scheme:                  mgr.GetScheme(),
@@ -313,6 +326,7 @@ func main() {
 
 	if err = (&controller.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		APIReader:               mgr.GetAPIReader(),
 		Type:                    &topology.Binding{},
 		Log:                     ctrl.Log.WithName(controller.BindingControllerName),
 		Scheme:                  mgr.GetScheme(),
@@ -329,13 +343,13 @@ func main() {
 
 	if err = (&controller.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		APIReader:               mgr.GetAPIReader(),
 		Type:                    &topology.User{},
 		Log:                     ctrl.Log.WithName(controller.UserControllerName),
 		Scheme:                  mgr.GetScheme(),
 		Recorder:                mgr.GetEventRecorder(controller.UserControllerName),
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
-		WatchTypes:              []client.Object{},
 		ReconcileFunc:           &controller.UserReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()},
 		ConnectUsingPlainHTTP:   usePlainHTTP,
 		MaxConcurrentReconciles: maxConcurrentReconciles,
@@ -346,6 +360,7 @@ func main() {
 
 	if err = (&controller.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		APIReader:               mgr.GetAPIReader(),
 		Type:                    &topology.Vhost{},
 		Log:                     ctrl.Log.WithName(controller.VhostControllerName),
 		Scheme:                  mgr.GetScheme(),
@@ -362,6 +377,7 @@ func main() {
 
 	if err = (&controller.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		APIReader:               mgr.GetAPIReader(),
 		Type:                    &topology.Policy{},
 		Log:                     ctrl.Log.WithName(controller.PolicyControllerName),
 		Scheme:                  mgr.GetScheme(),
@@ -378,6 +394,7 @@ func main() {
 
 	if err = (&controller.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		APIReader:               mgr.GetAPIReader(),
 		Type:                    &topology.OperatorPolicy{},
 		Log:                     ctrl.Log.WithName(controller.OperatorPolicyControllerName),
 		Scheme:                  mgr.GetScheme(),
@@ -394,6 +411,7 @@ func main() {
 
 	if err = (&controller.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		APIReader:               mgr.GetAPIReader(),
 		Type:                    &topology.Permission{},
 		Log:                     ctrl.Log.WithName(controller.PermissionControllerName),
 		Scheme:                  mgr.GetScheme(),
@@ -410,6 +428,7 @@ func main() {
 
 	if err = (&controller.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		APIReader:               mgr.GetAPIReader(),
 		Type:                    &topology.SchemaReplication{},
 		Log:                     ctrl.Log.WithName(controller.SchemaReplicationControllerName),
 		Scheme:                  mgr.GetScheme(),
@@ -426,6 +445,7 @@ func main() {
 
 	if err = (&controller.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		APIReader:               mgr.GetAPIReader(),
 		Type:                    &topology.Federation{},
 		Log:                     ctrl.Log.WithName(controller.FederationControllerName),
 		Scheme:                  mgr.GetScheme(),
@@ -442,6 +462,7 @@ func main() {
 
 	if err = (&controller.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		APIReader:               mgr.GetAPIReader(),
 		Type:                    &topology.Shovel{},
 		Log:                     ctrl.Log.WithName(controller.ShovelControllerName),
 		Scheme:                  mgr.GetScheme(),
@@ -458,6 +479,7 @@ func main() {
 
 	if err = (&controller.TopologyReconciler{
 		Client:                  mgr.GetClient(),
+		APIReader:               mgr.GetAPIReader(),
 		Type:                    &topology.TopicPermission{},
 		Log:                     ctrl.Log.WithName(controller.TopicPermissionControllerName),
 		Scheme:                  mgr.GetScheme(),

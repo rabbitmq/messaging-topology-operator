@@ -29,6 +29,9 @@ var _ = Describe("federation", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "federation-uri",
 				Namespace: namespace,
+				Labels: map[string]string{
+					topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
+				},
 			},
 			Type: corev1.SecretTypeOpaque,
 			Data: map[string][]byte{

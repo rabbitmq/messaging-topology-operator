@@ -81,6 +81,7 @@ var _ = Describe("permission-controller", func() {
 
 		Expect((&controller.TopologyReconciler{
 			Client:                permissionMgr.GetClient(),
+			APIReader:             permissionMgr.GetAPIReader(),
 			Type:                  &topology.Permission{},
 			Scheme:                permissionMgr.GetScheme(),
 			Recorder:              fakeRecorder,

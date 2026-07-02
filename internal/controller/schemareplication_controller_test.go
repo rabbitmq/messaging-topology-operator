@@ -63,6 +63,7 @@ var _ = Describe("schema-replication-controller", func() {
 
 		Expect((&controller.TopologyReconciler{
 			Client:                schemaReplication.GetClient(),
+			APIReader:             schemaReplication.GetAPIReader(),
 			Type:                  &topology.SchemaReplication{},
 			Scheme:                schemaReplication.GetScheme(),
 			Recorder:              fakeRecorder,

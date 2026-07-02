@@ -19,6 +19,7 @@ import (
 	"k8s.io/client-go/tools/events"
 	clientretry "k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
+	ctrlbuilder "sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -27,6 +28,7 @@ import (
 // TopologyReconciler reconciles any topology rabbitmq objects
 type TopologyReconciler struct {
 	client.Client
+	APIReader client.Reader
 	ReconcileFunc
 	Type                    client.Object
 	WatchTypes              []client.Object
@@ -37,6 +39,12 @@ type TopologyReconciler struct {
 	KubernetesClusterDomain string
 	ConnectUsingPlainHTTP   bool
 	MaxConcurrentReconciles int
+}
+
+// ControllerBuilder may optionally be implemented by a ReconcileFunc to register
+// additional watches or field indices during SetupWithManager.
+type ControllerBuilder interface {
+	SetupControllerBuilder(ctx context.Context, mgr ctrl.Manager, b *ctrlbuilder.Builder) error
 }
 
 // +kubebuilder:rbac:groups=events.k8s.io,resources=events,verbs=create;patch
@@ -55,7 +63,7 @@ func (r *TopologyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, err
 	}
 
-	credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, r.Client, obj.RabbitReference(), obj.GetNamespace(), r.KubernetesClusterDomain, r.ConnectUsingPlainHTTP)
+	credsProvider, tlsEnabled, err := rabbitmqclient.ParseReference(ctx, r.Client, r.APIReader, obj.RabbitReference(), obj.GetNamespace(), r.KubernetesClusterDomain, r.ConnectUsingPlainHTTP)
 	if err != nil {
 		return r.handleRMQReferenceParseError(ctx, obj, err)
 	}
@@ -225,22 +233,21 @@ func (r *TopologyReconciler) getTopLevelField(obj topology.TopologyResource, pat
 }
 
 func (r *TopologyReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	if len(r.WatchTypes) == 0 {
-		return ctrl.NewControllerManagedBy(mgr).
-			For(r.Type).
-			WithOptions(controller.Options{MaxConcurrentReconciles: r.MaxConcurrentReconciles}).
-			Complete(r)
-	}
-	builder := ctrl.NewControllerManagedBy(mgr).
+	b := ctrl.NewControllerManagedBy(mgr).
 		For(r.Type).
 		WithOptions(controller.Options{MaxConcurrentReconciles: r.MaxConcurrentReconciles})
 	for _, t := range r.WatchTypes {
 		if err := mgr.GetFieldIndexer().IndexField(context.Background(), t, ownerKey, addResourceToIndex); err != nil {
 			return err
 		}
-		builder = builder.Owns(t)
+		b = b.Owns(t)
 	}
-	return builder.Complete(r)
+	if cb, ok := r.ReconcileFunc.(ControllerBuilder); ok {
+		if err := cb.SetupControllerBuilder(context.Background(), mgr, b); err != nil {
+			return err
+		}
+	}
+	return b.Complete(r)
 }
 
 func addResourceToIndex(rawObj client.Object) []string {

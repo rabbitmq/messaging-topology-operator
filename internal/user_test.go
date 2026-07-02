@@ -9,26 +9,22 @@ import (
 	. "github.com/onsi/gomega"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
-	corev1 "k8s.io/api/core/v1"
 )
 
 var _ = Describe("GenerateUserSettings", func() {
-	var credentialSecret corev1.Secret
+	var credentials internal.UserCredentials
 	var userTags []topology.UserTag
 
 	BeforeEach(func() {
-		credentialSecret = corev1.Secret{
-			Type: corev1.SecretTypeOpaque,
-			Data: map[string][]byte{
-				"username": []byte("my-rabbit-user"),
-				"password": []byte("a-secure-password"),
-			},
+		credentials = internal.UserCredentials{
+			Username: "my-rabbit-user",
+			Password: "a-secure-password",
 		}
 		userTags = []topology.UserTag{"administrator", "monitoring"}
 	})
 
 	It("uses the password to generate the expected rabbithole.UserSettings", func() {
-		settings, err := internal.GenerateUserSettings(&credentialSecret, userTags)
+		settings, err := internal.GenerateUserSettings(credentials, userTags)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(settings.Name).To(Equal("my-rabbit-user"))
 		Expect(settings.Tags).To(ConsistOf("administrator", "monitoring"))
@@ -51,9 +47,9 @@ var _ = Describe("GenerateUserSettings", func() {
 
 	It("uses the passwordHash to generate the expected rabbithole.UserSettings", func() {
 		hash, _ := rabbithole.SaltedPasswordHashSHA256("a-different-password")
-		credentialSecret.Data["passwordHash"] = []byte(hash)
+		credentials.PasswordHash = &hash
 
-		settings, err := internal.GenerateUserSettings(&credentialSecret, userTags)
+		settings, err := internal.GenerateUserSettings(credentials, userTags)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(settings.Name).To(Equal("my-rabbit-user"))
 		Expect(settings.Tags).To(ConsistOf("administrator", "monitoring"))

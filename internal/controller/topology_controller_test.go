@@ -84,6 +84,7 @@ var _ = Describe("TopologyReconciler", func() {
 		It("sets the domain name in the URI to connect to RabbitMQ", func() {
 			Expect((&controller.TopologyReconciler{
 				Client:                  topologyMgr.GetClient(),
+				APIReader:               topologyMgr.GetAPIReader(),
 				Type:                    &topology.Queue{},
 				Scheme:                  topologyMgr.GetScheme(),
 				Recorder:                fakeRecorder,
@@ -114,6 +115,7 @@ var _ = Describe("TopologyReconciler", func() {
 		It("uses internal short name", func() {
 			Expect((&controller.TopologyReconciler{
 				Client:                topologyMgr.GetClient(),
+				APIReader:             topologyMgr.GetAPIReader(),
 				Type:                  &topology.Queue{},
 				Scheme:                topologyMgr.GetScheme(),
 				Recorder:              fakeRecorder,
@@ -143,6 +145,7 @@ var _ = Describe("TopologyReconciler", func() {
 		It("uses http for connection", func() {
 			Expect((&controller.TopologyReconciler{
 				Client:                topologyMgr.GetClient(),
+				APIReader:             topologyMgr.GetAPIReader(),
 				Type:                  &topology.Queue{},
 				Scheme:                topologyMgr.GetScheme(),
 				Recorder:              fakeRecorder,

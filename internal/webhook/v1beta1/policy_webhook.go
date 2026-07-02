@@ -7,16 +7,23 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // Implements admission.Validator
-type PolicyCustomValidator struct{}
+type PolicyCustomValidator struct {
+	Client    client.Client
+	APIReader client.Reader
+}
 
 // SetupPolicyWebhookWithManager registers the webhook for Policy in the manager.
 func SetupPolicyWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr, &rabbitmqcomv1beta1.Policy{}).
-		WithValidator(&PolicyCustomValidator{}).
+		WithValidator(&PolicyCustomValidator{
+			Client:    mgr.GetClient(),
+			APIReader: mgr.GetAPIReader(),
+		}).
 		Complete()
 }
 
@@ -24,7 +31,10 @@ func SetupPolicyWebhookWithManager(mgr ctrl.Manager) error {
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
-func (v *PolicyCustomValidator) ValidateCreate(_ context.Context, policy *rabbitmqcomv1beta1.Policy) (warnings admission.Warnings, err error) {
+func (v *PolicyCustomValidator) ValidateCreate(ctx context.Context, policy *rabbitmqcomv1beta1.Policy) (warnings admission.Warnings, err error) {
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, policy.Spec.RabbitmqClusterReference.ConnectionSecret, policy.Namespace); err != nil {
+		return nil, err
+	}
 	return policy.Spec.RabbitmqClusterReference.ValidateOnCreate(policy.GroupResource(), policy.Name)
 }
 

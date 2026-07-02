@@ -80,6 +80,7 @@ var _ = Describe("policy-controller", func() {
 
 		Expect((&controller.TopologyReconciler{
 			Client:                policyMgr.GetClient(),
+			APIReader:             policyMgr.GetAPIReader(),
 			Type:                  &topology.Policy{},
 			Scheme:                policyMgr.GetScheme(),
 			Recorder:              fakeRecorder,
