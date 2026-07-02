@@ -513,7 +513,6 @@ deploy-e2e: manifests kustomize ytt ## Deploy operator for e2e tests (uses image
 		| "$(YTT)" -f- -f config/ytt_overlays/never_pull.yml \
 			-f config/ytt_overlays/skip_namespace.yml \
 			-f config/ytt_overlays/fix_rbac_namespace.yml \
-			-f config/ytt_overlays/enable_secure_metrics.yml \
 		| $(KUBECTL) apply -f -
 
 .PHONY: cluster-operator

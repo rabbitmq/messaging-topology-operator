@@ -2,3 +2,9 @@
 - op: add
   path: /spec/template/spec/containers/0/args/0
   value: --metrics-bind-address=:8443
+# Serve the metrics endpoint securely (HTTPS + authn/authz). Combined with
+# cert_metrics_manager_patch.yaml, the endpoint is backed by the cert-manager
+# managed metrics-server-cert rather than a controller-runtime self-signed cert.
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value: --metrics-secure

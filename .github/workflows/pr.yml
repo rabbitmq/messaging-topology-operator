@@ -102,8 +102,9 @@ jobs:
       shell: bash # important: because it sets pipefail, so that the job fails if there are failures in the command pipe
       run: |
         ./bin/kind load image-archive ${{ runner.temp }}/operator.tar --name topology-operator-testing
-        make cluster-operator cert-manager
+        make cert-manager
         ./bin/cmctl check api --wait=2m
+        make cluster-operator
         ./bin/kustomize build config/default | \
           ./bin/ytt -f- -f config/ytt_overlays/never_pull.yml \
             -f config/ytt_overlays/change_deployment_image.yml \
