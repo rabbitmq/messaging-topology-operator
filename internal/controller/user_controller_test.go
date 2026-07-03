@@ -92,7 +92,7 @@ var _ = Describe("UserController", func() {
 			Scheme:                userMgr.GetScheme(),
 			Recorder:              fakeRecorder,
 			RabbitmqClientFactory: fakeRabbitMQClientFactory,
-			ReconcileFunc:         &controller.UserReconciler{Client: userMgr.GetClient(), Scheme: userMgr.GetScheme()},
+			ReconcileFunc:         &controller.UserReconciler{Client: userMgr.GetClient(), Scheme: userMgr.GetScheme(), Recorder: fakeRecorder},
 		}).SetupWithManager(userMgr)).To(Succeed())
 	}
 
@@ -627,6 +627,82 @@ var _ = Describe("UserController", func() {
 			latestIdx := fakeRabbitMQClient.PutUserCallCount() - 1
 			username, _ := fakeRabbitMQClient.PutUserArgsForCall(latestIdx)
 			Expect(username).To(Equal("imported-user"))
+
+			Eventually(objectStatus).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+				ContainElement(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(topology.ConditionType("PasswordSynced")),
+					"Reason": Equal("SuccessfulPasswordSync"),
+					"Status": Equal(corev1.ConditionTrue),
+				})),
+			)
+			Eventually(observedEvents).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+				ContainElement(`Normal PasswordUpdated synced password for user "imported-user"`),
+			)
+		})
+
+		It("does not call PutUser again when a reconcile is triggered without any relevant change", func() {
+			Eventually(func() int {
+				return fakeRabbitMQClient.PutUserCallCount()
+			}).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(BeNumerically(">", 0))
+			callsBefore := fakeRabbitMQClient.PutUserCallCount()
+
+			// Trigger a reconcile via a metadata-only change on the User itself (annotations
+			// don't bump .metadata.generation), without touching the import secret at all.
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &user)).To(Succeed())
+			if user.Annotations == nil {
+				user.Annotations = map[string]string{}
+			}
+			user.Annotations["unrelated"] = "churn"
+			Expect(k8sClient.Update(ctx, &user)).To(Succeed())
+
+			Consistently(func() int {
+				return fakeRabbitMQClient.PutUserCallCount()
+			}).Within(5 * time.Second).WithPolling(time.Second).Should(Equal(callsBefore))
+		})
+
+		It("still calls PutUser when only Tags change, with no secret change", func() {
+			Eventually(func() int {
+				return fakeRabbitMQClient.PutUserCallCount()
+			}).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(BeNumerically(">", 0))
+			callsBefore := fakeRabbitMQClient.PutUserCallCount()
+
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &user)).To(Succeed())
+			user.Spec.Tags = []topology.UserTag{"monitoring"}
+			Expect(k8sClient.Update(ctx, &user)).To(Succeed())
+
+			Eventually(func() int {
+				return fakeRabbitMQClient.PutUserCallCount()
+			}).Within(statusEventsUpdateTimeout).WithPolling(time.Second).
+				Should(BeNumerically(">", callsBefore))
+
+			latestIdx := fakeRabbitMQClient.PutUserCallCount() - 1
+			_, settings := fakeRabbitMQClient.PutUserArgsForCall(latestIdx)
+			Expect(settings.Tags).To(ConsistOf("monitoring"))
+		})
+
+		It("leaves Tags unchanged in the PutUser payload across a password-only rotation", func() {
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &user)).To(Succeed())
+			user.Spec.Tags = []topology.UserTag{"management"}
+			Expect(k8sClient.Update(ctx, &user)).To(Succeed())
+
+			Eventually(func() int {
+				return fakeRabbitMQClient.PutUserCallCount()
+			}).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(BeNumerically(">", 0))
+			callsBefore := fakeRabbitMQClient.PutUserCallCount()
+
+			importSecret := &corev1.Secret{}
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: importSecretName, Namespace: userNamespace}, importSecret)).To(Succeed())
+			importSecret.Data["password"] = []byte("another-rotated-password")
+			Expect(k8sClient.Update(ctx, importSecret)).To(Succeed())
+
+			Eventually(func() int {
+				return fakeRabbitMQClient.PutUserCallCount()
+			}).Within(statusEventsUpdateTimeout).WithPolling(time.Second).
+				Should(BeNumerically(">", callsBefore))
+
+			latestIdx := fakeRabbitMQClient.PutUserCallCount() - 1
+			_, settings := fakeRabbitMQClient.PutUserArgsForCall(latestIdx)
+			Expect(settings.Tags).To(ConsistOf("management"))
 		})
 	})
 
@@ -654,6 +730,40 @@ var _ = Describe("UserController", func() {
 		}).Within(10 * time.Second).WithPolling(time.Second).Should(
 			HaveKeyWithValue(topology.TopologyOperatorLabel, topology.TopologyOperatorLabelValue),
 		)
+	})
+
+	It("does not call PutUser again on a no-op reconcile of the generated credentials secret", func() {
+		userName = "test-generated-creds-idempotent"
+		initialiseUser()
+		user.Labels = map[string]string{"test": userName}
+		fakeRabbitMQClient.PutUserReturns(&http.Response{Status: "201 Created", StatusCode: http.StatusCreated}, nil)
+		initialiseManager("test", userName)
+
+		Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+		Eventually(objectStatus).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+			ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":   Equal(topology.ConditionType("Ready")),
+				"Reason": Equal("SuccessfulCreateOrUpdate"),
+				"Status": Equal(corev1.ConditionTrue),
+			})),
+		)
+		Eventually(func() int {
+			return fakeRabbitMQClient.PutUserCallCount()
+		}).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(BeNumerically(">", 0))
+		callsBefore := fakeRabbitMQClient.PutUserCallCount()
+
+		// Trigger a reconcile via a metadata-only change on the User itself (annotations
+		// don't bump .metadata.generation), without touching the generated secret at all.
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &user)).To(Succeed())
+		if user.Annotations == nil {
+			user.Annotations = map[string]string{}
+		}
+		user.Annotations["unrelated"] = "churn"
+		Expect(k8sClient.Update(ctx, &user)).To(Succeed())
+
+		Consistently(func() int {
+			return fakeRabbitMQClient.PutUserCallCount()
+		}).Within(5 * time.Second).WithPolling(time.Second).Should(Equal(callsBefore))
 	})
 
 	It("sets an owner reference and does not block owner deletion", func() {
