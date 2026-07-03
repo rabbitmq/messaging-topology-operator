@@ -350,7 +350,7 @@ func main() {
 		Recorder:                mgr.GetEventRecorder(controller.UserControllerName),
 		RabbitmqClientFactory:   rabbitmqclient.RabbitholeClientFactory,
 		KubernetesClusterDomain: clusterDomain,
-		ReconcileFunc:           &controller.UserReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()},
+		ReconcileFunc:           &controller.UserReconciler{Client: mgr.GetClient(), Scheme: mgr.GetScheme(), Recorder: mgr.GetEventRecorder(controller.UserControllerName)},
 		ConnectUsingPlainHTTP:   usePlainHTTP,
 		MaxConcurrentReconciles: maxConcurrentReconciles,
 	}).SetupWithManager(mgr); err != nil {

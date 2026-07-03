@@ -22,6 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/events"
 	clientretry "k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrlbuilder "sigs.k8s.io/controller-runtime/pkg/builder"
@@ -45,7 +46,8 @@ const (
 
 type UserReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme   *runtime.Scheme
+	Recorder events.EventRecorder
 }
 
 func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.User) (string, error) {
@@ -141,7 +143,7 @@ func (r *UserReconciler) generateCredentials(ctx context.Context, user *topology
 	return credentials, nil
 }
 
-func (r *UserReconciler) importCredentials(ctx context.Context, secretName, secretNamespace string) (internal.UserCredentials, error) {
+func (r *UserReconciler) importCredentials(ctx context.Context, secretName, secretNamespace string) (internal.UserCredentials, string, error) {
 	logger := ctrl.LoggerFrom(ctx)
 	logger.Info("Importing user credentials from provided Secret", "secretName", secretName, "secretNamespace", secretNamespace)
 
@@ -150,12 +152,12 @@ func (r *UserReconciler) importCredentials(ctx context.Context, secretName, secr
 
 	err := r.Get(ctx, types.NamespacedName{Name: secretName, Namespace: secretNamespace}, &credentialsSecret)
 	if err != nil {
-		return credentials, fmt.Errorf("could not find password secret %s in namespace %s; Err: %w", secretName, secretNamespace, err)
+		return credentials, "", fmt.Errorf("could not find password secret %s in namespace %s; Err: %w", secretName, secretNamespace, err)
 	}
 
 	username, ok := credentialsSecret.Data["username"]
 	if !ok || len(username) == 0 {
-		return credentials, fmt.Errorf("could not find username key in credentials secret: %s", credentialsSecret.Name)
+		return credentials, "", fmt.Errorf("could not find username key in credentials secret: %s", credentialsSecret.Name)
 	}
 	credentials.Username = string(username)
 
@@ -169,10 +171,12 @@ func (r *UserReconciler) importCredentials(ctx context.Context, secretName, secr
 	}
 
 	logger.Info("Retrieved credentials from Secret", "secretName", secretName, "retrievedUsername", string(username))
-	return credentials, nil
+	return credentials, credentialsSecret.ResourceVersion, nil
 }
 
-func (r *UserReconciler) setUserStatus(ctx context.Context, user *topology.User, username, credentialsSecretName string) error {
+// setUserStatus persists the credentials reference, username, and the resourceVersion of the
+// credentials Secret that was just successfully applied to RabbitMQ.
+func (r *UserReconciler) setUserStatus(ctx context.Context, user *topology.User, username, credentialsSecretName, secretVersion string) error {
 	logger := ctrl.LoggerFrom(ctx)
 
 	credentials := &corev1.LocalObjectReference{
@@ -180,6 +184,7 @@ func (r *UserReconciler) setUserStatus(ctx context.Context, user *topology.User,
 	}
 	user.Status.Credentials = credentials
 	user.Status.Username = username
+	user.Status.ObservedSecretVersion = secretVersion
 	if err := r.Status().Update(ctx, user); err != nil {
 		msg := "Failed to update secret status credentials"
 		logger.Error(err, msg, "user", user.Name, "secretRef", credentials)
@@ -200,19 +205,16 @@ func (r *UserReconciler) DeclareFunc(ctx context.Context, rmqc rabbitmqclient.Cl
 func (r *UserReconciler) declareWithImportedCredentials(ctx context.Context, rmqc rabbitmqclient.Client, user *topology.User) error {
 	logger := ctrl.LoggerFrom(ctx)
 
-	credentials, err := r.importCredentials(ctx, user.Spec.ImportCredentialsSecret.Name, user.Namespace)
+	credentials, secretResourceVersion, err := r.importCredentials(ctx, user.Spec.ImportCredentialsSecret.Name, user.Namespace)
 	if err != nil {
 		return err
 	}
 
-	// Update status on first run, or correct a migration where Status.Credentials.Name
-	// still points to the old generated secret rather than the import secret.
-	if user.Status.Credentials == nil ||
-		user.Status.Credentials.Name != user.Spec.ImportCredentialsSecret.Name ||
-		user.Status.Username != credentials.Username {
-		if err := r.setUserStatus(ctx, user, credentials.Username, user.Spec.ImportCredentialsSecret.Name); err != nil {
-			return err
-		}
+	// Skip the RabbitMQ write entirely if neither the User spec nor the import secret have
+	// changed since the last successful sync — avoids re-issuing PutUser (and generating a
+	// fresh salted password hash) on every reconcile.
+	if user.Generation == user.Status.ObservedGeneration && secretResourceVersion == user.Status.ObservedSecretVersion {
+		return r.reconcileUserLimits(ctx, rmqc, user, credentials.Username)
 	}
 
 	userSettings, err := internal.GenerateUserSettings(credentials, user.Spec.Tags)
@@ -224,6 +226,12 @@ func (r *UserReconciler) declareWithImportedCredentials(ctx context.Context, rmq
 	if err := validateResponse(rmqc.PutUser(userSettings.Name, userSettings)); err != nil {
 		return err
 	}
+
+	user.SetStatusConditions([]topology.Condition{topology.PasswordSynced(user.Status.Conditions)})
+	if err := r.setUserStatus(ctx, user, credentials.Username, user.Spec.ImportCredentialsSecret.Name, secretResourceVersion); err != nil {
+		return err
+	}
+	r.Recorder.Eventf(user, nil, corev1.EventTypeNormal, "PasswordUpdated", updateEventAction, "synced password for user %q", user.Status.Username)
 
 	return r.reconcileUserLimits(ctx, rmqc, user, credentials.Username)
 }
@@ -253,11 +261,11 @@ func (r *UserReconciler) declareWithGeneratedCredentials(ctx context.Context, rm
 		actualUsername = username
 	}
 
-	if user.Status.Credentials == nil || user.Status.Username == "" ||
-		user.Status.Credentials.Name != user.Name+"-user-credentials" {
-		if err := r.setUserStatus(ctx, user, actualUsername, user.Name+"-user-credentials"); err != nil {
-			return err
-		}
+	// Skip the RabbitMQ write entirely if neither the User spec nor the generated credentials
+	// secret have changed since the last successful sync — avoids re-issuing PutUser (and
+	// generating a fresh salted password hash) on every reconcile.
+	if user.Generation == user.Status.ObservedGeneration && credentials.ResourceVersion == user.Status.ObservedSecretVersion {
+		return r.reconcileUserLimits(ctx, rmqc, user, actualUsername)
 	}
 
 	userSettings, err := internal.GenerateUserSettings(secretToCredentials(credentials), user.Spec.Tags)
@@ -269,6 +277,12 @@ func (r *UserReconciler) declareWithGeneratedCredentials(ctx context.Context, rm
 	if err := validateResponse(rmqc.PutUser(userSettings.Name, userSettings)); err != nil {
 		return err
 	}
+
+	user.SetStatusConditions([]topology.Condition{topology.PasswordSynced(user.Status.Conditions)})
+	if err := r.setUserStatus(ctx, user, actualUsername, user.Name+"-user-credentials", credentials.ResourceVersion); err != nil {
+		return err
+	}
+	r.Recorder.Eventf(user, nil, corev1.EventTypeNormal, "PasswordUpdated", updateEventAction, "synced password for user %q", user.Status.Username)
 
 	return r.reconcileUserLimits(ctx, rmqc, user, actualUsername)
 }
