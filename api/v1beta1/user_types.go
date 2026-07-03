@@ -35,7 +35,8 @@ type UserSpec struct {
 	//    will be created. For more information, see https://www.rabbitmq.com/docs/passwords.
 	//  * `password` – Plain-text password. Will be used only if the `passwordHash` key is missing.
 	//
-	// Note that this import only occurs at creation time, and is ignored once a password has been set on a User.
+	// The Operator watches this Secret and re-syncs the User's credentials to RabbitMQ whenever it changes,
+	// so updating the Secret's `password`/`passwordHash` rotates the User's password.
 	ImportCredentialsSecret *corev1.LocalObjectReference `json:"importCredentialsSecret,omitempty"`
 	// Limits to apply to a user to restrict the number of connections and channels
 	// the user can create. These limits can be used as guard rails in environments
@@ -54,6 +55,9 @@ type UserStatus struct {
 	Credentials *corev1.LocalObjectReference `json:"credentials,omitempty"`
 	// Provide rabbitmq Username
 	Username string `json:"username"`
+	// ObservedSecretVersion is the resourceVersion of the credentials Secret (generated or imported) that was
+	// last successfully applied to RabbitMQ. Used to avoid unnecessary password updates when nothing has changed.
+	ObservedSecretVersion string `json:"observedSecretVersion,omitempty"`
 }
 
 // UserTag defines the level of access to the management UI allocated to the user.
@@ -110,7 +114,9 @@ func (u *User) RabbitReference() RabbitmqClusterReference {
 }
 
 func (u *User) SetStatusConditions(c []Condition) {
-	u.Status.Conditions = c
+	for _, cond := range c {
+		u.Status.Conditions = upsertCondition(u.Status.Conditions, cond)
+	}
 }
 
 func init() {

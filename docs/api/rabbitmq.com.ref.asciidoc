@@ -1457,7 +1457,8 @@ password will be generated. The Secret must have the following keys in its Data 
    will be created. For more information, see https://www.rabbitmq.com/docs/passwords.
  * `password` – Plain-text password. Will be used only if the `passwordHash` key is missing.
 
-Note that this import only occurs at creation time, and is ignored once a password has been set on a User.
+The Operator watches this Secret and re-syncs the User's credentials to RabbitMQ whenever it changes,
+so updating the Secret's `password`/`passwordHash` rotates the User's password.
 | *`limits`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-userlimits[$$UserLimits$$]__ | Limits to apply to a user to restrict the number of connections and channels
 the user can create. These limits can be used as guard rails in environments
 where applications cannot be trusted and monitored in detail, for example,
@@ -1483,6 +1484,8 @@ User's generation, which is updated on mutation by the API Server.
 | *`conditions`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-condition[$$Condition$$] array__ | 
 | *`credentials`* __link:https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#localobjectreference-v1-core[$$LocalObjectReference$$]__ | Provides a reference to a Secret object containing the user credentials.
 | *`username`* __string__ | Provide rabbitmq Username
+| *`observedSecretVersion`* __string__ | ObservedSecretVersion is the resourceVersion of the credentials Secret (generated or imported) that was
+last successfully applied to RabbitMQ. Used to avoid unnecessary password updates when nothing has changed.
 |===
 
 
