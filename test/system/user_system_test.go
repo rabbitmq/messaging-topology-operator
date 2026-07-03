@@ -109,13 +109,14 @@ var _ = Describe("Users", func() {
 			Eventually(func() []topology.Condition {
 				Expect(k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &updatedUser)).To(Succeed())
 				return updatedUser.Status.Conditions
-			}, waitUpdatedStatusCondition, 2).Should(HaveLen(1), "User status condition should be present")
+			}, waitUpdatedStatusCondition, 2).Should(HaveLen(2), "User status condition should be present")
 
-			readyCondition := updatedUser.Status.Conditions[0]
-			Expect(string(readyCondition.Type)).To(Equal("Ready"))
-			Expect(readyCondition.Status).To(Equal(corev1.ConditionTrue))
-			Expect(readyCondition.Reason).To(Equal("SuccessfulCreateOrUpdate"))
-			Expect(readyCondition.LastTransitionTime).NotTo(Equal(metav1.Time{}))
+			Ω(updatedUser.Status.Conditions).Should(ContainElement(SatisfyAll(
+				HaveField("Type", "Ready"),
+				HaveField("Status", corev1.ConditionTrue),
+				HaveField("Reason", "SuccessfulCreateOrUpdate"),
+				HaveField("LastTransitionTime", Not(Equal(metav1.Time{}))),
+			)))
 
 			By("setting correct finalizer")
 			Expect(updatedUser.ObjectMeta.Finalizers).To(ConsistOf("deletion.finalizers.users.rabbitmq.com"))

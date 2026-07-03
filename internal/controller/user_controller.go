@@ -22,6 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/events"
 	clientretry "k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrlbuilder "sigs.k8s.io/controller-runtime/pkg/builder"
@@ -40,7 +41,8 @@ const ownerKind = "User"
 
 type UserReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme   *runtime.Scheme
+	Recorder events.EventRecorder
 }
 
 func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.User) (string, error) {
@@ -219,6 +221,8 @@ func (r *UserReconciler) declareWithImportedCredentials(ctx context.Context, rmq
 	if err := validateResponse(rmqc.PutUser(userSettings.Name, userSettings)); err != nil {
 		return err
 	}
+	user.SetStatusConditions([]topology.Condition{topology.PasswordSynced(user.Status.Conditions)})
+	r.Recorder.Eventf(user, nil, corev1.EventTypeNormal, "PasswordUpdated", updateEventAction, "synced password for user %q", user.Status.Username)
 
 	return r.reconcileUserLimits(ctx, rmqc, user, credentials.Username)
 }
@@ -264,6 +268,8 @@ func (r *UserReconciler) declareWithGeneratedCredentials(ctx context.Context, rm
 	if err := validateResponse(rmqc.PutUser(userSettings.Name, userSettings)); err != nil {
 		return err
 	}
+	user.SetStatusConditions([]topology.Condition{topology.PasswordSynced(user.Status.Conditions)})
+	r.Recorder.Eventf(user, nil, corev1.EventTypeNormal, "PasswordUpdated", updateEventAction, "synced password for user %q", user.Status.Username)
 
 	return r.reconcileUserLimits(ctx, rmqc, user, actualUsername)
 }
