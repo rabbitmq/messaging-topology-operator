@@ -2,12 +2,13 @@ package controller
 
 // common error messages shared across controllers
 const (
-	failedStatusUpdate         = "failed to update object status"
-	failedMarshalSpec          = "failed to marshal spec"
-	failedGenerateRabbitClient = "failed to generate http rabbitClient"
-	failedParseClusterRef      = "failed to retrieve cluster from reference"
-	failedRetrieveSysCertPool  = "failed to retrieve system trusted certs"
-	noSuchRabbitDeletion       = "RabbitmqCluster is already gone: cannot find its connection secret"
+	failedStatusUpdate          = "failed to update object status"
+	failedMarshalSpec           = "failed to marshal spec"
+	failedGenerateRabbitClient  = "failed to generate http rabbitClient"
+	failedParseClusterRef       = "failed to retrieve cluster from reference"
+	failedRetrieveSysCertPool   = "failed to retrieve system trusted certs"
+	noSuchRabbitDeletion        = "RabbitmqCluster is already gone: cannot find its connection secret"
+	clusterScaledToZeroDeletion = "RabbitmqCluster is scaled to zero: skipping broker call and removing finalizer"
 )
 
 const (
