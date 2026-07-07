@@ -217,7 +217,7 @@ var _ = Describe("TopologyReconciler", func() {
 
 			cluster = &rabbitmqv1beta1.RabbitmqCluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "scaled-to-zero-rabbit-1", Namespace: topologyNamespace},
-				Spec:       rabbitmqv1beta1.RabbitmqClusterSpec{Replicas: ptr(int32(0))},
+				Spec:       rabbitmqv1beta1.RabbitmqClusterSpec{Replicas: new(int32)},
 			}
 			Expect(k8sClient.Create(ctx, cluster)).To(Succeed())
 
@@ -267,7 +267,7 @@ var _ = Describe("TopologyReconciler", func() {
 			})))
 
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, cluster)).To(Succeed())
-			cluster.Spec.Replicas = ptr(int32(0))
+			cluster.Spec.Replicas = new(int32)
 			Expect(k8sClient.Update(ctx, cluster)).To(Succeed())
 
 			deleteCallsBefore := fakeRabbitMQClient.DeleteQueueCallCount()
@@ -286,7 +286,7 @@ var _ = Describe("TopologyReconciler", func() {
 
 			cluster = &rabbitmqv1beta1.RabbitmqCluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "scaled-to-zero-rabbit-3", Namespace: topologyNamespace},
-				Spec:       rabbitmqv1beta1.RabbitmqClusterSpec{Replicas: ptr(int32(0))},
+				Spec:       rabbitmqv1beta1.RabbitmqClusterSpec{Replicas: new(int32)},
 			}
 			Expect(createRabbitmqClusterResources(k8sClient, cluster)).To(Succeed())
 
@@ -310,7 +310,7 @@ var _ = Describe("TopologyReconciler", func() {
 			})))
 
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, cluster)).To(Succeed())
-			cluster.Spec.Replicas = ptr(int32(1))
+			cluster.Spec.Replicas = new(int32(1))
 			Expect(k8sClient.Update(ctx, cluster)).To(Succeed())
 
 			Eventually(func() []topology.Condition {
@@ -323,7 +323,3 @@ var _ = Describe("TopologyReconciler", func() {
 		})
 	})
 })
-
-func ptr[T any](v T) *T {
-	return &v
-}
