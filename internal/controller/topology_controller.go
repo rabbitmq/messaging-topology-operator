@@ -255,8 +255,15 @@ func (r *TopologyReconciler) getTopLevelField(obj topology.TopologyResource, pat
 func (r *TopologyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	b := ctrl.NewControllerManagedBy(mgr).
 		For(r.Type).
-		Watches(&rabbitmqv1beta1.RabbitmqCluster{}, handler.EnqueueRequestsFromMapFunc(r.rabbitmqClusterToRequests)).
 		WithOptions(controller.Options{MaxConcurrentReconciles: r.MaxConcurrentReconciles})
+	// ListType is set when the controller wants to Watch RabbitmqCluster for updates.
+	// This field is set to support scale-to-zero feature in RabbitmqCluster, where
+	// rabbit can have 0 replicas. When rabbit replicas are 0, we don't reconcile.
+	// Instead, we want to Watch for changes in RabbitmqCluster objects, so that
+	// we can react and recocnile when rabbit is scaled up.
+	if r.ListType != nil {
+		b = b.Watches(&rabbitmqv1beta1.RabbitmqCluster{}, handler.EnqueueRequestsFromMapFunc(r.rabbitmqClusterToRequests))
+	}
 	if cb, ok := r.ReconcileFunc.(ControllerBuilder); ok {
 		if err := cb.SetupControllerBuilder(context.Background(), mgr, b); err != nil {
 			return err
