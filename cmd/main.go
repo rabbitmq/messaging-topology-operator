@@ -561,6 +561,13 @@ func main() {
 	}
 	// nolint:goconst
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err := webhookv1beta1.SetupQueueDefaulterWebhookWithManager(mgr); err != nil {
+			log.Error(err, "unable to create webhook", "webhook", "QueueDefaulter")
+			os.Exit(1)
+		}
+	}
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err := webhookv1beta1.SetupSchemaReplicationWebhookWithManager(mgr); err != nil {
 			log.Error(err, "unable to create webhook", "webhook", "SchemaReplication")
 			os.Exit(1)

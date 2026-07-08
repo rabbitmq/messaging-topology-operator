@@ -109,41 +109,19 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	err = SetupBindingWebhookWithManager(mgr)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = SetupExchangeWebhookWithManager(mgr)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = SetupFederationWebhookWithManager(mgr)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = SetupPermissionWebhookWithManager(mgr)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = SetupPolicyWebhookWithManager(mgr)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = SetupQueueWebhookWithManager(mgr)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = SetupSchemaReplicationWebhookWithManager(mgr)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = SetupShovelWebhookWithManager(mgr)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = SetupUserWebhookWithManager(mgr)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = SetupVhostWebhookWithManager(mgr)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = SetupTopicPermissionWebhookWithManager(mgr)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = SetupOperatorPolicyWebhookWithManager(mgr)
-	Expect(err).NotTo(HaveOccurred())
+	Expect(SetupBindingWebhookWithManager(mgr)).To(Succeed())
+	Expect(SetupExchangeWebhookWithManager(mgr)).To(Succeed())
+	Expect(SetupFederationWebhookWithManager(mgr)).To(Succeed())
+	Expect(SetupPermissionWebhookWithManager(mgr)).To(Succeed())
+	Expect(SetupPolicyWebhookWithManager(mgr)).To(Succeed())
+	Expect(SetupQueueWebhookWithManager(mgr)).To(Succeed())
+	Expect(SetupQueueDefaulterWebhookWithManager(mgr)).To(Succeed())
+	Expect(SetupSchemaReplicationWebhookWithManager(mgr)).To(Succeed())
+	Expect(SetupShovelWebhookWithManager(mgr)).To(Succeed())
+	Expect(SetupUserWebhookWithManager(mgr)).To(Succeed())
+	Expect(SetupVhostWebhookWithManager(mgr)).To(Succeed())
+	Expect(SetupTopicPermissionWebhookWithManager(mgr)).To(Succeed())
+	Expect(SetupOperatorPolicyWebhookWithManager(mgr)).To(Succeed())
 
 	// +kubebuilder:scaffold:webhook
 

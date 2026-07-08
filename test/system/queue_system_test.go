@@ -38,7 +38,7 @@ var _ = Describe("Queue Controller", func() {
 				Name:       "queue-test",
 				Type:       "quorum",
 				AutoDelete: false,
-				Durable:    true,
+				Durable:    new(true),
 				Arguments: &runtime.RawExtension{
 					Raw: []byte(`{"x-quorum-initial-group-size": 3}`),
 				},
@@ -118,7 +118,7 @@ var _ = Describe("Queue Controller", func() {
 				Spec: topology.QueueSpec{
 					Name:           "retain-policy-test",
 					Type:           "classic",
-					Durable:        true,
+					Durable:        new(true),
 					DeletionPolicy: "retain",
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
 						Name: rmq.Name,

@@ -60,7 +60,7 @@ var _ = Describe("RabbitMQ connection using provided connection secret", func() 
 					ConnectionSecret: &corev1.LocalObjectReference{Name: secret.Name},
 				},
 				AutoDelete: false,
-				Durable:    true,
+				Durable:    new(true),
 			},
 		}
 		Expect(k8sClient.Create(ctx, q, &client.CreateOptions{})).To(Succeed())

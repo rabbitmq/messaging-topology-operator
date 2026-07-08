@@ -58,7 +58,7 @@ var _ = Describe("SuperstreamPartition", func() {
 		})
 
 		It("sets the queue to be durable", func() {
-			Expect(partition.Spec.Durable).To(BeTrue())
+			Expect(partition.Spec.Durable).To(HaveValue(BeTrue()))
 		})
 
 		It("sets the queue type to be stream", func() {

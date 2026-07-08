@@ -42,7 +42,7 @@ func (builder *SuperStreamPartitionBuilder) Build() (client.Object, error) {
 func (builder *SuperStreamPartitionBuilder) Update(object client.Object) error {
 	partition := object.(*topology.Queue)
 	partition.Spec.Name = RoutingKeyToPartitionName(builder.ObjectOwner.GetName(), builder.routingKey)
-	partition.Spec.Durable = true
+	partition.Spec.Durable = new(true)
 	partition.Spec.Type = "stream"
 	partition.Spec.Vhost = builder.vhost
 	partition.Spec.RabbitmqClusterReference = *builder.rabbitmqCluster

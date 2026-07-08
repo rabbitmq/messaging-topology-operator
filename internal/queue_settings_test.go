@@ -20,7 +20,7 @@ var _ = Describe("GenerateQueueSettings", func() {
 			Spec: topology.QueueSpec{
 				Type:       "quorum",
 				AutoDelete: false,
-				Durable:    true,
+				Durable:    new(true),
 			},
 		}
 	})

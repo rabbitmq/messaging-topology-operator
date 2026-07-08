@@ -15,6 +15,7 @@ import (
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	"k8s.io/utils/ptr"
 )
 
 // GenerateQueueSettings generates rabbithole.QueueSettings for a given Queue
@@ -31,7 +32,7 @@ func GenerateQueueSettings(q *topology.Queue) (*rabbithole.QueueSettings, error)
 
 	return &rabbithole.QueueSettings{
 		Type:       q.Spec.Type,
-		Durable:    q.Spec.Durable,
+		Durable:    ptr.Deref(q.Spec.Durable, false),
 		AutoDelete: q.Spec.AutoDelete,
 		Arguments:  arguments,
 	}, nil

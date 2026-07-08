@@ -10,6 +10,7 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -36,7 +37,7 @@ func SetupQueueWebhookWithManager(mgr ctrl.Manager) error {
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 // Either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (v *QueueCustomValidator) ValidateCreate(ctx context.Context, inQueue *rabbitmqcomv1beta1.Queue) (warnings admission.Warnings, err error) {
-	if inQueue.Spec.Type == "quorum" && !inQueue.Spec.Durable {
+	if inQueue.Spec.Type == "quorum" && !ptr.Deref(inQueue.Spec.Durable, false) {
 		return nil, apierrors.NewForbidden(inQueue.GroupResource(), inQueue.Name,
 			field.Forbidden(field.NewPath("spec", "durable"),
 				"Quorum queues must have durable set to true"))
@@ -86,7 +87,7 @@ func (v *QueueCustomValidator) ValidateUpdate(_ context.Context, oldQueue, newQu
 		))
 	}
 
-	if newQueue.Spec.Durable != oldQueue.Spec.Durable {
+	if ptr.Deref(newQueue.Spec.Durable, false) != ptr.Deref(oldQueue.Spec.Durable, false) {
 		allErrs = append(allErrs, field.Invalid(
 			field.NewPath("spec", "durable"),
 			newQueue.Spec.Durable,

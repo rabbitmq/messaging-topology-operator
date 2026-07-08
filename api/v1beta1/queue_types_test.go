@@ -20,7 +20,6 @@ var _ = Describe("Queue spec", func() {
 		expectedSpec := QueueSpec{
 			Name:           "test-queue",
 			Vhost:          "/",
-			Durable:        false,
 			AutoDelete:     false,
 			DeletionPolicy: "delete",
 			RabbitmqClusterReference: RabbitmqClusterReference{
@@ -59,7 +58,7 @@ var _ = Describe("Queue spec", func() {
 				Name:       "test-queue",
 				Vhost:      "/hello",
 				Type:       "a type",
-				Durable:    true,
+				Durable:    new(true),
 				AutoDelete: true,
 				Arguments: &runtime.RawExtension{
 					Raw: []byte(`{"yoyo":10}`),
@@ -79,7 +78,7 @@ var _ = Describe("Queue spec", func() {
 		Expect(fetchedQ.Spec.Name).To(Equal("test-queue"))
 		Expect(fetchedQ.Spec.Vhost).To(Equal("/hello"))
 		Expect(fetchedQ.Spec.Type).To(Equal("a type"))
-		Expect(fetchedQ.Spec.Durable).To(BeTrue())
+		Expect(fetchedQ.Spec.Durable).To(HaveValue(BeTrue()))
 		Expect(fetchedQ.Spec.AutoDelete).To(BeTrue())
 		Expect(fetchedQ.Spec.RabbitmqClusterReference).To(Equal(
 			RabbitmqClusterReference{
