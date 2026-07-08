@@ -33,6 +33,7 @@ var (
 	ErrNoSuchRabbitmqCluster = errors.New("RabbitmqCluster object does not exist")
 	ErrResourceNotAllowed    = errors.New("resource is not allowed to reference defined cluster reference. Check the namespace of the resource is allowed as part of the cluster's `rabbitmq.com/topology-allowed-namespaces` annotation")
 	ErrNoServiceReferenceSet = errors.New("RabbitmqCluster has no ServiceReference set in status.defaultUser")
+	ErrClusterScaledToZero   = errors.New("RabbitmqCluster is scaled to zero replicas")
 )
 
 func ParseReference(ctx context.Context, c client.Client, apiReader client.Reader, rmq topology.RabbitmqClusterReference, requestNamespace string, clusterDomain string, connectUsingHTTP bool) (map[string]string, bool, error) {
@@ -61,6 +62,10 @@ func ParseReference(ctx context.Context, c client.Client, apiReader client.Reade
 
 	if !AllowedNamespace(rmq, requestNamespace, cluster) {
 		return nil, false, ErrResourceNotAllowed
+	}
+
+	if cluster.Spec.Replicas != nil && *cluster.Spec.Replicas == 0 {
+		return nil, false, ErrClusterScaledToZero
 	}
 
 	if cluster.Status.DefaultUser == nil || cluster.Status.DefaultUser.ServiceReference == nil {

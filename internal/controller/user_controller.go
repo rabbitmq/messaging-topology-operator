@@ -31,12 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-var apiGVStr = topology.GroupVersion.String()
-
-const (
-	ownerKey  = ".metadata.controller"
-	ownerKind = "User"
-)
+const ownerKind = "User"
 
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=users,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rabbitmq.com,resources=users/finalizers,verbs=update

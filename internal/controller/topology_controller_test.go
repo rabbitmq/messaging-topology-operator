@@ -15,8 +15,13 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
+	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 var _ = Describe("TopologyReconciler", func() {
@@ -169,6 +174,152 @@ var _ = Describe("TopologyReconciler", func() {
 			credentials, _, _ := FakeRabbitMQClientFactoryArgsForCall(0)
 			expected := fmt.Sprintf("http://%s.%s.svc:15672", name, topologyNamespace)
 			Expect(credentials).Should(HaveKeyWithValue("uri", expected))
+		})
+	})
+
+	When("the referenced RabbitmqCluster is scaled to zero", func() {
+		var (
+			cluster *rabbitmqv1beta1.RabbitmqCluster
+			queue   *topology.Queue
+		)
+
+		AfterEach(func() {
+			// Delete leftover objects, and wait for the Queue to actually disappear, so a
+			// subsequent test's fresh manager cache doesn't re-reconcile them and pollute
+			// the shared fakeRabbitMQClientFactory call log.
+			if queue != nil {
+				_ = k8sClient.Delete(ctx, queue)
+				Eventually(func() bool {
+					err := k8sClient.Get(ctx, types.NamespacedName{Name: queue.Name, Namespace: queue.Namespace}, &topology.Queue{})
+					return apierrors.IsNotFound(err)
+				}, 10*time.Second, 1*time.Second).Should(BeTrue())
+			}
+			if cluster != nil {
+				_ = k8sClient.Delete(ctx, cluster)
+			}
+		})
+
+		setupReconciler := func() {
+			Expect((&controller.TopologyReconciler{
+				Client:                topologyMgr.GetClient(),
+				APIReader:             topologyMgr.GetAPIReader(),
+				Type:                  &topology.Queue{},
+				ListType:              &topology.QueueList{},
+				Scheme:                topologyMgr.GetScheme(),
+				Recorder:              fakeRecorder,
+				RabbitmqClientFactory: fakeRabbitMQClientFactory,
+				ReconcileFunc:         &controller.QueueReconciler{},
+			}).SetupWithManager(topologyMgr)).To(Succeed())
+		}
+
+		It("sets a NotReady condition and does not declare the queue", func() {
+			setupReconciler()
+
+			cluster = &rabbitmqv1beta1.RabbitmqCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "scaled-to-zero-rabbit-1", Namespace: topologyNamespace},
+				Spec:       rabbitmqv1beta1.RabbitmqClusterSpec{Replicas: new(int32)},
+			}
+			Expect(k8sClient.Create(ctx, cluster)).To(Succeed())
+
+			queue = &topology.Queue{
+				ObjectMeta: metav1.ObjectMeta{Name: "scaled-to-zero-queue-1", Namespace: topologyNamespace},
+				Spec: topology.QueueSpec{RabbitmqClusterReference: topology.RabbitmqClusterReference{
+					Name:      cluster.Name,
+					Namespace: topologyNamespace,
+				}},
+			}
+			Expect(k8sClient.Create(ctx, queue)).To(Succeed())
+
+			Eventually(func() []topology.Condition {
+				_ = k8sClient.Get(ctx, types.NamespacedName{Name: queue.Name, Namespace: queue.Namespace}, queue)
+				return queue.Status.Conditions
+			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":    Equal(topology.ConditionType("Ready")),
+				"Status":  Equal(corev1.ConditionFalse),
+				"Message": ContainSubstring("scaled to zero"),
+			})))
+		})
+
+		It("removes the finalizer on deletion without calling the broker", func() {
+			setupReconciler()
+
+			cluster = &rabbitmqv1beta1.RabbitmqCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "scaled-to-zero-rabbit-2", Namespace: topologyNamespace},
+			}
+			Expect(createRabbitmqClusterResources(k8sClient, cluster)).To(Succeed())
+
+			queue = &topology.Queue{
+				ObjectMeta: metav1.ObjectMeta{Name: "scaled-to-zero-queue-2", Namespace: topologyNamespace},
+				Spec: topology.QueueSpec{RabbitmqClusterReference: topology.RabbitmqClusterReference{
+					Name:      cluster.Name,
+					Namespace: topologyNamespace,
+				}},
+			}
+			fakeRabbitMQClient.DeclareQueueReturns(commonHttpCreatedResponse, nil)
+			Expect(k8sClient.Create(ctx, queue)).To(Succeed())
+
+			Eventually(func() []topology.Condition {
+				_ = k8sClient.Get(ctx, types.NamespacedName{Name: queue.Name, Namespace: queue.Namespace}, queue)
+				return queue.Status.Conditions
+			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":   Equal(topology.ConditionType("Ready")),
+				"Status": Equal(corev1.ConditionTrue),
+			})))
+
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, cluster)).To(Succeed())
+			cluster.Spec.Replicas = new(int32)
+			Expect(k8sClient.Update(ctx, cluster)).To(Succeed())
+
+			deleteCallsBefore := fakeRabbitMQClient.DeleteQueueCallCount()
+			Expect(k8sClient.Delete(ctx, queue)).To(Succeed())
+
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: queue.Name, Namespace: queue.Namespace}, &topology.Queue{})
+				return apierrors.IsNotFound(err)
+			}, 10*time.Second, 1*time.Second).Should(BeTrue())
+
+			Expect(fakeRabbitMQClient.DeleteQueueCallCount()).To(Equal(deleteCallsBefore))
+		})
+
+		It("recovers once the cluster is scaled back up, via the RabbitmqCluster watch", func() {
+			setupReconciler()
+
+			cluster = &rabbitmqv1beta1.RabbitmqCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "scaled-to-zero-rabbit-3", Namespace: topologyNamespace},
+				Spec:       rabbitmqv1beta1.RabbitmqClusterSpec{Replicas: new(int32)},
+			}
+			Expect(createRabbitmqClusterResources(k8sClient, cluster)).To(Succeed())
+
+			queue = &topology.Queue{
+				ObjectMeta: metav1.ObjectMeta{Name: "scaled-to-zero-queue-3", Namespace: topologyNamespace},
+				Spec: topology.QueueSpec{RabbitmqClusterReference: topology.RabbitmqClusterReference{
+					Name:      cluster.Name,
+					Namespace: topologyNamespace,
+				}},
+			}
+			fakeRabbitMQClient.DeclareQueueReturns(commonHttpCreatedResponse, nil)
+			fakeRabbitMQClient.DeleteQueueReturns(commonHttpDeletedResponse, nil)
+			Expect(k8sClient.Create(ctx, queue)).To(Succeed())
+
+			Eventually(func() []topology.Condition {
+				_ = k8sClient.Get(ctx, types.NamespacedName{Name: queue.Name, Namespace: queue.Namespace}, queue)
+				return queue.Status.Conditions
+			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":   Equal(topology.ConditionType("Ready")),
+				"Status": Equal(corev1.ConditionFalse),
+			})))
+
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, cluster)).To(Succeed())
+			cluster.Spec.Replicas = new(int32(1))
+			Expect(k8sClient.Update(ctx, cluster)).To(Succeed())
+
+			Eventually(func() []topology.Condition {
+				_ = k8sClient.Get(ctx, types.NamespacedName{Name: queue.Name, Namespace: queue.Namespace}, queue)
+				return queue.Status.Conditions
+			}, 10*time.Second, 1*time.Second).Should(ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":   Equal(topology.ConditionType("Ready")),
+				"Status": Equal(corev1.ConditionTrue),
+			})))
 		})
 	})
 })

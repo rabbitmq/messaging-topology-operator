@@ -11,17 +11,20 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/rabbitmqclient"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/events"
 	clientretry "k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrlbuilder "sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -31,7 +34,7 @@ type TopologyReconciler struct {
 	APIReader client.Reader
 	ReconcileFunc
 	Type                    client.Object
-	WatchTypes              []client.Object
+	ListType                client.ObjectList
 	Log                     logr.Logger
 	Scheme                  *runtime.Scheme
 	Recorder                events.EventRecorder
@@ -160,6 +163,23 @@ func (r *TopologyReconciler) handleRMQReferenceParseError(ctx context.Context, o
 		logger.Info("Could not generate rabbitClient for non existent cluster: " + err.Error())
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, err
 	}
+	if errors.Is(err, rabbitmqclient.ErrClusterScaledToZero) && !object.GetDeletionTimestamp().IsZero() {
+		logger.Info(clusterScaledToZeroDeletion, "object", object.GetName())
+		r.Recorder.Eventf(object, nil, corev1.EventTypeNormal, "SuccessfulDelete", deleteEventAction, "successfully deleted "+object.GetName())
+		return ctrl.Result{}, removeFinalizer(ctx, r.Client, object)
+	}
+	if errors.Is(err, rabbitmqclient.ErrClusterScaledToZero) {
+		msg := "RabbitmqCluster is scaled to zero replicas; waiting for it to scale up"
+		logger.Info(msg)
+		r.Recorder.Eventf(object, nil, corev1.EventTypeWarning, "ClusterScaledToZero", updateEventAction, msg)
+		object.SetStatusConditions([]topology.Condition{topology.NotReady(msg, r.getStatusConditions(object))})
+		if writerErr := clientretry.RetryOnConflict(clientretry.DefaultRetry, func() error {
+			return r.Status().Update(ctx, object)
+		}); writerErr != nil {
+			logger.Error(writerErr, failedStatusUpdate, "object", object.GetName())
+		}
+		return ctrl.Result{}, nil
+	}
 	if errors.Is(err, rabbitmqclient.ErrResourceNotAllowed) {
 		logger.Info("Could not create resource: " + err.Error())
 		object.SetStatusConditions([]topology.Condition{topology.NotReady(rabbitmqclient.ErrResourceNotAllowed.Error(), r.getStatusConditions(object))})
@@ -236,11 +256,13 @@ func (r *TopologyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	b := ctrl.NewControllerManagedBy(mgr).
 		For(r.Type).
 		WithOptions(controller.Options{MaxConcurrentReconciles: r.MaxConcurrentReconciles})
-	for _, t := range r.WatchTypes {
-		if err := mgr.GetFieldIndexer().IndexField(context.Background(), t, ownerKey, addResourceToIndex); err != nil {
-			return err
-		}
-		b = b.Owns(t)
+	// ListType is set when the controller wants to Watch RabbitmqCluster for updates.
+	// This field is set to support scale-to-zero feature in RabbitmqCluster, where
+	// rabbit can have 0 replicas. When rabbit replicas are 0, we don't reconcile.
+	// Instead, we want to Watch for changes in RabbitmqCluster objects, so that
+	// we can react and recocnile when rabbit is scaled up.
+	if r.ListType != nil {
+		b = b.Watches(&rabbitmqv1beta1.RabbitmqCluster{}, handler.EnqueueRequestsFromMapFunc(r.rabbitmqClusterToRequests))
 	}
 	if cb, ok := r.ReconcileFunc.(ControllerBuilder); ok {
 		if err := cb.SetupControllerBuilder(context.Background(), mgr, b); err != nil {
@@ -250,22 +272,45 @@ func (r *TopologyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return b.Complete(r)
 }
 
-func addResourceToIndex(rawObj client.Object) []string {
-	switch resourceObject := rawObj.(type) {
-	case *corev1.Secret:
-		owner := metav1.GetControllerOf(resourceObject)
-		return validateAndGetOwner(owner)
-	default:
+// rabbitmqClusterToRequests maps a RabbitmqCluster event to reconcile requests for every
+// topology object of this reconciler's Type that references it by name, so that scaling the
+// cluster back up promptly re-triggers reconciliation of objects paused while it was at zero.
+func (r *TopologyReconciler) rabbitmqClusterToRequests(ctx context.Context, obj client.Object) []reconcile.Request {
+	cluster, ok := obj.(*rabbitmqv1beta1.RabbitmqCluster)
+	if !ok || r.ListType == nil {
 		return nil
 	}
-}
 
-func validateAndGetOwner(owner *metav1.OwnerReference) []string {
-	if owner == nil {
+	list := r.ListType.DeepCopyObject().(client.ObjectList)
+	if err := r.List(ctx, list); err != nil {
+		ctrl.LoggerFrom(ctx).Error(err, "failed to list objects for RabbitmqCluster watch", "cluster", cluster.Name)
 		return nil
 	}
-	if owner.APIVersion != apiGVStr || owner.Kind != ownerKind {
+
+	items, err := apimeta.ExtractList(list)
+	if err != nil {
 		return nil
 	}
-	return []string{owner.Name}
+
+	var requests []reconcile.Request
+	for _, item := range items {
+		res, ok := item.(topology.TopologyResource)
+		if !ok {
+			continue
+		}
+		ref := res.RabbitReference()
+		if ref.ConnectionSecret != nil {
+			continue
+		}
+		refNamespace := ref.Namespace
+		if refNamespace == "" {
+			refNamespace = res.GetNamespace()
+		}
+		if ref.Name == cluster.Name && refNamespace == cluster.Namespace {
+			requests = append(requests, reconcile.Request{
+				NamespacedName: types.NamespacedName{Name: res.GetName(), Namespace: res.GetNamespace()},
+			})
+		}
+	}
+	return requests
 }

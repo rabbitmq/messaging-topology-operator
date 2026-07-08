@@ -122,6 +122,57 @@ var _ = Describe("ParseReference", func() {
 			})
 		})
 
+		When("RabbitmqCluster is scaled to zero replicas", func() {
+			BeforeEach(func() {
+				zero := int32(0)
+				existingRabbitMQCluster.Spec.Replicas = &zero
+			})
+
+			It("returns ErrClusterScaledToZero", func() {
+				_, _, err := rabbitmqclient.ParseReference(ctx, fakeClient, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "", false)
+				Expect(errors.Is(err, rabbitmqclient.ErrClusterScaledToZero)).To(BeTrue())
+			})
+
+			When("the reference uses a connectionSecret instead of a name", func() {
+				BeforeEach(func() {
+					connectionSecret := &corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "rmq-connection-info",
+							Namespace: namespace,
+						},
+						Data: map[string][]byte{
+							"uri":      []byte("http://10.0.0.0:15672"),
+							"username": []byte("test-user"),
+							"password": []byte("test-password"),
+						},
+					}
+					objs = append(objs, connectionSecret)
+				})
+
+				It("does not return ErrClusterScaledToZero, since the cluster is never fetched", func() {
+					_, _, err := rabbitmqclient.ParseReference(ctx, fakeClient, fakeClient,
+						topology.RabbitmqClusterReference{
+							ConnectionSecret: &corev1.LocalObjectReference{Name: "rmq-connection-info"},
+						},
+						existingRabbitMQCluster.Namespace, "", false)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(errors.Is(err, rabbitmqclient.ErrClusterScaledToZero)).To(BeFalse())
+				})
+			})
+		})
+
+		When("RabbitmqCluster replicas is explicitly set above zero", func() {
+			BeforeEach(func() {
+				one := int32(1)
+				existingRabbitMQCluster.Spec.Replicas = &one
+			})
+
+			It("does not return ErrClusterScaledToZero", func() {
+				_, _, err := rabbitmqclient.ParseReference(ctx, fakeClient, fakeClient, topology.RabbitmqClusterReference{Name: existingRabbitMQCluster.Name}, existingRabbitMQCluster.Namespace, "", false)
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
 		When("default-user credentials Secret is absent", func() {
 			BeforeEach(func() {
 				// Include cluster and service but omit the binding secret
