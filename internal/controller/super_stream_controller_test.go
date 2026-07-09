@@ -336,7 +336,7 @@ var _ = Describe("super-stream-controller", func() {
 								Expect(partition.Spec).To(MatchFields(IgnoreExtras, Fields{
 									"Name":    Equal(fmt.Sprint(managedresource.RoutingKeyToPartitionName(superStreamName, strconv.Itoa(i)))),
 									"Type":    Equal("stream"),
-									"Durable": BeTrue(),
+									"Durable": PointTo(BeTrue()),
 									"RabbitmqClusterReference": MatchAllFields(Fields{
 										"Name":             Equal("example-rabbit"),
 										"Namespace":        Equal(superStreamNamespace),
@@ -441,7 +441,7 @@ var _ = Describe("super-stream-controller", func() {
 								Expect(partition.Spec).To(MatchFields(IgnoreExtras, Fields{
 									"Name":    Equal(fmt.Sprint(managedresource.RoutingKeyToPartitionName(superStreamName, strconv.Itoa(i)))),
 									"Type":    Equal("stream"),
-									"Durable": BeTrue(),
+									"Durable": PointTo(BeTrue()),
 									"RabbitmqClusterReference": MatchAllFields(Fields{
 										"Name":             Equal("example-rabbit"),
 										"Namespace":        Equal(superStreamNamespace),
@@ -574,7 +574,7 @@ var _ = Describe("super-stream-controller", func() {
 							Expect(partition.Spec).To(MatchFields(IgnoreExtras, Fields{
 								"Name":    Equal(fmt.Sprintf("%s-%s", superStreamName, superStream.Spec.RoutingKeys[i])),
 								"Type":    Equal("stream"),
-								"Durable": BeTrue(),
+								"Durable": PointTo(BeTrue()),
 								"RabbitmqClusterReference": MatchAllFields(Fields{
 									"Name":             Equal("example-rabbit"),
 									"Namespace":        Equal(superStreamNamespace),

@@ -51,7 +51,7 @@ var _ = Describe("Binding", func() {
 					Name: rmq.Name,
 				},
 				AutoDelete: false,
-				Durable:    true,
+				Durable:    new(true),
 			},
 		}
 		Expect(k8sClient.Create(ctx, queue, &client.CreateOptions{})).To(Succeed())

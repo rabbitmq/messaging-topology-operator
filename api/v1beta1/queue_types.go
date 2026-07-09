@@ -29,7 +29,7 @@ type QueueSpec struct {
 	Vhost string `json:"vhost,omitempty"`
 	Type  string `json:"type,omitempty"`
 	// When set to false queues does not survive server restart.
-	Durable bool `json:"durable,omitempty"`
+	Durable *bool `json:"durable,omitempty"`
 	// when set to true, queues that have had at least one consumer before are deleted after the last consumer unsubscribes.
 	AutoDelete bool `json:"autoDelete,omitempty"`
 	// when set to true, queues are deleted only if empty.

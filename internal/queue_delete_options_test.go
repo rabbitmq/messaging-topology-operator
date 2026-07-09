@@ -19,7 +19,7 @@ var _ = Describe("GenerateQueueDeleteOptionsQuorum", func() {
 			Spec: topology.QueueSpec{
 				Type:           "quorum",
 				AutoDelete:     false,
-				Durable:        true,
+				Durable:        new(true),
 				DeleteIfEmpty:  true,
 				DeleteIfUnused: false,
 			},
@@ -51,7 +51,7 @@ var _ = Describe("GenerateQueueDeleteOptionsClassic", func() {
 			Spec: topology.QueueSpec{
 				Type:           "classic",
 				AutoDelete:     false,
-				Durable:        true,
+				Durable:        new(true),
 				DeleteIfEmpty:  true,
 				DeleteIfUnused: false,
 			},
