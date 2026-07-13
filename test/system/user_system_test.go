@@ -111,8 +111,8 @@ var _ = Describe("Users", func() {
 				return updatedUser.Status.Conditions
 			}, waitUpdatedStatusCondition, 2).Should(HaveLen(2), "User status condition should be present")
 
-			Ω(updatedUser.Status.Conditions).Should(ContainElement(SatisfyAll(
-				HaveField("Type", "Ready"),
+			Expect(updatedUser.Status.Conditions).To(ContainElement(SatisfyAll(
+				HaveField("Type", topology.ConditionType("Ready")),
 				HaveField("Status", corev1.ConditionTrue),
 				HaveField("Reason", "SuccessfulCreateOrUpdate"),
 				HaveField("LastTransitionTime", Not(Equal(metav1.Time{}))),
