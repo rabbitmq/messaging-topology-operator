@@ -92,7 +92,7 @@ var _ = Describe("UserController", func() {
 			Scheme:                userMgr.GetScheme(),
 			Recorder:              fakeRecorder,
 			RabbitmqClientFactory: fakeRabbitMQClientFactory,
-			ReconcileFunc:         &controller.UserReconciler{Client: userMgr.GetClient(), Scheme: userMgr.GetScheme()},
+			ReconcileFunc:         &controller.UserReconciler{Client: userMgr.GetClient(), Scheme: userMgr.GetScheme(), Recorder: fakeRecorder},
 		}).SetupWithManager(userMgr)).To(Succeed())
 	}
 
@@ -611,6 +611,17 @@ var _ = Describe("UserController", func() {
 			})).To(Succeed())
 		})
 
+		It("sets a PasswordSynced condition and emits a PasswordUpdated event after the first sync", func() {
+			Eventually(objectStatus).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+				ContainElement(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(topology.ConditionType("PasswordSynced")),
+					"Reason": Equal("SuccessfulPasswordSync"),
+					"Status": Equal(corev1.ConditionTrue),
+				})),
+			)
+			Expect(observedEvents()).To(ContainElement(`Normal PasswordUpdated synced password for user "imported-user"`))
+		})
+
 		It("re-reconciles the user when the import secret's password is updated", func() {
 			callsBefore := fakeRabbitMQClient.PutUserCallCount()
 
@@ -627,6 +638,8 @@ var _ = Describe("UserController", func() {
 			latestIdx := fakeRabbitMQClient.PutUserCallCount() - 1
 			username, _ := fakeRabbitMQClient.PutUserArgsForCall(latestIdx)
 			Expect(username).To(Equal("imported-user"))
+
+			Expect(observedEvents()).To(ContainElement(`Normal PasswordUpdated synced password for user "imported-user"`))
 		})
 	})
 
