@@ -59,7 +59,6 @@ ENVTEST ?= $(LOCALBIN)/setup-envtest
 GOLANGCI_LINT ?= $(LOCALBIN)/golangci-lint
 YTT ?= $(LOCALBIN)/ytt
 CMCTL ?= $(LOCALBIN)/cmctl
-CRD_REF_DOCS ?= $(LOCALBIN)/crd-ref-docs
 COUNTERFEITER ?= $(LOCALBIN)/counterfeiter
 GINKGO_CLI ?= $(LOCALBIN)/ginkgo
 YJ ?= $(LOCALBIN)/yj
@@ -74,7 +73,6 @@ GOLANGCI_LINT_VERSION ?= v2.12.2
 YTT_VERSION ?= v0.55.1
 CMCTL_VERSION ?= v2.5.0
 CERT_MANAGER_VERSION ?= v1.15.1
-CRD_REF_DOCS_VERSION ?= v0.3.0
 COUNTERFEITER_VERSION ?= v6.12.2
 GINKGO_VERSION ?= v2.32.0
 YJ_VERSION ?= v5.1.0
@@ -153,10 +151,6 @@ golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
 $(GOLANGCI_LINT): $(LOCALBIN)
 	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/v2/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
 
-.PHONY: crd-ref-docs
-crd-ref-docs: $(CRD_REF_DOCS) ## Download crd-ref-docs locally if necessary.
-$(CRD_REF_DOCS): $(LOCALBIN)
-	$(call go-install-tool,$(CRD_REF_DOCS),github.com/elastic/crd-ref-docs,$(CRD_REF_DOCS_VERSION))
 
 .PHONY: counterfeiter
 counterfeiter: $(COUNTERFEITER) ## Download counterfeiter locally if necessary.
@@ -333,15 +327,6 @@ uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified 
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects
 	"$(CONTROLLER_GEN)" rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
-# Generate API reference documentation
-.PHONY: api-reference
-api-reference: crd-ref-docs ## Generate API reference documentation
-	"$(CRD_REF_DOCS)" \
-		--source-path ./api \
-		--config ./docs/api/autogen/config.yaml \
-		--templates-dir ./docs/api/autogen/templates \
-		--output-path ./docs/api/rabbitmq.com.ref.asciidoc \
-		--max-depth 30
 
 # Run go fmt against code
 .PHONY: fmt
@@ -360,7 +345,7 @@ vuln: govulncheck ## Run govulncheck
 
 # Generate code & docs
 .PHONY: generate
-generate: controller-gen api-reference ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations
+generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations
 	"$(CONTROLLER_GEN)" object:headerFile="hack/NOTICE.go.txt" paths="./..."
 
 .PHONY: lint
