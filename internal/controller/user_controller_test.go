@@ -3,6 +3,8 @@ package controller_test
 import (
 	"bytes"
 	"context"
+	"crypto/sha512"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -630,16 +632,53 @@ var _ = Describe("UserController", func() {
 			importSecret.Data["password"] = []byte("rotated-password")
 			Expect(k8sClient.Update(ctx, importSecret)).To(Succeed())
 
-			Eventually(func() int {
-				return fakeRabbitMQClient.PutUserCallCount()
-			}).Within(statusEventsUpdateTimeout).WithPolling(time.Second).
-				Should(BeNumerically(">", callsBefore))
-
-			latestIdx := fakeRabbitMQClient.PutUserCallCount() - 1
-			username, _ := fakeRabbitMQClient.PutUserArgsForCall(latestIdx)
+			// Poll until the *latest* PutUser call carries the rotated password: earlier
+			// calls above callsBefore may still reflect a stale, pre-rotation cache read.
+			var username string
+			Eventually(func() bool {
+				idx := fakeRabbitMQClient.PutUserCallCount() - 1
+				if idx < callsBefore {
+					return false
+				}
+				var settings rabbithole.UserSettings
+				username, settings = fakeRabbitMQClient.PutUserArgsForCall(idx)
+				return passwordMatchesHash(settings.PasswordHash, "rotated-password")
+			}).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(BeTrue())
 			Expect(username).To(Equal("imported-user"))
 
 			Expect(observedEvents()).To(ContainElement(`Normal PasswordUpdated synced password for user "imported-user"`))
+		})
+	})
+
+	When("the import secret is missing", func() {
+		const missingSecretName = "missing-import-secret"
+
+		BeforeEach(func() {
+			userName = "test-import-missing-secret"
+			initialiseUser()
+			user.Labels = map[string]string{"test": userName}
+			user.Spec.ImportCredentialsSecret = &corev1.LocalObjectReference{Name: missingSecretName}
+			initialiseManager("test", userName)
+		})
+
+		JustBeforeEach(func() {
+			Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+		})
+
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
+		})
+
+		It("emits a Warning event and sets a False status condition", func() {
+			Eventually(objectStatus).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+				ContainElement(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(topology.ConditionType("Ready")),
+					"Status": Equal(corev1.ConditionFalse),
+				})),
+			)
+			Eventually(observedEvents).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+				ContainElement("Warning FailedDeclare failed to declare user"),
+			)
 		})
 	})
 
@@ -704,3 +743,16 @@ var _ = Describe("UserController", func() {
 		))
 	})
 })
+
+// passwordMatchesHash verifies a base64-encoded, salted SHA-512 password hash
+// (as produced by rabbithole.Base64EncodedSaltedPasswordHashSHA512) against a
+// plaintext password. See https://www.rabbitmq.com/passwords.html#computing-password-hash.
+func passwordMatchesHash(base64Hash, password string) bool {
+	decoded, err := base64.StdEncoding.DecodeString(base64Hash)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(len(decoded)).To(BeNumerically(">", sha512.Size))
+
+	salt, saltedHash := decoded[:len(decoded)-sha512.Size], decoded[len(decoded)-sha512.Size:]
+	expected := sha512.Sum512(append(append([]byte{}, salt...), []byte(password)...))
+	return bytes.Equal(saltedHash, expected[:])
+}
