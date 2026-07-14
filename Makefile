@@ -195,7 +195,7 @@ kind: $(LOCALBIN) ## Download kind locally if necessary
 	$(LOCALBIN)/kind version
 
 .PHONY: install-tools
-install-tools: controller-gen envtest golangci-lint crd-ref-docs counterfeiter ginkgo-cli yj govulncheck openapi-gen ## Install all tooling required to configure and build this repo
+install-tools: controller-gen envtest golangci-lint counterfeiter ginkgo-cli yj govulncheck openapi-gen ## Install all tooling required to configure and build this repo
 	@echo "All tools installed successfully"
 
 ##@ Testing
