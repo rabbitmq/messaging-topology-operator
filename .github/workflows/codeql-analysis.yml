@@ -26,7 +26,7 @@ jobs:
     # Manually install the right version of Go
     # See https://github.com/github/codeql-action/issues/1842 and https://github.com/github/codeql/issues/13992
     - name: Install Go
-      uses: actions/setup-go@v6
+      uses: actions/setup-go@v7
       with:
         go-version-file: go.mod
 
