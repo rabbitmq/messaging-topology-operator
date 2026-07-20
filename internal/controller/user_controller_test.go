@@ -580,6 +580,7 @@ var _ = Describe("UserController", func() {
 		BeforeEach(func() {
 			userName = "test-import-watch"
 			fakeRabbitMQClient.PutUserReturns(&http.Response{Status: "201 Created", StatusCode: http.StatusCreated}, nil)
+			fakeRabbitMQClient.DeleteUserReturns(&http.Response{Status: "204 No Content", StatusCode: http.StatusNoContent}, nil)
 			initialiseUser()
 			user.Labels = map[string]string{"test": userName}
 			user.Spec.ImportCredentialsSecret = &corev1.LocalObjectReference{Name: importSecretName}
@@ -608,6 +609,9 @@ var _ = Describe("UserController", func() {
 
 		AfterEach(func() {
 			Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
+			Eventually(func() bool {
+				return apierrors.IsNotFound(k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{}))
+			}).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(BeTrue())
 			Expect(k8sClient.Delete(ctx, &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Name: importSecretName, Namespace: userNamespace},
 			})).To(Succeed())
