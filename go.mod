@@ -4,7 +4,7 @@ go 1.26.5
 
 require (
 	github.com/cloudflare/cfssl v1.6.5
-	github.com/go-logr/logr v1.4.3
+	github.com/go-logr/logr v1.4.4
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/michaelklishin/rabbit-hole/v3 v3.5.0
