@@ -191,8 +191,8 @@ github.com/prometheus/procfs v0.21.1 h1:GljZCt+zSTS+NZq88cyQ1LjZ+RCHp3uVuabBWA5+
 github.com/prometheus/procfs v0.21.1/go.mod h1:aB55Cww9pdSJVHk0hUf0inxWyyjPogFIjmHKYgMKmtY=
 github.com/rabbitmq/amqp091-go v1.12.0 h1:V0v14Iqfs+MwHWihJt/nGS5Ulu0vw572b2Co3mwunkI=
 github.com/rabbitmq/amqp091-go v1.12.0/go.mod h1:Hy4jKW5kQART1u+JkDTF9YYOQUHXqMuhrgxOEeS7G4o=
-github.com/rabbitmq/cluster-operator/v2 v2.22.2 h1:fdUhHBGQrlu/8uu3+uQVuMVU5RGUP+Lh04Wjx9dJGxY=
-github.com/rabbitmq/cluster-operator/v2 v2.22.2/go.mod h1:zLjSgcURE61GIiWLWaA4Wl47gcD8m99N+6K2sfoiR6U=
+github.com/rabbitmq/cluster-operator/v2 v2.22.3 h1:GB89D2c4Pi1UKDnz7Y+W4NBJOCwbPrT5Rlz04DaEfo4=
+github.com/rabbitmq/cluster-operator/v2 v2.22.3/go.mod h1:zLjSgcURE61GIiWLWaA4Wl47gcD8m99N+6K2sfoiR6U=
 github.com/rogpeppe/go-internal v1.14.1 h1:UQB4HGPB6osV0SQTLymcB4TgvyWu6ZyliaW0tI/otEQ=
 github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7so1lCWt35ZSgc=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
