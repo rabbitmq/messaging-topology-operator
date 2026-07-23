@@ -54,7 +54,6 @@ check_go_version() {
 KUSTOMIZE_VERSION=$(grep '^KUSTOMIZE_VERSION' "$MAKEFILE" | awk -F'= ' '{print $2}')
 CONTROLLER_TOOLS_VERSION=$(grep '^CONTROLLER_TOOLS_VERSION' "$MAKEFILE" | awk -F'= ' '{print $2}')
 GOLANGCI_LINT_VERSION=$(grep '^GOLANGCI_LINT_VERSION' "$MAKEFILE" | awk -F'= ' '{print $2}')
-CRD_REF_DOCS_VERSION=$(grep '^CRD_REF_DOCS_VERSION' "$MAKEFILE" | awk -F'= ' '{print $2}')
 COUNTERFEITER_VERSION=$(grep '^COUNTERFEITER_VERSION' "$MAKEFILE" | awk -F'= ' '{print $2}')
 GINKGO_VERSION=$(grep '^GINKGO_VERSION' "$MAKEFILE" | awk -F'= ' '{print $2}')
 YJ_VERSION=$(grep '^YJ_VERSION' "$MAKEFILE" | awk -F'= ' '{print $2}')
@@ -64,7 +63,6 @@ GOVULNCHECK_VERSION=$(grep '^GOVULNCHECK_VERSION' "$MAKEFILE" | awk -F'= ' '{pri
 check_go_version "KUSTOMIZE_VERSION" "sigs.k8s.io/kustomize/kustomize/v5" "$KUSTOMIZE_VERSION" "https://github.com/kubernetes-sigs/kustomize"
 check_go_version "CONTROLLER_TOOLS_VERSION" "sigs.k8s.io/controller-tools" "$CONTROLLER_TOOLS_VERSION" "https://github.com/kubernetes-sigs/controller-tools"
 check_go_version "GOLANGCI_LINT_VERSION" "github.com/golangci/golangci-lint/v2" "$GOLANGCI_LINT_VERSION" "https://github.com/golangci/golangci-lint"
-check_go_version "CRD_REF_DOCS_VERSION" "github.com/elastic/crd-ref-docs" "$CRD_REF_DOCS_VERSION" "https://github.com/elastic/crd-ref-docs"
 check_go_version "COUNTERFEITER_VERSION" "github.com/maxbrunsfeld/counterfeiter/v6" "$COUNTERFEITER_VERSION" "https://github.com/maxbrunsfeld/counterfeiter"
 check_go_version "GINKGO_VERSION" "github.com/onsi/ginkgo/v2" "$GINKGO_VERSION" "https://github.com/onsi/ginkgo"
 check_go_version "YJ_VERSION" "github.com/sclevine/yj/v5" "$YJ_VERSION" "https://github.com/sclevine/yj"
