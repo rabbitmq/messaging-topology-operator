@@ -284,6 +284,16 @@ func main() {
 		}),
 	}
 
+	// rabbitmqclient.ParseReference reads the RabbitmqCluster's management Service by name on
+	// every reconcile. There is no label to scope a Service informer the way there is for
+	// Secret, and caching every Service across every namespace is not acceptable, so reads for
+	// this type bypass the cache entirely and go straight to the API server.
+	managerOpts.Client.Cache = &client.CacheOptions{
+		DisableFor: []client.Object{
+			&corev1.Service{},
+		},
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), managerOpts)
 	if err != nil {
 		log.Error(err, "unable to start manager")
