@@ -73,6 +73,14 @@ func InitializeClient() func() {
 		}
 
 		config := vault.DefaultConfig() // modify for more granular configuration
+		if config.HttpClient != nil {
+			if transport, ok := config.HttpClient.Transport.(*http.Transport); ok &&
+				transport.TLSClientConfig != nil && transport.TLSClientConfig.InsecureSkipVerify {
+				ctrl.LoggerFrom(nil).Info(
+					"WARNING: Vault client TLS verification is disabled: VAULT_SKIP_VERIFY or VAULT_INSECURE set",
+				)
+			}
+		}
 
 		if strings.HasPrefix(vaultURL, "https") {
 			systemCertPool, err := x509.SystemCertPool()
