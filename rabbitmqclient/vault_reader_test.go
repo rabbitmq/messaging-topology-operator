@@ -165,7 +165,7 @@ var _ = Describe("VaultReader", func() {
 
 			It("should have returned an error", func() {
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError("data type assertion failed for Vault secret of type: string and value \"I am not a map\" read from path some/path"))
+				Expect(err).To(MatchError("data type assertion failed for Vault secret of type: string read from path some/path"))
 			})
 		})
 

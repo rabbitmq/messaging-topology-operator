@@ -122,8 +122,7 @@ func (r *UserReconciler) generateCredentials(ctx context.Context, user *topology
 	logger := ctrl.LoggerFrom(ctx)
 
 	var err error
-	msg := fmt.Sprintf("generating/importing credentials for User %s: %#v", user.Name, user)
-	logger.Info(msg)
+	logger.Info("generating/importing credentials for User", "user", user.Name, "namespace", user.Namespace)
 
 	credentials := internal.UserCredentials{}
 
@@ -263,7 +262,7 @@ func (r *UserReconciler) declareWithGeneratedCredentials(ctx context.Context, rm
 	if err != nil {
 		return fmt.Errorf("failed to generate user settings from credential: %w", err)
 	}
-	logger.Info("Generated user settings", "user", user.Name, "settings", userSettings)
+	logger.Info("Generated user settings", "user", user.Name, "username", userSettings.Name, "tags", userSettings.Tags)
 
 	if err := validateResponse(rmqc.PutUser(userSettings.Name, userSettings)); err != nil {
 		return err
