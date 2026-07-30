@@ -131,7 +131,7 @@ func (vc VaultClient) ReadCredentials(path string) (string, string, error) {
 
 	data, ok := secret.Data["data"].(map[string]any)
 	if !ok {
-		return "", "", fmt.Errorf("data type assertion failed for Vault secret of type: %T and value %#v read from path %s", secret.Data["data"], secret.Data["data"], path)
+		return "", "", fmt.Errorf("data type assertion failed for Vault secret of type: %T read from path %s", secret.Data["data"], path)
 	}
 
 	username, err := getValue("username", data)

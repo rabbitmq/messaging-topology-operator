@@ -51,9 +51,18 @@ func validateResponse(res *http.Response, err error) error {
 	if res.StatusCode >= http.StatusMultipleChoices {
 		body, _ := io.ReadAll(res.Body)
 		_ = res.Body.Close()
-		return fmt.Errorf("request failed with status code %d and body %q", res.StatusCode, body)
+		return &rabbitmqAPIError{statusCode: res.StatusCode, body: body}
 	}
 	return nil
+}
+
+type rabbitmqAPIError struct {
+	statusCode int
+	body       []byte
+}
+
+func (e *rabbitmqAPIError) Error() string {
+	return fmt.Sprintf("RabbitMQ management API request failed with status code %d", e.statusCode)
 }
 
 // ErrNotFound is a custom error
