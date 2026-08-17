@@ -1,0 +1,11 @@
+---
+# Wires Kind nodes' containerd to redirect pulls for localhost:5000 to the
+# kind-registry container over the "kind" Docker network, so images pushed
+# to localhost:5000 on the runner are reachable from inside the cluster.
+# https://kind.sigs.k8s.io/docs/user/local-registry/
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+containerdConfigPatches:
+- |-
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:5000"]
+    endpoint = ["http://kind-registry:5000"]
