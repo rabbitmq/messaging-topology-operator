@@ -34,7 +34,8 @@ func SetupVhostWebhookWithManager(mgr ctrl.Manager) error {
 // Either rabbitmqClusterReference.name or
 // rabbitmqClusterReference.connectionSecret must be provided but not both
 func (v *VhostCustomValidator) ValidateCreate(ctx context.Context, vhost *rabbitmqcomv1beta1.Vhost) (warnings admission.Warnings, err error) {
-	if err := validateSecretLabel(ctx, v.Client, v.APIReader, vhost.Spec.RabbitmqClusterReference.ConnectionSecret, vhost.Namespace); err != nil {
+	connSecretNS := vhost.Spec.RabbitmqClusterReference.ConnectionSecretNamespace(vhost.Namespace)
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, vhost.Spec.RabbitmqClusterReference.ConnectionSecret, connSecretNS); err != nil {
 		return nil, err
 	}
 	return vhost.Spec.RabbitmqClusterReference.ValidateOnCreate(vhost.GroupResource(), vhost.Name)

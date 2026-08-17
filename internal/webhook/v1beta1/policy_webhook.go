@@ -32,7 +32,8 @@ func SetupPolicyWebhookWithManager(mgr ctrl.Manager) error {
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (v *PolicyCustomValidator) ValidateCreate(ctx context.Context, policy *rabbitmqcomv1beta1.Policy) (warnings admission.Warnings, err error) {
-	if err := validateSecretLabel(ctx, v.Client, v.APIReader, policy.Spec.RabbitmqClusterReference.ConnectionSecret, policy.Namespace); err != nil {
+	connSecretNS := policy.Spec.RabbitmqClusterReference.ConnectionSecretNamespace(policy.Namespace)
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, policy.Spec.RabbitmqClusterReference.ConnectionSecret, connSecretNS); err != nil {
 		return nil, err
 	}
 	return policy.Spec.RabbitmqClusterReference.ValidateOnCreate(policy.GroupResource(), policy.Name)

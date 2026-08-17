@@ -108,4 +108,20 @@ var _ = Describe("RabbitmqClusterReference", func() {
 		})
 	})
 
+	Context("ConnectionSecretNamespace", func() {
+		When("Namespace is set on the reference", func() {
+			It("returns the reference's namespace", func() {
+				reference.Namespace = "referenced-ns"
+				Expect(reference.ConnectionSecretNamespace("resource-ns")).To(Equal("referenced-ns"))
+			})
+		})
+
+		When("Namespace is not set on the reference", func() {
+			It("returns the resource's own namespace", func() {
+				reference.Namespace = ""
+				Expect(reference.ConnectionSecretNamespace("resource-ns")).To(Equal("resource-ns"))
+			})
+		})
+	})
+
 })

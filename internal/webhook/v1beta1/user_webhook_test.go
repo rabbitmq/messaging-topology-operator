@@ -212,4 +212,82 @@ var _ = Describe("User Webhook", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
+
+	Context("connectionSecret label enforcement respects rabbitmqClusterReference.namespace", func() {
+		const (
+			resourceNS   = "default"
+			referencedNS = "other-ns"
+		)
+
+		buildUserWithConnectionSecret := func(refNamespace, secretName string) *rabbitmqcomv1beta1.User {
+			return &rabbitmqcomv1beta1.User{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-user", Namespace: resourceNS},
+				Spec: rabbitmqcomv1beta1.UserSpec{
+					RabbitmqClusterReference: rabbitmqcomv1beta1.RabbitmqClusterReference{
+						Namespace:        refNamespace,
+						ConnectionSecret: &corev1.LocalObjectReference{Name: secretName},
+					},
+				},
+			}
+		}
+
+		When("rabbitmqClusterReference.namespace is set", func() {
+			When("the connectionSecret exists in that namespace", func() {
+				It("allows creation", func() {
+					labeledSecret := &corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "conn-secret",
+							Namespace: referencedNS,
+							Labels: map[string]string{
+								rabbitmqcomv1beta1.TopologyOperatorLabel: rabbitmqcomv1beta1.TopologyOperatorLabelValue,
+							},
+						},
+					}
+					cacheClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(labeledSecret).Build()
+					v := UserCustomValidator{Client: cacheClient, APIReader: cacheClient}
+
+					_, err := v.ValidateCreate(ctx, buildUserWithConnectionSecret(referencedNS, "conn-secret"))
+					Expect(err).NotTo(HaveOccurred())
+				})
+			})
+
+			When("the connectionSecret only exists in the resource's own namespace", func() {
+				It("denies creation", func() {
+					secretInWrongNamespace := &corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "conn-secret",
+							Namespace: resourceNS,
+							Labels: map[string]string{
+								rabbitmqcomv1beta1.TopologyOperatorLabel: rabbitmqcomv1beta1.TopologyOperatorLabelValue,
+							},
+						},
+					}
+					cacheClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(secretInWrongNamespace).Build()
+					v := UserCustomValidator{Client: cacheClient, APIReader: cacheClient}
+
+					_, err := v.ValidateCreate(ctx, buildUserWithConnectionSecret(referencedNS, "conn-secret"))
+					Expect(err).To(MatchError(ContainSubstring("not found")))
+				})
+			})
+		})
+
+		When("rabbitmqClusterReference.namespace is unset", func() {
+			It("falls back to looking up the connectionSecret in the resource's own namespace", func() {
+				labeledSecret := &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "conn-secret",
+						Namespace: resourceNS,
+						Labels: map[string]string{
+							rabbitmqcomv1beta1.TopologyOperatorLabel: rabbitmqcomv1beta1.TopologyOperatorLabelValue,
+						},
+					},
+				}
+				cacheClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(labeledSecret).Build()
+				v := UserCustomValidator{Client: cacheClient, APIReader: cacheClient}
+
+				_, err := v.ValidateCreate(ctx, buildUserWithConnectionSecret("", "conn-secret"))
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+	})
 })

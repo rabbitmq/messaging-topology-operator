@@ -52,7 +52,8 @@ type OperatorPolicyCustomValidator struct {
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type OperatorPolicy.
 func (v *OperatorPolicyCustomValidator) ValidateCreate(ctx context.Context, obj *rabbitmqcomv1beta1.OperatorPolicy) (admission.Warnings, error) {
-	if err := validateSecretLabel(ctx, v.Client, v.APIReader, obj.Spec.RabbitmqClusterReference.ConnectionSecret, obj.Namespace); err != nil {
+	connSecretNS := obj.Spec.RabbitmqClusterReference.ConnectionSecretNamespace(obj.Namespace)
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, obj.Spec.RabbitmqClusterReference.ConnectionSecret, connSecretNS); err != nil {
 		return nil, err
 	}
 	return obj.Spec.RabbitmqClusterReference.ValidateOnCreate(obj.GroupResource(), obj.Name)
