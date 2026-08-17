@@ -48,7 +48,14 @@ deployment: $(TMP_DIR)/_all_manifests.yaml $(TMP_DIR) $(OLM_MANIFEST_DIR) ## Ext
 			--data-value operator_image=$(QUAY_IO_OPERATOR_IMAGE) \
 			-f $(REPO_ROOT)/olm/bundle/templates/topology-operator-namespace-scope-overlay.yml \
 		> $(TMP_DIR)/topology-operator.yml
-	yq 'select(.kind =="Deployment") | {"spec": .spec}' $(TMP_DIR)/topology-operator.yml > $(TMP_DIR)/spec.yaml
+	# Unlike the webhook cert, OLM has no built-in mechanism to provision the cert-manager-issued
+	# "metrics-server-cert" secret, so strip that mount here and let the manager fall back to its
+	# self-signed in-memory metrics cert under OLM installs (still served over HTTPS).
+	yq "select(.kind ==\"Deployment\") | \
+		del(.spec.template.spec.volumes[] | select(.name == \"metrics-certs\")) | \
+		del(.spec.template.spec.containers[0].volumeMounts[] | select(.name == \"metrics-certs\")) | \
+		del(.spec.template.spec.containers[0].args[] | select(test(\"^--metrics-cert-path=\"))) | \
+		{\"spec\": .spec}" $(TMP_DIR)/topology-operator.yml > $(TMP_DIR)/spec.yaml
 
 webhooks: $(TMP_DIR)/_all_manifests.yaml $(TMP_DIR) ## Extract Web-hook manifests into a temporary file
 	yq 'select(.kind =="ValidatingWebhookConfiguration") | {"webhooks": .webhooks}' $(TMP_DIR)/_all_manifests.yaml \
