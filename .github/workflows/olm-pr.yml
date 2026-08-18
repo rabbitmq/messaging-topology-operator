@@ -85,10 +85,25 @@ jobs:
           with:
             cluster_name: top-op-testing
             config: olm/kind-config-local-registry.yaml
-            # Pinned because the containerd registry.mirrors patch in
-            # olm/kind-config-local-registry.yaml is version-dependent.
+            # Pinned for reproducibility; the certs.d containerd registry
+            # config (olm/kind-config-local-registry.yaml) needs kind v0.27+
+            # to pick this node image's containerd, which is well past that.
             # https://kind.sigs.k8s.io/docs/user/local-registry/
             node_image: kindest/node:v1.35.1
+
+        - name: Configure node registry mirror
+          # Kind's containerd config_path patch (olm/kind-config-local-registry.yaml)
+          # only enables the certs.d mechanism; each node still needs a hosts.toml
+          # telling containerd where "localhost:5000" actually resolves to.
+          # https://kind.sigs.k8s.io/docs/user/local-registry/
+          run: |
+            REGISTRY_DIR="/etc/containerd/certs.d/${{ env.REGISTRY }}"
+            for node in $(kind get nodes --name top-op-testing); do
+              docker exec "${node}" mkdir -p "${REGISTRY_DIR}"
+              cat <<EOF | docker exec -i "${node}" cp /dev/stdin "${REGISTRY_DIR}/hosts.toml"
+            [host."http://kind-registry:5000"]
+            EOF
+            done
 
         - name: Connect local registry to the Kind network
           run: docker network connect kind kind-registry
