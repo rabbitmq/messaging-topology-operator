@@ -1,0 +1,143 @@
+---
+name: Test OLM bundle (PR)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'olm/**'
+      - 'config/**'
+      - 'api/**'
+      - '.github/workflows/olm-pr.yml'
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    test-olm-bundle-pr:
+        name: Build and test the OLM bundle against a local registry
+        runs-on: ubuntu-latest
+        env:
+          REGISTRY: localhost:5000
+          BUNDLE_VERSION: 0.0.0-pr${{ github.event.pull_request.number }}.${{ github.run_number }}
+          IMAGE: rabbitmq-for-kubernetes-olm-messaging-topology-operator:0.0.0-pr${{ github.event.pull_request.number }}.${{ github.run_number }}
+          CATALOG_IMAGE: test-catalog:pr-${{ github.event.pull_request.number }}.${{ github.run_number }}
+
+        # Fork PRs have no access to quay.io push credentials, so bundle/catalog
+        # images are built and pushed to an ephemeral, unauthenticated registry
+        # instead. Kind nodes reach it via olm/kind-config-local-registry.yaml.
+        # https://docs.docker.com/build/ci/github-actions/local-registry/
+        # https://kind.sigs.k8s.io/docs/user/local-registry/
+        services:
+          registry:
+            image: registry:3
+            ports:
+              - 127.0.0.1:5000:5000
+            # Named explicitly so the Kind containerd mirror config and the
+            # "Connect local registry to the Kind network" step below can
+            # address it by a stable hostname.
+            options: --name kind-registry --restart=always
+
+        steps:
+        - name: Checkout code
+          uses: actions/checkout@v7
+
+        - name: Build and push operator image
+          run: make docker-build docker-push IMG="${{ env.REGISTRY }}/messaging-topology-operator:${{ env.BUNDLE_VERSION }}"
+
+        - name: OpenShift Tools Installer
+          uses: redhat-actions/openshift-tools-installer@v3
+          with:
+            # Using GitHub source because the Openshift mirror source binary file does not match the expected name
+            # pattern. In the mirror, the filename is opm-rhel8, and the Action is expecting the name as opm-${OS}-${ARCH}
+            source: github
+            github_pat: ${{ github.token }}
+            opm: "latest"
+
+        - name: Install Carvel tooling
+          uses: carvel-dev/setup-action@v2.2.0
+          with:
+            token: ${{ github.token }}
+            only: ytt, imgpkg
+
+        - name: Create OLM bundle manifests
+          env:
+            # PR runs build/push the operator image from the PR's own source (see
+            # "Build and push operator image" above), so the CSV exercises the
+            # PR's actual code rather than the last published release.
+            QUAY_IO_OPERATOR_IMAGE: ${{ env.REGISTRY }}/messaging-topology-operator:${{ env.BUNDLE_VERSION }}
+          run: make -C olm/ crds rbac deployment webhooks olm-manifests
+
+        - name: Create OLM Package
+          run: make -C olm/ docker-build docker-push
+
+        - name: Validate bundle manifests
+          run: opm alpha bundle validate --tag ${{ env.REGISTRY }}/${{ env.IMAGE }} --image-builder docker
+
+        - name: Install Go
+          uses: actions/setup-go@v7
+          with:
+            go-version-file: "go.mod"
+
+        - name: Kind Cluster
+          uses: helm/kind-action@v1
+          with:
+            cluster_name: top-op-testing
+            config: olm/kind-config-local-registry.yaml
+            # Pinned for reproducibility; the certs.d containerd registry
+            # config (olm/kind-config-local-registry.yaml) needs kind v0.27+
+            # to pick this node image's containerd, which is well past that.
+            # https://kind.sigs.k8s.io/docs/user/local-registry/
+            node_image: kindest/node:v1.35.1
+
+        - name: Configure node registry mirror
+          # Kind's containerd config_path patch (olm/kind-config-local-registry.yaml)
+          # only enables the certs.d mechanism; each node still needs a hosts.toml
+          # telling containerd where "localhost:5000" actually resolves to.
+          # https://kind.sigs.k8s.io/docs/user/local-registry/
+          run: |
+            REGISTRY_DIR="/etc/containerd/certs.d/${{ env.REGISTRY }}"
+            for node in $(kind get nodes --name top-op-testing); do
+              docker exec "${node}" mkdir -p "${REGISTRY_DIR}"
+              cat <<EOF | docker exec -i "${node}" cp /dev/stdin "${REGISTRY_DIR}/hosts.toml"
+            [host."http://kind-registry:5000"]
+            EOF
+            done
+
+        - name: Connect local registry to the Kind network
+          run: docker network connect kind kind-registry
+
+        - name: Install OLM
+          run: |
+            curl -L https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.32.0/install.sh -o install.sh
+            chmod +x install.sh
+            ./install.sh v0.32.0
+
+        - name: Deploy test catalog
+          run: make -C olm/ catalog-all
+
+        - name: Run Operator System Tests
+          id: system_tests
+          env:
+            ENVIRONMENT: "openshift"
+            K8S_OPERATOR_NAMESPACE: ns-1
+            SYSTEM_TEST_NAMESPACE: ns-1
+            NAMESPACE: ns-1
+          run: |
+            kubectl wait -n "$K8S_OPERATOR_NAMESPACE" sub --all  --for=jsonpath='{.status.state}'=AtLatestKnown --timeout=2m
+            go run github.com/onsi/ginkgo/v2/ginkgo --randomize-all -r --skip "RabbitMQ Cluster with TLS enabled" test/system/
+
+        - name: Collect operator logs on failure
+          if: ${{ !cancelled() && steps.system_tests.outcome == 'failure' }}
+          env:
+            K8S_OPERATOR_NAMESPACE: ns-1
+          run: kubectl logs -n "$K8S_OPERATOR_NAMESPACE" deployment/messaging-topology-operator > topology-operator.log
+
+        - name: Upload topology operator log
+          if: ${{ !cancelled() && steps.system_tests.outcome == 'failure' }}
+          uses: actions/upload-artifact@v7
+          with:
+            path: topology-operator.log
+            name: top-op-log
+            retention-days: 4
