@@ -54,6 +54,15 @@ func (r *RabbitmqClusterReference) ValidateOnCreate(_ schema.GroupResource, _ st
 	return nil, r.validate(*r)
 }
 
+// ConnectionSecretNamespace returns the namespace in which ConnectionSecret should be looked
+// up: Namespace when set, otherwise the referencing resource's own namespace.
+func (r *RabbitmqClusterReference) ConnectionSecretNamespace(resourceNamespace string) string {
+	if r.Namespace == "" {
+		return resourceNamespace
+	}
+	return r.Namespace
+}
+
 func (r *RabbitmqClusterReference) validate(ref RabbitmqClusterReference) error {
 	if ref.Name != "" && ref.ConnectionSecret != nil {
 		return errors.New("invalid RabbitmqClusterReference: do not provide both name and connectionSecret")

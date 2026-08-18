@@ -35,7 +35,8 @@ func (v *UserCustomValidator) ValidateCreate(ctx context.Context, user *rabbitmq
 	if err := validateSecretLabel(ctx, v.Client, v.APIReader, user.Spec.ImportCredentialsSecret, user.Namespace); err != nil {
 		return nil, err
 	}
-	if err := validateSecretLabel(ctx, v.Client, v.APIReader, user.Spec.RabbitmqClusterReference.ConnectionSecret, user.Namespace); err != nil {
+	connSecretNS := user.Spec.RabbitmqClusterReference.ConnectionSecretNamespace(user.Namespace)
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, user.Spec.RabbitmqClusterReference.ConnectionSecret, connSecretNS); err != nil {
 		return nil, err
 	}
 	return user.Spec.RabbitmqClusterReference.ValidateOnCreate(user.GroupResource(), user.Name)

@@ -33,7 +33,8 @@ func SetupExchangeWebhookWithManager(mgr ctrl.Manager) error {
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 // either rabbitmqClusterReference.name or rabbitmqClusterReference.connectionSecret must be provided but not both
 func (v *ExchangeCustomValidator) ValidateCreate(ctx context.Context, ex *rabbitmqcomv1beta1.Exchange) (warnings admission.Warnings, err error) {
-	if err := validateSecretLabel(ctx, v.Client, v.APIReader, ex.Spec.RabbitmqClusterReference.ConnectionSecret, ex.Namespace); err != nil {
+	connSecretNS := ex.Spec.RabbitmqClusterReference.ConnectionSecretNamespace(ex.Namespace)
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, ex.Spec.RabbitmqClusterReference.ConnectionSecret, connSecretNS); err != nil {
 		return nil, err
 	}
 	return ex.Spec.RabbitmqClusterReference.ValidateOnCreate(ex.GroupResource(), ex.Name)

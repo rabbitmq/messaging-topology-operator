@@ -63,7 +63,8 @@ func (v *PermissionCustomValidator) ValidateCreate(ctx context.Context, obj *rab
 			"cannot specify spec.user and spec.userReference at the same time")
 	}
 
-	if err := validateSecretLabel(ctx, v.Client, v.APIReader, obj.Spec.RabbitmqClusterReference.ConnectionSecret, obj.Namespace); err != nil {
+	connSecretNS := obj.Spec.RabbitmqClusterReference.ConnectionSecretNamespace(obj.Namespace)
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, obj.Spec.RabbitmqClusterReference.ConnectionSecret, connSecretNS); err != nil {
 		return nil, err
 	}
 

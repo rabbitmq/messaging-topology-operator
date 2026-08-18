@@ -61,7 +61,8 @@ func (v *SchemaReplicationCustomValidator) ValidateCreate(ctx context.Context, o
 		return nil, err
 	}
 
-	if err := validateSecretLabel(ctx, v.Client, v.APIReader, obj.Spec.RabbitmqClusterReference.ConnectionSecret, obj.Namespace); err != nil {
+	connSecretNS := obj.Spec.RabbitmqClusterReference.ConnectionSecretNamespace(obj.Namespace)
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, obj.Spec.RabbitmqClusterReference.ConnectionSecret, connSecretNS); err != nil {
 		return nil, err
 	}
 

@@ -42,7 +42,8 @@ func (v *QueueCustomValidator) ValidateCreate(ctx context.Context, inQueue *rabb
 			field.Forbidden(field.NewPath("spec", "durable"),
 				"Quorum queues must have durable set to true"))
 	}
-	if err := validateSecretLabel(ctx, v.Client, v.APIReader, inQueue.Spec.RabbitmqClusterReference.ConnectionSecret, inQueue.Namespace); err != nil {
+	connSecretNS := inQueue.Spec.RabbitmqClusterReference.ConnectionSecretNamespace(inQueue.Namespace)
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, inQueue.Spec.RabbitmqClusterReference.ConnectionSecret, connSecretNS); err != nil {
 		return nil, err
 	}
 	return inQueue.Spec.RabbitmqClusterReference.ValidateOnCreate(inQueue.GroupResource(), inQueue.Name)

@@ -21,7 +21,10 @@ import (
 	. "github.com/onsi/gomega"
 
 	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	// TODO (user): Add any additional imports if needed
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 var _ = Describe("Vhost Webhook", func() {
@@ -35,36 +38,132 @@ var _ = Describe("Vhost Webhook", func() {
 		obj = &rabbitmqcomv1beta1.Vhost{}
 		oldObj = &rabbitmqcomv1beta1.Vhost{}
 		validator = VhostCustomValidator{}
-		Expect(validator).NotTo(BeNil(), "Expected validator to be initialized")
-		Expect(oldObj).NotTo(BeNil(), "Expected oldObj to be initialized")
-		Expect(obj).NotTo(BeNil(), "Expected obj to be initialized")
 	})
 
-	AfterEach(func() {
-		// TODO (user): Add any teardown logic common to all tests
+	Context("structural validation (no k8s client needed)", func() {
+		It("allows creation when only a cluster name is provided", func() {
+			obj = &rabbitmqcomv1beta1.Vhost{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-vhost", Namespace: "default"},
+				Spec: rabbitmqcomv1beta1.VhostSpec{
+					Name: "test-vhost",
+					RabbitmqClusterReference: rabbitmqcomv1beta1.RabbitmqClusterReference{
+						Name: "my-cluster",
+					},
+				},
+			}
+			_, err := validator.ValidateCreate(ctx, obj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("denies creation when both cluster name and connectionSecret are provided", func() {
+			obj = &rabbitmqcomv1beta1.Vhost{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-vhost", Namespace: "default"},
+				Spec: rabbitmqcomv1beta1.VhostSpec{
+					Name: "test-vhost",
+					RabbitmqClusterReference: rabbitmqcomv1beta1.RabbitmqClusterReference{
+						Name:             "my-cluster",
+						ConnectionSecret: &corev1.LocalObjectReference{Name: "conn-secret"},
+					},
+				},
+			}
+			_, err := validator.ValidateCreate(ctx, obj)
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("denies updates to rabbitmqClusterReference", func() {
+			oldObj = &rabbitmqcomv1beta1.Vhost{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-vhost", Namespace: "default"},
+				Spec: rabbitmqcomv1beta1.VhostSpec{
+					Name: "test-vhost",
+					RabbitmqClusterReference: rabbitmqcomv1beta1.RabbitmqClusterReference{
+						Name: "my-cluster",
+					},
+				},
+			}
+			obj = oldObj.DeepCopy()
+			obj.Spec.RabbitmqClusterReference.Name = "other-cluster"
+
+			_, err := validator.ValidateUpdate(ctx, oldObj, obj)
+			Expect(err).To(HaveOccurred())
+		})
 	})
 
-	Context("When creating or updating Vhost under Validating Webhook", func() {
-		// TODO (user): Add logic for validating webhooks
-		// Example:
-		// It("Should deny creation if a required field is missing", func() {
-		//     By("simulating an invalid creation scenario")
-		//     obj.SomeRequiredField = ""
-		//     Expect(validator.ValidateCreate(ctx, obj)).Error().To(HaveOccurred())
-		// })
-		//
-		// It("Should admit creation if all required fields are present", func() {
-		//     By("simulating an invalid creation scenario")
-		//     obj.SomeRequiredField = "valid_value"
-		//     Expect(validator.ValidateCreate(ctx, obj)).To(BeNil())
-		// })
-		//
-		// It("Should validate updates correctly", func() {
-		//     By("simulating a valid update scenario")
-		//     oldObj.SomeRequiredField = "updated_value"
-		//     obj.SomeRequiredField = "updated_value"
-		//     Expect(validator.ValidateUpdate(ctx, oldObj, obj)).To(BeNil())
-		// })
-	})
+	Context("connectionSecret label enforcement respects rabbitmqClusterReference.namespace", func() {
+		const (
+			resourceNS   = "default"
+			referencedNS = "other-ns"
+		)
 
+		buildVhostWithConnectionSecret := func(refNamespace, secretName string) *rabbitmqcomv1beta1.Vhost {
+			return &rabbitmqcomv1beta1.Vhost{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-vhost", Namespace: resourceNS},
+				Spec: rabbitmqcomv1beta1.VhostSpec{
+					Name: "test-vhost",
+					RabbitmqClusterReference: rabbitmqcomv1beta1.RabbitmqClusterReference{
+						Namespace:        refNamespace,
+						ConnectionSecret: &corev1.LocalObjectReference{Name: secretName},
+					},
+				},
+			}
+		}
+
+		When("rabbitmqClusterReference.namespace is set", func() {
+			When("the connectionSecret exists in that namespace", func() {
+				It("allows creation", func() {
+					labeledSecret := &corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "conn-secret",
+							Namespace: referencedNS,
+							Labels: map[string]string{
+								rabbitmqcomv1beta1.TopologyOperatorLabel: rabbitmqcomv1beta1.TopologyOperatorLabelValue,
+							},
+						},
+					}
+					cacheClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(labeledSecret).Build()
+					v := VhostCustomValidator{Client: cacheClient, APIReader: cacheClient}
+
+					_, err := v.ValidateCreate(ctx, buildVhostWithConnectionSecret(referencedNS, "conn-secret"))
+					Expect(err).NotTo(HaveOccurred())
+				})
+			})
+
+			When("the connectionSecret only exists in the resource's own namespace", func() {
+				It("denies creation", func() {
+					secretInWrongNamespace := &corev1.Secret{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "conn-secret",
+							Namespace: resourceNS,
+							Labels: map[string]string{
+								rabbitmqcomv1beta1.TopologyOperatorLabel: rabbitmqcomv1beta1.TopologyOperatorLabelValue,
+							},
+						},
+					}
+					cacheClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(secretInWrongNamespace).Build()
+					v := VhostCustomValidator{Client: cacheClient, APIReader: cacheClient}
+
+					_, err := v.ValidateCreate(ctx, buildVhostWithConnectionSecret(referencedNS, "conn-secret"))
+					Expect(err).To(MatchError(ContainSubstring("not found")))
+				})
+			})
+		})
+
+		When("rabbitmqClusterReference.namespace is unset", func() {
+			It("falls back to looking up the connectionSecret in the resource's own namespace", func() {
+				labeledSecret := &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "conn-secret",
+						Namespace: resourceNS,
+						Labels: map[string]string{
+							rabbitmqcomv1beta1.TopologyOperatorLabel: rabbitmqcomv1beta1.TopologyOperatorLabelValue,
+						},
+					},
+				}
+				cacheClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(labeledSecret).Build()
+				v := VhostCustomValidator{Client: cacheClient, APIReader: cacheClient}
+
+				_, err := v.ValidateCreate(ctx, buildVhostWithConnectionSecret("", "conn-secret"))
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+	})
 })

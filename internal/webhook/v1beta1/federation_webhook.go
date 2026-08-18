@@ -35,7 +35,8 @@ func (v *FederationCustomValidator) ValidateCreate(ctx context.Context, fed *rab
 	if err := validateSecretLabel(ctx, v.Client, v.APIReader, fed.Spec.UriSecret, fed.Namespace); err != nil {
 		return nil, err
 	}
-	if err := validateSecretLabel(ctx, v.Client, v.APIReader, fed.Spec.RabbitmqClusterReference.ConnectionSecret, fed.Namespace); err != nil {
+	connSecretNS := fed.Spec.RabbitmqClusterReference.ConnectionSecretNamespace(fed.Namespace)
+	if err := validateSecretLabel(ctx, v.Client, v.APIReader, fed.Spec.RabbitmqClusterReference.ConnectionSecret, connSecretNS); err != nil {
 		return nil, err
 	}
 	return fed.Spec.RabbitmqClusterReference.ValidateOnCreate(fed.GroupResource(), fed.Name)
