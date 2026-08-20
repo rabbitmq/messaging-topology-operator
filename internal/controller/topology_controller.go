@@ -231,7 +231,7 @@ func (r *TopologyReconciler) getStatusConditions(obj topology.TopologyResource) 
 	if !conditionsValue.IsValid() || conditionsValue.IsZero() {
 		return nil
 	}
-	conditions, ok := conditionsValue.Interface().([]topology.Condition)
+	conditions, ok := reflect.TypeAssert[[]topology.Condition](conditionsValue)
 	if !ok {
 		return nil
 	}
