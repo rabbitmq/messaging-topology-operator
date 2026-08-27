@@ -78,7 +78,7 @@ GINKGO_VERSION ?= v2.32.1
 YJ_VERSION ?= v5.1.0
 GOVULNCHECK_VERSION ?= v1.7.0
 OPENAPI_GEN_VERSION ?= master
-KIND_VERSION ?= v0.32.0
+KIND_VERSION ?= v0.33.0
 
 # Allows flexibility to use other build kits, like nerdctl
 BUILD_KIT ?= docker
