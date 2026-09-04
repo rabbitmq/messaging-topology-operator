@@ -32,7 +32,7 @@ jobs:
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v4.37.8
+      uses: github/codeql-action/init@v4.37.9
       with:
         languages: go
         config-file: .github/codeql/codeql-config.yml
@@ -43,6 +43,6 @@ jobs:
       run: go build -o bin/manager ./cmd
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v4.37.8
+      uses: github/codeql-action/analyze@v4.37.9
       with:
         category: '/language:go'
