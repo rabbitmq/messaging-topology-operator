@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -28,10 +27,8 @@ var _ = Describe("Queue spec", func() {
 		}
 
 		q := Queue{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-queue",
-				Namespace: namespace,
-			},
+			Name:      "test-queue",
+			Namespace: namespace,
 			Spec: QueueSpec{
 				Name: "test-queue",
 				RabbitmqClusterReference: RabbitmqClusterReference{
@@ -50,10 +47,8 @@ var _ = Describe("Queue spec", func() {
 
 	It("creates a queue with configurations", func() {
 		q := Queue{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "random-q",
-				Namespace: namespace,
-			},
+			Name:      "random-q",
+			Namespace: namespace,
 			Spec: QueueSpec{
 				Name:       "test-queue",
 				Vhost:      "/hello",
@@ -89,10 +84,8 @@ var _ = Describe("Queue spec", func() {
 
 	It("creates a queue with non-default DeletionPolicy", func() {
 		q := Queue{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "queue-with-retain-policy",
-				Namespace: namespace,
-			},
+			Name:      "queue-with-retain-policy",
+			Namespace: namespace,
 			Spec: QueueSpec{
 				Name:           "queue-with-retain-policy",
 				DeletionPolicy: "retain",

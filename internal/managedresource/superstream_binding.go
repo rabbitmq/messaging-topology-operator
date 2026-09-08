@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -28,13 +27,11 @@ func (builder *SuperStreamBindingBuilder) partitionSuffix() string {
 
 func (builder *SuperStreamBindingBuilder) Build() (client.Object, error) {
 	return &topology.Binding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      builder.GenerateChildResourceName(builder.partitionSuffix()),
-			Namespace: builder.ObjectOwner.GetNamespace(),
-			Labels: map[string]string{
-				AnnotationSuperStream:           builder.ObjectOwner.GetName(),
-				AnnotationSuperStreamRoutingKey: builder.routingKey,
-			},
+		Name:      builder.GenerateChildResourceName(builder.partitionSuffix()),
+		Namespace: builder.ObjectOwner.GetNamespace(),
+		Labels: map[string]string{
+			AnnotationSuperStream:           builder.ObjectOwner.GetName(),
+			AnnotationSuperStreamRoutingKey: builder.routingKey,
 		},
 	}, nil
 }

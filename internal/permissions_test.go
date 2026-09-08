@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	. "github.com/rabbitmq/messaging-topology-operator/internal"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("GeneratePermissions", func() {
@@ -13,9 +12,7 @@ var _ = Describe("GeneratePermissions", func() {
 
 	BeforeEach(func() {
 		p = &topology.Permission{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "user-permissions",
-			},
+			Name: "user-permissions",
 			Spec: topology.PermissionSpec{
 				User:  "a-user",
 				Vhost: "/new-vhost",

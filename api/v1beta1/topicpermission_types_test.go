@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -18,10 +17,8 @@ var _ = Describe("TopicPermission", func() {
 
 	It("creates a topic permission when username is provided", func() {
 		permission := TopicPermission{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-permission-1",
-				Namespace: namespace,
-			},
+			Name:      "test-permission-1",
+			Namespace: namespace,
 			Spec: TopicPermissionSpec{
 				User:  "test",
 				Vhost: "/test",
@@ -52,10 +49,8 @@ var _ = Describe("TopicPermission", func() {
 
 	It("creates a permission object with user reference is provided", func() {
 		permission := TopicPermission{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "user-ref-permission",
-				Namespace: namespace,
-			},
+			Name:      "user-ref-permission",
+			Namespace: namespace,
 			Spec: TopicPermissionSpec{
 				UserReference: &corev1.LocalObjectReference{
 					Name: "a-created-user",

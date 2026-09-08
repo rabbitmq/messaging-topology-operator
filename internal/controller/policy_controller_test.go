@@ -26,7 +26,6 @@ import (
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -91,10 +90,8 @@ var _ = Describe("policy-controller", func() {
 
 	initialisePolicy := func() {
 		policy = topology.Policy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      policyName,
-				Namespace: policyNamespace,
-			},
+			Name:      policyName,
+			Namespace: policyNamespace,
 			Spec: topology.PolicySpec{
 				Definition: &runtime.RawExtension{
 					Raw: []byte(`{"key":"value"}`),

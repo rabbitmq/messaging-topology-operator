@@ -26,10 +26,8 @@ var _ = Describe("Exchange", func() {
 
 	BeforeEach(func() {
 		exchange = &topology.Exchange{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "exchange-test",
-				Namespace: namespace,
-			},
+			Name:      "exchange-test",
+			Namespace: namespace,
 			Spec: topology.ExchangeSpec{
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: rmq.Name,

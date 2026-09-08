@@ -26,10 +26,8 @@ var _ = Describe("Policy", func() {
 
 	BeforeEach(func() {
 		policy = &topology.Policy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "policy-test",
-				Namespace: namespace,
-			},
+			Name:      "policy-test",
+			Namespace: namespace,
 			Spec: topology.PolicySpec{
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: rmq.Name,

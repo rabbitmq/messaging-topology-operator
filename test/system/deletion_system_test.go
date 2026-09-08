@@ -5,7 +5,6 @@ import (
 
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -30,20 +29,16 @@ var _ = Describe("Deletion", func() {
 		setupTestRabbitmqCluster(k8sClient, targetCluster)
 		targetClusterRef := topology.RabbitmqClusterReference{Name: targetCluster.Name}
 		exchange = topology.Exchange{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "exchange-deletion-test",
-				Namespace: namespace,
-			},
+			Name:      "exchange-deletion-test",
+			Namespace: namespace,
 			Spec: topology.ExchangeSpec{
 				Name:                     "exchange-deletion-test",
 				RabbitmqClusterReference: targetClusterRef,
 			},
 		}
 		policy = topology.Policy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "policy-deletion-test",
-				Namespace: namespace,
-			},
+			Name:      "policy-deletion-test",
+			Namespace: namespace,
 			Spec: topology.PolicySpec{
 				Name:    "policy-deletion-test",
 				Pattern: ".*",
@@ -55,29 +50,23 @@ var _ = Describe("Deletion", func() {
 			},
 		}
 		queue = topology.Queue{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "queue-deletion-test",
-				Namespace: namespace,
-			},
+			Name:      "queue-deletion-test",
+			Namespace: namespace,
 			Spec: topology.QueueSpec{
 				Name:                     "queue-deletion-test",
 				RabbitmqClusterReference: targetClusterRef,
 			},
 		}
 		user = topology.User{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "user-deletion-test",
-				Namespace: namespace,
-			},
+			Name:      "user-deletion-test",
+			Namespace: namespace,
 			Spec: topology.UserSpec{
 				RabbitmqClusterReference: targetClusterRef,
 			},
 		}
 		vhost = topology.Vhost{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "vhost-deletion-test",
-				Namespace: namespace,
-			},
+			Name:      "vhost-deletion-test",
+			Namespace: namespace,
 			Spec: topology.VhostSpec{
 				Name:                     "vhost-deletion-test",
 				RabbitmqClusterReference: targetClusterRef,
@@ -91,7 +80,7 @@ var _ = Describe("Deletion", func() {
 	})
 
 	It("handles the referenced RabbitmqCluster being deleted", func() {
-		Expect(k8sClient.Delete(ctx, &rabbitmqv1beta1.RabbitmqCluster{ObjectMeta: metav1.ObjectMeta{Name: targetCluster.Name, Namespace: targetCluster.Namespace}})).To(Succeed())
+		Expect(k8sClient.Delete(ctx, &rabbitmqv1beta1.RabbitmqCluster{Name: targetCluster.Name, Namespace: targetCluster.Namespace})).To(Succeed())
 		Eventually(func() string {
 			output, _ := kubectl(
 				"-n",

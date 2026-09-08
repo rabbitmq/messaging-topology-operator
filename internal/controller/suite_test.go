@@ -150,15 +150,13 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	for _, n := range namespaces {
-		_, err := clientSet.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: n}}, metav1.CreateOptions{})
+		_, err := clientSet.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{Name: n}, metav1.CreateOptions{})
 		Expect(err).ToNot(HaveOccurred())
 		rmq := rabbitmqv1beta1.RabbitmqCluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "example-rabbit",
-				Namespace: n,
-				Annotations: map[string]string{
-					"rabbitmq.com/topology-allowed-namespaces": "allowed",
-				},
+			Name:      "example-rabbit",
+			Namespace: n,
+			Annotations: map[string]string{
+				"rabbitmq.com/topology-allowed-namespaces": "allowed",
 			},
 			Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
 				TLS: rabbitmqv1beta1.TLSSpec{
@@ -169,12 +167,10 @@ var _ = BeforeSuite(func() {
 		Expect(createRabbitmqClusterResources(client, &rmq)).To(Succeed())
 
 		rmq = rabbitmqv1beta1.RabbitmqCluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "allow-all-rabbit",
-				Namespace: n,
-				Annotations: map[string]string{
-					"rabbitmq.com/topology-allowed-namespaces": "*",
-				},
+			Name:      "allow-all-rabbit",
+			Namespace: n,
+			Annotations: map[string]string{
+				"rabbitmq.com/topology-allowed-namespaces": "*",
 			},
 		}
 		Expect(createRabbitmqClusterResources(client, &rmq)).To(Succeed())
@@ -189,11 +185,9 @@ var _ = BeforeSuite(func() {
 
 	// used in schema-replication-controller test
 	endpointsSecret := corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "endpoints-secret",
-			Namespace: schemaReplicationNamespace,
-		},
-		Type: corev1.SecretTypeOpaque,
+		Name:      "endpoints-secret",
+		Namespace: schemaReplicationNamespace,
+		Type:      corev1.SecretTypeOpaque,
 		Data: map[string][]byte{
 			"username":  []byte("a-random-user"),
 			"password":  []byte("a-random-password"),
@@ -204,11 +198,9 @@ var _ = BeforeSuite(func() {
 
 	// used in federation-controller test
 	federationUriSecret := corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "federation-uri",
-			Namespace: federationNamespace,
-		},
-		Type: corev1.SecretTypeOpaque,
+		Name:      "federation-uri",
+		Namespace: federationNamespace,
+		Type:      corev1.SecretTypeOpaque,
 		Data: map[string][]byte{
 			"uri": []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
 		},
@@ -217,11 +209,9 @@ var _ = BeforeSuite(func() {
 
 	// used in shovel-controller test
 	shovelUriSecret := corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "shovel-uri-secret",
-			Namespace: shovelNamespace,
-		},
-		Type: corev1.SecretTypeOpaque,
+		Name:      "shovel-uri-secret",
+		Namespace: shovelNamespace,
+		Type:      corev1.SecretTypeOpaque,
 		Data: map[string][]byte{
 			"srcUri":  []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
 			"destUri": []byte("amqp://rabbit@rabbit:a-rabbitmq-uri.test.com"),
@@ -265,10 +255,8 @@ func FakeRabbitMQClientFactoryArgsForCall(i int) (map[string]string, bool, *x509
 
 func createRabbitmqClusterResources(client runtimeClient.Client, rabbitmqObj *rabbitmqv1beta1.RabbitmqCluster) error {
 	rmqCreds := corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-user-credentials", rabbitmqObj.Name),
-			Namespace: rabbitmqObj.Namespace,
-		},
+		Name:      fmt.Sprintf("%s-user-credentials", rabbitmqObj.Name),
+		Namespace: rabbitmqObj.Namespace,
 	}
 	err := client.Create(ctx, &rmqCreds)
 	if err != nil {
@@ -276,10 +264,8 @@ func createRabbitmqClusterResources(client runtimeClient.Client, rabbitmqObj *ra
 	}
 
 	rmqSrv := corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      rabbitmqObj.Name,
-			Namespace: rabbitmqObj.Namespace,
-		},
+		Name:      rabbitmqObj.Name,
+		Namespace: rabbitmqObj.Namespace,
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
 				{

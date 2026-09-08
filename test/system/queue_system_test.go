@@ -27,10 +27,8 @@ var _ = Describe("Queue Controller", func() {
 
 	BeforeEach(func() {
 		q = &topology.Queue{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "queue-test",
-				Namespace: namespace,
-			},
+			Name:      "queue-test",
+			Namespace: namespace,
 			Spec: topology.QueueSpec{
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: rmq.Name,
@@ -111,10 +109,8 @@ var _ = Describe("Queue Controller", func() {
 	When("deletion policy is retain", func() {
 		It("deletes k8s resource but keeps the queue in RabbitMQ", func() {
 			queueWithRetain := &topology.Queue{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "retain-policy-test",
-					Namespace: namespace,
-				},
+				Name:      "retain-policy-test",
+				Namespace: namespace,
 				Spec: topology.QueueSpec{
 					Name:           "retain-policy-test",
 					Type:           "classic",

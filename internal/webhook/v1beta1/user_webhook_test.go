@@ -43,7 +43,7 @@ var _ = Describe("User Webhook", func() {
 	Context("structural validation (no k8s client needed)", func() {
 		It("allows creation when only a cluster name is provided", func() {
 			obj = &rabbitmqcomv1beta1.User{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-user", Namespace: "default"},
+				Name: "test-user", Namespace: "default",
 				Spec: rabbitmqcomv1beta1.UserSpec{
 					RabbitmqClusterReference: rabbitmqcomv1beta1.RabbitmqClusterReference{
 						Name: "my-cluster",
@@ -56,7 +56,7 @@ var _ = Describe("User Webhook", func() {
 
 		It("denies creation when both cluster name and connectionSecret are provided", func() {
 			obj = &rabbitmqcomv1beta1.User{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-user", Namespace: "default"},
+				Name: "test-user", Namespace: "default",
 				Spec: rabbitmqcomv1beta1.UserSpec{
 					RabbitmqClusterReference: rabbitmqcomv1beta1.RabbitmqClusterReference{
 						Name:             "my-cluster",
@@ -70,13 +70,13 @@ var _ = Describe("User Webhook", func() {
 
 		It("denies updates that change rabbitmqClusterReference", func() {
 			oldObj = &rabbitmqcomv1beta1.User{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-user", Namespace: "default"},
+				Name: "test-user", Namespace: "default",
 				Spec: rabbitmqcomv1beta1.UserSpec{
 					RabbitmqClusterReference: rabbitmqcomv1beta1.RabbitmqClusterReference{Name: "cluster-a"},
 				},
 			}
 			obj = &rabbitmqcomv1beta1.User{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-user", Namespace: "default"},
+				Name: "test-user", Namespace: "default",
 				Spec: rabbitmqcomv1beta1.UserSpec{
 					RabbitmqClusterReference: rabbitmqcomv1beta1.RabbitmqClusterReference{Name: "cluster-b"},
 				},
@@ -92,7 +92,7 @@ var _ = Describe("User Webhook", func() {
 
 		buildUser := func(importSecretName string) *rabbitmqcomv1beta1.User {
 			return &rabbitmqcomv1beta1.User{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-user", Namespace: testNS},
+				Name: "test-user", Namespace: testNS,
 				Spec: rabbitmqcomv1beta1.UserSpec{
 					RabbitmqClusterReference: rabbitmqcomv1beta1.RabbitmqClusterReference{
 						Name: "my-cluster",
@@ -104,12 +104,10 @@ var _ = Describe("User Webhook", func() {
 
 		It("allows creation when importCredentialsSecret carries the topology operator label", func() {
 			labeledSecret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "labeled-import-secret",
-					Namespace: testNS,
-					Labels: map[string]string{
-						rabbitmqcomv1beta1.TopologyOperatorLabel: rabbitmqcomv1beta1.TopologyOperatorLabelValue,
-					},
+				Name:      "labeled-import-secret",
+				Namespace: testNS,
+				Labels: map[string]string{
+					rabbitmqcomv1beta1.TopologyOperatorLabel: rabbitmqcomv1beta1.TopologyOperatorLabelValue,
 				},
 			}
 			// The cache client finds the labeled secret → validateSecretLabel returns nil.
@@ -122,7 +120,7 @@ var _ = Describe("User Webhook", func() {
 
 		It("denies creation when importCredentialsSecret exists without the topology operator label", func() {
 			unlabeledSecret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: "unlabeled-import-secret", Namespace: testNS},
+				Name: "unlabeled-import-secret", Namespace: testNS,
 			}
 			// The filtered cache has no entry (simulates the label selector filtering it out).
 			// The apiReader finds the secret, confirming it exists but is unlabeled.
@@ -144,14 +142,14 @@ var _ = Describe("User Webhook", func() {
 
 		It("denies update when the new importCredentialsSecret lacks the topology operator label", func() {
 			unlabeledSecret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: "unlabeled-update-secret", Namespace: testNS},
+				Name: "unlabeled-update-secret", Namespace: testNS,
 			}
 			emptyCache := fake.NewClientBuilder().WithScheme(scheme.Scheme).Build()
 			apiReader := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(unlabeledSecret).Build()
 			v := UserCustomValidator{Client: emptyCache, APIReader: apiReader}
 
 			oldObj = &rabbitmqcomv1beta1.User{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-user", Namespace: testNS},
+				Name: "test-user", Namespace: testNS,
 				Spec: rabbitmqcomv1beta1.UserSpec{
 					RabbitmqClusterReference: rabbitmqcomv1beta1.RabbitmqClusterReference{Name: "my-cluster"},
 				},
@@ -167,18 +165,16 @@ var _ = Describe("User Webhook", func() {
 
 			now := metav1.Now()
 			oldObj = &rabbitmqcomv1beta1.User{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-user", Namespace: testNS},
+				Name: "test-user", Namespace: testNS,
 				Spec: rabbitmqcomv1beta1.UserSpec{
 					RabbitmqClusterReference: rabbitmqcomv1beta1.RabbitmqClusterReference{Name: "my-cluster"},
 				},
 			}
 			obj = &rabbitmqcomv1beta1.User{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:              "test-user",
-					Namespace:         testNS,
-					DeletionTimestamp: &now,
-					Finalizers:        []string{"deletion.finalizers.users.rabbitmq.com"},
-				},
+				Name:              "test-user",
+				Namespace:         testNS,
+				DeletionTimestamp: &now,
+				Finalizers:        []string{"deletion.finalizers.users.rabbitmq.com"},
 				Spec: rabbitmqcomv1beta1.UserSpec{
 					RabbitmqClusterReference: rabbitmqcomv1beta1.RabbitmqClusterReference{Name: "my-cluster"},
 					ImportCredentialsSecret:  &corev1.LocalObjectReference{Name: "already-deleted-secret"},
@@ -190,19 +186,17 @@ var _ = Describe("User Webhook", func() {
 
 		It("allows update when the new importCredentialsSecret carries the topology operator label", func() {
 			labeledSecret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "labeled-update-secret",
-					Namespace: testNS,
-					Labels: map[string]string{
-						rabbitmqcomv1beta1.TopologyOperatorLabel: rabbitmqcomv1beta1.TopologyOperatorLabelValue,
-					},
+				Name:      "labeled-update-secret",
+				Namespace: testNS,
+				Labels: map[string]string{
+					rabbitmqcomv1beta1.TopologyOperatorLabel: rabbitmqcomv1beta1.TopologyOperatorLabelValue,
 				},
 			}
 			cacheClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(labeledSecret).Build()
 			v := UserCustomValidator{Client: cacheClient, APIReader: cacheClient}
 
 			oldObj = &rabbitmqcomv1beta1.User{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-user", Namespace: testNS},
+				Name: "test-user", Namespace: testNS,
 				Spec: rabbitmqcomv1beta1.UserSpec{
 					RabbitmqClusterReference: rabbitmqcomv1beta1.RabbitmqClusterReference{Name: "my-cluster"},
 				},
@@ -221,7 +215,7 @@ var _ = Describe("User Webhook", func() {
 
 		buildUserWithConnectionSecret := func(refNamespace, secretName string) *rabbitmqcomv1beta1.User {
 			return &rabbitmqcomv1beta1.User{
-				ObjectMeta: metav1.ObjectMeta{Name: "test-user", Namespace: resourceNS},
+				Name: "test-user", Namespace: resourceNS,
 				Spec: rabbitmqcomv1beta1.UserSpec{
 					RabbitmqClusterReference: rabbitmqcomv1beta1.RabbitmqClusterReference{
 						Namespace:        refNamespace,
@@ -235,12 +229,10 @@ var _ = Describe("User Webhook", func() {
 			When("the connectionSecret exists in that namespace", func() {
 				It("allows creation", func() {
 					labeledSecret := &corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "conn-secret",
-							Namespace: referencedNS,
-							Labels: map[string]string{
-								rabbitmqcomv1beta1.TopologyOperatorLabel: rabbitmqcomv1beta1.TopologyOperatorLabelValue,
-							},
+						Name:      "conn-secret",
+						Namespace: referencedNS,
+						Labels: map[string]string{
+							rabbitmqcomv1beta1.TopologyOperatorLabel: rabbitmqcomv1beta1.TopologyOperatorLabelValue,
 						},
 					}
 					cacheClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(labeledSecret).Build()
@@ -254,12 +246,10 @@ var _ = Describe("User Webhook", func() {
 			When("the connectionSecret only exists in the resource's own namespace", func() {
 				It("denies creation", func() {
 					secretInWrongNamespace := &corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "conn-secret",
-							Namespace: resourceNS,
-							Labels: map[string]string{
-								rabbitmqcomv1beta1.TopologyOperatorLabel: rabbitmqcomv1beta1.TopologyOperatorLabelValue,
-							},
+						Name:      "conn-secret",
+						Namespace: resourceNS,
+						Labels: map[string]string{
+							rabbitmqcomv1beta1.TopologyOperatorLabel: rabbitmqcomv1beta1.TopologyOperatorLabelValue,
 						},
 					}
 					cacheClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(secretInWrongNamespace).Build()
@@ -274,12 +264,10 @@ var _ = Describe("User Webhook", func() {
 		When("rabbitmqClusterReference.namespace is unset", func() {
 			It("falls back to looking up the connectionSecret in the resource's own namespace", func() {
 				labeledSecret := &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "conn-secret",
-						Namespace: resourceNS,
-						Labels: map[string]string{
-							rabbitmqcomv1beta1.TopologyOperatorLabel: rabbitmqcomv1beta1.TopologyOperatorLabelValue,
-						},
+					Name:      "conn-secret",
+					Namespace: resourceNS,
+					Labels: map[string]string{
+						rabbitmqcomv1beta1.TopologyOperatorLabel: rabbitmqcomv1beta1.TopologyOperatorLabelValue,
 					},
 				}
 				cacheClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(labeledSecret).Build()

@@ -7,7 +7,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -19,10 +18,8 @@ var _ = Describe("OperatorPolicy", func() {
 
 	It("creates an operator policy with minimal configurations", func() {
 		policy := OperatorPolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-operator-policy",
-				Namespace: namespace,
-			},
+			Name:      "test-operator-policy",
+			Namespace: namespace,
 			Spec: OperatorPolicySpec{
 				Name:    "test-operator-policy",
 				Pattern: "^some-prefix",
@@ -53,10 +50,8 @@ var _ = Describe("OperatorPolicy", func() {
 
 	It("creates operator policy with configurations", func() {
 		policy := OperatorPolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "random-policy",
-				Namespace: namespace,
-			},
+			Name:      "random-policy",
+			Namespace: namespace,
 			Spec: OperatorPolicySpec{
 				Name:     "test-policy",
 				Vhost:    "/hello",
@@ -93,10 +88,8 @@ var _ = Describe("OperatorPolicy", func() {
 	When("creating a policy with an invalid 'ApplyTo' value", func() {
 		It("fails with validation errors", func() {
 			policy := OperatorPolicy{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "invalid",
-					Namespace: namespace,
-				},
+				Name:      "invalid",
+				Namespace: namespace,
 				Spec: OperatorPolicySpec{
 					Name:    "test-policy",
 					Pattern: "a-queue-name",

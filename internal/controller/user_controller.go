@@ -75,11 +75,9 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.
 	}
 
 	credentialSecret := corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      user.Name + "-user-credentials",
-			Namespace: user.Namespace,
-		},
-		Type: corev1.SecretTypeOpaque,
+		Name:      user.Name + "-user-credentials",
+		Namespace: user.Namespace,
+		Type:      corev1.SecretTypeOpaque,
 		// The format of the generated Secret conforms to the Provisioned Service
 		// type Spec. For more information, see https://k8s-service-bindings.github.io/spec/#provisioned-service.
 		Data: credentialSecretData,
@@ -382,9 +380,8 @@ func (r *UserReconciler) secretToUserRequests(ctx context.Context, obj client.Ob
 
 	// Generated secret: owned by a User CR
 	if owner := metav1.GetControllerOf(secret); owner != nil && owner.Kind == ownerKind {
-		return []reconcile.Request{{NamespacedName: types.NamespacedName{
-			Name: owner.Name, Namespace: secret.Namespace,
-		}}}
+		return []reconcile.Request{{
+			Name: owner.Name, Namespace: secret.Namespace}}
 	}
 
 	// Import secret: find Users referencing it via field index
@@ -398,7 +395,7 @@ func (r *UserReconciler) secretToUserRequests(ctx context.Context, obj client.Ob
 	reqs := make([]reconcile.Request, 0, len(userList.Items))
 	for _, u := range userList.Items {
 		reqs = append(reqs, reconcile.Request{
-			NamespacedName: types.NamespacedName{Name: u.Name, Namespace: u.Namespace},
+			Name: u.Name, Namespace: u.Namespace,
 		})
 	}
 	return reqs

@@ -20,7 +20,6 @@ import (
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -99,8 +98,8 @@ var _ = Describe("TopologyReconciler", func() {
 			}).SetupWithManager(topologyMgr)).To(Succeed())
 
 			queue := &topology.Queue{
-				ObjectMeta: metav1.ObjectMeta{Name: "ab-queue", Namespace: topologyNamespace},
-				Spec:       topology.QueueSpec{RabbitmqClusterReference: commonRabbitmqClusterRef},
+				Name: "ab-queue", Namespace: topologyNamespace,
+				Spec: topology.QueueSpec{RabbitmqClusterReference: commonRabbitmqClusterRef},
 			}
 			fakeRabbitMQClient.DeclareQueueReturns(commonHttpCreatedResponse, nil)
 			fakeRabbitMQClient.DeleteQueueReturns(commonHttpDeletedResponse, nil)
@@ -129,8 +128,8 @@ var _ = Describe("TopologyReconciler", func() {
 			}).SetupWithManager(topologyMgr)).To(Succeed())
 
 			queue := &topology.Queue{
-				ObjectMeta: metav1.ObjectMeta{Name: "bb-queue", Namespace: topologyNamespace},
-				Spec:       topology.QueueSpec{RabbitmqClusterReference: commonRabbitmqClusterRef},
+				Name: "bb-queue", Namespace: topologyNamespace,
+				Spec: topology.QueueSpec{RabbitmqClusterReference: commonRabbitmqClusterRef},
 			}
 			fakeRabbitMQClient.DeclareQueueReturns(commonHttpCreatedResponse, nil)
 			fakeRabbitMQClient.DeleteQueueReturns(commonHttpDeletedResponse, nil)
@@ -160,8 +159,8 @@ var _ = Describe("TopologyReconciler", func() {
 			}).SetupWithManager(topologyMgr)).To(Succeed())
 
 			queue := &topology.Queue{
-				ObjectMeta: metav1.ObjectMeta{Name: "cb-queue", Namespace: topologyNamespace},
-				Spec:       topology.QueueSpec{RabbitmqClusterReference: commonRabbitmqClusterRef},
+				Name: "cb-queue", Namespace: topologyNamespace,
+				Spec: topology.QueueSpec{RabbitmqClusterReference: commonRabbitmqClusterRef},
 			}
 			fakeRabbitMQClient.DeclareQueueReturns(commonHttpCreatedResponse, nil)
 			fakeRabbitMQClient.DeleteQueueReturns(commonHttpDeletedResponse, nil)
@@ -216,13 +215,13 @@ var _ = Describe("TopologyReconciler", func() {
 			setupReconciler()
 
 			cluster = &rabbitmqv1beta1.RabbitmqCluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "scaled-to-zero-rabbit-1", Namespace: topologyNamespace},
-				Spec:       rabbitmqv1beta1.RabbitmqClusterSpec{Replicas: new(int32)},
+				Name: "scaled-to-zero-rabbit-1", Namespace: topologyNamespace,
+				Spec: rabbitmqv1beta1.RabbitmqClusterSpec{Replicas: new(int32)},
 			}
 			Expect(k8sClient.Create(ctx, cluster)).To(Succeed())
 
 			queue = &topology.Queue{
-				ObjectMeta: metav1.ObjectMeta{Name: "scaled-to-zero-queue-1", Namespace: topologyNamespace},
+				Name: "scaled-to-zero-queue-1", Namespace: topologyNamespace,
 				Spec: topology.QueueSpec{RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name:      cluster.Name,
 					Namespace: topologyNamespace,
@@ -244,12 +243,12 @@ var _ = Describe("TopologyReconciler", func() {
 			setupReconciler()
 
 			cluster = &rabbitmqv1beta1.RabbitmqCluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "scaled-to-zero-rabbit-2", Namespace: topologyNamespace},
+				Name: "scaled-to-zero-rabbit-2", Namespace: topologyNamespace,
 			}
 			Expect(createRabbitmqClusterResources(k8sClient, cluster)).To(Succeed())
 
 			queue = &topology.Queue{
-				ObjectMeta: metav1.ObjectMeta{Name: "scaled-to-zero-queue-2", Namespace: topologyNamespace},
+				Name: "scaled-to-zero-queue-2", Namespace: topologyNamespace,
 				Spec: topology.QueueSpec{RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name:      cluster.Name,
 					Namespace: topologyNamespace,
@@ -285,13 +284,13 @@ var _ = Describe("TopologyReconciler", func() {
 			setupReconciler()
 
 			cluster = &rabbitmqv1beta1.RabbitmqCluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "scaled-to-zero-rabbit-3", Namespace: topologyNamespace},
-				Spec:       rabbitmqv1beta1.RabbitmqClusterSpec{Replicas: new(int32)},
+				Name: "scaled-to-zero-rabbit-3", Namespace: topologyNamespace,
+				Spec: rabbitmqv1beta1.RabbitmqClusterSpec{Replicas: new(int32)},
 			}
 			Expect(createRabbitmqClusterResources(k8sClient, cluster)).To(Succeed())
 
 			queue = &topology.Queue{
-				ObjectMeta: metav1.ObjectMeta{Name: "scaled-to-zero-queue-3", Namespace: topologyNamespace},
+				Name: "scaled-to-zero-queue-3", Namespace: topologyNamespace,
 				Spec: topology.QueueSpec{RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name:      cluster.Name,
 					Namespace: topologyNamespace,

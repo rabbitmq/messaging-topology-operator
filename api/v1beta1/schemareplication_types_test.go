@@ -6,17 +6,14 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
 var _ = Describe("schemaReplication spec", func() {
 	It("creates a schemaReplication", func() {
 		replication := SchemaReplication{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "replication",
-				Namespace: "default",
-			},
+			Name:      "replication",
+			Namespace: "default",
 			Spec: SchemaReplicationSpec{
 				RabbitmqClusterReference: RabbitmqClusterReference{
 					Name: "some-cluster",

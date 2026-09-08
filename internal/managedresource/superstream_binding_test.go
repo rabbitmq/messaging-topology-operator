@@ -22,9 +22,9 @@ var _ = Describe("SuperstreamBinding", func() {
 		scheme = runtime.NewScheme()
 		Expect(topology.AddToScheme(scheme)).To(Succeed())
 		Expect(topologyv1alpha1.AddToScheme(scheme)).To(Succeed())
-		superStream = topologyv1alpha1.SuperStream{}
-		superStream.Namespace = "foo"
-		superStream.Name = "foo"
+		superStream = topologyv1alpha1.SuperStream{
+			Namespace: "foo",
+			Name:      "foo"}
 		builder = &managedresource.Builder{
 			ObjectOwner: &superStream,
 			Scheme:      scheme,

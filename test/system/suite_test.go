@@ -16,7 +16,6 @@ import (
 	"testing"
 
 	topologyv1alpha1 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
@@ -118,5 +117,5 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	By("deleting RabbitmqCluster created in system tests")
-	Expect(k8sClient.Delete(context.Background(), &rabbitmqv1beta1.RabbitmqCluster{ObjectMeta: metav1.ObjectMeta{Name: rmq.Name, Namespace: rmq.Namespace}})).ToNot(HaveOccurred())
+	Expect(k8sClient.Delete(context.Background(), &rabbitmqv1beta1.RabbitmqCluster{Name: rmq.Name, Namespace: rmq.Namespace})).ToNot(HaveOccurred())
 })

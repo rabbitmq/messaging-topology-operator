@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -18,10 +17,8 @@ var _ = Describe("Permission spec", func() {
 
 	It("creates a permission with no vhost permission configured", func() {
 		permission := Permission{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-permission-0",
-				Namespace: namespace,
-			},
+			Name:      "test-permission-0",
+			Namespace: namespace,
 			Spec: PermissionSpec{
 				User:        "test",
 				Vhost:       "/test",
@@ -48,10 +45,8 @@ var _ = Describe("Permission spec", func() {
 
 	It("creates a permission with vhost permissions all configured", func() {
 		permission := Permission{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-permission-1",
-				Namespace: namespace,
-			},
+			Name:      "test-permission-1",
+			Namespace: namespace,
 			Spec: PermissionSpec{
 				User:  "test",
 				Vhost: "/test",
@@ -82,10 +77,8 @@ var _ = Describe("Permission spec", func() {
 
 	It("creates a permission object with user reference provided", func() {
 		permission := Permission{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "user-ref-permission",
-				Namespace: namespace,
-			},
+			Name:      "user-ref-permission",
+			Namespace: namespace,
 			Spec: PermissionSpec{
 				UserReference: &corev1.LocalObjectReference{
 					Name: "a-created-user",

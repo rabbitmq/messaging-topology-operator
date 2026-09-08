@@ -4,7 +4,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("GenerationFederationDefinition", func() {
@@ -12,9 +11,7 @@ var _ = Describe("GenerationFederationDefinition", func() {
 
 	BeforeEach(func() {
 		f = &topology.Federation{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "new-federation",
-			},
+			Name: "new-federation",
 			Spec: topology.FederationSpec{
 				Vhost: "/new-vhost",
 				Name:  "new-federation",

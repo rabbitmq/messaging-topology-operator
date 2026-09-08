@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -15,9 +14,7 @@ var _ = Describe("Binding", func() {
 	Context("GenerateBindingInfo", func() {
 		BeforeEach(func() {
 			binding = &topology.Binding{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "exchange",
-				},
+				Name: "exchange",
 				Spec: topology.BindingSpec{
 					Vhost:           "/avhost",
 					Source:          "test-exchange",
@@ -74,9 +71,7 @@ var _ = Describe("Binding", func() {
 	Context("GeneratePropertiesKey", func() {
 		BeforeEach(func() {
 			binding = &topology.Binding{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "exchange",
-				},
+				Name: "exchange",
 				Spec: topology.BindingSpec{
 					Vhost:           "/avhost",
 					Source:          "test-exchange",

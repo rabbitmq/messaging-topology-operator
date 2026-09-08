@@ -25,7 +25,6 @@ import (
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -90,10 +89,8 @@ var _ = Describe("exchange-controller", func() {
 
 	initialiseExchange := func() {
 		exchange = topology.Exchange{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      exchangeName,
-				Namespace: exchangeNamespace,
-			},
+			Name:      exchangeName,
+			Namespace: exchangeNamespace,
 			Spec: topology.ExchangeSpec{
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: "example-rabbit",

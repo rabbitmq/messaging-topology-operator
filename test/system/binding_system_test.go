@@ -27,10 +27,8 @@ var _ = Describe("Binding", func() {
 
 	BeforeEach(func() {
 		exchange = &topology.Exchange{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-exchange",
-				Namespace: namespace,
-			},
+			Name:      "test-exchange",
+			Namespace: namespace,
 			Spec: topology.ExchangeSpec{
 				Name: "test-exchange",
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
@@ -41,10 +39,8 @@ var _ = Describe("Binding", func() {
 
 		Expect(k8sClient.Create(ctx, exchange, &client.CreateOptions{})).To(Succeed())
 		queue = &topology.Queue{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-queue",
-				Namespace: namespace,
-			},
+			Name:      "test-queue",
+			Namespace: namespace,
 			Spec: topology.QueueSpec{
 				Name: "test-queue",
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
@@ -62,10 +58,8 @@ var _ = Describe("Binding", func() {
 		}, 10, 2).Should(Succeed()) // wait for queue to be available; or else binding will fail to create
 
 		binding = &topology.Binding{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "binding-test",
-				Namespace: namespace,
-			},
+			Name:      "binding-test",
+			Namespace: namespace,
 			Spec: topology.BindingSpec{
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: rmq.Name,

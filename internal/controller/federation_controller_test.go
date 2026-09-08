@@ -24,7 +24,6 @@ import (
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -90,10 +89,8 @@ var _ = Describe("federation-controller", func() {
 
 	initialiseFederation := func() {
 		federation = topology.Federation{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      federationName,
-				Namespace: federationNamespace,
-			},
+			Name:      federationName,
+			Namespace: federationNamespace,
 			Spec: topology.FederationSpec{
 				Name:      "my-federation-upstream",
 				Vhost:     "/test",

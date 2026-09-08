@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -25,12 +24,10 @@ func (builder *Builder) SuperStreamExchange(vhost string, rabbitmqCluster *topol
 
 func (builder *SuperStreamExchangeBuilder) Build() (client.Object, error) {
 	return &topology.Exchange{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      builder.GenerateChildResourceName(superStreamExchangeSuffix),
-			Namespace: builder.ObjectOwner.GetNamespace(),
-			Labels: map[string]string{
-				AnnotationSuperStream: builder.ObjectOwner.GetName(),
-			},
+		Name:      builder.GenerateChildResourceName(superStreamExchangeSuffix),
+		Namespace: builder.ObjectOwner.GetNamespace(),
+		Labels: map[string]string{
+			AnnotationSuperStream: builder.ObjectOwner.GetName(),
 		},
 	}, nil
 }

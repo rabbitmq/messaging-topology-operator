@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -30,10 +29,8 @@ var _ = Describe("Federation spec", func() {
 		}
 
 		federation := Federation{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-federation",
-				Namespace: namespace,
-			},
+			Name:      "test-federation",
+			Namespace: namespace,
 			Spec: FederationSpec{
 				Name: "test-federation",
 				UriSecret: &corev1.LocalObjectReference{
@@ -55,10 +52,8 @@ var _ = Describe("Federation spec", func() {
 
 	It("creates a federation with configurations", func() {
 		federation := Federation{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "configured-federation",
-				Namespace: namespace,
-			},
+			Name:      "configured-federation",
+			Namespace: namespace,
 			Spec: FederationSpec{
 				Name:  "configured-federation",
 				Vhost: "/hello",
@@ -109,10 +104,8 @@ var _ = Describe("Federation spec", func() {
 	When("creating a federation with an invalid 'AckMode' value", func() {
 		It("fails with validation errors", func() {
 			federation := Federation{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "invalid-federation",
-					Namespace: namespace,
-				},
+				Name:      "invalid-federation",
+				Namespace: namespace,
 				Spec: FederationSpec{
 					Name: "test-federation",
 					UriSecret: &corev1.LocalObjectReference{
@@ -131,10 +124,8 @@ var _ = Describe("Federation spec", func() {
 
 	It("creates a federation with non-default DeletionPolicy", func() {
 		federation := Federation{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "federation-with-retain-policy",
-				Namespace: namespace,
-			},
+			Name:      "federation-with-retain-policy",
+			Namespace: namespace,
 			Spec: FederationSpec{
 				Name:           "federation-with-retain-policy",
 				DeletionPolicy: "retain",

@@ -25,7 +25,6 @@ import (
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -91,10 +90,8 @@ var _ = Describe("vhost-controller", func() {
 
 	initialiseVhost := func() {
 		vhost = topology.Vhost{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      vhostName,
-				Namespace: vhostNamespace,
-			},
+			Name:      vhostName,
+			Namespace: vhostNamespace,
 			Spec: topology.VhostSpec{
 				Name: vhostName,
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{

@@ -28,10 +28,8 @@ var _ = Describe("vhost", func() {
 
 	BeforeEach(func() {
 		vhost = &topology.Vhost{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test",
-				Namespace: namespace,
-			},
+			Name:      "test",
+			Namespace: namespace,
 			Spec: topology.VhostSpec{
 				Name:             "test",
 				Tags:             []string{"multi_dc_replication"},
@@ -111,10 +109,8 @@ var _ = Describe("vhost", func() {
 	When("deletion policy is retain", func() {
 		It("deletes k8s resource but keeps the vhost in RabbitMQ", func() {
 			vhostWithRetain := &topology.Vhost{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "retain-policy-test",
-					Namespace: namespace,
-				},
+				Name:      "retain-policy-test",
+				Namespace: namespace,
 				Spec: topology.VhostSpec{
 					Name:           "retain-policy-test",
 					DeletionPolicy: "retain",
@@ -156,10 +152,8 @@ var _ = Describe("vhost", func() {
 			connections = 108
 			queues = 212
 			vhostWithLimits = &topology.Vhost{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "vhost-limits-test",
-					Namespace: namespace,
-				},
+				Name:      "vhost-limits-test",
+				Namespace: namespace,
 				Spec: topology.VhostSpec{
 					Name: "vhost-limits-test",
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{

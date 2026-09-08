@@ -28,12 +28,10 @@ var _ = Describe("Shovel", func() {
 
 	BeforeEach(func() {
 		shovelSecret = corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "shovel-uri",
-				Namespace: namespace,
-				Labels: map[string]string{
-					topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
-				},
+			Name:      "shovel-uri",
+			Namespace: namespace,
+			Labels: map[string]string{
+				topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
 			},
 			Type: corev1.SecretTypeOpaque,
 			Data: map[string][]byte{
@@ -44,9 +42,7 @@ var _ = Describe("Shovel", func() {
 		Expect(k8sClient.Create(ctx, &shovelSecret)).To(Succeed())
 
 		shovel = &topology.Shovel{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: namespace,
-			},
+			Namespace: namespace,
 			Spec: topology.ShovelSpec{
 				UriSecret:         &corev1.LocalObjectReference{Name: shovelSecret.Name},
 				SourceDeleteAfter: "never",
@@ -154,10 +150,8 @@ var _ = Describe("Shovel", func() {
 	When("deletion policy is retain", func() {
 		It("deletes k8s resource but keeps the shovel in RabbitMQ", func() {
 			shovelWithRetain := &topology.Shovel{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "retain-policy-test",
-					Namespace: namespace,
-				},
+				Name:      "retain-policy-test",
+				Namespace: namespace,
 				Spec: topology.ShovelSpec{
 					Name:           "retain-policy-test",
 					UriSecret:      &corev1.LocalObjectReference{Name: shovelSecret.Name},

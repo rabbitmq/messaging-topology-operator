@@ -17,7 +17,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/events"
 	clientretry "k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -308,7 +307,7 @@ func (r *TopologyReconciler) rabbitmqClusterToRequests(ctx context.Context, obj 
 		}
 		if ref.Name == cluster.Name && refNamespace == cluster.Namespace {
 			requests = append(requests, reconcile.Request{
-				NamespacedName: types.NamespacedName{Name: res.GetName(), Namespace: res.GetNamespace()},
+				Name: res.GetName(), Namespace: res.GetNamespace(),
 			})
 		}
 	}

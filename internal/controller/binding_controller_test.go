@@ -24,7 +24,6 @@ import (
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -89,10 +88,8 @@ var _ = Describe("bindingController", func() {
 
 	initialiseBinding := func() {
 		binding = topology.Binding{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      bindingName,
-				Namespace: bindingNamespace,
-			},
+			Name:      bindingName,
+			Namespace: bindingNamespace,
 			Spec: topology.BindingSpec{
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: "example-rabbit",

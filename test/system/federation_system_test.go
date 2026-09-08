@@ -26,12 +26,10 @@ var _ = Describe("federation", func() {
 
 	BeforeEach(func() {
 		federationUriSecret = corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "federation-uri",
-				Namespace: namespace,
-				Labels: map[string]string{
-					topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
-				},
+			Name:      "federation-uri",
+			Namespace: namespace,
+			Labels: map[string]string{
+				topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
 			},
 			Type: corev1.SecretTypeOpaque,
 			Data: map[string][]byte{
@@ -41,10 +39,8 @@ var _ = Describe("federation", func() {
 		Expect(k8sClient.Create(ctx, &federationUriSecret)).To(Succeed())
 
 		federation = &topology.Federation{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "federation",
-				Namespace: namespace,
-			},
+			Name:      "federation",
+			Namespace: namespace,
 			Spec: topology.FederationSpec{
 				Name:       "my-upstream",
 				UriSecret:  &corev1.LocalObjectReference{Name: federationUriSecret.Name},
@@ -133,10 +129,8 @@ var _ = Describe("federation", func() {
 	When("deletion policy is retain", func() {
 		It("deletes k8s resource but keeps the federation in RabbitMQ", func() {
 			federationWithRetain := &topology.Federation{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "retain-policy-test",
-					Namespace: namespace,
-				},
+				Name:      "retain-policy-test",
+				Namespace: namespace,
 				Spec: topology.FederationSpec{
 					Name:           "retain-policy-test",
 					UriSecret:      &corev1.LocalObjectReference{Name: federationUriSecret.Name},
