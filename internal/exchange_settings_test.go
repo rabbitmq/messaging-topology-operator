@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -14,9 +13,7 @@ var _ = Describe("GenerateExchangeSettings", func() {
 
 	BeforeEach(func() {
 		e = &topology.Exchange{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "exchange",
-			},
+			Name: "exchange",
 			Spec: topology.ExchangeSpec{
 				Type:       "fanout",
 				Durable:    true,

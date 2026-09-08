@@ -28,10 +28,8 @@ var _ = Describe("Topic Permission", func() {
 
 	BeforeEach(func() {
 		user = &topology.User{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "userabc",
-				Namespace: namespace,
-			},
+			Name:      "userabc",
+			Namespace: namespace,
 			Spec: topology.UserSpec{
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: rmq.Name,
@@ -51,10 +49,8 @@ var _ = Describe("Topic Permission", func() {
 		username = string(generatedSecret.Data["username"])
 
 		exchange = &topology.Exchange{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "exchangeabc",
-				Namespace: namespace,
-			},
+			Name:      "exchangeabc",
+			Namespace: namespace,
 			Spec: topology.ExchangeSpec{
 				Name: "exchangeabc",
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
@@ -65,10 +61,8 @@ var _ = Describe("Topic Permission", func() {
 		Expect(k8sClient.Create(ctx, exchange, &client.CreateOptions{})).To(Succeed())
 
 		topicPermission = &topology.TopicPermission{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-topic-perm",
-				Namespace: namespace,
-			},
+			Name:      "test-topic-perm",
+			Namespace: namespace,
 			Spec: topology.TopicPermissionSpec{
 				Vhost: "/",
 				User:  username,

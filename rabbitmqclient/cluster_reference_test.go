@@ -13,7 +13,6 @@ import (
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -44,10 +43,8 @@ var _ = Describe("ParseReference", func() {
 	When("the RabbitmqCluster is configured without TLS", func() {
 		BeforeEach(func() {
 			existingRabbitMQCluster = &rabbitmqv1beta1.RabbitmqCluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq",
-					Namespace: namespace,
-				},
+				Name:      "rmq",
+				Namespace: namespace,
 				Status: rabbitmqv1beta1.RabbitmqClusterStatus{
 					Binding: &corev1.LocalObjectReference{
 						Name: "rmq-default-user-credentials",
@@ -61,20 +58,16 @@ var _ = Describe("ParseReference", func() {
 				},
 			}
 			existingCredentialSecret = &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq-default-user-credentials",
-					Namespace: namespace,
-				},
+				Name:      "rmq-default-user-credentials",
+				Namespace: namespace,
 				Data: map[string][]byte{
 					"username": []byte(existingRabbitMQUsername),
 					"password": []byte(existingRabbitMQPassword),
 				},
 			}
 			existingService = &corev1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq",
-					Namespace: namespace,
-				},
+				Name:      "rmq",
+				Namespace: namespace,
 				Spec: corev1.ServiceSpec{
 					ClusterIP: "1.2.3.4",
 					Ports: []corev1.ServicePort{
@@ -104,10 +97,8 @@ var _ = Describe("ParseReference", func() {
 		When("RabbitmqCluster does not have status.defaultUser set", func() {
 			BeforeEach(func() {
 				*existingRabbitMQCluster = rabbitmqv1beta1.RabbitmqCluster{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "rmq-incomplete",
-						Namespace: namespace,
-					},
+					Name:      "rmq-incomplete",
+					Namespace: namespace,
 					Status: rabbitmqv1beta1.RabbitmqClusterStatus{
 						Binding: &corev1.LocalObjectReference{
 							Name: "rmq-default-user-credentials",
@@ -136,10 +127,8 @@ var _ = Describe("ParseReference", func() {
 			When("the reference uses a connectionSecret instead of a name", func() {
 				BeforeEach(func() {
 					connectionSecret := &corev1.Secret{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "rmq-connection-info",
-							Namespace: namespace,
-						},
+						Name:      "rmq-connection-info",
+						Namespace: namespace,
 						Data: map[string][]byte{
 							"uri":      []byte("http://10.0.0.0:15672"),
 							"username": []byte("test-user"),
@@ -209,10 +198,8 @@ var _ = Describe("ParseReference", func() {
 
 			BeforeEach(func() {
 				*existingRabbitMQCluster = rabbitmqv1beta1.RabbitmqCluster{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "rmq",
-						Namespace: namespace,
-					},
+					Name:      "rmq",
+					Namespace: namespace,
 					Status: rabbitmqv1beta1.RabbitmqClusterStatus{
 						Binding: &corev1.LocalObjectReference{
 							Name: "rmq-default-user-credentials",
@@ -266,10 +253,8 @@ var _ = Describe("ParseReference", func() {
 			When("RabbitmqCluster does not have status.defaultUser set", func() {
 				BeforeEach(func() {
 					*existingRabbitMQCluster = rabbitmqv1beta1.RabbitmqCluster{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "rmq-vault-incomplete-status",
-							Namespace: namespace,
-						},
+						Name:      "rmq-vault-incomplete-status",
+						Namespace: namespace,
 						Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
 							SecretBackend: rabbitmqv1beta1.SecretBackend{
 								Vault: &rabbitmqv1beta1.VaultSpec{
@@ -297,10 +282,8 @@ var _ = Describe("ParseReference", func() {
 	When("the RabbitmqCluster is configured with only TLS", func() {
 		BeforeEach(func() {
 			existingRabbitMQCluster = &rabbitmqv1beta1.RabbitmqCluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq",
-					Namespace: namespace,
-				},
+				Name:      "rmq",
+				Namespace: namespace,
 				Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
 					TLS: rabbitmqv1beta1.TLSSpec{
 						SecretName:             "a-tls-secret",
@@ -320,20 +303,16 @@ var _ = Describe("ParseReference", func() {
 				},
 			}
 			existingCredentialSecret = &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq-default-user-credentials",
-					Namespace: namespace,
-				},
+				Name:      "rmq-default-user-credentials",
+				Namespace: namespace,
 				Data: map[string][]byte{
 					"username": []byte(existingRabbitMQUsername),
 					"password": []byte(existingRabbitMQPassword),
 				},
 			}
 			existingService = &corev1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq",
-					Namespace: namespace,
-				},
+				Name:      "rmq",
+				Namespace: namespace,
 				Spec: corev1.ServiceSpec{
 					ClusterIP: "1.2.3.4",
 					Ports: []corev1.ServicePort{
@@ -372,10 +351,8 @@ var _ = Describe("ParseReference", func() {
 	When("the RabbitmqCluster is configured with TLS and other listeners are enabled", func() {
 		BeforeEach(func() {
 			existingRabbitMQCluster = &rabbitmqv1beta1.RabbitmqCluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq",
-					Namespace: namespace,
-				},
+				Name:      "rmq",
+				Namespace: namespace,
 				Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
 					TLS: rabbitmqv1beta1.TLSSpec{
 						SecretName:             "a-tls-secret",
@@ -395,20 +372,16 @@ var _ = Describe("ParseReference", func() {
 				},
 			}
 			existingCredentialSecret = &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq-default-user-credentials",
-					Namespace: namespace,
-				},
+				Name:      "rmq-default-user-credentials",
+				Namespace: namespace,
 				Data: map[string][]byte{
 					"username": []byte(existingRabbitMQUsername),
 					"password": []byte(existingRabbitMQPassword),
 				},
 			}
 			existingService = &corev1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq",
-					Namespace: namespace,
-				},
+				Name:      "rmq",
+				Namespace: namespace,
 				Spec: corev1.ServiceSpec{
 					ClusterIP: "1.2.3.4",
 					Ports: []corev1.ServicePort{
@@ -451,10 +424,8 @@ var _ = Describe("ParseReference", func() {
 	When("the RabbitmqCluster is configured with management path_prefix", func() {
 		BeforeEach(func() {
 			existingRabbitMQCluster = &rabbitmqv1beta1.RabbitmqCluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq",
-					Namespace: namespace,
-				},
+				Name:      "rmq",
+				Namespace: namespace,
 				Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
 					Rabbitmq: rabbitmqv1beta1.RabbitmqClusterConfigurationSpec{
 						AdditionalConfig: `
@@ -475,20 +446,16 @@ var _ = Describe("ParseReference", func() {
 				},
 			}
 			existingCredentialSecret = &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq-default-user-credentials",
-					Namespace: namespace,
-				},
+				Name:      "rmq-default-user-credentials",
+				Namespace: namespace,
 				Data: map[string][]byte{
 					"username": []byte(existingRabbitMQUsername),
 					"password": []byte(existingRabbitMQPassword),
 				},
 			}
 			existingService = &corev1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq",
-					Namespace: namespace,
-				},
+				Name:      "rmq",
+				Namespace: namespace,
 				Spec: corev1.ServiceSpec{
 					ClusterIP: "1.2.3.4",
 					Ports: []corev1.ServicePort{
@@ -523,10 +490,8 @@ var _ = Describe("ParseReference", func() {
 		When("uri has no scheme defined", func() {
 			BeforeEach(func() {
 				noSchemeSecret := &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "rmq-connection-info",
-						Namespace: namespace,
-					},
+					Name:      "rmq-connection-info",
+					Namespace: namespace,
 					Data: map[string][]byte{
 						"uri":      []byte("10.0.0.0:15672"),
 						"username": []byte("test-user"),
@@ -561,12 +526,10 @@ var _ = Describe("ParseReference", func() {
 		When("when object is placed in another namespace", func() {
 			BeforeEach(func() {
 				noSchemeSecret := &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "rmq-connection-info",
-						Namespace: namespace,
-						Annotations: map[string]string{
-							"rabbitmq.com/topology-allowed-namespaces": "*",
-						},
+					Name:      "rmq-connection-info",
+					Namespace: namespace,
+					Annotations: map[string]string{
+						"rabbitmq.com/topology-allowed-namespaces": "*",
 					},
 					Data: map[string][]byte{
 						"uri":      []byte("10.0.0.0:15672"),
@@ -603,10 +566,8 @@ var _ = Describe("ParseReference", func() {
 		When("uri sets http as the scheme", func() {
 			BeforeEach(func() {
 				httpSchemeSecret := &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "rmq-connection-info",
-						Namespace: namespace,
-					},
+					Name:      "rmq-connection-info",
+					Namespace: namespace,
 					Data: map[string][]byte{
 						"uri":      []byte("http://10.0.0.0:15672"),
 						"username": []byte("test-user"),
@@ -641,10 +602,8 @@ var _ = Describe("ParseReference", func() {
 		When("uri sets https as the scheme", func() {
 			BeforeEach(func() {
 				httpsSchemeSecret := &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "rmq-connection-info",
-						Namespace: namespace,
-					},
+					Name:      "rmq-connection-info",
+					Namespace: namespace,
 					Data: map[string][]byte{
 						"uri":      []byte("https://10.0.0.0:15671"),
 						"username": []byte("test-user"),
@@ -750,10 +709,8 @@ var _ = Describe("ParseReference", func() {
 	Context("namespace permissions", func() {
 		BeforeEach(func() {
 			existingRabbitMQCluster = &rabbitmqv1beta1.RabbitmqCluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq",
-					Namespace: namespace,
-				},
+				Name:      "rmq",
+				Namespace: namespace,
 				Status: rabbitmqv1beta1.RabbitmqClusterStatus{
 					Binding: &corev1.LocalObjectReference{
 						Name: "rmq-default-user-credentials",
@@ -767,20 +724,16 @@ var _ = Describe("ParseReference", func() {
 				},
 			}
 			existingCredentialSecret = &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq-default-user-credentials",
-					Namespace: namespace,
-				},
+				Name:      "rmq-default-user-credentials",
+				Namespace: namespace,
 				Data: map[string][]byte{
 					"username": []byte(existingRabbitMQUsername),
 					"password": []byte(existingRabbitMQPassword),
 				},
 			}
 			existingService = &corev1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq",
-					Namespace: namespace,
-				},
+				Name:      "rmq",
+				Namespace: namespace,
 				Spec: corev1.ServiceSpec{
 					ClusterIP: "1.2.3.4",
 					Ports: []corev1.ServicePort{
@@ -892,12 +845,10 @@ var _ = Describe("ParseReference", func() {
 	When("the RabbitmqCluster is annotated with connection uri override", func() {
 		BeforeEach(func() {
 			existingRabbitMQCluster = &rabbitmqv1beta1.RabbitmqCluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq",
-					Namespace: namespace,
-					Annotations: map[string]string{
-						uriAnnotationKey: "http://a-rabbitmq-test:2333",
-					},
+				Name:      "rmq",
+				Namespace: namespace,
+				Annotations: map[string]string{
+					uriAnnotationKey: "http://a-rabbitmq-test:2333",
 				},
 				Status: rabbitmqv1beta1.RabbitmqClusterStatus{
 					Binding: &corev1.LocalObjectReference{
@@ -912,20 +863,16 @@ var _ = Describe("ParseReference", func() {
 				},
 			}
 			existingCredentialSecret = &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq-default-user-credentials",
-					Namespace: namespace,
-				},
+				Name:      "rmq-default-user-credentials",
+				Namespace: namespace,
 				Data: map[string][]byte{
 					"username": []byte(existingRabbitMQUsername),
 					"password": []byte(existingRabbitMQPassword),
 				},
 			}
 			existingService = &corev1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rmq",
-					Namespace: namespace,
-				},
+				Name:      "rmq",
+				Namespace: namespace,
 				Spec: corev1.ServiceSpec{
 					ClusterIP: "1.2.3.4",
 					Ports: []corev1.ServicePort{
@@ -959,12 +906,10 @@ var _ = Describe("ParseReference", func() {
 		When("annotated URI has no scheme", func() {
 			BeforeEach(func() {
 				*existingRabbitMQCluster = rabbitmqv1beta1.RabbitmqCluster{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "rmq",
-						Namespace: namespace,
-						Annotations: map[string]string{
-							uriAnnotationKey: "a-rabbitmq-test:7890",
-						},
+					Name:      "rmq",
+					Namespace: namespace,
+					Annotations: map[string]string{
+						uriAnnotationKey: "a-rabbitmq-test:7890",
 					},
 					Status: rabbitmqv1beta1.RabbitmqClusterStatus{
 						Binding: &corev1.LocalObjectReference{
@@ -1001,12 +946,10 @@ var _ = Describe("ParseReference", func() {
 		When("annotated URI has https as scheme", func() {
 			BeforeEach(func() {
 				*existingRabbitMQCluster = rabbitmqv1beta1.RabbitmqCluster{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "rmq",
-						Namespace: namespace,
-						Annotations: map[string]string{
-							uriAnnotationKey: "https://a-rabbitmq-test:2333",
-						},
+					Name:      "rmq",
+					Namespace: namespace,
+					Annotations: map[string]string{
+						uriAnnotationKey: "https://a-rabbitmq-test:2333",
 					},
 					Status: rabbitmqv1beta1.RabbitmqClusterStatus{
 						Binding: &corev1.LocalObjectReference{
@@ -1059,10 +1002,8 @@ var _ = Describe("AllowedNamespace", func() {
 	When("requested namespace matches topology-allowed-namespaces annotation", func() {
 		It("returns true", func() {
 			cluster := &rabbitmqv1beta1.RabbitmqCluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"rabbitmq.com/topology-allowed-namespaces": "test,test0,test1",
-					},
+				Annotations: map[string]string{
+					"rabbitmq.com/topology-allowed-namespaces": "test,test0,test1",
 				},
 			}
 			ref := topology.RabbitmqClusterReference{Name: "a-name"}
@@ -1075,10 +1016,8 @@ var _ = Describe("AllowedNamespace", func() {
 	When("request namespace is not listed in topology-allowed-namespaces annotations", func() {
 		It("returns false", func() {
 			cluster := &rabbitmqv1beta1.RabbitmqCluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"rabbitmq.com/topology-allowed-namespaces": "test,test0,test1",
-					},
+				Annotations: map[string]string{
+					"rabbitmq.com/topology-allowed-namespaces": "test,test0,test1",
 				},
 			}
 			ref := topology.RabbitmqClusterReference{Name: "a-name"}
@@ -1089,10 +1028,8 @@ var _ = Describe("AllowedNamespace", func() {
 	When("topology-allowed-namespaces is set to *", func() {
 		It("returns true", func() {
 			cluster := &rabbitmqv1beta1.RabbitmqCluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"rabbitmq.com/topology-allowed-namespaces": "*",
-					},
+				Annotations: map[string]string{
+					"rabbitmq.com/topology-allowed-namespaces": "*",
 				},
 			}
 			ref := topology.RabbitmqClusterReference{Name: "a-name"}

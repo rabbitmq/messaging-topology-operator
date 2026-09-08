@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -28,13 +27,11 @@ func partitionSuffix(partitionIndex int) string {
 
 func (builder *SuperStreamPartitionBuilder) Build() (client.Object, error) {
 	return &topology.Queue{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      builder.GenerateChildResourceName(partitionSuffix(builder.partitionIndex)),
-			Namespace: builder.ObjectOwner.GetNamespace(),
-			Labels: map[string]string{
-				AnnotationSuperStream:           builder.ObjectOwner.GetName(),
-				AnnotationSuperStreamRoutingKey: builder.routingKey,
-			},
+		Name:      builder.GenerateChildResourceName(partitionSuffix(builder.partitionIndex)),
+		Namespace: builder.ObjectOwner.GetNamespace(),
+		Labels: map[string]string{
+			AnnotationSuperStream:           builder.ObjectOwner.GetName(),
+			AnnotationSuperStreamRoutingKey: builder.routingKey,
 		},
 	}, nil
 }

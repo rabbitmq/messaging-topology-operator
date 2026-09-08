@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -26,10 +25,8 @@ var _ = Describe("Vhost", func() {
 		}
 
 		vhost := Vhost{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-vhost",
-				Namespace: namespace,
-			},
+			Name:      "test-vhost",
+			Namespace: namespace,
 			Spec: VhostSpec{
 				Name: "test-vhost",
 				RabbitmqClusterReference: RabbitmqClusterReference{
@@ -48,10 +45,8 @@ var _ = Describe("Vhost", func() {
 
 	It("creates a vhost with 'tracing' configured", func() {
 		vhost := Vhost{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "random-vhost",
-				Namespace: namespace,
-			},
+			Name:      "random-vhost",
+			Namespace: namespace,
 			Spec: VhostSpec{
 				Name:    "vhost-with-tracing",
 				Tracing: true,
@@ -76,10 +71,8 @@ var _ = Describe("Vhost", func() {
 
 	It("creates a vhost with list of vhost tags configured", func() {
 		vhost := Vhost{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "vhost-with-tags",
-				Namespace: namespace,
-			},
+			Name:      "vhost-with-tags",
+			Namespace: namespace,
 			Spec: VhostSpec{
 				Name: "vhost-with-tags",
 				Tags: []string{"tag1", "tag2", "multi_dc_replication"},
@@ -110,10 +103,8 @@ var _ = Describe("Vhost", func() {
 				connections = 1000
 				queues = 500
 				vhost := Vhost{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "vhost-with-limits",
-						Namespace: namespace,
-					},
+					Name:      "vhost-with-limits",
+					Namespace: namespace,
 					Spec: VhostSpec{
 						Name: "vhost-with-limits",
 						VhostLimits: &VhostLimits{
@@ -144,10 +135,8 @@ var _ = Describe("Vhost", func() {
 		When("No vhost limits are provided", func() {
 			It("Does not set VhostLimits", func() {
 				vhost := Vhost{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "vhost-with-no-provided-limits",
-						Namespace: namespace,
-					},
+					Name:      "vhost-with-no-provided-limits",
+					Namespace: namespace,
 					Spec: VhostSpec{
 						Name: "vhost-with-no-provided-limits",
 						RabbitmqClusterReference: RabbitmqClusterReference{
@@ -174,10 +163,8 @@ var _ = Describe("Vhost", func() {
 			It("Configures those limits and lifts other limits", func() {
 				queues = 800
 				vhost := Vhost{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "vhost-some-limits",
-						Namespace: namespace,
-					},
+					Name:      "vhost-some-limits",
+					Namespace: namespace,
 					Spec: VhostSpec{
 						Name: "vhost-some-limits",
 						VhostLimits: &VhostLimits{
@@ -207,10 +194,8 @@ var _ = Describe("Vhost", func() {
 
 	Context("Default queue types", func() {
 		var qTypeVhost = &Vhost{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "some-vhost",
-				Namespace: namespace,
-			},
+			Name:      "some-vhost",
+			Namespace: namespace,
 			Spec: VhostSpec{
 				Name: "some-vhost",
 				RabbitmqClusterReference: RabbitmqClusterReference{
@@ -242,10 +227,8 @@ var _ = Describe("Vhost", func() {
 
 	It("creates a vhost with non-default DeletionPolicy", func() {
 		vhost := Vhost{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "vhost-with-retain-policy",
-				Namespace: namespace,
-			},
+			Name:      "vhost-with-retain-policy",
+			Namespace: namespace,
 			Spec: VhostSpec{
 				Name:           "vhost-with-retain-policy",
 				DeletionPolicy: "retain",

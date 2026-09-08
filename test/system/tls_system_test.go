@@ -13,7 +13,6 @@ import (
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -55,12 +54,10 @@ var _ = Describe("RabbitMQ Cluster with TLS enabled", func() {
 		user, pass, err := getUsernameAndPassword(ctx, clientSet, targetCluster.Namespace, targetCluster.Name)
 		Expect(err).NotTo(HaveOccurred(), "failed to get user and pass")
 		connectionSecret = &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "uri-secret",
-				Namespace: namespace,
-				Labels: map[string]string{
-					topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
-				},
+			Name:      "uri-secret",
+			Namespace: namespace,
+			Labels: map[string]string{
+				topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
 			},
 			StringData: map[string]string{
 				"username": user,
@@ -107,7 +104,7 @@ var _ = Describe("RabbitMQ Cluster with TLS enabled", func() {
 			)
 			return string(output)
 		}, 90, 10).Should(ContainSubstring("NotFound"))
-		Expect(k8sClient.Delete(ctx, &rabbitmqv1beta1.RabbitmqCluster{ObjectMeta: metav1.ObjectMeta{Name: targetCluster.Name, Namespace: targetCluster.Namespace}})).To(Succeed())
+		Expect(k8sClient.Delete(ctx, &rabbitmqv1beta1.RabbitmqCluster{Name: targetCluster.Name, Namespace: targetCluster.Namespace})).To(Succeed())
 		Eventually(func() string {
 			output, _ := kubectl(
 				"-n",
@@ -118,9 +115,9 @@ var _ = Describe("RabbitMQ Cluster with TLS enabled", func() {
 			)
 			return string(output)
 		}, 90, 10).Should(ContainSubstring("NotFound"))
-		Expect(k8sClient.Delete(ctx, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: connectionSecret.Name, Namespace: targetCluster.Namespace}})).To(Succeed())
-		Expect(k8sClient.Delete(ctx, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: tlsSecretName, Namespace: targetCluster.Namespace}})).To(Succeed())
-		Expect(k8sClient.Delete(ctx, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: tlsSecretName + "-ca", Namespace: targetCluster.Namespace}})).To(Succeed())
+		Expect(k8sClient.Delete(ctx, &corev1.Secret{Name: connectionSecret.Name, Namespace: targetCluster.Namespace})).To(Succeed())
+		Expect(k8sClient.Delete(ctx, &corev1.Secret{Name: tlsSecretName, Namespace: targetCluster.Namespace})).To(Succeed())
+		Expect(k8sClient.Delete(ctx, &corev1.Secret{Name: tlsSecretName + "-ca", Namespace: targetCluster.Namespace})).To(Succeed())
 	})
 
 	It("works", func() {
@@ -128,10 +125,8 @@ var _ = Describe("RabbitMQ Cluster with TLS enabled", func() {
 
 		By("successfully creating object when rabbitmqClusterReference.name is set")
 		policy = topology.Policy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "policy-tls-test",
-				Namespace: namespace,
-			},
+			Name:      "policy-tls-test",
+			Namespace: namespace,
 			Spec: topology.PolicySpec{
 				Name:    "policy-tls-test",
 				Pattern: ".*",
@@ -167,10 +162,8 @@ var _ = Describe("RabbitMQ Cluster with TLS enabled", func() {
 
 		By("successfully creating object when rabbitmqClusterReference.connectionSecret is set")
 		exchange = topology.Exchange{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "tls-test",
-				Namespace: namespace,
-			},
+			Name:      "tls-test",
+			Namespace: namespace,
 			Spec: topology.ExchangeSpec{
 				Name:       "tls-test",
 				Type:       "direct",

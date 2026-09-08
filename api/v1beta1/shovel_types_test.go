@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -19,10 +18,8 @@ var _ = Describe("Shovel spec", func() {
 
 	It("creates a shovel with minimal configurations", func() {
 		shovel := Shovel{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-shovel",
-				Namespace: namespace,
-			},
+			Name:      "test-shovel",
+			Namespace: namespace,
 			Spec: ShovelSpec{
 				Name: "test-shovel",
 				RabbitmqClusterReference: RabbitmqClusterReference{
@@ -46,10 +43,8 @@ var _ = Describe("Shovel spec", func() {
 
 	It("creates shovel with configurations", func() {
 		shovel := Shovel{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-shovel-configurations",
-				Namespace: namespace,
-			},
+			Name:      "test-shovel-configurations",
+			Namespace: namespace,
 			Spec: ShovelSpec{
 				Name:  "test-shovel-configurations",
 				Vhost: "test-vhost",
@@ -132,10 +127,8 @@ var _ = Describe("Shovel spec", func() {
 	When("creating a shovel with an invalid 'AckMode' value", func() {
 		It("fails with validation errors", func() {
 			shovel := Shovel{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "an-invalid-ackmode",
-					Namespace: namespace,
-				},
+				Name:      "an-invalid-ackmode",
+				Namespace: namespace,
 				Spec: ShovelSpec{
 					Name: "an-invalid-ackmode",
 					RabbitmqClusterReference: RabbitmqClusterReference{
@@ -154,10 +147,8 @@ var _ = Describe("Shovel spec", func() {
 	When("creating a shovel with unsupported protocol", func() {
 		It("fails with validation errors", func() {
 			shovel := Shovel{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "an-invalid-destprotocol",
-					Namespace: namespace,
-				},
+				Name:      "an-invalid-destprotocol",
+				Namespace: namespace,
 				Spec: ShovelSpec{
 					Name: "an-invalid-destprotocol",
 					RabbitmqClusterReference: RabbitmqClusterReference{
@@ -175,10 +166,8 @@ var _ = Describe("Shovel spec", func() {
 
 		It("fails with validation errors", func() {
 			shovel := Shovel{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "an-invalid-srcprotocol",
-					Namespace: namespace,
-				},
+				Name:      "an-invalid-srcprotocol",
+				Namespace: namespace,
 				Spec: ShovelSpec{
 					Name: "an-invalid-srcprotocol",
 					RabbitmqClusterReference: RabbitmqClusterReference{
@@ -197,10 +186,8 @@ var _ = Describe("Shovel spec", func() {
 
 	It("creates a shovel with non-default DeletionPolicy", func() {
 		shovel := Shovel{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "shovel-with-retain-policy",
-				Namespace: namespace,
-			},
+			Name:      "shovel-with-retain-policy",
+			Namespace: namespace,
 			Spec: ShovelSpec{
 				Name:           "shovel-with-retain-policy",
 				DeletionPolicy: "retain",

@@ -25,7 +25,6 @@ import (
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -90,10 +89,8 @@ var _ = Describe("queue-controller", func() {
 
 	initialiseQueue := func() {
 		queue = topology.Queue{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      queueName,
-				Namespace: queueNamespace,
-			},
+			Name:      queueName,
+			Namespace: queueNamespace,
 			Spec: topology.QueueSpec{
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: "example-rabbit",

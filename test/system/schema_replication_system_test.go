@@ -6,7 +6,6 @@ import (
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v3"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -30,12 +29,10 @@ var _ = Describe("schema replication", func() {
 
 	BeforeEach(func() {
 		endpointsSecret = corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "endpoints-secret",
-				Namespace: namespace,
-				Labels: map[string]string{
-					topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
-				},
+			Name:      "endpoints-secret",
+			Namespace: namespace,
+			Labels: map[string]string{
+				topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
 			},
 			Type: corev1.SecretTypeOpaque,
 			Data: map[string][]byte{
@@ -45,10 +42,8 @@ var _ = Describe("schema replication", func() {
 		}
 		Expect(k8sClient.Create(ctx, &endpointsSecret, &client.CreateOptions{})).To(Succeed())
 		replication = &topology.SchemaReplication{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "replication",
-				Namespace: namespace,
-			},
+			Name:      "replication",
+			Namespace: namespace,
 			Spec: topology.SchemaReplicationSpec{
 				Endpoints: "abc.endpoints.local:5672,efg.endpoints.local:1234",
 				UpstreamSecret: &corev1.LocalObjectReference{

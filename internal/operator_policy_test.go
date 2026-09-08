@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	. "github.com/rabbitmq/messaging-topology-operator/internal"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -14,9 +13,7 @@ var _ = Describe("GenerateOperatorPolicy", func() {
 
 	BeforeEach(func() {
 		p = &topology.OperatorPolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "new-operatorPolicy",
-			},
+			Name: "new-operatorPolicy",
 			Spec: topology.OperatorPolicySpec{
 				Name:       "new-p",
 				Vhost:      "/new-vhost",

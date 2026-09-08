@@ -25,7 +25,6 @@ import (
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -92,10 +91,8 @@ var _ = Describe("permission-controller", func() {
 
 	initialisePermission := func() {
 		permission = topology.Permission{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      permissionName,
-				Namespace: permissionNamespace,
-			},
+			Name:      permissionName,
+			Namespace: permissionNamespace,
 			Spec: topology.PermissionSpec{
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: "example-rabbit",
@@ -257,11 +254,9 @@ var _ = Describe("permission-controller", func() {
 			// Must use a JustBeforeEach to extract this common behaviour
 			// JustBeforeEach runs AFTER all BeforeEach have completed
 			user = topology.User{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      userName,
-					Namespace: permissionNamespace,
-					Labels:    map[string]string{"test": permissionName},
-				},
+				Name:      userName,
+				Namespace: permissionNamespace,
+				Labels:    map[string]string{"test": permissionName},
 				Spec: topology.UserSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
 						Name:      "example-rabbit",
@@ -270,11 +265,9 @@ var _ = Describe("permission-controller", func() {
 				},
 			}
 			permission = topology.Permission{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      permissionName,
-					Namespace: permissionNamespace,
-					Labels:    map[string]string{"test": permissionName},
-				},
+				Name:      permissionName,
+				Namespace: permissionNamespace,
+				Labels:    map[string]string{"test": permissionName},
 				Spec: topology.PermissionSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
 						Name:      "example-rabbit",
@@ -499,19 +492,15 @@ var _ = Describe("permission-controller", func() {
 			initialiseManager("test", permissionName)
 
 			cluster = &v1beta1.RabbitmqCluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "secret-gone-rabbit",
-					Namespace: permissionNamespace,
-				},
+				Name:      "secret-gone-rabbit",
+				Namespace: permissionNamespace,
 			}
 			Expect(createRabbitmqClusterResources(k8sClient, cluster)).To(Succeed())
 
 			permission = topology.Permission{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      permissionName,
-					Namespace: permissionNamespace,
-					Labels:    map[string]string{"test": permissionName},
-				},
+				Name:      permissionName,
+				Namespace: permissionNamespace,
+				Labels:    map[string]string{"test": permissionName},
 				Spec: topology.PermissionSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{Name: "secret-gone-rabbit"},
 					User:                     "example",
@@ -539,10 +528,9 @@ var _ = Describe("permission-controller", func() {
 
 			// Simulate cluster teardown: default-user secret removed while the cluster lingers.
 			By("deleting the default-user secret")
-			secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+			secret := &corev1.Secret{
 				Name:      "secret-gone-rabbit-user-credentials",
-				Namespace: permissionNamespace,
-			}}
+				Namespace: permissionNamespace}
 			Expect(k8sClient.Delete(ctx, secret)).To(Succeed())
 			// Wait until the manager cache no longer serves the secret, so the delete
 			// reconcile deterministically hits the ParseReference not-found path.

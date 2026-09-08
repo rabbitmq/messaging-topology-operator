@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("GenerateQueueDeleteOptionsQuorum", func() {
@@ -13,9 +12,7 @@ var _ = Describe("GenerateQueueDeleteOptionsQuorum", func() {
 
 	BeforeEach(func() {
 		q = &topology.Queue{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "a-queue",
-			},
+			Name: "a-queue",
 			Spec: topology.QueueSpec{
 				Type:           "quorum",
 				AutoDelete:     false,
@@ -45,9 +42,7 @@ var _ = Describe("GenerateQueueDeleteOptionsClassic", func() {
 
 	BeforeEach(func() {
 		q = &topology.Queue{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "a-queue",
-			},
+			Name: "a-queue",
 			Spec: topology.QueueSpec{
 				Type:           "classic",
 				AutoDelete:     false,

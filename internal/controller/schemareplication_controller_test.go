@@ -24,7 +24,6 @@ import (
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -88,10 +87,8 @@ var _ = Describe("schema-replication-controller", func() {
 
 	JustBeforeEach(func() {
 		replication = topology.SchemaReplication{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      replicationName,
-				Namespace: schemaReplicationNamespace,
-			},
+			Name:      replicationName,
+			Namespace: schemaReplicationNamespace,
 			Spec: topology.SchemaReplicationSpec{
 				UpstreamSecret: &corev1.LocalObjectReference{
 					Name: "endpoints-secret", // created in 'BeforeSuite'
@@ -242,10 +239,8 @@ var _ = Describe("schema-replication-controller", func() {
 		JustBeforeEach(func() {
 			replicationName = "vault"
 			replication = topology.SchemaReplication{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      replicationName,
-					Namespace: schemaReplicationNamespace,
-				},
+				Name:      replicationName,
+				Namespace: schemaReplicationNamespace,
 				Spec: topology.SchemaReplicationSpec{
 					SecretBackend: topology.SecretBackend{Vault: &topology.VaultSpec{SecretPath: "rabbitmq"}},
 					Endpoints:     "test:12345",

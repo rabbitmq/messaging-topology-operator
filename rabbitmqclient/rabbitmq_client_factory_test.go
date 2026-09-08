@@ -15,7 +15,6 @@ import (
 	"github.com/onsi/gomega/ghttp"
 	rabbitmqv1beta1 "github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("ParseReference", func() {
@@ -66,10 +65,8 @@ var _ = Describe("ParseReference", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				existingRabbitMQCluster = &rabbitmqv1beta1.RabbitmqCluster{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "rmq",
-						Namespace: "rabbitmq-system",
-					},
+					Name:      "rmq",
+					Namespace: "rabbitmq-system",
 					Status: rabbitmqv1beta1.RabbitmqClusterStatus{
 						Binding: &corev1.LocalObjectReference{
 							Name: "rmq-default-user-credentials",
@@ -83,10 +80,8 @@ var _ = Describe("ParseReference", func() {
 					},
 				}
 				existingService = &corev1.Service{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "rmq-service",
-						Namespace: "rabbitmq-system",
-					},
+					Name:      "rmq-service",
+					Namespace: "rabbitmq-system",
 					Spec: corev1.ServiceSpec{
 						ClusterIP: fakeRabbitMQURL.Hostname(),
 						Ports: []corev1.ServicePort{
@@ -125,10 +120,8 @@ var _ = Describe("ParseReference", func() {
 				caCertBytes, err = os.ReadFile(caCertPath)
 				Expect(err).NotTo(HaveOccurred())
 				existingRabbitMQCluster = &rabbitmqv1beta1.RabbitmqCluster{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "rmq",
-						Namespace: "rabbitmq-system",
-					},
+					Name:      "rmq",
+					Namespace: "rabbitmq-system",
 					Status: rabbitmqv1beta1.RabbitmqClusterStatus{
 						Binding: &corev1.LocalObjectReference{
 							Name: "rmq-default-user-credentials",
@@ -142,10 +135,8 @@ var _ = Describe("ParseReference", func() {
 					},
 				}
 				existingService = &corev1.Service{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "rmq-service",
-						Namespace: "rabbitmq-system",
-					},
+					Name:      "rmq-service",
+					Namespace: "rabbitmq-system",
 					Spec: corev1.ServiceSpec{
 						ClusterIP: fakeRabbitMQURL.Hostname(),
 						Ports: []corev1.ServicePort{
@@ -157,11 +148,9 @@ var _ = Describe("ParseReference", func() {
 					},
 				}
 				existingCertSecret := &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "tls-certs",
-						Namespace: "rabbitmq-system",
-					},
-					Type: corev1.SecretTypeTLS,
+					Name:      "tls-certs",
+					Namespace: "rabbitmq-system",
+					Type:      corev1.SecretTypeTLS,
 					Data: map[string][]byte{
 						corev1.TLSCertKey:       certBytes,
 						corev1.TLSPrivateKeyKey: keyBytes,

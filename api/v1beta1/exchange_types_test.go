@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -29,10 +28,8 @@ var _ = Describe("Exchange spec", func() {
 		}
 
 		exchange := Exchange{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-exchange",
-				Namespace: namespace,
-			},
+			Name:      "test-exchange",
+			Namespace: namespace,
 			Spec: ExchangeSpec{
 				Name: "test-exchange",
 				RabbitmqClusterReference: RabbitmqClusterReference{
@@ -51,10 +48,8 @@ var _ = Describe("Exchange spec", func() {
 
 	It("creates a exchange with configurations", func() {
 		exchange := Exchange{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "random-exchange",
-				Namespace: namespace,
-			},
+			Name:      "random-exchange",
+			Namespace: namespace,
 			Spec: ExchangeSpec{
 				Name:       "test-exchange",
 				Vhost:      "/hello",

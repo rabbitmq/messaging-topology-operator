@@ -7,16 +7,13 @@ import (
 	. "github.com/onsi/gomega"
 	rabbitmqcomv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 var _ = Describe("policy webhook", func() {
 	var (
 		policy = rabbitmqcomv1beta1.OperatorPolicy{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "test",
-			},
+			Name: "test",
 			Spec: rabbitmqcomv1beta1.OperatorPolicySpec{
 				Name:     "test",
 				Vhost:    "/test",
@@ -75,9 +72,7 @@ var _ = Describe("policy webhook", func() {
 
 		It("does not allow updates on rabbitmqClusterReference.connectionSecret", func() {
 			connectionScr := rabbitmqcomv1beta1.OperatorPolicy{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test",
-				},
+				Name: "test",
 				Spec: rabbitmqcomv1beta1.OperatorPolicySpec{
 					Name:     "test",
 					Vhost:    "/test",

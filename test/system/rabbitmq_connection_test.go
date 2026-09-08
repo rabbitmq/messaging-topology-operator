@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -27,12 +26,10 @@ var _ = Describe("RabbitMQ connection using provided connection secret", func() 
 		Expect(err).NotTo(HaveOccurred(), "failed to get user and pass")
 
 		secret = &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "uri-secret",
-				Namespace: namespace,
-				Labels: map[string]string{
-					topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
-				},
+			Name:      "uri-secret",
+			Namespace: namespace,
+			Labels: map[string]string{
+				topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
 			},
 			StringData: map[string]string{
 				"username": user,
@@ -50,10 +47,8 @@ var _ = Describe("RabbitMQ connection using provided connection secret", func() 
 	It("succeeds creating an object in a RabbitMQ cluster configured with connection URI", func() {
 		By("declaring queue")
 		q = &topology.Queue{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "connection-test",
-				Namespace: namespace,
-			},
+			Name:      "connection-test",
+			Namespace: namespace,
 			Spec: topology.QueueSpec{
 				Name: "connection-test",
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{

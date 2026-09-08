@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -25,10 +24,8 @@ var _ = Describe("Binding spec", func() {
 		}
 
 		binding := Binding{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-binding",
-				Namespace: namespace,
-			},
+			Name:      "test-binding",
+			Namespace: namespace,
 			Spec: BindingSpec{
 				RabbitmqClusterReference: RabbitmqClusterReference{
 					Name: "some-cluster",
@@ -46,10 +43,8 @@ var _ = Describe("Binding spec", func() {
 
 	It("creates a binding with configurations", func() {
 		binding := Binding{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "random-binding",
-				Namespace: namespace,
-			},
+			Name:      "random-binding",
+			Namespace: namespace,
 			Spec: BindingSpec{
 				Vhost:           "/avhost",
 				Source:          "anexchange",

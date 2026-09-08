@@ -30,10 +30,8 @@ var _ = Describe("Users", func() {
 	When("relying on the operator to generate a username and password", func() {
 		BeforeEach(func() {
 			user = &topology.User{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user",
-					Namespace: namespace,
-				},
+				Name:      "user",
+				Namespace: namespace,
 				Spec: topology.UserSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
 						Name: rmq.Name,
@@ -151,12 +149,10 @@ var _ = Describe("Users", func() {
 		var credentialSecret corev1.Secret
 		BeforeEach(func() {
 			credentialSecret = corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "credential-list-secret",
-					Namespace: namespace,
-					Labels: map[string]string{
-						topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
-					},
+				Name:      "credential-list-secret",
+				Namespace: namespace,
+				Labels: map[string]string{
+					topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
 				},
 				Type: corev1.SecretTypeOpaque,
 				Data: map[string][]byte{
@@ -167,10 +163,8 @@ var _ = Describe("Users", func() {
 			}
 			Expect(k8sClient.Create(ctx, &credentialSecret, &client.CreateOptions{})).To(Succeed())
 			user = &topology.User{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-2",
-					Namespace: namespace,
-				},
+				Name:      "user-2",
+				Namespace: namespace,
 				Spec: topology.UserSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
 						Name: rmq.Name,
@@ -227,12 +221,10 @@ var _ = Describe("Users", func() {
 		var credentialSecret corev1.Secret
 		BeforeEach(func() {
 			credentialSecret = corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "credential-list-secret",
-					Namespace: namespace,
-					Labels: map[string]string{
-						topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
-					},
+				Name:      "credential-list-secret",
+				Namespace: namespace,
+				Labels: map[string]string{
+					topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
 				},
 				Type: corev1.SecretTypeOpaque,
 				Data: map[string][]byte{
@@ -244,10 +236,8 @@ var _ = Describe("Users", func() {
 			}
 			Expect(k8sClient.Create(ctx, &credentialSecret, &client.CreateOptions{})).To(Succeed())
 			user = &topology.User{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-4",
-					Namespace: namespace,
-				},
+				Name:      "user-4",
+				Namespace: namespace,
 				Spec: topology.UserSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
 						Name: rmq.Name,
@@ -305,12 +295,10 @@ var _ = Describe("Users", func() {
 		var credentialSecret corev1.Secret
 		BeforeEach(func() {
 			credentialSecret = corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "credential-list-secret",
-					Namespace: namespace,
-					Labels: map[string]string{
-						topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
-					},
+				Name:      "credential-list-secret",
+				Namespace: namespace,
+				Labels: map[string]string{
+					topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
 				},
 				Type: corev1.SecretTypeOpaque,
 				Data: map[string][]byte{
@@ -322,10 +310,8 @@ var _ = Describe("Users", func() {
 			}
 			Expect(k8sClient.Create(ctx, &credentialSecret, &client.CreateOptions{})).To(Succeed())
 			user = &topology.User{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-5",
-					Namespace: namespace,
-				},
+				Name:      "user-5",
+				Namespace: namespace,
 				Spec: topology.UserSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
 						Name: rmq.Name,
@@ -378,12 +364,10 @@ var _ = Describe("Users", func() {
 		var connections, channels int32
 		BeforeEach(func() {
 			credentialSecret = corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "user-limit-secret",
-					Namespace: namespace,
-					Labels: map[string]string{
-						topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
-					},
+				Name:      "user-limit-secret",
+				Namespace: namespace,
+				Labels: map[string]string{
+					topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
 				},
 				Type: corev1.SecretTypeOpaque,
 				Data: map[string][]byte{
@@ -396,10 +380,8 @@ var _ = Describe("Users", func() {
 			connections = 4
 			channels = 6
 			user = &topology.User{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      username,
-					Namespace: namespace,
-				},
+				Name:      username,
+				Namespace: namespace,
 				Spec: topology.UserSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
 						Name: rmq.Name,
@@ -465,12 +447,10 @@ var _ = Describe("Users", func() {
 
 		BeforeEach(func() {
 			credentialSecret = corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      rotationSecretName,
-					Namespace: namespace,
-					Labels: map[string]string{
-						topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
-					},
+				Name:      rotationSecretName,
+				Namespace: namespace,
+				Labels: map[string]string{
+					topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue,
 				},
 				Type: corev1.SecretTypeOpaque,
 				Data: map[string][]byte{
@@ -481,10 +461,8 @@ var _ = Describe("Users", func() {
 			Expect(k8sClient.Create(ctx, &credentialSecret, &client.CreateOptions{})).To(Succeed())
 
 			user = &topology.User{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "rotation-test",
-					Namespace: namespace,
-				},
+				Name:      "rotation-test",
+				Namespace: namespace,
 				Spec: topology.UserSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
 						Name: rmq.Name,

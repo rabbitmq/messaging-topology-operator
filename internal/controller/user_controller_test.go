@@ -100,10 +100,8 @@ var _ = Describe("UserController", func() {
 
 	initialiseUser := func() {
 		user = topology.User{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      userName,
-				Namespace: userNamespace,
-			},
+			Name:      userName,
+			Namespace: userNamespace,
 			Spec: topology.UserSpec{
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: "example-rabbit",
@@ -423,10 +421,8 @@ var _ = Describe("UserController", func() {
 
 			It("raises an event to indicate a successful deletion", func() {
 				Expect(k8sClient.Delete(ctx, &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      user.Name + "-user-credentials",
-						Namespace: user.Namespace,
-					},
+					Name:      user.Name + "-user-credentials",
+					Namespace: user.Namespace,
 				})).To(Succeed())
 				Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
 				Eventually(func() bool {
@@ -498,13 +494,11 @@ var _ = Describe("UserController", func() {
 
 		JustBeforeEach(func() {
 			Expect(k8sClient.Create(ctx, &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      importSecretName,
-					Namespace: userNamespace,
-					Labels:    map[string]string{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue},
-				},
-				Type: corev1.SecretTypeOpaque,
-				Data: map[string][]byte{"username": []byte("imported-user"), "password": []byte("imported-password")},
+				Name:      importSecretName,
+				Namespace: userNamespace,
+				Labels:    map[string]string{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue},
+				Type:      corev1.SecretTypeOpaque,
+				Data:      map[string][]byte{"username": []byte("imported-user"), "password": []byte("imported-password")},
 			})).To(Succeed())
 			Expect(k8sClient.Create(ctx, &user)).To(Succeed())
 		})
@@ -512,7 +506,7 @@ var _ = Describe("UserController", func() {
 		AfterEach(func() {
 			Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
 			Expect(k8sClient.Delete(ctx, &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: importSecretName, Namespace: userNamespace},
+				Name: importSecretName, Namespace: userNamespace,
 			})).To(Succeed())
 		})
 
@@ -542,13 +536,11 @@ var _ = Describe("UserController", func() {
 
 		JustBeforeEach(func() {
 			Expect(k8sClient.Create(ctx, &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      importSecretName,
-					Namespace: userNamespace,
-					Labels:    map[string]string{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue},
-				},
-				Type: corev1.SecretTypeOpaque,
-				Data: map[string][]byte{"username": []byte("imported-user"), "password": []byte("imported-password")},
+				Name:      importSecretName,
+				Namespace: userNamespace,
+				Labels:    map[string]string{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue},
+				Type:      corev1.SecretTypeOpaque,
+				Data:      map[string][]byte{"username": []byte("imported-user"), "password": []byte("imported-password")},
 			})).To(Succeed())
 			Expect(k8sClient.Create(ctx, &user)).To(Succeed())
 		})
@@ -556,7 +548,7 @@ var _ = Describe("UserController", func() {
 		AfterEach(func() {
 			Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
 			Expect(k8sClient.Delete(ctx, &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: importSecretName, Namespace: userNamespace},
+				Name: importSecretName, Namespace: userNamespace,
 			})).To(Succeed())
 		})
 
@@ -589,13 +581,11 @@ var _ = Describe("UserController", func() {
 
 		JustBeforeEach(func() {
 			Expect(k8sClient.Create(ctx, &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      importSecretName,
-					Namespace: userNamespace,
-					Labels:    map[string]string{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue},
-				},
-				Type: corev1.SecretTypeOpaque,
-				Data: map[string][]byte{"username": []byte("imported-user"), "password": []byte("initial-password")},
+				Name:      importSecretName,
+				Namespace: userNamespace,
+				Labels:    map[string]string{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue},
+				Type:      corev1.SecretTypeOpaque,
+				Data:      map[string][]byte{"username": []byte("imported-user"), "password": []byte("initial-password")},
 			})).To(Succeed())
 			Expect(k8sClient.Create(ctx, &user)).To(Succeed())
 			// Wait for first successful reconcile.
@@ -613,7 +603,7 @@ var _ = Describe("UserController", func() {
 				return apierrors.IsNotFound(k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &topology.User{}))
 			}).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(BeTrue())
 			Expect(k8sClient.Delete(ctx, &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{Name: importSecretName, Namespace: userNamespace},
+				Name: importSecretName, Namespace: userNamespace,
 			})).To(Succeed())
 		})
 
@@ -729,7 +719,7 @@ var _ = Describe("UserController", func() {
 				"Status": Equal(corev1.ConditionTrue),
 			})), "User should have been created and have a True Ready condition")
 
-		generatedSecret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: user.Name + "-user-credentials", Namespace: user.Namespace}}
+		generatedSecret := &corev1.Secret{Name: user.Name + "-user-credentials", Namespace: user.Namespace}
 		Eventually(k.Get(generatedSecret)).
 			Within(10 * time.Second).
 			Should(Succeed())

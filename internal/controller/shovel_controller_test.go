@@ -26,7 +26,6 @@ import (
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -91,10 +90,8 @@ var _ = Describe("shovel-controller", func() {
 
 	initialiseShovel := func() {
 		shovel = topology.Shovel{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      shovelName,
-				Namespace: shovelNamespace,
-			},
+			Name:      shovelName,
+			Namespace: shovelNamespace,
 			Spec: topology.ShovelSpec{
 				Name:      "my-shovel-configuration",
 				Vhost:     "/test",

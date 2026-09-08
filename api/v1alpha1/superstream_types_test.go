@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	topologyv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -27,10 +26,8 @@ var _ = Describe("SuperStream spec", func() {
 		}
 
 		superStream := SuperStream{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-super-stream",
-				Namespace: namespace,
-			},
+			Name:      "test-super-stream",
+			Namespace: namespace,
 			Spec: SuperStreamSpec{
 				Name: "test-super-stream",
 				RabbitmqClusterReference: topologyv1beta1.RabbitmqClusterReference{
@@ -58,10 +55,8 @@ var _ = Describe("SuperStream spec", func() {
 		}
 
 		superStream := SuperStream{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-super-stream2",
-				Namespace: namespace,
-			},
+			Name:      "test-super-stream2",
+			Namespace: namespace,
 			Spec: SuperStreamSpec{
 				Name:       "test-super-stream2",
 				Vhost:      "test-vhost",

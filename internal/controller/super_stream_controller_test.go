@@ -22,7 +22,6 @@ import (
 	topologyv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/rabbitmq/messaging-topology-operator/internal/managedresource"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -110,10 +109,8 @@ var _ = Describe("super-stream-controller", func() {
 				StatusCode: http.StatusNoContent,
 			}, nil)
 			superStream = topologyv1alpha1.SuperStream{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      superStreamName,
-					Namespace: superStreamNamespace,
-				},
+				Name:      superStreamName,
+				Namespace: superStreamNamespace,
 				Spec: topologyv1alpha1.SuperStreamSpec{
 					RabbitmqClusterReference: topologyv1beta1.RabbitmqClusterReference{
 						Name: "example-rabbit",

@@ -27,10 +27,8 @@ var _ = Describe("Permission", func() {
 
 	BeforeEach(func() {
 		user = &topology.User{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "testuser",
-				Namespace: namespace,
-			},
+			Name:      "testuser",
+			Namespace: namespace,
 			Spec: topology.UserSpec{
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: rmq.Name,
@@ -50,10 +48,8 @@ var _ = Describe("Permission", func() {
 		username = string(generatedSecret.Data["username"])
 
 		permission = &topology.Permission{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "user-permission",
-				Namespace: namespace,
-			},
+			Name:      "user-permission",
+			Namespace: namespace,
 			Spec: topology.PermissionSpec{
 				Vhost: "/",
 				User:  username,

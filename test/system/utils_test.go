@@ -253,10 +253,8 @@ func getManagementPort(ctx context.Context, clientSet *kubernetes.Clientset, nam
 
 func basicTestRabbitmqCluster(name, namespace string) *rabbitmqv1beta1.RabbitmqCluster {
 	cluster := &rabbitmqv1beta1.RabbitmqCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
+		Name:      name,
+		Namespace: namespace,
 		Spec: rabbitmqv1beta1.RabbitmqClusterSpec{
 			Replicas: new(int32(1)),
 			Image:    "rabbitmq:4-management",

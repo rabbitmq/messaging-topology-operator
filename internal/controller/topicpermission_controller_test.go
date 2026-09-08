@@ -91,10 +91,8 @@ var _ = Describe("topicpermission-controller", func() {
 
 	initialiseTopicPermission := func() {
 		topicperm = topology.TopicPermission{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: topicPermissionNamespace,
-			},
+			Name:      name,
+			Namespace: topicPermissionNamespace,
 			Spec: topology.TopicPermissionSpec{
 				RabbitmqClusterReference: topology.RabbitmqClusterReference{
 					Name: "example-rabbit",
@@ -272,11 +270,9 @@ var _ = Describe("topicpermission-controller", func() {
 	When("validating RabbitMQ Client failures with userRef", func() {
 		JustBeforeEach(func() {
 			user = topology.User{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      userName,
-					Namespace: topicPermissionNamespace,
-					Labels:    map[string]string{"test": name},
-				},
+				Name:      userName,
+				Namespace: topicPermissionNamespace,
+				Labels:    map[string]string{"test": name},
 				Spec: topology.UserSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
 						Name:      "example-rabbit",
@@ -285,11 +281,9 @@ var _ = Describe("topicpermission-controller", func() {
 				},
 			}
 			topicperm = topology.TopicPermission{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      name,
-					Namespace: topicPermissionNamespace,
-					Labels:    map[string]string{"test": name},
-				},
+				Name:      name,
+				Namespace: topicPermissionNamespace,
+				Labels:    map[string]string{"test": name},
 				Spec: topology.TopicPermissionSpec{
 					RabbitmqClusterReference: topology.RabbitmqClusterReference{
 						Name:      "example-rabbit",

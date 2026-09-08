@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -18,10 +17,8 @@ var _ = Describe("user spec", func() {
 
 	It("creates a user with default settings", func() {
 		user := User{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-user",
-				Namespace: namespace,
-			},
+			Name:      "test-user",
+			Namespace: namespace,
 			Spec: UserSpec{
 				RabbitmqClusterReference: RabbitmqClusterReference{
 					Name: "some-cluster",
@@ -46,10 +43,8 @@ var _ = Describe("user spec", func() {
 		var username string
 		JustBeforeEach(func() {
 			user = User{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      username,
-					Namespace: namespace,
-				},
+				Name:      username,
+				Namespace: namespace,
 				Spec: UserSpec{
 					Tags: tags,
 					ImportCredentialsSecret: &corev1.LocalObjectReference{
@@ -100,10 +95,8 @@ var _ = Describe("user spec", func() {
 
 		JustBeforeEach(func() {
 			user = User{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      username,
-					Namespace: namespace,
-				},
+				Name:      username,
+				Namespace: namespace,
 				Spec: UserSpec{
 					RabbitmqClusterReference: RabbitmqClusterReference{
 						Name: "some-cluster",
