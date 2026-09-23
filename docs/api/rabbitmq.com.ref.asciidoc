@@ -490,7 +490,9 @@ Required property.
 | *`expires`* __integer__ | 
 | *`messageTTL`* __integer__ | 
 | *`maxHops`* __integer__ | 
-| *`reconnectDelay`* __integer__ | 
+| *`reconnectDelay`* __integer__ | Time in seconds to wait before reconnecting after a federation link goes down.
+Defaults to 1, matching the RabbitMQ default. Setting this to 0 reconnects with no
+delay, which can produce a reconnection storm against an unavailable upstream.
 | *`trustUserId`* __boolean__ | 
 | *`exchange`* __string__ | 
 | *`queue`* __string__ | 

@@ -17,13 +17,22 @@ import (
 )
 
 func GenerateFederationDefinition(f *topology.Federation, uri string) rabbithole.FederationDefinition {
+	// rabbit-hole serialises reconnect-delay without omitempty, so an unset value would be
+	// sent to RabbitMQ as an explicit 0 rather than letting the server apply its own
+	// default. The CRD defaults this field, so nil only happens for objects that bypassed
+	// defaulting; fall back to the RabbitMQ default of 1 rather than to 0.
+	reconnectDelay := 1
+	if f.Spec.ReconnectDelay != nil {
+		reconnectDelay = *f.Spec.ReconnectDelay
+	}
+
 	return rabbithole.FederationDefinition{
 		Uri:                 strings.Split(uri, ","),
 		Expires:             f.Spec.Expires,
 		MessageTTL:          int32(f.Spec.MessageTTL),
 		MaxHops:             f.Spec.MaxHops,
 		PrefetchCount:       f.Spec.PrefetchCount,
-		ReconnectDelay:      f.Spec.ReconnectDelay,
+		ReconnectDelay:      reconnectDelay,
 		AckMode:             f.Spec.AckMode,
 		TrustUserId:         f.Spec.TrustUserId,
 		Exchange:            f.Spec.Exchange,

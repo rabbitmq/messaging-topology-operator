@@ -27,11 +27,14 @@ type FederationSpec struct {
 	UriSecret     *corev1.LocalObjectReference `json:"uriSecret"`
 	PrefetchCount int                          `json:"prefetch-count,omitempty"`
 	// +kubebuilder:validation:Enum=on-confirm;on-publish;no-ack
-	AckMode        string `json:"ackMode,omitempty"`
-	Expires        int    `json:"expires,omitempty"`
-	MessageTTL     int    `json:"messageTTL,omitempty"`
-	MaxHops        int    `json:"maxHops,omitempty"`
-	ReconnectDelay int    `json:"reconnectDelay,omitempty"`
+	AckMode    string `json:"ackMode,omitempty"`
+	Expires    int    `json:"expires,omitempty"`
+	MessageTTL int    `json:"messageTTL,omitempty"`
+	MaxHops    int    `json:"maxHops,omitempty"`
+	// Time in seconds to wait before reconnecting after a federation link goes down.
+	// Defaults to 1.
+	// +kubebuilder:default:=1
+	ReconnectDelay *int   `json:"reconnectDelay,omitempty"`
 	TrustUserId    bool   `json:"trustUserId,omitempty"`
 	Exchange       string `json:"exchange,omitempty"`
 	Queue          string `json:"queue,omitempty"`
