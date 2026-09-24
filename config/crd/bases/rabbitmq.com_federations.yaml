@@ -119,6 +119,11 @@ spec:
                     type: string
                 type: object
               reconnectDelay:
+                default: 1
+                description: |-
+                  Time in seconds to wait before reconnecting after a federation link goes down.
+                  Defaults to 1, matching the RabbitMQ default. Setting this to 0 reconnects with no
+                  delay, which can produce a reconnection storm against an unavailable upstream.
                 type: integer
               resourceCleanupMode:
                 description: |-

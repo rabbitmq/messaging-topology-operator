@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"encoding/json"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	topology "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
@@ -60,9 +62,28 @@ var _ = Describe("GenerationFederationDefinition", func() {
 	})
 
 	It("sets 'ReconnectDelay' correctly", func() {
-		f.Spec.ReconnectDelay = 100
+		f.Spec.ReconnectDelay = new(100)
 		definition := GenerateFederationDefinition(f, "")
 		Expect(definition.ReconnectDelay).To(Equal(100))
+	})
+
+	It("sets 'ReconnectDelay' to 0 when explicitly requested", func() {
+		f.Spec.ReconnectDelay = new(0)
+		definition := GenerateFederationDefinition(f, "")
+		Expect(definition.ReconnectDelay).To(BeZero())
+	})
+
+	It("falls back to the RabbitMQ default of 1 when 'ReconnectDelay' is unset", func() {
+		f.Spec.ReconnectDelay = nil
+		definition := GenerateFederationDefinition(f, "")
+		Expect(definition.ReconnectDelay).To(Equal(1))
+	})
+
+	It("always serialises 'reconnect-delay' to RabbitMQ", func() {
+		f.Spec.ReconnectDelay = new(0)
+		body, err := json.Marshal(GenerateFederationDefinition(f, ""))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(body).To(ContainSubstring(`"reconnect-delay":0`))
 	})
 
 	It("sets 'TrustUserId' correctly", func() {
