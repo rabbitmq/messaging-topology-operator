@@ -7,10 +7,10 @@ require (
 	github.com/go-logr/logr v1.4.4
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/vault/api v1.23.0
-	github.com/michaelklishin/rabbit-hole/v3 v3.2.1-0.20261006213425-5b019a831fe8
+	github.com/michaelklishin/rabbit-hole/v3 v3.5.0
 	github.com/onsi/ginkgo/v2 v2.33.0
 	github.com/onsi/gomega v1.44.0
-	github.com/rabbitmq/cluster-operator/v2 v2.21.0
+	github.com/rabbitmq/cluster-operator/v2 v2.23.0
 	gopkg.in/ini.v1 v1.67.3
 	k8s.io/api v0.37.1
 	k8s.io/apimachinery v0.37.1
@@ -131,3 +131,7 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.2 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
+
+// UserInfo.HasPassword is only on rabbit-hole main, not in a release yet.
+// Remove once a release that includes it is tagged.
+replace github.com/michaelklishin/rabbit-hole/v3 => github.com/michaelklishin/rabbit-hole/v3 v3.2.1-0.20261006213425-5b019a831fe8
