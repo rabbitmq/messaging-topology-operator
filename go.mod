@@ -7,7 +7,7 @@ require (
 	github.com/go-logr/logr v1.4.4
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/vault/api v1.23.0
-	github.com/michaelklishin/rabbit-hole/v3 v3.5.0
+	github.com/michaelklishin/rabbit-hole/v3 v3.6.0
 	github.com/onsi/ginkgo/v2 v2.33.0
 	github.com/onsi/gomega v1.44.0
 	github.com/rabbitmq/cluster-operator/v2 v2.23.0
@@ -107,7 +107,7 @@ require (
 	golang.org/x/mod v0.41.0 // indirect
 	golang.org/x/net v0.59.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/term v0.46.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
@@ -131,7 +131,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.2 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
-
-// UserInfo.HasPassword is only on rabbit-hole main, not in a release yet.
-// Remove once a release that includes it is tagged.
-replace github.com/michaelklishin/rabbit-hole/v3 => github.com/michaelklishin/rabbit-hole/v3 v3.2.1-0.20261006213425-5b019a831fe8
