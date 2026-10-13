@@ -73,7 +73,12 @@ var _ = Describe("Users", func() {
 				"Tags":             ConsistOf("policymaker", "management"),
 				"HashingAlgorithm": Equal(rabbithole.HashingAlgorithmSHA512),
 			}))
-			Expect(userInfo.PasswordHash).NotTo(BeEmpty())
+			// RabbitMQ 4.4+ no longer returns password_hash; has_password is returned instead
+			if userInfo.PasswordHash != nil { //nolint:staticcheck // still returned by RabbitMQ < 4.4
+				Expect(*userInfo.PasswordHash).NotTo(BeEmpty()) //nolint:staticcheck // still returned by RabbitMQ < 4.4
+			} else {
+				Expect(userInfo.HasPassword).To(HaveValue(BeTrue()))
+			}
 
 			By("creating a client credential set that can be authenticated")
 			var err error
@@ -280,7 +285,12 @@ var _ = Describe("Users", func() {
 				userInfo, err = rabbitClient.GetUser(username)
 				return err
 			}, 10, 2).Should(Succeed())
-			Expect(userInfo.PasswordHash).To(Equal(hash))
+			// RabbitMQ 4.4+ no longer returns password_hash; has_password is returned instead
+			if userInfo.PasswordHash != nil { //nolint:staticcheck // still returned by RabbitMQ < 4.4
+				Expect(*userInfo.PasswordHash).To(Equal(hash)) //nolint:staticcheck // still returned by RabbitMQ < 4.4
+			} else {
+				Expect(userInfo.HasPassword).To(HaveValue(BeTrue()))
+			}
 
 		})
 	})
@@ -354,7 +364,12 @@ var _ = Describe("Users", func() {
 				fetchedUser, err = rabbitClient.GetUser(username)
 				return err
 			}, 30, 2).Should(Succeed())
-			Expect(fetchedUser.PasswordHash).To(Equal(""))
+			// RabbitMQ 4.4+ no longer returns password_hash; has_password is returned instead
+			if fetchedUser.PasswordHash != nil { //nolint:staticcheck // still returned by RabbitMQ < 4.4
+				Expect(*fetchedUser.PasswordHash).To(BeEmpty()) //nolint:staticcheck // still returned by RabbitMQ < 4.4
+			} else {
+				Expect(fetchedUser.HasPassword).To(HaveValue(BeFalse()))
+			}
 		})
 	})
 
