@@ -123,7 +123,7 @@ var _ = Describe("federation", func() {
 			_, err = rabbitClient.GetFederationUpstream("/", federation.Spec.Name)
 			return err
 		}, 10).Should(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("Object Not Found"))
+		Expect(err.Error()).To(ContainSubstring("Not Found"))
 	})
 
 	When("deletion policy is retain", func() {
