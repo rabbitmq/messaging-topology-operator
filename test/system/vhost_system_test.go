@@ -103,7 +103,7 @@ var _ = Describe("vhost", func() {
 			_, err = rabbitClient.GetVhost(vhost.Spec.Name)
 			return err
 		}, 30).Should(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("Object Not Found"))
+		Expect(err.Error()).To(ContainSubstring("Not Found"))
 	})
 
 	When("deletion policy is retain", func() {

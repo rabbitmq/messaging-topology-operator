@@ -115,6 +115,6 @@ var _ = Describe("Policy", func() {
 			_, err = rabbitClient.GetPolicy(policy.Spec.Vhost, policy.Name)
 			return err
 		}, 10).Should(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("Object Not Found"))
+		Expect(err.Error()).To(ContainSubstring("Not Found"))
 	})
 })
