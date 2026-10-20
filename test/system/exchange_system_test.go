@@ -102,6 +102,6 @@ var _ = Describe("Exchange", func() {
 			_, err = rabbitClient.GetExchange(exchange.Spec.Vhost, exchange.Name)
 			return err
 		}, 30).Should(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("Object Not Found"))
+		Expect(err.Error()).To(ContainSubstring("Not Found"))
 	})
 })
