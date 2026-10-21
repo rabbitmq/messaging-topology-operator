@@ -53,13 +53,6 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.
 		logger.Error(err, "failed to generate credentials")
 		return "", err
 	}
-	// Neither PasswordHash nor Password wasn't in the provided input secret we need to generate a random password
-	if credentials.PasswordHash == nil && credentials.Password == "" {
-		credentials.Password, err = internal.RandomEncodedString(24)
-		if err != nil {
-			return "", fmt.Errorf("failed to generate random password: %w", err)
-		}
-	}
 
 	logger.Info("Credentials generated for User", "user", user.Name, "generatedUsername", credentials.Username)
 
@@ -124,9 +117,13 @@ func (r *UserReconciler) generateCredentials(ctx context.Context, user *topology
 
 	credentials := internal.UserCredentials{}
 
-	credentials.Username, err = internal.RandomEncodedString(24)
-	if err != nil {
-		return credentials, fmt.Errorf("failed to generate random username: %w", err)
+	if user.Spec.UsernameFromMeta {
+		credentials.Username = user.Name
+	} else {
+		credentials.Username, err = internal.RandomEncodedString(24)
+		if err != nil {
+			return credentials, fmt.Errorf("failed to generate random username: %w", err)
+		}
 	}
 	credentials.Password, err = internal.RandomEncodedString(24)
 	if err != nil {
@@ -185,6 +182,9 @@ func (r *UserReconciler) setUserStatus(ctx context.Context, user *topology.User,
 
 func (r *UserReconciler) DeclareFunc(ctx context.Context, rmqc rabbitmqclient.Client, obj topology.TopologyResource) error {
 	user := obj.(*topology.User)
+	if user.Spec.UsernameFromMeta && user.Spec.ImportCredentialsSecret != nil {
+		return errors.New("spec.usernameFromMeta cannot be set together with spec.importCredentialsSecret")
+	}
 	if user.Spec.ImportCredentialsSecret != nil {
 		return r.declareWithImportedCredentials(ctx, rmqc, user)
 	}
@@ -197,6 +197,11 @@ func (r *UserReconciler) declareWithImportedCredentials(ctx context.Context, rmq
 	credentials, err := r.importCredentials(ctx, user.Spec.ImportCredentialsSecret.Name, user.Namespace)
 	if err != nil {
 		return err
+	}
+	if credentials.PasswordHash == nil && credentials.Password == "" {
+		return fmt.Errorf("neither passwordHash nor password is set in credentials secret %q; "+
+			"to let the operator generate a password, remove spec.importCredentialsSecret and set spec.usernameFromMeta: true",
+			user.Spec.ImportCredentialsSecret.Name)
 	}
 
 	// Update status on first run, or correct a migration where Status.Credentials.Name
@@ -248,9 +253,16 @@ func (r *UserReconciler) declareWithGeneratedCredentials(ctx context.Context, rm
 	if actualUsername == "" {
 		actualUsername = username
 	}
+	if user.Spec.UsernameFromMeta && actualUsername != user.Name {
+		return fmt.Errorf("spec.usernameFromMeta is true but the existing credentials secret %q has a username different from metadata.name %q; "+
+			"unset spec.usernameFromMeta, or delete the secret to have it regenerated "+
+			"(the RabbitMQ user with the previous username will not be deleted)",
+			user.Name+"-user-credentials", user.Name)
+	}
 
 	if user.Status.Credentials == nil || user.Status.Username == "" ||
-		user.Status.Credentials.Name != user.Name+"-user-credentials" {
+		user.Status.Credentials.Name != user.Name+"-user-credentials" ||
+		user.Status.Username != actualUsername {
 		if err := r.setUserStatus(ctx, user, actualUsername, user.Name+"-user-credentials"); err != nil {
 			return err
 		}

@@ -676,6 +676,291 @@ var _ = Describe("UserController", func() {
 		})
 	})
 
+	When("the user has usernameFromMeta set", func() {
+		var generatedSecretName string
+
+		BeforeEach(func() {
+			userName = "test-username-from-meta"
+			generatedSecretName = userName + "-user-credentials"
+			fakeRabbitMQClient.PutUserReturns(&http.Response{Status: "201 Created", StatusCode: http.StatusCreated}, nil)
+			initialiseUser()
+			user.Labels = map[string]string{"test": userName}
+			user.Spec.UsernameFromMeta = true
+			initialiseManager("test", userName)
+		})
+
+		JustBeforeEach(func() {
+			Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+		})
+
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
+			// envtest does not run the garbage collector
+			_ = k8sClient.Delete(ctx, &corev1.Secret{Name: generatedSecretName, Namespace: userNamespace})
+		})
+
+		It("uses metadata.name as the username and stores the credentials in the generated secret", func() {
+			Eventually(objectStatus).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+				ContainElement(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(topology.ConditionType("Ready")),
+					"Reason": Equal("SuccessfulCreateOrUpdate"),
+					"Status": Equal(corev1.ConditionTrue),
+				})),
+			)
+
+			Expect(fakeRabbitMQClient.PutUserCallCount()).To(BeNumerically(">", 0))
+			username, settings := fakeRabbitMQClient.PutUserArgsForCall(0)
+			Expect(username).To(Equal(user.Name))
+			Expect(settings.PasswordHash).NotTo(BeEmpty())
+
+			generatedSecret := &corev1.Secret{Name: generatedSecretName, Namespace: userNamespace}
+			Eventually(k.Get(generatedSecret)).Within(10 * time.Second).Should(Succeed())
+			Expect(generatedSecret.Data).To(HaveKeyWithValue("username", []byte(user.Name)))
+			Expect(generatedSecret.Data["password"]).NotTo(BeEmpty())
+			Expect(passwordMatchesHash(settings.PasswordHash, string(generatedSecret.Data["password"]))).To(BeTrue())
+
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &user)).To(Succeed())
+			Expect(user.Status.Username).To(Equal(user.Name))
+			Expect(user.Status.Credentials).To(HaveValue(MatchFields(IgnoreExtras, Fields{
+				"Name": Equal(generatedSecretName),
+			})))
+		})
+	})
+
+	When("the user has usernameFromMeta and a pre-existing generated secret with a matching username", func() {
+		var generatedSecretName string
+
+		BeforeEach(func() {
+			userName = "test-username-from-meta-migrate"
+			generatedSecretName = userName + "-user-credentials"
+			fakeRabbitMQClient.PutUserReturns(&http.Response{Status: "201 Created", StatusCode: http.StatusCreated}, nil)
+			initialiseUser()
+			user.Labels = map[string]string{"test": userName}
+			user.Spec.UsernameFromMeta = true
+			initialiseManager("test", userName)
+		})
+
+		JustBeforeEach(func() {
+			Expect(k8sClient.Create(ctx, &corev1.Secret{
+				Name:      generatedSecretName,
+				Namespace: userNamespace,
+				Labels:    map[string]string{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue},
+				Type:      corev1.SecretTypeOpaque,
+				Data:      map[string][]byte{"username": []byte(userName), "password": []byte("pre-existing-password")},
+			})).To(Succeed())
+			Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+		})
+
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
+		})
+
+		It("keeps the existing password", func() {
+			Eventually(objectStatus).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+				ContainElement(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(topology.ConditionType("Ready")),
+					"Reason": Equal("SuccessfulCreateOrUpdate"),
+					"Status": Equal(corev1.ConditionTrue),
+				})),
+			)
+
+			Expect(fakeRabbitMQClient.PutUserCallCount()).To(BeNumerically(">", 0))
+			username, settings := fakeRabbitMQClient.PutUserArgsForCall(0)
+			Expect(username).To(Equal(user.Name))
+			Expect(passwordMatchesHash(settings.PasswordHash, "pre-existing-password")).To(BeTrue())
+
+			generatedSecret := &corev1.Secret{Name: generatedSecretName, Namespace: userNamespace}
+			Expect(k.Get(generatedSecret)()).To(Succeed())
+			Expect(generatedSecret.Data).To(HaveKeyWithValue("password", []byte("pre-existing-password")))
+		})
+	})
+
+	When("the user has usernameFromMeta and a pre-existing generated secret with a different username", func() {
+		var generatedSecretName string
+
+		BeforeEach(func() {
+			userName = "test-username-from-meta-mismatch"
+			generatedSecretName = userName + "-user-credentials"
+			initialiseUser()
+			user.Labels = map[string]string{"test": userName}
+			user.Spec.UsernameFromMeta = true
+			initialiseManager("test", userName)
+		})
+
+		JustBeforeEach(func() {
+			Expect(k8sClient.Create(ctx, &corev1.Secret{
+				Name:      generatedSecretName,
+				Namespace: userNamespace,
+				Labels:    map[string]string{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue},
+				Type:      corev1.SecretTypeOpaque,
+				Data:      map[string][]byte{"username": []byte("some-random-username"), "password": []byte("pre-existing-password")},
+			})).To(Succeed())
+			Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+		})
+
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, &corev1.Secret{Name: generatedSecretName, Namespace: userNamespace})).To(Succeed())
+		})
+
+		It("sets a False status condition and does not declare the user", func() {
+			Eventually(objectStatus).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+				ContainElement(MatchFields(IgnoreExtras, Fields{
+					"Type":    Equal(topology.ConditionType("Ready")),
+					"Status":  Equal(corev1.ConditionFalse),
+					"Message": ContainSubstring("usernameFromMeta"),
+				})),
+			)
+			Expect(fakeRabbitMQClient.PutUserCallCount()).To(BeZero())
+			Expect(objectStatus()).NotTo(ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Message": ContainSubstring("some-random-username"),
+			})))
+		})
+	})
+
+	When("usernameFromMeta is enabled after the credentials secret was generated with a random username", func() {
+		var generatedSecretName string
+
+		BeforeEach(func() {
+			userName = "test-username-from-meta-enable-later"
+			generatedSecretName = userName + "-user-credentials"
+			fakeRabbitMQClient.PutUserReturns(&http.Response{Status: "201 Created", StatusCode: http.StatusCreated}, nil)
+			initialiseUser()
+			user.Labels = map[string]string{"test": userName}
+			initialiseManager("test", userName)
+		})
+
+		JustBeforeEach(func() {
+			Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+		})
+
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
+			// envtest does not run the garbage collector
+			_ = k8sClient.Delete(ctx, &corev1.Secret{Name: generatedSecretName, Namespace: userNamespace})
+		})
+
+		It("updates status.username after the secret is regenerated", func() {
+			Eventually(objectStatus).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+				ContainElement(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(topology.ConditionType("Ready")),
+					"Reason": Equal("SuccessfulCreateOrUpdate"),
+					"Status": Equal(corev1.ConditionTrue),
+				})),
+			)
+			key := types.NamespacedName{Name: user.Name, Namespace: user.Namespace}
+			Eventually(func(g Gomega) string {
+				u := &topology.User{}
+				g.Expect(k8sClient.Get(ctx, key, u)).To(Succeed())
+				return u.Status.Username
+			}).Within(10 * time.Second).WithPolling(time.Second).ShouldNot(BeEmpty())
+			Expect(k8sClient.Get(ctx, key, &user)).To(Succeed())
+			Expect(user.Status.Username).NotTo(Equal(user.Name))
+
+			Eventually(func() error {
+				u := &topology.User{}
+				if err := k8sClient.Get(ctx, key, u); err != nil {
+					return err
+				}
+				u.Spec.UsernameFromMeta = true
+				return k8sClient.Update(ctx, u)
+			}).Within(10 * time.Second).WithPolling(time.Second).Should(Succeed())
+
+			// Delete only after enabling usernameFromMeta, otherwise the controller
+			// may regenerate the secret (with a random username) before the update lands.
+			Expect(k8sClient.Delete(ctx, &corev1.Secret{Name: generatedSecretName, Namespace: userNamespace})).To(Succeed())
+
+			Eventually(func(g Gomega) string {
+				u := &topology.User{}
+				g.Expect(k8sClient.Get(ctx, key, u)).To(Succeed())
+				return u.Status.Username
+			}).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(Equal(user.Name))
+
+			Eventually(func() []string {
+				var names []string
+				for i := 0; i < fakeRabbitMQClient.PutUserCallCount(); i++ {
+					n, _ := fakeRabbitMQClient.PutUserArgsForCall(i)
+					names = append(names, n)
+				}
+				return names
+			}).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(ContainElement(user.Name))
+		})
+	})
+
+	When("the user has both usernameFromMeta and importCredentialsSecret", func() {
+		BeforeEach(func() {
+			userName = "test-username-from-meta-and-import"
+			initialiseUser()
+			user.Labels = map[string]string{"test": userName}
+			user.Spec.UsernameFromMeta = true
+			user.Spec.ImportCredentialsSecret = &corev1.LocalObjectReference{Name: "some-import-secret"}
+			initialiseManager("test", userName)
+		})
+
+		JustBeforeEach(func() {
+			Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+		})
+
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
+		})
+
+		It("emits a Warning event and sets a False status condition", func() {
+			Eventually(objectStatus).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+				ContainElement(MatchFields(IgnoreExtras, Fields{
+					"Type":    Equal(topology.ConditionType("Ready")),
+					"Status":  Equal(corev1.ConditionFalse),
+					"Message": ContainSubstring("cannot be set together"),
+				})),
+			)
+			Eventually(observedEvents).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+				ContainElement("Warning FailedDeclare failed to declare user"),
+			)
+			Expect(fakeRabbitMQClient.PutUserCallCount()).To(BeZero())
+		})
+	})
+
+	When("the import secret only has a username", func() {
+		const importSecretName = "import-username-only-secret"
+
+		BeforeEach(func() {
+			userName = "test-import-username-only"
+			initialiseUser()
+			user.Labels = map[string]string{"test": userName}
+			user.Spec.ImportCredentialsSecret = &corev1.LocalObjectReference{Name: importSecretName}
+			initialiseManager("test", userName)
+		})
+
+		JustBeforeEach(func() {
+			Expect(k8sClient.Create(ctx, &corev1.Secret{
+				Name:      importSecretName,
+				Namespace: userNamespace,
+				Labels:    map[string]string{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue},
+				Type:      corev1.SecretTypeOpaque,
+				Data:      map[string][]byte{"username": []byte("imported-user")},
+			})).To(Succeed())
+			Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+		})
+
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, &corev1.Secret{
+				Name: importSecretName, Namespace: userNamespace,
+			})).To(Succeed())
+		})
+
+		It("sets a False status condition pointing to usernameFromMeta", func() {
+			Eventually(objectStatus).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+				ContainElement(MatchFields(IgnoreExtras, Fields{
+					"Type":    Equal(topology.ConditionType("Ready")),
+					"Status":  Equal(corev1.ConditionFalse),
+					"Message": ContainSubstring("usernameFromMeta"),
+				})),
+			)
+			Expect(fakeRabbitMQClient.PutUserCallCount()).To(BeZero())
+		})
+	})
+
 	It("labels the generated credentials secret with the topology operator label", func() {
 		userName = "test-user-labeled-secret"
 		initialiseUser()

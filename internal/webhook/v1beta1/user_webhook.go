@@ -32,6 +32,9 @@ func SetupUserWebhookWithManager(mgr ctrl.Manager) error {
 // ValidateCreate - either rabbitmqClusterReference.name or
 // rabbitmqClusterReference.connectionSecret must be provided but not both
 func (v *UserCustomValidator) ValidateCreate(ctx context.Context, user *rabbitmqcomv1beta1.User) (warnings admission.Warnings, err error) {
+	if err := validateUsernameFromMeta(user); err != nil {
+		return nil, err
+	}
 	if err := validateSecretLabel(ctx, v.Client, v.APIReader, user.Spec.ImportCredentialsSecret, user.Namespace); err != nil {
 		return nil, err
 	}
@@ -51,11 +54,23 @@ func (v *UserCustomValidator) ValidateUpdate(ctx context.Context, oldUser, newUs
 	// The operator patches the User to remove its finalizer during deletion. By that point the
 	// import secret may already be gone, so skip label validation for objects being deleted.
 	if newUser.DeletionTimestamp == nil {
+		if err := validateUsernameFromMeta(newUser); err != nil {
+			return nil, err
+		}
 		if err := validateSecretLabel(ctx, v.Client, v.APIReader, newUser.Spec.ImportCredentialsSecret, newUser.Namespace); err != nil {
 			return nil, err
 		}
 	}
 	return nil, nil
+}
+
+// validateUsernameFromMeta rejects Users that set both usernameFromMeta and importCredentialsSecret
+func validateUsernameFromMeta(user *rabbitmqcomv1beta1.User) error {
+	if user.Spec.UsernameFromMeta && user.Spec.ImportCredentialsSecret != nil {
+		return apierrors.NewForbidden(user.GroupResource(), user.Name,
+			field.Forbidden(field.NewPath("spec", "usernameFromMeta"), "usernameFromMeta cannot be set together with spec.importCredentialsSecret"))
+	}
+	return nil
 }
 
 func (v *UserCustomValidator) ValidateDelete(_ context.Context, obj *rabbitmqcomv1beta1.User) (warnings admission.Warnings, err error) {
