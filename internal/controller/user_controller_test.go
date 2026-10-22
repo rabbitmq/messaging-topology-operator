@@ -753,6 +753,8 @@ var _ = Describe("UserController", func() {
 
 		AfterEach(func() {
 			Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
+			// envtest does not run the garbage collector
+			Expect(k8sClient.Delete(ctx, &corev1.Secret{Name: generatedSecretName, Namespace: userNamespace})).To(Succeed())
 		})
 
 		It("keeps the existing password", func() {
@@ -773,6 +775,56 @@ var _ = Describe("UserController", func() {
 			Expect(k.Get(generatedSecret)()).To(Succeed())
 			Expect(generatedSecret.Data).To(HaveKeyWithValue("password", []byte("pre-existing-password")))
 		})
+	})
+
+	When("the generated credentials secret has no usable username", func() {
+		var generatedSecretName string
+
+		BeforeEach(func() {
+			userName = fmt.Sprintf("test-generated-missing-username-%d", CurrentSpecReport().LeafNodeLocation.LineNumber)
+			generatedSecretName = userName + "-user-credentials"
+			initialiseUser()
+			user.Labels = map[string]string{"test": userName}
+			initialiseManager("test", userName)
+		})
+
+		AfterEach(func() {
+			Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
+			Eventually(func() bool {
+				return apierrors.IsNotFound(userMgr.GetAPIReader().Get(ctx, types.NamespacedName{Name: user.Name, Namespace: userNamespace}, &topology.User{}))
+			}).Within(statusEventsUpdateTimeout).Should(BeTrue())
+			Expect(k8sClient.Delete(ctx, &corev1.Secret{Name: generatedSecretName, Namespace: userNamespace})).To(Succeed())
+		})
+
+		DescribeTable("rejects the secret before recording credentials in status", func(fromMeta, emptyUsername bool) {
+			user.Spec.UsernameFromMeta = fromMeta
+			data := map[string][]byte{"password": []byte("existing-password")}
+			if emptyUsername {
+				data["username"] = []byte("")
+			}
+			Expect(k8sClient.Create(ctx, &corev1.Secret{
+				Name: generatedSecretName, Namespace: userNamespace,
+				Labels: map[string]string{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue},
+				Data:   data,
+			})).To(Succeed())
+			Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+			Eventually(objectStatus).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+				ContainElement(MatchFields(IgnoreExtras, Fields{
+					"Type":    Equal(topology.ConditionType("Ready")),
+					"Status":  Equal(corev1.ConditionFalse),
+					"Message": ContainSubstring("could not find non-empty username key in generated credentials secret: " + generatedSecretName),
+				})),
+			)
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: userNamespace}, &user)).To(Succeed())
+			Expect(user.Status.Username).To(BeEmpty())
+			Expect(user.Status.Credentials).To(BeNil())
+			Expect(fakeRabbitMQClient.PutUserCallCount()).To(BeZero())
+		},
+			Entry("missing username with usernameFromMeta", true, false),
+			Entry("empty username with usernameFromMeta", true, true),
+			Entry("missing username with random credentials", false, false),
+			Entry("empty username with random credentials", false, true),
+		)
 	})
 
 	When("the user has usernameFromMeta and a pre-existing generated secret with a different username", func() {
@@ -975,6 +1027,77 @@ var _ = Describe("UserController", func() {
 			)
 			Expect(fakeRabbitMQClient.PutUserCallCount()).To(BeZero())
 		})
+	})
+
+	It("preserves legacy credentials after labeling an unlabeled secret and removing the username-only import", func() {
+		userName = "test-legacy-username-only-migration"
+		initialiseUser()
+		user.Labels = map[string]string{"test": userName}
+		const importSecretName = "legacy-username-only-import"
+		generatedSecretName := userName + "-user-credentials"
+		user.Spec.ImportCredentialsSecret = &corev1.LocalObjectReference{Name: importSecretName}
+		fakeRabbitMQClient.PutUserReturns(&http.Response{StatusCode: http.StatusCreated}, nil)
+		initialiseManager("test", userName)
+
+		// Model the two Secrets left by a pre-v1.20 username-only import.
+		generatedSecret := &corev1.Secret{
+			Name: generatedSecretName, Namespace: userNamespace,
+			Data: map[string][]byte{"username": []byte("legacy-imported-user"), "password": []byte("legacy-generated-password")},
+		}
+		Expect(k8sClient.Create(ctx, generatedSecret)).To(Succeed())
+		Expect(k8sClient.Create(ctx, &corev1.Secret{
+			Name: importSecretName, Namespace: userNamespace,
+			Labels: map[string]string{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue},
+			Data:   map[string][]byte{"username": []byte("legacy-imported-user")},
+		})).To(Succeed())
+		Expect(k8sClient.Create(ctx, &user)).To(Succeed())
+		DeferCleanup(func() {
+			Expect(k8sClient.Delete(ctx, &user)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, &corev1.Secret{Name: generatedSecretName, Namespace: userNamespace})).To(Succeed())
+			Expect(k8sClient.Delete(ctx, &corev1.Secret{Name: importSecretName, Namespace: userNamespace})).To(Succeed())
+		})
+
+		Eventually(objectStatus).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+			ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":    Equal(topology.ConditionType("Ready")),
+				"Status":  Equal(corev1.ConditionFalse),
+				"Message": ContainSubstring("to preserve its username and password"),
+			})),
+		)
+		Expect(fakeRabbitMQClient.PutUserCallCount()).To(BeZero())
+		Expect(userMgr.GetAPIReader().Get(ctx, types.NamespacedName{Name: generatedSecretName, Namespace: userNamespace}, generatedSecret)).To(Succeed())
+		Expect(generatedSecret.Labels).NotTo(HaveKey(topology.TopologyOperatorLabel))
+		generatedSecret.Labels = map[string]string{topology.TopologyOperatorLabel: topology.TopologyOperatorLabelValue}
+		Expect(k8sClient.Update(ctx, generatedSecret)).To(Succeed())
+		Eventually(func() error {
+			return k8sClient.Get(ctx, types.NamespacedName{Name: generatedSecretName, Namespace: userNamespace}, &corev1.Secret{})
+		}).Within(statusEventsUpdateTimeout).Should(Succeed())
+		Eventually(func() error {
+			if err := k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: userNamespace}, &user); err != nil {
+				return err
+			}
+			user.Spec.ImportCredentialsSecret = nil
+			return k8sClient.Update(ctx, &user)
+		}).Within(statusEventsUpdateTimeout).Should(Succeed())
+		Eventually(objectStatus).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+			ContainElement(MatchFields(IgnoreExtras, Fields{
+				"Type":   Equal(topology.ConditionType("Ready")),
+				"Status": Equal(corev1.ConditionTrue),
+			})),
+		)
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: userNamespace}, &user)).To(Succeed())
+		Expect(user.Status.Username).To(Equal("legacy-imported-user"))
+		Expect(user.Status.Credentials).To(Equal(&corev1.LocalObjectReference{Name: generatedSecretName}))
+		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: generatedSecretName, Namespace: userNamespace}, generatedSecret)).To(Succeed())
+		Expect(generatedSecret.Data).To(Equal(map[string][]byte{
+			"username": []byte("legacy-imported-user"), "password": []byte("legacy-generated-password"),
+		}))
+		for i := 0; i < fakeRabbitMQClient.PutUserCallCount(); i++ {
+			username, settings := fakeRabbitMQClient.PutUserArgsForCall(i)
+			Expect(username).To(Equal("legacy-imported-user"))
+			Expect(passwordMatchesHash(settings.PasswordHash, "legacy-generated-password")).To(BeTrue())
+		}
+		Expect(fakeRabbitMQClient.DeleteUserCallCount()).To(BeZero())
 	})
 
 	It("labels the generated credentials secret with the topology operator label", func() {

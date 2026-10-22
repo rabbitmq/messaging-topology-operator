@@ -200,7 +200,8 @@ func (r *UserReconciler) declareWithImportedCredentials(ctx context.Context, rmq
 	}
 	if credentials.PasswordHash == nil && credentials.Password == "" {
 		return fmt.Errorf("neither passwordHash nor password is set in credentials secret %q; "+
-			"to let the operator generate a password, remove spec.importCredentialsSecret and set spec.usernameFromMeta: true",
+			"for a User created before v1.20, label the existing <name>-user-credentials secret with rabbitmq.com/topology-operator=true and remove spec.importCredentialsSecret to preserve its username and password; "+
+			"for a new User using metadata.name as the username, remove spec.importCredentialsSecret and set spec.usernameFromMeta: true",
 			user.Spec.ImportCredentialsSecret.Name)
 	}
 
@@ -235,7 +236,7 @@ func (r *UserReconciler) declareWithGeneratedCredentials(ctx context.Context, rm
 	// Always call declareCredentials to ensure the generated secret exists and is labeled.
 	// CreateOrUpdate fetches the existing secret first, so the mutate function only adds the
 	// label — credentials in the Data field are never regenerated for existing secrets.
-	username, err := r.declareCredentials(ctx, user)
+	_, err := r.declareCredentials(ctx, user)
 	if err != nil {
 		return err
 	}
@@ -247,16 +248,14 @@ func (r *UserReconciler) declareWithGeneratedCredentials(ctx context.Context, rm
 	}
 	logger.Info("Retrieved credentials for user", "user", user.Name, "credentials", credentials.Name)
 
-	// username from declareCredentials is only valid for newly created secrets.
-	// For existing secrets, read the actual username from the secret.
+	// Read the stored username, including for existing secrets whose credentials are preserved.
 	actualUsername := string(credentials.Data["username"])
 	if actualUsername == "" {
-		actualUsername = username
+		return fmt.Errorf("could not find non-empty username key in generated credentials secret: %s", credentials.Name)
 	}
 	if user.Spec.UsernameFromMeta && actualUsername != user.Name {
 		return fmt.Errorf("spec.usernameFromMeta is true but the existing credentials secret %q has a username different from metadata.name %q; "+
-			"unset spec.usernameFromMeta, or delete the secret to have it regenerated "+
-			"(the RabbitMQ user with the previous username will not be deleted)",
+			"unset spec.usernameFromMeta to preserve the existing username and password",
 			user.Name+"-user-credentials", user.Name)
 	}
 
