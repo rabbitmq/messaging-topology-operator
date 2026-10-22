@@ -866,8 +866,16 @@ var _ = Describe("UserController", func() {
 				return k8sClient.Update(ctx, u)
 			}).Within(10 * time.Second).WithPolling(time.Second).Should(Succeed())
 
-			// Delete only after enabling usernameFromMeta, otherwise the controller
-			// may regenerate the secret (with a random username) before the update lands.
+			// Wait until the controller has observed usernameFromMeta before deleting
+			// the secret, so a reconcile using the old spec cannot recreate a random username.
+			Eventually(objectStatus).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+				ContainElement(MatchFields(IgnoreExtras, Fields{
+					"Type":    Equal(topology.ConditionType("Ready")),
+					"Reason":  Equal("FailedCreateOrUpdate"),
+					"Status":  Equal(corev1.ConditionFalse),
+					"Message": ContainSubstring("has a username different from metadata.name"),
+				})),
+			)
 			Expect(k8sClient.Delete(ctx, &corev1.Secret{Name: generatedSecretName, Namespace: userNamespace})).To(Succeed())
 
 			Eventually(func(g Gomega) string {
@@ -884,6 +892,14 @@ var _ = Describe("UserController", func() {
 				}
 				return names
 			}).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(ContainElement(user.Name))
+
+			Eventually(objectStatus).Within(statusEventsUpdateTimeout).WithPolling(time.Second).Should(
+				ContainElement(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(topology.ConditionType("Ready")),
+					"Reason": Equal("SuccessfulCreateOrUpdate"),
+					"Status": Equal(corev1.ConditionTrue),
+				})),
+			)
 		})
 	})
 

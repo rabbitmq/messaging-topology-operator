@@ -15,9 +15,17 @@ See [setUsernamewithGenPass.yaml](./setUsernamewithGenPass.yaml) as an example.
 
 Between [Messaging Topology Operator v1.10.0](https://github.com/rabbitmq/messaging-topology-operator/releases/tag/v1.10.1) and v1.19, an `importCredentialsSecret` containing only `username` made the Operator generate the password. This is no longer supported: such a User now fails with `neither passwordHash nor password is set in credentials`. `spec.usernameFromMeta` replaces it. To migrate a User that used a username-only secret:
 
-1. Edit the User: remove `spec.importCredentialsSecret` and set `spec.usernameFromMeta: true`.
-2. If the User was created before v1.20, its `<name>-user-credentials` Secret still holds the generated password and the existing password is kept. This requires that Secret's `username` to equal the User's `metadata.name`; otherwise the User reports an error and you must pick a User name matching the existing username (or delete the Secret and accept a new generated password; note that the Operator does not remove the RabbitMQ user with the old username, so delete it manually if it is no longer needed).
-3. The now unused username-only Secret can be deleted.
+1. Before editing the User, label its existing generated Secret so the Operator's filtered Secret cache can see it. Replace `<name>` and `<namespace>` with the User's name and namespace:
+
+   ```sh
+   kubectl label secret <name>-user-credentials \
+     -n <namespace> rabbitmq.com/topology-operator=true --overwrite
+   ```
+
+   Without this label, the Operator cannot find the existing Secret and attempts to create it, failing with `AlreadyExists`.
+2. Edit the User: remove `spec.importCredentialsSecret` and set `spec.usernameFromMeta: true`.
+3. If the User was created before v1.20, its `<name>-user-credentials` Secret still holds the generated password and the existing password is kept. This requires that Secret's `username` to equal the User's `metadata.name`; otherwise the User reports an error and you must pick a User name matching the existing username (or delete the Secret and accept a new generated password; note that the Operator does not remove the RabbitMQ user with the old username, so delete it manually if it is no longer needed).
+4. The now unused username-only Secret can be deleted.
 
 Any secret referenced by `importCredentialsSecret` must carry the label `rabbitmq.com/topology-operator: "true"`. The Operator's Secret cache is restricted to labeled secrets, and the admission webhook will reject a User that references an unlabeled or missing secret.
 
