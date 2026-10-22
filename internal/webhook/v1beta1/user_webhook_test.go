@@ -132,6 +132,25 @@ var _ = Describe("User Webhook", func() {
 			Expect(err).To(MatchError(ContainSubstring("must have label")))
 		})
 
+		It("allows creation when the labeled importCredentialsSecret is not yet in the cache", func() {
+			labeledSecret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "uncached-labeled-secret",
+					Namespace: testNS,
+					Labels: map[string]string{
+						rabbitmqcomv1beta1.TopologyOperatorLabel: rabbitmqcomv1beta1.TopologyOperatorLabelValue,
+					},
+				},
+			}
+			// The Secret was created just before the User, so the cache has not received it yet.
+			emptyCache := fake.NewClientBuilder().WithScheme(scheme.Scheme).Build()
+			apiReader := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(labeledSecret).Build()
+			v := UserCustomValidator{Client: emptyCache, APIReader: apiReader}
+
+			_, err := v.ValidateCreate(ctx, buildUser("uncached-labeled-secret"))
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		It("denies creation when importCredentialsSecret does not exist", func() {
 			emptyCache := fake.NewClientBuilder().WithScheme(scheme.Scheme).Build()
 			v := UserCustomValidator{Client: emptyCache, APIReader: emptyCache}

@@ -23,8 +23,12 @@ func validateSecretLabel(ctx context.Context, c client.Client, apiReader client.
 		if !apierrors.IsNotFound(err) {
 			return err
 		}
-		// Cache miss: check whether the Secret exists without the label.
+		// Cache miss: the Secret may be unlabeled, or labeled but not yet seen by the cache
+		// (e.g. created in the same apply as the referencing object).
 		if apiErr := apiReader.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: ns}, secret); apiErr == nil {
+			if secret.Labels[topology.TopologyOperatorLabel] == topology.TopologyOperatorLabelValue {
+				return nil
+			}
 			return fmt.Errorf("secret %q must have label %s=%s to be used by the Topology Operator",
 				ref.Name, topology.TopologyOperatorLabel, topology.TopologyOperatorLabelValue)
 		}
