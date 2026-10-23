@@ -24,7 +24,7 @@ type UserCredentials struct {
 	// If PasswordHash is an empty string, a passwordless user is created.
 	// If PasswordHash is nil, Password is used instead.
 	PasswordHash *string
-	// If Password is empty and PasswordHash is nil, a random password is generated.
+	// If Password is empty and PasswordHash is nil, GenerateUserSettings returns an error.
 	Password string
 }
 

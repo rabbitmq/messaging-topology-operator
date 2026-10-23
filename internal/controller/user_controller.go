@@ -53,13 +53,6 @@ func (r *UserReconciler) declareCredentials(ctx context.Context, user *topology.
 		logger.Error(err, "failed to generate credentials")
 		return "", err
 	}
-	// Neither PasswordHash nor Password wasn't in the provided input secret we need to generate a random password
-	if credentials.PasswordHash == nil && credentials.Password == "" {
-		credentials.Password, err = internal.RandomEncodedString(24)
-		if err != nil {
-			return "", fmt.Errorf("failed to generate random password: %w", err)
-		}
-	}
 
 	logger.Info("Credentials generated for User", "user", user.Name, "generatedUsername", credentials.Username)
 
@@ -124,9 +117,13 @@ func (r *UserReconciler) generateCredentials(ctx context.Context, user *topology
 
 	credentials := internal.UserCredentials{}
 
-	credentials.Username, err = internal.RandomEncodedString(24)
-	if err != nil {
-		return credentials, fmt.Errorf("failed to generate random username: %w", err)
+	if user.Spec.UsernameFromMeta {
+		credentials.Username = user.Name
+	} else {
+		credentials.Username, err = internal.RandomEncodedString(24)
+		if err != nil {
+			return credentials, fmt.Errorf("failed to generate random username: %w", err)
+		}
 	}
 	credentials.Password, err = internal.RandomEncodedString(24)
 	if err != nil {
@@ -185,6 +182,9 @@ func (r *UserReconciler) setUserStatus(ctx context.Context, user *topology.User,
 
 func (r *UserReconciler) DeclareFunc(ctx context.Context, rmqc rabbitmqclient.Client, obj topology.TopologyResource) error {
 	user := obj.(*topology.User)
+	if user.Spec.UsernameFromMeta && user.Spec.ImportCredentialsSecret != nil {
+		return errors.New("spec.usernameFromMeta cannot be set together with spec.importCredentialsSecret")
+	}
 	if user.Spec.ImportCredentialsSecret != nil {
 		return r.declareWithImportedCredentials(ctx, rmqc, user)
 	}
@@ -197,6 +197,12 @@ func (r *UserReconciler) declareWithImportedCredentials(ctx context.Context, rmq
 	credentials, err := r.importCredentials(ctx, user.Spec.ImportCredentialsSecret.Name, user.Namespace)
 	if err != nil {
 		return err
+	}
+	if credentials.PasswordHash == nil && credentials.Password == "" {
+		return fmt.Errorf("neither passwordHash nor password is set in credentials secret %q; "+
+			"for a User created before v1.20, label the existing <name>-user-credentials secret with rabbitmq.com/topology-operator=true and remove spec.importCredentialsSecret to preserve its username and password; "+
+			"for a new User using metadata.name as the username, remove spec.importCredentialsSecret and set spec.usernameFromMeta: true",
+			user.Spec.ImportCredentialsSecret.Name)
 	}
 
 	// Update status on first run, or correct a migration where Status.Credentials.Name
@@ -230,7 +236,7 @@ func (r *UserReconciler) declareWithGeneratedCredentials(ctx context.Context, rm
 	// Always call declareCredentials to ensure the generated secret exists and is labeled.
 	// CreateOrUpdate fetches the existing secret first, so the mutate function only adds the
 	// label — credentials in the Data field are never regenerated for existing secrets.
-	username, err := r.declareCredentials(ctx, user)
+	_, err := r.declareCredentials(ctx, user)
 	if err != nil {
 		return err
 	}
@@ -242,15 +248,20 @@ func (r *UserReconciler) declareWithGeneratedCredentials(ctx context.Context, rm
 	}
 	logger.Info("Retrieved credentials for user", "user", user.Name, "credentials", credentials.Name)
 
-	// username from declareCredentials is only valid for newly created secrets.
-	// For existing secrets, read the actual username from the secret.
+	// Read the stored username, including for existing secrets whose credentials are preserved.
 	actualUsername := string(credentials.Data["username"])
 	if actualUsername == "" {
-		actualUsername = username
+		return fmt.Errorf("could not find non-empty username key in generated credentials secret: %s", credentials.Name)
+	}
+	if user.Spec.UsernameFromMeta && actualUsername != user.Name {
+		return fmt.Errorf("spec.usernameFromMeta is true but the existing credentials secret %q has a username different from metadata.name %q; "+
+			"unset spec.usernameFromMeta to preserve the existing username and password",
+			user.Name+"-user-credentials", user.Name)
 	}
 
 	if user.Status.Credentials == nil || user.Status.Username == "" ||
-		user.Status.Credentials.Name != user.Name+"-user-credentials" {
+		user.Status.Credentials.Name != user.Name+"-user-credentials" ||
+		user.Status.Username != actualUsername {
 		if err := r.setUserStatus(ctx, user, actualUsername, user.Name+"-user-credentials"); err != nil {
 			return err
 		}

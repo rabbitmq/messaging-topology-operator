@@ -150,6 +150,77 @@ var _ = Describe("Users", func() {
 		})
 	})
 
+	When("using the username from the User's metadata.name", func() {
+		BeforeEach(func() {
+			user = &topology.User{
+				Name:      "user-from-meta",
+				Namespace: namespace,
+				Spec: topology.UserSpec{
+					RabbitmqClusterReference: topology.RabbitmqClusterReference{
+						Name: rmq.Name,
+					},
+					Tags:             []topology.UserTag{"management"},
+					UsernameFromMeta: true,
+				},
+			}
+		})
+
+		It("declares a user named after the User resource with a generated password", func() {
+			By("declaring user")
+			Expect(k8sClient.Create(ctx, user, &client.CreateOptions{})).To(Succeed())
+
+			By("Creating a Secret with the metadata.name as username and a generated password")
+			generatedSecretKey := types.NamespacedName{
+				Name:      "user-from-meta-user-credentials",
+				Namespace: namespace,
+			}
+			var generatedSecret = &corev1.Secret{}
+			Eventually(func() error {
+				return k8sClient.Get(ctx, generatedSecretKey, generatedSecret)
+			}, 30, 2).Should(Succeed())
+			Expect(generatedSecret.Data).To(HaveKeyWithValue("username", []byte(user.Name)))
+			Expect(generatedSecret.Data).To(HaveKey("password"))
+			rawPassword := string(generatedSecret.Data["password"])
+
+			By("setting the correct user info")
+			var userInfo *rabbithole.UserInfo
+			Eventually(func() error {
+				var err error
+				userInfo, err = rabbitClient.GetUser(user.Name)
+				return err
+			}, 10, 2).Should(Succeed())
+			Expect(userInfo.Name).To(Equal(user.Name))
+			Expect(userInfo.Tags).To(ConsistOf("management"))
+
+			By("creating a client credential set that can be authenticated")
+			managementEndpoint, err := managementEndpoint(ctx, clientSet, user.Namespace, user.Spec.RabbitmqClusterReference.Name)
+			Expect(err).NotTo(HaveOccurred())
+			client, err := rabbithole.NewClient(managementEndpoint, user.Name, rawPassword)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = client.Overview()
+			Expect(err).NotTo(HaveOccurred())
+
+			By("referencing the location of the Secret in the User's Status")
+			updatedUser := topology.User{}
+			Eventually(func() string {
+				Expect(k8sClient.Get(ctx, types.NamespacedName{Name: user.Name, Namespace: user.Namespace}, &updatedUser)).To(Succeed())
+				if updatedUser.Status.Credentials == nil {
+					return ""
+				}
+				return updatedUser.Status.Credentials.Name
+			}, 30, 2).Should(Equal(generatedSecret.Name))
+			Expect(updatedUser.Status.Username).To(Equal(user.Name))
+
+			By("deleting user")
+			Expect(k8sClient.Delete(ctx, user)).To(Succeed())
+			Eventually(func() error {
+				_, err = rabbitClient.GetUser(user.Name)
+				return err
+			}, 30).Should(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Not Found"))
+		})
+	})
+
 	When("providing a pre-defined username & password", func() {
 		var credentialSecret corev1.Secret
 		BeforeEach(func() {

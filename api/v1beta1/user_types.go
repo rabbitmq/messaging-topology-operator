@@ -37,7 +37,15 @@ type UserSpec struct {
 	//
 	// The Operator watches this Secret and re-syncs the User's credentials to RabbitMQ whenever it changes,
 	// so updating the Secret's `password`/`passwordHash` rotates the User's password.
+	//
+	// To only choose the username and have the Operator generate the password, set `usernameFromMeta` instead.
+	// Cannot be set together with `usernameFromMeta`.
 	ImportCredentialsSecret *corev1.LocalObjectReference `json:"importCredentialsSecret,omitempty"`
+	// When true, the User's metadata.name is used as the RabbitMQ username and a random password is
+	// generated. Both are stored in the operator-owned Secret `<metadata.name>-user-credentials`.
+	// Cannot be set together with importCredentialsSecret. Defaults to false.
+	// +optional
+	UsernameFromMeta bool `json:"usernameFromMeta,omitempty"`
 	// Limits to apply to a user to restrict the number of connections and channels
 	// the user can create. These limits can be used as guard rails in environments
 	// where applications cannot be trusted and monitored in detail, for example,

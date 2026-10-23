@@ -207,6 +207,49 @@ var _ = Describe("User Webhook", func() {
 		})
 	})
 
+	Context("usernameFromMeta validation", func() {
+		buildUser := func(usernameFromMeta bool, importSecret *corev1.LocalObjectReference) *rabbitmqcomv1beta1.User {
+			return &rabbitmqcomv1beta1.User{
+				Name: "test-user", Namespace: "default",
+				Spec: rabbitmqcomv1beta1.UserSpec{
+					RabbitmqClusterReference: rabbitmqcomv1beta1.RabbitmqClusterReference{Name: "my-cluster"},
+					UsernameFromMeta:         usernameFromMeta,
+					ImportCredentialsSecret:  importSecret,
+				},
+			}
+		}
+
+		It("allows creation when usernameFromMeta is set on its own", func() {
+			_, err := validator.ValidateCreate(ctx, buildUser(true, nil))
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("denies creation when usernameFromMeta and importCredentialsSecret are both set", func() {
+			_, err := validator.ValidateCreate(ctx, buildUser(true, &corev1.LocalObjectReference{Name: "some-secret"}))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("spec.usernameFromMeta"))
+			Expect(err.Error()).To(ContainSubstring("cannot be set together with spec.importCredentialsSecret"))
+		})
+
+		It("denies updates that introduce the conflicting fields", func() {
+			oldObj = buildUser(false, &corev1.LocalObjectReference{Name: "some-secret"})
+			obj = buildUser(true, &corev1.LocalObjectReference{Name: "some-secret"})
+			_, err := validator.ValidateUpdate(ctx, oldObj, obj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("spec.usernameFromMeta"))
+		})
+
+		It("allows updates with conflicting fields when the User has a DeletionTimestamp", func() {
+			now := metav1.Now()
+			oldObj = buildUser(false, nil)
+			obj = buildUser(true, &corev1.LocalObjectReference{Name: "some-secret"})
+			obj.DeletionTimestamp = &now
+			obj.Finalizers = []string{"deletion.finalizers.users.rabbitmq.com"}
+			_, err := validator.ValidateUpdate(ctx, oldObj, obj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
 	Context("connectionSecret label enforcement respects rabbitmqClusterReference.namespace", func() {
 		const (
 			resourceNS   = "default"

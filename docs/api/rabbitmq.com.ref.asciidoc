@@ -1461,6 +1461,12 @@ password will be generated. The Secret must have the following keys in its Data 
 
 The Operator watches this Secret and re-syncs the User's credentials to RabbitMQ whenever it changes,
 so updating the Secret's `password`/`passwordHash` rotates the User's password.
+
+To only choose the username and have the Operator generate the password, set `usernameFromMeta` instead.
+Cannot be set together with `usernameFromMeta`.
+| *`usernameFromMeta`* __boolean__ | When true, the User's metadata.name is used as the RabbitMQ username and a random password is
+generated. Both are stored in the operator-owned Secret `<metadata.name>-user-credentials`.
+Cannot be set together with importCredentialsSecret. Defaults to false.
 | *`limits`* __xref:{anchor_prefix}-github-com-rabbitmq-messaging-topology-operator-api-v1beta1-userlimits[$$UserLimits$$]__ | Limits to apply to a user to restrict the number of connections and channels
 the user can create. These limits can be used as guard rails in environments
 where applications cannot be trusted and monitored in detail, for example,

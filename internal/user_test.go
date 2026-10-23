@@ -60,6 +60,13 @@ var _ = Describe("GenerateUserSettings", func() {
 		Expect(settings.Password).To(BeEmpty())
 	})
 
+	It("returns an error when neither password nor passwordHash is set", func() {
+		credentials.Password = ""
+
+		_, err := internal.GenerateUserSettings(credentials, userTags)
+		Expect(err).To(MatchError(ContainSubstring("neither passwordHash nor password is set in credentials")))
+	})
+
 	When("user limits are provided", func() {
 		var connections, channels int32
 
