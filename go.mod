@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/michaelklishin/rabbit-hole/v3 v3.6.0
-	github.com/onsi/ginkgo/v2 v2.33.1
+	github.com/onsi/ginkgo/v2 v2.34.0
 	github.com/onsi/gomega v1.44.0
 	github.com/rabbitmq/cluster-operator/v2 v2.23.2
 	gopkg.in/ini.v1 v1.67.3
