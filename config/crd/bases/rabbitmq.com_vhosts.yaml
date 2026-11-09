@@ -59,6 +59,9 @@ spec:
                 - delete
                 - retain
                 type: string
+              description:
+                description: Description of the vhost, shown in the management UI.
+                type: string
               limits:
                 description: |-
                   Limits defines limits to be applied to the vhost.
