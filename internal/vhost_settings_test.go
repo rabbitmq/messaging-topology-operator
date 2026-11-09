@@ -35,6 +35,12 @@ var _ = Describe("GenerateVhostSettings", func() {
 		settings := internal.GenerateVhostSettings(v)
 		Expect(settings.DefaultQueueType).To(Equal("stream"))
 	})
+
+	It("sets 'description' according to vhost.spec.description", func() {
+		v.Spec.Description = "For Banking"
+		settings := internal.GenerateVhostSettings(v)
+		Expect(settings.Description).To(Equal("For Banking"))
+	})
 })
 
 var _ = Describe("GenerateVhostLimits", func() {
