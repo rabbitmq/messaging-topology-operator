@@ -18,9 +18,11 @@ import (
 type VhostSpec struct {
 	// Name of the vhost; see https://www.rabbitmq.com/vhosts.html.
 	// +kubebuilder:validation:Required
-	Name    string   `json:"name"`
-	Tracing bool     `json:"tracing,omitempty"`
-	Tags    []string `json:"tags,omitempty"`
+	Name string `json:"name"`
+	// Description of the vhost, shown in the management UI.
+	Description string   `json:"description,omitempty"`
+	Tracing     bool     `json:"tracing,omitempty"`
+	Tags        []string `json:"tags,omitempty"`
 	// Default queue type for this vhost; can be set to quorum, classic or stream.
 	// Supported in RabbitMQ 3.11.12 or above.
 	// +kubebuilder:validation:Enum=quorum;classic;stream
