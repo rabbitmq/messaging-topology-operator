@@ -10,14 +10,14 @@ require (
 	github.com/michaelklishin/rabbit-hole/v3 v3.6.0
 	github.com/onsi/ginkgo/v2 v2.34.0
 	github.com/onsi/gomega v1.44.0
-	github.com/rabbitmq/cluster-operator/v2 v2.23.2
-	gopkg.in/ini.v1 v1.67.3
+	github.com/rabbitmq/cluster-operator/v2 v2.23.3
+	gopkg.in/ini.v1 v1.68.0
 	k8s.io/api v0.37.2
 	k8s.io/apimachinery v0.37.2
 	k8s.io/client-go v0.37.2
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/utils v0.0.0-20261023123148-ca04ba58ecab
-	sigs.k8s.io/controller-runtime v0.25.2
+	sigs.k8s.io/controller-runtime v0.25.3
 )
 
 require (
